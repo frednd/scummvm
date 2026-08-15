@@ -1,0 +1,84 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "base/plugins.h"
+
+#include "engines/advancedDetector.h"
+#include "engines/game.h"
+
+#include "alien/detection.h"
+
+static const PlainGameDescriptor alienGames[] = {
+	{"alien", "Alien Incident"},
+	{nullptr, nullptr}
+};
+
+static const DebugChannelDef debugFlagList[] = {
+	{Alien::kDebugGraphics, "graphics", "Graphics and blitting"},
+	{Alien::kDebugResource, "resource", "Resource loading"},
+	DEBUG_CHANNEL_END
+};
+
+namespace Alien {
+
+static const ADGameDescription gameDescriptions[] = {
+	// CD release, installed to hard disk. One install carries all four text
+	// languages (USESTRS.ENG/FIN/FRA/GER plus TALFILES/ENG and TALFILES/FIN),
+	// so the entry is multi-language rather than one entry per language.
+	{
+		"alien",
+		"CD",
+		AD_ENTRY2s("GAME.EXE", "3f8b9a6c0dfd515a632154eb82dfec35", 202768,
+				   "OBJFILE.PCX", "d6115a4bc1bbffde628a74978b6b5a0f", 17844),
+		Common::UNK_LANG,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+
+	AD_TABLE_END_MARKER
+};
+
+} // End of namespace Alien
+
+class AlienMetaEngineDetection : public AdvancedMetaEngineDetection<ADGameDescription> {
+public:
+	AlienMetaEngineDetection() : AdvancedMetaEngineDetection(Alien::gameDescriptions, alienGames) {
+	}
+
+	const char *getName() const override {
+		return "alien";
+	}
+
+	const char *getEngineName() const override {
+		return "Alien Incident";
+	}
+
+	const char *getOriginalCopyright() const override {
+		return "Alien Incident (C) 1996 Housemarque";
+	}
+
+	const DebugChannelDef *getDebugChannels() const override {
+		return debugFlagList;
+	}
+};
+
+REGISTER_PLUGIN_STATIC(ALIEN_DETECTION, PLUGIN_TYPE_ENGINE_DETECTION, AlienMetaEngineDetection);
