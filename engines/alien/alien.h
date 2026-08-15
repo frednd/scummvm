@@ -27,6 +27,8 @@
 #include "graphics/surface.h"
 
 #include "alien/dl1.h"
+#include "alien/font.h"
+#include "alien/tal.h"
 
 struct ADGameDescription;
 
@@ -52,12 +54,23 @@ private:
 	void handleEvents();
 	void dumpScreen();
 
+	void setTextColor(byte r, byte g, byte b);
+	void drawSpeech(const TalFile::Entry &entry, int anchorX, int anchorY);
+	void drawBand(const TalFile::Entry &entry);
+	void showDialog(uint id);
+
 	Graphics::Surface _screen;		///< 320x200 staging buffer, 8bpp
 	Graphics::Surface _background;	///< the room plate as decoded
 	byte _palette[256 * 3];
 
 	DL1Sprite _sprite;
 	uint _spriteFrame;
+
+	Font _font;
+	TalFile _tal;
+	uint _dialogId;
+	bool _dialogBand;				///< bottom band layout instead of over the speaker
+
 	bool _dirty;
 	bool _quit;
 };

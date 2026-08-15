@@ -3,8 +3,10 @@ MODULE := engines/alien
 MODULE_OBJS = \
 	alien.o \
 	dl1.o \
+	font.o \
 	metaengine.o \
-	resources.o
+	resources.o \
+	tal.o
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_ALIEN), DYNAMIC_PLUGIN)
