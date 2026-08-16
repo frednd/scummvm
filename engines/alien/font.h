@@ -44,14 +44,26 @@ namespace Alien {
  */
 class Font {
 public:
-	static const int kGlyphHeight = 10;
 	static const byte kInkColor = 65;		///< the one palette entry speaker color recolors
+
+	/**
+	 * Which of the two metric sets in the executable to read. The tables are
+	 * laid out identically and sit 0x330 bytes apart: the speech font is ten
+	 * rows tall and overlaps its glyphs by a pixel, the label font used for the
+	 * status line is eight rows tall and does not.
+	 */
+	enum Variant {
+		kSpeech,
+		kLabel
+	};
 
 	Font();
 	~Font();
 
 	/** Read the metric tables from the executable and the atlas from the PCX. */
-	bool load();
+	bool load(Variant variant = kSpeech);
+
+	int glyphHeight() const { return _variant == kLabel ? 8 : 10; }
 
 	bool isLoaded() const { return _atlas.getPixels() != nullptr; }
 
@@ -78,7 +90,9 @@ private:
 	static const uint kGlyphCount = 256;
 
 	bool readMetrics();
+	int advance(const Glyph &g) const { return _variant == kLabel ? g.width : g.width - 2; }
 
+	Variant _variant;
 	Glyph _glyphs[kGlyphCount];
 	Graphics::Surface _atlas;
 	byte _atlasPalette[256 * 3];

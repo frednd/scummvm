@@ -38,6 +38,10 @@ static const uint32 kTableX = 0x1E6A;		///< u16 per character
 static const uint32 kTableY = 0x2022;		///< u8 per character
 static const uint32 kTableW = 0x20EE;		///< u8 per character
 
+// The label font's three tables follow the speech font's at a fixed distance,
+// glyph for glyph. OBJ:sub_08177, the status line blitter, reads them.
+static const uint32 kLabelTables = 0x330;
+
 // Below space nothing is ever printed, and past 0xEB the tables hold junk that
 // would address outside the atlas.
 static const uint kFirstCode = 0x20;
@@ -46,7 +50,7 @@ static const uint kLastCode = 0xEB;
 static const int kAtlasWidth = 320;
 static const int kAtlasHeight = 200;
 
-Font::Font() {
+Font::Font() : _variant(kSpeech) {
 	memset(_glyphs, 0, sizeof(_glyphs));
 	memset(_atlasPalette, 0, sizeof(_atlasPalette));
 }
@@ -62,13 +66,15 @@ bool Font::readMetrics() {
 		return false;
 	}
 
+	const uint32 base = kDataSegment + (_variant == kLabel ? kLabelTables : 0);
+
 	uint valid = 0;
 	for (uint c = kFirstCode; c <= kLastCode; c++) {
-		exe.seek(kDataSegment + kTableX + c * 2);
+		exe.seek(base + kTableX + c * 2);
 		uint16 x = exe.readUint16LE();
-		exe.seek(kDataSegment + kTableY + c);
+		exe.seek(base + kTableY + c);
 		byte y = exe.readByte();
-		exe.seek(kDataSegment + kTableW + c);
+		exe.seek(base + kTableW + c);
 		byte w = exe.readByte();
 
 		if (exe.eos() || exe.err()) {
@@ -80,7 +86,7 @@ bool Font::readMetrics() {
 		// prints; anything reaching outside the atlas is not a glyph either.
 		if (w <= 1 && x == 0 && y == 0)
 			continue;
-		if ((int)x + w + 1 > kAtlasWidth || (int)y + kGlyphHeight > kAtlasHeight)
+		if ((int)x + w + 1 > kAtlasWidth || (int)y + glyphHeight() > kAtlasHeight)
 			continue;
 
 		_glyphs[c].x = x;
@@ -90,11 +96,14 @@ bool Font::readMetrics() {
 		valid++;
 	}
 
-	debugC(1, kDebugResource, "font: %u glyphs", valid);
+	debugC(1, kDebugResource, "%s font: %u glyphs",
+		   _variant == kLabel ? "label" : "speech", valid);
 	return valid > 0;
 }
 
-bool Font::load() {
+bool Font::load(Variant variant) {
+	_variant = variant;
+
 	if (!readMetrics())
 		return false;
 
@@ -116,7 +125,7 @@ int Font::measure(const byte *text, uint length) const {
 	for (uint i = 0; i < length; i++) {
 		const Glyph &g = _glyphs[text[i]];
 		if (g.valid)
-			width += g.width - 2;
+			width += advance(g);
 	}
 	return width;
 }
@@ -135,7 +144,7 @@ void Font::drawString(Graphics::Surface &dest, const byte *text, uint length, in
 		if (!g.valid)
 			continue;
 
-		for (int row = 0; row < kGlyphHeight; row++) {
+		for (int row = 0; row < glyphHeight(); row++) {
 			int dy = y + row;
 			if (dy < 0 || dy >= dest.h)
 				continue;
@@ -153,8 +162,9 @@ void Font::drawString(Graphics::Surface &dest, const byte *text, uint length, in
 			}
 		}
 
-		// One pixel of deliberate overlap between neighbours.
-		pen += g.width - 2;
+		// The speech font overlaps its neighbours by a pixel; the label font
+		// does not, and steps by the full glyph.
+		pen += advance(g);
 	}
 }
 
