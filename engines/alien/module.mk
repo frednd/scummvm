@@ -8,7 +8,8 @@ MODULE_OBJS = \
 	overlay.o \
 	resources.o \
 	tables.o \
-	tal.o
+	tal.o \
+	walk.o
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_ALIEN), DYNAMIC_PLUGIN)

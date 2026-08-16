@@ -58,8 +58,8 @@ static const int kAnchorY = 90;
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _dialogId(1), _dialogBand(false),
-		_dirty(true), _quit(false) {
+		_room(0), _secondPlate(false), _walkX(0), _walkY(0), _showWalk(false),
+		_dialogId(1), _dialogBand(false), _dirty(true), _quit(false) {
 	memset(_palette, 0, sizeof(_palette));
 }
 
@@ -129,6 +129,21 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// keep an empty manifest until their code is understood.
 	_overlays.readRoom(room, _assets);
 	loadSpriteBank(0);
+
+	// The walk mask and the node ring, so a click can be routed. Rooms with no
+	// KIERRA files have no free movement at all, and those keep an empty mask.
+	_walk.load(room, _assets);
+	_route.count = 0;
+
+	// Ben is not on screen yet, so a route has to start somewhere: the first
+	// walk node stands in for him until the character sprites are ported.
+	if (_walk.nodes().count()) {
+		_walkX = _walk.nodes().x(0);
+		_walkY = _walk.nodes().y(0);
+	} else {
+		_walkX = kScreenWidth / 2;
+		_walkY = 140;
+	}
 
 	// Most rooms name a room<n>.tal, but several speak through a shared file,
 	// and the ones without an overlay fall back to the naming convention.
@@ -201,6 +216,66 @@ void AlienEngine::stepSpriteBank(int delta) {
 	loadSpriteBank((uint)bank);
 }
 
+void AlienEngine::walkTo(int x, int y) {
+	// The original converts the click into a walk target before routing --
+	// walk_target = click + (10, 64) -- but that offset belongs to the click
+	// pipeline, which is not ported, so the point is taken as it stands here.
+	if (!_walk.plotRoute(_walkX, _walkY, x, y, _route)) {
+		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
+		return;
+	}
+
+	debugC(1, kDebugGraphics, "walk %d,%d -> %d,%d: %u waypoints, target %s",
+		   _walkX, _walkY, x, y, _route.count,
+		   _walk.mask().blocked(x, y) ? "blocked" : "walkable");
+
+	// The walk itself is animation the character sprites have to drive, so the
+	// route only moves the stand-in to its end for now.
+	if (_route.count) {
+		_walkX = _route.points[_route.count - 1].x;
+		_walkY = _route.points[_route.count - 1].y;
+	}
+	_dirty = true;
+}
+
+void AlienEngine::drawWalkOverlay() {
+	// A debug view, not something the game ever drew: blocked pixels stippled,
+	// the node ring marked, and the last plotted route joined up. The ink
+	// colour is the one the text layer already reprograms, so it stands out
+	// against any plate.
+	byte *pixels = (byte *)_screen.getPixels();
+
+	for (int y = 0; y < _screen.h; y++) {
+		for (int x = 0; x < _screen.w; x++) {
+			if (((x + y) & 3) == 0 && _walk.mask().blocked(x, y))
+				pixels[y * _screen.pitch + x] = Font::kInkColor;
+		}
+	}
+
+	for (uint i = 0; i < _walk.nodes().count(); i++) {
+		const int nx = _walk.nodes().x(i);
+		const int ny = _walk.nodes().y(i);
+		for (int d = -2; d <= 2; d++) {
+			if (nx + d >= 0 && nx + d < _screen.w)
+				pixels[ny * _screen.pitch + nx + d] = Font::kInkColor;
+			if (ny + d >= 0 && ny + d < _screen.h)
+				pixels[(ny + d) * _screen.pitch + nx] = Font::kInkColor;
+		}
+	}
+
+	for (uint i = 1; i < _route.count; i++) {
+		const WalkRoute::Point &a = _route.points[i - 1];
+		const WalkRoute::Point &b = _route.points[i];
+		const int steps = MAX(ABS(b.x - a.x), ABS(b.y - a.y));
+		for (int s = 0; s <= steps; s++) {
+			const int x = steps ? a.x + (b.x - a.x) * s / steps : a.x;
+			const int y = steps ? a.y + (b.y - a.y) * s / steps : a.y;
+			if (x >= 0 && x < _screen.w && y >= 0 && y < _screen.h)
+				pixels[y * _screen.pitch + x] = Font::kInkColor;
+		}
+	}
+}
+
 void AlienEngine::setTextColor(byte r, byte g, byte b) {
 	// The original reprograms a single DAC entry per speaker; the values in
 	// the disassembly are the VGA 6-bit ones, so they are widened here.
@@ -264,6 +339,9 @@ void AlienEngine::redraw() {
 
 	_sprite.drawFrame(_spriteFrame, _screen);
 
+	if (_showWalk)
+		drawWalkOverlay();
+
 	const TalFile::Entry &dialog = _tal.entry(_dialogId);
 	if (_dialogBand)
 		drawBand(dialog);
@@ -326,11 +404,17 @@ void AlienEngine::handleEvents() {
 				stepSpriteBank(1);
 			} else if (event.kbd.keycode == Common::KEYCODE_LEFTBRACKET) {
 				stepSpriteBank(-1);
+			} else if (event.kbd.keycode == Common::KEYCODE_w) {
+				_showWalk = !_showWalk;
+				_dirty = true;
 			} else if (event.kbd.keycode == Common::KEYCODE_b) {
 				// The second plate is the B state, the right half of a wide
 				// room or the close-up, depending on the room.
 				loadRoom(_room, !_secondPlate);
 			}
+			break;
+		case Common::EVENT_LBUTTONDOWN:
+			walkTo(event.mouse.x, event.mouse.y);
 			break;
 		default:
 			break;

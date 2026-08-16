@@ -31,6 +31,7 @@
 #include "alien/overlay.h"
 #include "alien/tables.h"
 #include "alien/tal.h"
+#include "alien/walk.h"
 
 struct ADGameDescription;
 
@@ -59,6 +60,9 @@ private:
 	void handleEvents();
 	void dumpScreen();
 
+	void walkTo(int x, int y);
+	void drawWalkOverlay();
+
 	void setTextColor(byte r, byte g, byte b);
 	void drawSpeech(const TalFile::Entry &entry, int anchorX, int anchorY);
 	void drawBand(const TalFile::Entry &entry);
@@ -77,6 +81,12 @@ private:
 	RoomAssets _assets;
 	int _room;
 	bool _secondPlate;				///< showing the room's B plate rather than A
+
+	Walk _walk;
+	WalkRoute _route;
+	int _walkX;						///< where a plotted route starts, Ben's stand-in
+	int _walkY;
+	bool _showWalk;					///< draw the mask, the node ring and the route
 
 	Font _font;
 	TalFile _tal;
