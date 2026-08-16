@@ -31,6 +31,7 @@
 #include "alien/font.h"
 #include "alien/hotspots.h"
 #include "alien/overlay.h"
+#include "alien/script.h"
 #include "alien/tables.h"
 #include "alien/tal.h"
 #include "alien/walk.h"
@@ -73,7 +74,7 @@ private:
 	void clickAt(int x, int y);
 	byte rotateOutcome(const Hotspot &spot);
 	void finishAction();
-	void queueOutcome(byte code, int anchorX, int anchorY);
+	void queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY);
 	void nextSpeech();
 	void stopSpeech();
 
@@ -96,6 +97,8 @@ private:
 	RoomAssets _assets;
 	int _room;
 	bool _secondPlate;				///< showing the room's B plate rather than A
+
+	RoomScript _script;			///< the room's own reaction to a click
 
 	Walk _walk;
 	WalkRoute _route;
@@ -128,6 +131,8 @@ private:
 	Font _labelFont;				///< the shorter face the status line is set in
 	TalFile _tal;
 	TalFile _labels;				///< NAMEROOM/<lang>/R<n>.TAL, the hover names
+	TalFile _talkall;				///< TALKALL.TAL, the answers no room owns
+	const TalFile *_speechTal;		///< which of the two the queue came out of
 	uint _labelSlot;
 	uint _dialogId;
 	bool _dialogBand;				///< bottom band layout instead of over the speaker

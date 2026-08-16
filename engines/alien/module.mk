@@ -9,6 +9,8 @@ MODULE_OBJS = \
 	metaengine.o \
 	overlay.o \
 	resources.o \
+	roomscripts.o \
+	script.o \
 	tables.o \
 	tal.o \
 	walk.o

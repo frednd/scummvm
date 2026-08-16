@@ -71,6 +71,19 @@ static const int kAnchorY = 90;
 static const int kTicksPerCharacter = 3;
 static const int kMinSpeechTicks = 0x46;
 
+// TALKALL.TAL holds the answers that belong to no room: the descriptions of the
+// carried items, and the two refusals the generic click path falls back on when
+// an object's outcome code is zero -- 10c9:sub_11c10 and 10c9:0x257 raise the
+// dialog branches that DIALOG:sub_0b776 turns into these two codes.
+static const char *const kSharedScript = "TALKALL.TAL";
+// Code 3 there is the other one, "Using these things together doesn't seem to
+// work.", which the item-use verb needs once inventory is ported.
+static const byte kOutcomeNothingSpecial = 4;	///< "I can't see anything special about it."
+
+// The status-line verb whose zero outcome falls back to a canned line. Any
+// other verb with a zero code is the room's own business.
+static const byte kVerbLookAt = 5;
+
 // SearchMan names a directory archive after the directory's own last component,
 // so registering TALFILES/ENG and NAMEROOM/ENG the usual way would have the
 // second one clash with the first and be dropped. The language directory is
@@ -105,7 +118,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _tick(0),
 		_spots(nullptr), _spotCount(0), _hover(-1), _pending(-1), _pendingOutcome(0),
-		_queueCount(0), _queueNext(0), _labelSlot(0), _dialogId(1), _dialogBand(false),
+		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false) {
 	memset(_palette, 0, sizeof(_palette));
@@ -140,6 +153,11 @@ Common::Error AlienEngine::run() {
 
 	if (!_labelFont.load(Font::kLabel))
 		return Common::Error(Common::kReadingFailed, "Could not load the label font");
+
+	// The shared script is resident in the original for the whole game, and the
+	// generic click path reads it whatever room the player is in.
+	if (!_talkall.load(Common::Path(kSharedScript)))
+		warning("could not load %s: objects with no outcome will stay silent", kSharedScript);
 
 	// The player character's frames are one set among six and live outside any
 	// room, so they are read once and kept for the whole session.
@@ -202,6 +220,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_hover = -1;
 	_pending = -1;
 	stopSpeech();
+
+	// What the room does with a click on its own account, lifted out of its
+	// overlay by tools/gen_roomscripts.py. The state block it reads and writes
+	// is not touched here: puzzle flags outlive the room they were set in.
+	_script.enterRoom(room);
 
 	// Where the character enters a room is the room script's business, and none
 	// of that is ported, so he is put on the first walk node -- a place the
@@ -407,13 +430,34 @@ void AlienEngine::finishAction() {
 	// docs/dialog_system.md 1: the speech is anchored on the horizontal midpoint
 	// of the clicked object's box, at its top edge.
 	const Hotspot &spot = _spots[index];
-	queueOutcome(_pendingOutcome, (spot.x1 + spot.x2) / 2, spot.y1);
+	const int anchorX = (spot.x1 + spot.x2) / 2;
+	const int anchorY = spot.y1;
+
+	// Every overlay calls the generic dispatch (10c9:sub_11c10) before running
+	// its own bodies, so the outcome speaks first. A code of zero means the room
+	// answers for itself -- except under "Look at", where the shared script
+	// supplies the canned line.
+	if (_pendingOutcome != 0 && _pendingOutcome != 0xff)
+		queueOutcome(_tal, _pendingOutcome, anchorX, anchorY);
+	else if (_pendingOutcome == 0 && spot.verb == kVerbLookAt)
+		queueOutcome(_talkall, kOutcomeNothingSpecial, anchorX, anchorY);
+
+	// Then the room's own reaction. A body that queues an event of its own
+	// speaks over whatever the generic path put up, as it does in the original:
+	// both write the one queue, and the later call is the one that stands.
+	const bool handled = _script.run(spot.obj, spot.verb);
+	if (_script.queuedEvent() != RoomScript::kNoEvent)
+		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
+
+	debugC(1, kDebugGraphics, "action: object %u verb %u -> outcome %u, script %s",
+		   spot.obj, spot.verb, _pendingOutcome, handled ? "handled it" : "passed");
 }
 
-void AlienEngine::queueOutcome(byte code, int anchorX, int anchorY) {
+void AlienEngine::queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY) {
 	// An outcome code does not name one line: it names a chain of up to ten
 	// dialog ids in zone 1 of the room's TAL, played one after another.
-	const TalFile::Outcome &chain = _tal.outcome(code);
+	const TalFile::Outcome &chain = tal.outcome(code);
+	_speechTal = &tal;
 
 	_queueCount = MIN<uint>(chain.count, TalFile::kMaxOutcomeIds);
 	_queueNext = 0;
@@ -432,7 +476,7 @@ void AlienEngine::nextSpeech() {
 	// empty pause; the shipped files do carry a few of those.
 	while (_queueNext < _queueCount) {
 		const uint id = _queue[_queueNext++];
-		const TalFile::Entry &entry = _tal.entry(id);
+		const TalFile::Entry &entry = _speechTal->entry(id);
 		if (entry.lines.empty())
 			continue;
 
@@ -571,6 +615,7 @@ void AlienEngine::showDialog(uint id) {
 	// Stepping through the file by hand, for checking the text layer against the
 	// reference renders: no countdown, so the line stays up until the next key.
 	_dialogId = id;
+	_speechTal = &_tal;
 	_speech = true;
 	_speechTicks = 0;
 	_speechX = kAnchorX;
@@ -601,7 +646,7 @@ void AlienEngine::redraw() {
 	drawLabel();
 
 	if (_speech) {
-		const TalFile::Entry &dialog = _tal.entry(_dialogId);
+		const TalFile::Entry &dialog = (_speechTal ? _speechTal : &_tal)->entry(_dialogId);
 		if (_dialogBand)
 			drawBand(dialog);
 		else
