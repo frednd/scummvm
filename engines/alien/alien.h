@@ -26,6 +26,7 @@
 #include "engines/engine.h"
 #include "graphics/surface.h"
 
+#include "alien/anim.h"
 #include "alien/charanim.h"
 #include "alien/dl1.h"
 #include "alien/font.h"
@@ -99,6 +100,7 @@ private:
 	bool _secondPlate;				///< showing the room's B plate rather than A
 
 	RoomScript _script;			///< the room's own reaction to a click
+	AnimSlots _anims;			///< the room's DL1 banks and what is playing on them
 
 	Walk _walk;
 	WalkRoute _route;

@@ -22,12 +22,14 @@
 #include "common/debug.h"
 #include "common/textconsole.h"
 
+#include "alien/anim.h"
 #include "alien/detection.h"
 #include "alien/script.h"
 
 namespace Alien {
 
-RoomScript::RoomScript() : _blocks(nullptr), _blockCount(0), _room(0), _queued(kNoEvent) {
+RoomScript::RoomScript() : _anims(nullptr), _blocks(nullptr), _blockCount(0),
+		_room(0), _queued(kNoEvent) {
 	reset();
 }
 
@@ -127,19 +129,18 @@ void RoomScript::execute(const ScriptBlock &block) {
 			break;
 
 		case kOpAnimPlay1:
+		case kOpAnimPlay2:
 		case kOpAnimPlay3:
-			debugC(2, kDebugGraphics, "script: animation slot %d, frames %d..%d, rate %d%s",
-				   effect.args[0], effect.args[1], effect.args[2], effect.args[3],
-				   effect.op == kOpAnimPlay3 ? " (reverse)" : "");
+			playAnim(effect);
 			break;
 
-		case kOpSpriteAdd:
-		case kOpSpriteRemove:
-		case kOpSpritePresent:
-			debugC(2, kDebugGraphics, "script: sprite %d %s", effect.args[0],
-				   effect.op == kOpSpriteAdd ? "added"
-											 : (effect.op == kOpSpriteRemove ? "removed"
-																			 : "tested"));
+		case kOpInvAdd:
+		case kOpInvRemove:
+		case kOpInvHas:
+			debugC(2, kDebugGraphics, "script: item %d %s", effect.args[0],
+				   effect.op == kOpInvAdd ? "picked up"
+										  : (effect.op == kOpInvRemove ? "given up"
+																	   : "tested for"));
 			break;
 
 		case kOpSound:
@@ -153,6 +154,22 @@ void RoomScript::execute(const ScriptBlock &block) {
 			break;
 		}
 	}
+}
+
+void RoomScript::playAnim(const ScriptEffect &effect) {
+	// All three play routines take the same four arguments. A body whose call
+	// lost one of them to a register cannot be run: the frame count and the rate
+	// decide how long the animation is on screen, and guessing either would
+	// leave a door half open.
+	if (!_anims || effect.argCount < 4) {
+		debugC(1, kDebugGraphics, "script: room %d plays an animation with %u of "
+			   "4 arguments", _room, effect.argCount);
+		return;
+	}
+
+	const int mode = effect.op == kOpAnimPlay1 ? 1 : (effect.op == kOpAnimPlay2 ? 2 : 3);
+	_anims->play(effect.args[0], (int)effect.args[1], (int)effect.args[2],
+				 (int)effect.args[3], mode);
 }
 
 bool RoomScript::run(byte obj, byte verb) {

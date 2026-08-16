@@ -34,6 +34,7 @@ static const PlainGameDescriptor alienGames[] = {
 static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugGraphics, "graphics", "Graphics and blitting"},
 	{Alien::kDebugResource, "resource", "Resource loading"},
+	{Alien::kDebugAnim, "anim", "Play every animation slot on entering a room"},
 	DEBUG_CHANNEL_END
 };
 

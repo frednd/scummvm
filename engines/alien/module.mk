@@ -2,6 +2,8 @@ MODULE := engines/alien
 
 MODULE_OBJS = \
 	alien.o \
+	anim.o \
+	anims.o \
 	charanim.o \
 	dl1.o \
 	font.o \

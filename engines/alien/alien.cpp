@@ -43,6 +43,9 @@ namespace Alien {
 // milestones were checked against.
 static const int kStartRoom = 10;
 
+// Ticks per frame for the debug run-everything animation, slow enough to watch.
+static const int kDebugAnimRate = 4;
+
 // One install ships all four text languages side by side. Picking the set is a
 // launcher option the engine does not have yet, so the English tree is wired up
 // for now. Both trees end in a directory of the same name, and SearchMan keys
@@ -124,6 +127,10 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 	memset(_palette, 0, sizeof(_palette));
 	memset(_outcomeCounter, 0, sizeof(_outcomeCounter));
 	memset(_queue, 0, sizeof(_queue));
+
+	// An anim_play effect in a room script drives the slots directly, the way the
+	// overlay's own body calls MIDAS.
+	_script.setAnims(&_anims);
 }
 
 AlienEngine::~AlienEngine() {
@@ -225,6 +232,18 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// overlay by tools/gen_roomscripts.py. The state block it reads and writes
 	// is not touched here: puzzle flags outlive the room they were set in.
 	_script.enterRoom(room);
+
+	// The banks the room's animation slots play, from the overlay's own load
+	// calls. Nothing is playing until a script body starts something: the
+	// original's room init sets the opening frame of every slot, and that code is
+	// the next milestone, so a door shows its initial state only once it is used.
+	_anims.loadRoom(room);
+
+	// With the anim channel on, the room opens with everything in it moving. It
+	// is the only way to see the slots run while the room init that sets their
+	// opening frames is still unported, and it is what the 'a' key repeats.
+	if (debugChannelSet(-1, kDebugAnim))
+		_anims.playAll(kDebugAnimRate);
 
 	// Where the character enters a room is the room script's business, and none
 	// of that is ported, so he is put on the first walk node -- a place the
@@ -347,8 +366,18 @@ void AlienEngine::stepClock() {
 	_lastTick = now;
 	_tick++;
 
-	if ((_tick & 1) == 0 && _speech && _speechTicks > 0 && --_speechTicks == 0)
-		nextSpeech();
+	if ((_tick & 1) == 0) {
+		// The animation slots advance under the same tick-pair gate as the
+		// dialog countdown -- MIDAS:0x1a6a tests [0xa5fc], not the animation
+		// gate -- so a slot's rate is in half ticks, about 35 Hz.
+		if (_anims.isBusy()) {
+			_anims.tick();
+			_dirty = true;
+		}
+
+		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
+			nextSpeech();
+	}
 
 	if (_tick & 3)
 		return;
@@ -637,6 +666,9 @@ void AlienEngine::redraw() {
 			memcpy(_screen.getBasePtr(0, y), _background.getBasePtr(0, y), w);
 	}
 
+	// The animation slots come first: they are the room's own furniture, and the
+	// character walks in front of them.
+	_anims.draw(_screen);
 	_sprite.drawFrame(_spriteFrame, _screen);
 	_ben.draw(_screen);
 
@@ -709,6 +741,10 @@ void AlienEngine::handleEvents() {
 				stepSpriteBank(1);
 			} else if (event.kbd.keycode == Common::KEYCODE_LEFTBRACKET) {
 				stepSpriteBank(-1);
+			} else if (event.kbd.keycode == Common::KEYCODE_a) {
+				// Everything in the room moves at once: the slots, running.
+				_anims.playAll(kDebugAnimRate);
+				_dirty = true;
 			} else if (event.kbd.keycode == Common::KEYCODE_w) {
 				_showWalk = !_showWalk;
 				_dirty = true;

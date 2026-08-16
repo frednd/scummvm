@@ -19,16 +19,30 @@
  *
  */
 
-#ifndef ALIEN_DETECTION_H
-#define ALIEN_DETECTION_H
+#ifndef ALIEN_ANIMS_H
+#define ALIEN_ANIMS_H
+
+#include "common/scummsys.h"
+#include "common/util.h"
 
 namespace Alien {
 
-enum AlienDebugChannels {
-	kDebugGraphics = 1,
-	kDebugResource,
-	kDebugAnim,
+/**
+ * One DL1 bank a room loads into one animation slot.
+ *
+ * The slot number is not the room's manifest order: slot numbers have gaps, and
+ * a few rooms load two banks into the same slot, the second overwriting the
+ * first. Both the slot and the bank name are immediate arguments to
+ * MIDAS:load_anim_bank as the overlay opens, and tools/gen_anims.py lifts them
+ * out of the disassembly into the generated table.
+ */
+struct AnimBank {
+	byte slot;
+	const char *name;
 };
+
+/** A room's bank loads in overlay order, or null with a count of zero. */
+const AnimBank *animBanksForRoom(int room, uint &count);
 
 } // End of namespace Alien
 

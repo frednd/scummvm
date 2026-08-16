@@ -26,6 +26,8 @@
 
 namespace Alien {
 
+class AnimSlots;
+
 /**
  * The room-script interpreter and the game state it reads and writes.
  *
@@ -54,6 +56,9 @@ public:
 
 	RoomScript();
 
+	/// The slots an anim_play effect drives. Not owned.
+	void setAnims(AnimSlots *anims) { _anims = anims; }
+
 	/// Clears the whole state block, as starting a new game does.
 	void reset();
 
@@ -76,7 +81,9 @@ private:
 	bool holds(const ScriptCond &cond) const;
 	bool matches(const ScriptBlock &block, byte obj, byte verb) const;
 	void execute(const ScriptBlock &block);
+	void playAnim(const ScriptEffect &effect);
 
+	AnimSlots *_anims;
 	byte _flags[kFlagCount];
 	const ScriptBlock *_blocks;
 	uint _blockCount;

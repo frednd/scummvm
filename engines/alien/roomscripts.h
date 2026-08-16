@@ -44,10 +44,10 @@ namespace Alien {
  * whose object, verb and preconditions all match, which is how the original
  * behaves once a body sets action_handled.
  *
- * Effects belonging to systems the port has not reached yet (animation slots,
- * the sprite-object table, sound) are still in the table with their arguments,
- * so wiring one up is an arm in the interpreter's switch. Bodies the
- * disassembler could not fully recover carry kOpUnsupported.
+ * Effects belonging to systems the port has not reached yet (the inventory,
+ * sound) are still in the table with their arguments, so wiring one up is an arm
+ * in the interpreter's switch. Bodies the disassembler could not fully recover
+ * carry kOpUnsupported.
  */
 enum ScriptOpcode {
 	kOpUnsupported = 0,	///< recovered as code, not as arguments; skipped
@@ -55,13 +55,14 @@ enum ScriptOpcode {
 	kOpActionHandled,	///< args: value of [0xa602]
 	kOpSubmode,			///< args: value of game_submode [0xa87e]
 	kOpQueueEvent,		///< args: outcome code -> the TAL dialog chain
-	kOpAnimPlay1,		///< args: slot, first, last, rate
-	kOpAnimPlay3,		///< args: slot, first, last, rate (reverse form)
+	kOpAnimPlay1,		///< args: slot, first frame, frame count, rate
+	kOpAnimPlay2,		///< as mode 1, then back to the frame it started on
+	kOpAnimPlay3,		///< as mode 1, but backward through the count
 	kOpSound,			///< args: sound slot
 	kOpPlaySample,		///< args: sample, ?, rate, volume, ?, delay
-	kOpSpriteAdd,		///< args: sprite id
-	kOpSpriteRemove,	///< args: sprite id
-	kOpSpritePresent	///< args: sprite id (a test in the original)
+	kOpInvAdd,			///< args: item id -- OBJ:0x69d5, append to the inventory
+	kOpInvRemove,		///< args: item id -- OBJ:0x6a71
+	kOpInvHas			///< args: item id -- OBJ:0x6add, a test in the original
 };
 
 /** One byte of the state block as a new game leaves it. */
