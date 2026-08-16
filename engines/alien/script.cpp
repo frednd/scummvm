@@ -67,6 +67,91 @@ void RoomScript::enterRoom(int room) {
 		runEffect(init[i]);
 }
 
+bool RoomScript::walkTarget(int clickX, int clickY, byte obj, WalkTarget &out) const {
+	// 1021:0x3ea, which every entry 0 calls first: the target is the click, held
+	// off the top of the room and out of the strip just above the toolbar, and no
+	// turn is owed. A click on the toolbar itself -- y at 0x9f or below it -- is
+	// left alone, because it is not a walk at all.
+	out.x = (int16)clickX;
+	out.y = (int16)MAX(clickY, 0x0d);
+	if (out.y > 0x9a && out.y < 0x9f)
+		out.y = 0x9a;
+	out.facing = kWalkFacingKeep;
+	out.submode = 0;
+
+	uint count = 0;
+	const WalkGeom *geom = walkGeomForRoom(_room, count);
+	if (!geom)
+		return false;
+
+	// Every test reads the click, never the target the previous row produced, so
+	// the rows do not chain; the last one that matches is the one that decides.
+	for (uint i = 0; i < count; i++) {
+		const WalkGeom &row = geom[i];
+
+		bool guarded = true;
+		for (uint g = 0; g < row.guardCount && guarded; g++)
+			guarded = holds(row.guards[g]);
+		if (!guarded)
+			continue;
+
+		const bool inside = clickX >= row.a && clickY >= row.b &&
+							clickX <= row.c && clickY <= row.d;
+
+		switch (row.kind) {
+		case kWalkSnapDown:
+			if (inside)
+				out.y = row.d;
+			break;
+		case kWalkSnapUp:
+			if (inside)
+				out.y = row.b;
+			break;
+		case kWalkSnapRight:
+			if (inside)
+				out.x = row.c;
+			break;
+		case kWalkSnapLeft:
+			if (inside)
+				out.x = row.a;
+			break;
+		case kWalkZone:
+			if (inside) {
+				out.x = row.x;
+				out.y = row.y;
+				out.facing = row.facing;
+			}
+			break;
+		case kWalkObject:
+			if (obj && (row.a == obj || row.b == obj || row.c == obj || row.d == obj)) {
+				out.x = row.x;
+				out.y = row.y;
+				out.facing = row.facing;
+			}
+			break;
+		case kWalkMaxY:
+			if (clickY > row.a)
+				out.y = row.y;
+			break;
+		case kWalkMinY:
+			if (clickY < row.a)
+				out.y = row.y;
+			break;
+		case kWalkSubmode:
+			// The click state the original also tests here -- left button down,
+			// right button up, no action already pending -- is what a click in
+			// this port is, so only the object has to match.
+			if (obj && row.a == obj)
+				out.submode = (byte)row.x;
+			break;
+		default:
+			break;
+		}
+	}
+
+	return true;
+}
+
 byte RoomScript::flag(uint16 addr) const {
 	if (addr < kFlagBase || addr >= kFlagBase + kFlagCount)
 		return 0;

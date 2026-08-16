@@ -16,7 +16,8 @@ MODULE_OBJS = \
 	script.o \
 	tables.o \
 	tal.o \
-	walk.o
+	walk.o \
+	walkgeom.o
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_ALIEN), DYNAMIC_PLUGIN)

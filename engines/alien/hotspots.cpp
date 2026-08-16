@@ -271,29 +271,29 @@ static const Hotspot kHotspots[] = {
 	{  124,  45,  159,  57,  6,  8,  5, 1, { 17, 0, 0, 0 } },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm:453
 	{  133,  27,  150,  49,  7,  6,  5, 1, { 15, 0, 0, 0 } },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm:461
 	{   62,  44,  129,  55,  8,  9,  5, 1, { 16, 0, 0, 0 } },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm:471
-	{    6,  22,   45, 111,  1,  2,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:241
-	{   40,  54,   67,  81,  2,  8,  5, 1, { 17, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:259
-	{   70,  21,  126, 115,  3,  3,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:272
-	{  147,  55,  164,  91,  4,  1,  5, 3, { 2, 3, 4, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:288
-	{  200,  27,  254, 110,  3,  4,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:301
-	{  274,  35,  319, 122,  3,  5,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:314
-	{   64, 134,  127, 159,  6,  6,  5, 1, { 11, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:327
-	{  192, 134,  255, 159,  6,  7,  5, 1, { 12, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:340
-	{    6,  22,   45, 111,  1,  2,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:368
-	{   40,  54,   67,  81,  2,  8,  5, 1, { 17, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:386
-	{   70,  21,  126, 115,  1,  3,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:399
-	{  147,  55,  164,  91,  3,  1,  5, 3, { 2, 3, 4, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:415
-	{  200,  27,  254, 110,  1,  4,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:428
-	{  274,  35,  319, 122,  1,  5,  5, 1, { 1, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:441
-	{  251,  76,  304, 126,  4, 10,  5, 4, { 14, 24, 25, 26 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:458
-	{  259,  57,  291,  88,  5, 11,  1, 1, { 0, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:469
-	{  262,  89,  273,  97,  6, 20,  5, 1, { 20, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:477
-	{   64, 134,  127, 159,  7,  6,  5, 1, { 11, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:490
-	{  192, 134,  255, 159,  7,  7,  5, 1, { 12, 0, 0, 0 } },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:503
-	{  269,  83,  319, 133,  1,  1,  3, 1, { 1, 0, 0, 0 } },	// ovr_xx_0ec3_room_46_-_diving_area___underwater.asm:168
-	{  269,  83,  319, 133,  1,  2,  5, 1, { 3, 0, 0, 0 } },	// ovr_xx_0ec3_room_46_-_diving_area___underwater.asm:177
-	{    0,  29,   66, 138,  2,  4,  5, 1, { 21, 0, 0, 0 } },	// ovr_xx_0ec3_room_46_-_diving_area___underwater.asm:185
-	{    0,  29,   66, 138,  2,  5,  5, 1, { 22, 0, 0, 0 } },	// ovr_xx_0ec3_room_46_-_diving_area___underwater.asm:195
+	{    6,  22,   45, 111,  1,  2,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:241
+	{   40,  54,   67,  81,  2,  8,  5, 1, { 17, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:259
+	{   70,  21,  126, 115,  3,  3,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:272
+	{  147,  55,  164,  91,  4,  1,  5, 3, { 2, 3, 4, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:288
+	{  200,  27,  254, 110,  3,  4,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:301
+	{  274,  35,  319, 122,  3,  5,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:314
+	{   64, 134,  127, 159,  6,  6,  5, 1, { 11, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:327
+	{  192, 134,  255, 159,  6,  7,  5, 1, { 12, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:340
+	{    6,  22,   45, 111,  1,  2,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:368
+	{   40,  54,   67,  81,  2,  8,  5, 1, { 17, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:386
+	{   70,  21,  126, 115,  1,  3,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:399
+	{  147,  55,  164,  91,  3,  1,  5, 3, { 2, 3, 4, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:415
+	{  200,  27,  254, 110,  1,  4,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:428
+	{  274,  35,  319, 122,  1,  5,  5, 1, { 1, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:441
+	{  251,  76,  304, 126,  4, 10,  5, 4, { 14, 24, 25, 26 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:458
+	{  259,  57,  291,  88,  5, 11,  1, 1, { 0, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:469
+	{  262,  89,  273,  97,  6, 20,  5, 1, { 20, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:477
+	{   64, 134,  127, 159,  7,  6,  5, 1, { 11, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:490
+	{  192, 134,  255, 159,  7,  7,  5, 1, { 12, 0, 0, 0 } },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm:503
+	{  269,  83,  319, 133,  1,  1,  3, 1, { 1, 0, 0, 0 } },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm:168
+	{  269,  83,  319, 133,  1,  2,  5, 1, { 3, 0, 0, 0 } },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm:177
+	{    0,  29,   66, 138,  2,  4,  5, 1, { 21, 0, 0, 0 } },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm:185
+	{    0,  29,   66, 138,  2,  5,  5, 1, { 22, 0, 0, 0 } },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm:195
 	{   90, 142,  231, 159,  1,  1,  5, 1, { 1, 0, 0, 0 } },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm:164
 	{  101, 124,  176, 141,  1,  1,  5, 1, { 1, 0, 0, 0 } },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm:172
 	{    0,   0,   41, 111,  2,  2,  3, 1, { 7, 0, 0, 0 } },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm:183
@@ -315,16 +315,16 @@ static const Hotspot kHotspots[] = {
 	{  280,  54,  307, 123,  1,  2,  5, 1, { 3, 0, 0, 0 } },	// ovr_33_0faa_room_51_-_alien_lobby.asm:155
 	{   20,  40,   43,  58,  2,  3,  5, 1, { 1, 0, 0, 0 } },	// ovr_33_0faa_room_51_-_alien_lobby.asm:163
 	{  175,  15,  199,  37,  2,  4,  5, 1, { 1, 0, 0, 0 } },	// ovr_33_0faa_room_51_-_alien_lobby.asm:171
-	{   27,  44,   55, 132,  1,  1,  5, 1, { 1, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:169
-	{  143,  62,  203,  83,  2,  2,  5, 1, { 2, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:177
-	{  581,  44,  599, 130,  1,  3,  5, 1, { 3, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:185
-	{  238,  43,  292, 135,  3,  5,  5, 1, { 8, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:193
-	{  293,  42,  489, 135,  3,  6,  5, 1, { 10, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:201
-	{  490,  42,  534, 135,  3,  4,  5, 1, { 7, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:209
-	{  278,  25,  306,  40,  4,  7,  5, 1, { 15, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:217
-	{  374,  25,  400,  41,  4,  8,  5, 1, { 15, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:225
-	{  467,  25,  493,  41,  4,  9,  5, 1, { 15, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:233
-	{  162,  38,  190,  57,  4, 20,  5, 1, { 15, 0, 0, 0 } },	// ovr_xx_0f96_room_52_-_security_scanner.asm:241
+	{   27,  44,   55, 132,  1,  1,  5, 1, { 1, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:169
+	{  143,  62,  203,  83,  2,  2,  5, 1, { 2, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:177
+	{  581,  44,  599, 130,  1,  3,  5, 1, { 3, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:185
+	{  238,  43,  292, 135,  3,  5,  5, 1, { 8, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:193
+	{  293,  42,  489, 135,  3,  6,  5, 1, { 10, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:201
+	{  490,  42,  534, 135,  3,  4,  5, 1, { 7, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:209
+	{  278,  25,  306,  40,  4,  7,  5, 1, { 15, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:217
+	{  374,  25,  400,  41,  4,  8,  5, 1, { 15, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:225
+	{  467,  25,  493,  41,  4,  9,  5, 1, { 15, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:233
+	{  162,  38,  190,  57,  4, 20,  5, 1, { 15, 0, 0, 0 } },	// ovr_34_0f96_room_52_-_security_scanner.asm:241
 	{   15,  43,   43, 120,  1,  1,  5, 1, { 5, 0, 0, 0 } },	// ovr_36_0fa6_room_54_-_waiting_room.asm:370
 	{   48,  72,   55,  79,  4, 12, 12, 1, { 0, 0, 0, 0 } },	// ovr_36_0fa6_room_54_-_waiting_room.asm:407
 	{   36,  33,   87,  87,  5, 17,  5, 1, { 60, 0, 0, 0 } },	// ovr_36_0fa6_room_54_-_waiting_room.asm:417

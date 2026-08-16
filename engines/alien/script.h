@@ -23,10 +23,19 @@
 #define ALIEN_SCRIPT_H
 
 #include "alien/roomscripts.h"
+#include "alien/walkgeom.h"
 
 namespace Alien {
 
 class AnimSlots;
+
+/** Where a click sends the character, as the room's walk geometry decides. */
+struct WalkTarget {
+	int16 x;
+	int16 y;
+	byte facing;		///< 1..4, or kWalkFacingKeep for "arrive as you are"
+	byte submode;		///< the game submode arriving there arms, 0 for none
+};
 
 /**
  * The room-script interpreter and the game state it reads and writes.
@@ -77,6 +86,19 @@ public:
 
 	/// The outcome code the last run() queued, or kNoEvent.
 	byte queuedEvent() const { return _queued; }
+
+	/**
+	 * Resolve a click into the point the character walks to.
+	 *
+	 * This is entry 0 of the room's overlay, from the table in walkgeom.h: the
+	 * target starts as the click, the room's rectangles snap or redirect it, and
+	 * an object's own approach point wins over all of them. `obj` is the object
+	 * the click landed on, or zero for a click on the floor.
+	 *
+	 * False when the room has no geometry of its own, in which case the click
+	 * itself is the target.
+	 */
+	bool walkTarget(int clickX, int clickY, byte obj, WalkTarget &out) const;
 
 	byte flag(uint16 addr) const;
 	void setFlag(uint16 addr, byte value);

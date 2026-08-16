@@ -111,7 +111,8 @@ public:
 		kWalkPointX = 10,
 		kWalkPointY = 64,
 		kWalkFrames = 16,		///< per facing, phases 0..15
-		kMaxTurnFrames = 7
+		kMaxTurnFrames = 7,
+		kFacingKeep = 10		///< arrive without turning, the original's default
 	};
 
 	Walker();
@@ -128,8 +129,15 @@ public:
 	 * ever ends its route on a walk node -- the last leg, from that node to the
 	 * point that was actually clicked, is the mover's own -- so the target is
 	 * passed in and appended as the final waypoint.
+	 *
+	 * `arrivalFacing` is the way to turn once the route runs out, 1..4, or
+	 * kFacingKeep to arrive facing however the last leg left him. The room's
+	 * walk geometry supplies it per object (see walkgeom.h), and the original
+	 * hands it to the mover the same way: walk_plot_route copies [0xa805] into
+	 * the pending turn when it is under five.
 	 */
-	void follow(const WalkRoute &route, int targetX, int targetY);
+	void follow(const WalkRoute &route, int targetX, int targetY,
+				int arrivalFacing = kFacingKeep);
 
 	/** Drop the route and fall back to standing. */
 	void stop();
@@ -151,6 +159,7 @@ private:
 	void startSegment();
 	int facingToward(int targetX, int targetY) const;
 	void turnTo(int facing);
+	void arrive();
 	void updateFrame();
 
 	CharAnim _anim;
@@ -167,6 +176,7 @@ private:
 	int _steps;						///< ticks left in this segment
 
 	int _facing;
+	int _arrivalFacing;				///< the turn owed at the end of the route
 	uint _phase;					///< walk cycle position, 0..15
 	uint _frame;
 

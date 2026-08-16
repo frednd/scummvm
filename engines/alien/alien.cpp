@@ -171,7 +171,11 @@ Common::Error AlienEngine::run() {
 	if (!_ben.load("BENANI"))
 		warning("could not load the player character's animation set");
 
-	if (!loadRoom(kStartRoom))
+	// --boot-param picks the room to open in, which is how the room-by-room
+	// checks are driven without clicking through the game to get there.
+	const int start = ConfMan.hasKey("boot_param") ? ConfMan.getInt("boot_param")
+												   : kStartRoom;
+	if (!loadRoom(start))
 		return Common::Error(Common::kReadingFailed, "Could not load the starting room");
 
 	while (!shouldQuit() && !_quit) {
@@ -286,6 +290,13 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries(), _spotCount);
 
 	_room = room;
+
+	// And with the walk channel on, every hotspot of the room is clicked on
+	// paper and the resolved walk target printed, which is what
+	// tools/check_walkgeom.py --sweep prints from the table it generated. The
+	// 'g' key repeats it.
+	if (debugChannelSet(-1, kDebugWalk))
+		sweepWalkGeometry();
 	_secondPlate = secondPlate;
 	_spriteFrame = 0;
 	_dialogId = 1;
@@ -336,21 +347,38 @@ void AlienEngine::stepSpriteBank(int delta) {
 	loadSpriteBank((uint)bank);
 }
 
-void AlienEngine::walkTo(int x, int y) {
-	// The original converts the click into a walk target before routing --
-	// walk_target = click + (10, 64) -- but that offset belongs to the click
-	// pipeline, which is not ported, so the point is taken as it stands here.
+void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 	if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), x, y, _route)) {
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
 		return;
 	}
 
-	debugC(1, kDebugGraphics, "walk %d,%d -> %d,%d: %u waypoints, target %s",
+	debugC(1, kDebugGraphics, "walk %d,%d -> %d,%d: %u waypoints, target %s, facing %d",
 		   _ben.walkX(), _ben.walkY(), x, y, _route.count,
-		   _walk.mask().blocked(x, y) ? "blocked" : "walkable");
+		   _walk.mask().blocked(x, y) ? "blocked" : "walkable", arrivalFacing);
 
-	_ben.follow(_route, x, y);
+	_ben.follow(_route, x, y, arrivalFacing);
 	_dirty = true;
+}
+
+void AlienEngine::sweepWalkGeometry() {
+	// Resolve a click on the middle of every hotspot in the room and print what
+	// the geometry made of it. tools/check_walkgeom.py --sweep prints the same
+	// lines straight from the table, so the two can be diffed to check the
+	// interpreter rather than only the extraction.
+	debugC(1, kDebugWalk, "geom: room %d, %u hotspots", _room, _spotCount);
+	for (uint i = 0; i < _spotCount; i++) {
+		const Hotspot &spot = _spots[i];
+		const int x = (spot.x1 + spot.x2) / 2;
+		const int y = (spot.y1 + spot.y2) / 2;
+
+		WalkTarget target;
+		if (!_script.walkTarget(x, y, spot.obj, target))
+			continue;
+
+		debugC(1, kDebugWalk, "geom: obj %3u click %3d,%3d -> %3d,%3d facing %2u submode %u",
+			   spot.obj, x, y, target.x, target.y, target.facing, target.submode);
+	}
 }
 
 void AlienEngine::stepClock() {
@@ -433,7 +461,21 @@ void AlienEngine::clickAt(int x, int y) {
 	}
 
 	updateHover(x, y);
-	walkTo(x, y);
+
+	// The room's own walk geometry decides where the click sends him: an object
+	// has an approach point and a facing, a floor rectangle snaps the point onto
+	// the room's floor line. Without it he walks onto whatever he was sent to
+	// use. See walkgeom.h and docs/walk_system.md.
+	const byte obj = _hover >= 0 ? _spots[_hover].obj : 0;
+	WalkTarget target;
+	if (_script.walkTarget(x, y, obj, target)) {
+		if (target.submode)
+			debugC(1, kDebugGraphics, "click: object %u arms submode %u",
+				   obj, target.submode);
+		walkTo(target.x, target.y, target.facing);
+	} else {
+		walkTo(x, y);
+	}
 
 	_pending = _hover;
 	if (_pending < 0)
@@ -745,6 +787,8 @@ void AlienEngine::handleEvents() {
 				// Everything in the room moves at once: the slots, running.
 				_anims.playAll(kDebugAnimRate);
 				_dirty = true;
+			} else if (event.kbd.keycode == Common::KEYCODE_g) {
+				sweepWalkGeometry();
 			} else if (event.kbd.keycode == Common::KEYCODE_w) {
 				_showWalk = !_showWalk;
 				_dirty = true;

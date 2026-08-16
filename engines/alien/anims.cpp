@@ -195,33 +195,33 @@ static const AnimBank kAnimBanks[] = {
 	{  9, "MAE_SLIP.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
 	{ 10, "MAE_DIVE.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
 	{ 11, "MAE_SHOR.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "CRY_DMOR.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "MA2_AXE.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "CRY_ENT1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  4, "ENT_NOTE.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  5, "ENT_BENB.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, "ENT_DROP.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "CRY_DMOR.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "MA2_AXE.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "CRY_ENT1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  4, "ENT_NOTE.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  5, "ENT_BENB.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, "ENT_DROP.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "CRY_DMOR.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "MA2_AXE.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "CRY_ENT1.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  4, "ENT_NOTE.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  5, "ENT_BENB.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, "ENT_DROP.DL1" },	// ovr_2d_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "DIV_SADE.DL1" },	// ovr_xx_0ec3_room_46_-_diving_area___underwater.asm
-	{  0, "DIV_PROP.DL1" },	// ovr_xx_0ec3_room_46_-_diving_area___underwater.asm
-	{  1, "DIV_CHES.DL1" },	// ovr_xx_0ec3_room_46_-_diving_area___underwater.asm
+	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "CRY_DMOR.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "MA2_AXE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "CRY_ENT1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  4, "ENT_NOTE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  5, "ENT_BENB.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  6, "ENT_DROP.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "CRY_DMOR.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "MA2_AXE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "CRY_ENT1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  4, "ENT_NOTE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  5, "ENT_BENB.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  6, "ENT_DROP.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "CRY_DMOR.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "MA2_AXE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "CRY_ENT1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  4, "ENT_NOTE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  5, "ENT_BENB.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  6, "ENT_DROP.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "DIV_SADE.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
+	{  0, "DIV_PROP.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
+	{  1, "DIV_CHES.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
 	{  0, "PUD_TORC.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
 	{  1, "PUD_DOOR.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
 	{  2, "PUD_DROP.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
@@ -242,13 +242,13 @@ static const AnimBank kAnimBanks[] = {
 	{  3, "LOB_DOOR.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
 	{  4, "LOB_DOO2.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
 	{  5, "LOB_LIGH.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
-	{  0, "SEC_MONI.DL1" },	// ovr_xx_0f96_room_52_-_security_scanner.asm
-	{  1, "SEC_DOO1.DL1" },	// ovr_xx_0f96_room_52_-_security_scanner.asm
-	{  2, "SEC_DOO2.DL1" },	// ovr_xx_0f96_room_52_-_security_scanner.asm
-	{  3, "SEC_ROEY.DL1" },	// ovr_xx_0f96_room_52_-_security_scanner.asm
-	{  4, "SEC_ROMO.DL1" },	// ovr_xx_0f96_room_52_-_security_scanner.asm
-	{  5, "SEC_NORO.DL1" },	// ovr_xx_0f96_room_52_-_security_scanner.asm
-	{  6, "SEC_ROBO.DL1" },	// ovr_xx_0f96_room_52_-_security_scanner.asm
+	{  0, "SEC_MONI.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  1, "SEC_DOO1.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  2, "SEC_DOO2.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  3, "SEC_ROEY.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  4, "SEC_ROMO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  5, "SEC_NORO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  6, "SEC_ROBO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
 	{  0, "HALW_DOO.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  1, "HALW_LED.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  2, "HALW_WIN.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm

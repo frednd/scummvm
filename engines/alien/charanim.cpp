@@ -188,7 +188,8 @@ static const int kSpeedX = 96;
 static const int kSpeedY = 40;
 
 Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY(0),
-		_steps(0), _facing(3), _phase(0), _frame(kIdleFrame[3]), _turnLeft(0) {
+		_steps(0), _facing(3), _arrivalFacing(kFacingKeep), _phase(0),
+		_frame(kIdleFrame[3]), _turnLeft(0) {
 	memset(_turn, 0, sizeof(_turn));
 }
 
@@ -198,6 +199,7 @@ void Walker::place(int walkX, int walkY, int facing) {
 	_fx = _x * 64;
 	_fy = _y * 64;
 	_facing = facing;
+	_arrivalFacing = kFacingKeep;
 	_phase = 0;
 	_steps = 0;
 	_turnLeft = 0;
@@ -213,8 +215,10 @@ void Walker::stop() {
 	updateFrame();
 }
 
-void Walker::follow(const WalkRoute &route, int targetX, int targetY) {
+void Walker::follow(const WalkRoute &route, int targetX, int targetY,
+					int arrivalFacing) {
 	_route = route;
+	_arrivalFacing = arrivalFacing;
 
 	// Slot 0 is where the walk starts, and the nodes follow; the clicked point
 	// is not in the route at all, so it goes on the end.
@@ -226,7 +230,10 @@ void Walker::follow(const WalkRoute &route, int targetX, int targetY) {
 
 	_waypoint = _route.count > 1 ? 1 : 0;
 	if (!_waypoint) {
+		// Nothing to walk: he is already standing on the target, so the only
+		// thing the route owed was the turn.
 		stop();
+		arrive();
 		return;
 	}
 
@@ -273,6 +280,17 @@ void Walker::turnTo(int facing) {
 	_facing = facing;
 }
 
+void Walker::arrive() {
+	// The room's geometry says which way to face what he walked to; anything
+	// over four means it does not care, which is what the original's [0xa805]
+	// default of ten encodes.
+	const int facing = _arrivalFacing;
+	_arrivalFacing = kFacingKeep;
+	if (facing >= 1 && facing <= 4)
+		turnTo(facing);
+	updateFrame();
+}
+
 void Walker::startSegment() {
 	// A route that starts where the character stands, or one whose last node is
 	// the clicked point itself, carries waypoints with nothing to walk; those
@@ -289,6 +307,7 @@ void Walker::startSegment() {
 	if (!isWalking()) {
 		_steps = 0;
 		_phase = 0;
+		arrive();
 		return;
 	}
 
@@ -363,10 +382,12 @@ void Walker::tick() {
 		_fy = _y * 64;
 
 		_waypoint++;
-		if (isWalking())
+		if (isWalking()) {
 			startSegment();
-		else
+		} else {
 			_phase = 0;
+			arrive();
+		}
 	}
 
 	updateFrame();

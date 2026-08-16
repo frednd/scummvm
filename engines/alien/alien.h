@@ -67,7 +67,8 @@ private:
 	void handleEvents();
 	void dumpScreen();
 
-	void walkTo(int x, int y);
+	void walkTo(int x, int y, int arrivalFacing = Walker::kFacingKeep);
+	void sweepWalkGeometry();
 	void stepClock();
 	void drawWalkOverlay();
 
