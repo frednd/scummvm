@@ -37,6 +37,12 @@ static const uint32 kTableSecondPlate = 0x2C4C;
 static const uint32 kRoomStride = 13;
 static const uint kMaxNameLength = kRoomStride - 1;
 
+// The verb names, same stride, indexed by verb code. "Walk to" sits just in
+// front of the table and is the default hover text; "Swim to", "USE" and
+// "WITH" follow it and belong to the item-use line, which is not ported yet.
+static const uint32 kTableVerbs = 0x3221;
+static const uint32 kWalkVerb = 0x3202;
+
 StaticTables::StaticTables() : _loaded(false) {
 }
 
@@ -82,7 +88,16 @@ bool StaticTables::load() {
 			rooms++;
 	}
 
-	debugC(1, kDebugResource, "room tables: %d rooms with a plate of their own", rooms);
+	for (int i = 0; i < kVerbCount; i++) {
+		exe.seek(kDataSegment + kTableVerbs + i * kRoomStride);
+		_verb[i] = readName(exe);
+	}
+
+	exe.seek(kDataSegment + kWalkVerb);
+	_walkVerb = readName(exe);
+
+	debugC(1, kDebugResource, "room tables: %d rooms with a plate of their own, "
+		   "verb 5 is \"%s\"", rooms, _verb[5].c_str());
 
 	_loaded = rooms > 0;
 	return _loaded;
@@ -98,6 +113,12 @@ const Common::String &StaticTables::secondPlate(int room) const {
 	if (room < 1 || room > kRoomCount)
 		return _empty;
 	return _secondPlate[room - 1];
+}
+
+const Common::String &StaticTables::verb(int code) const {
+	if (code < 0 || code >= kVerbCount)
+		return _empty;
+	return _verb[code];
 }
 
 } // End of namespace Alien

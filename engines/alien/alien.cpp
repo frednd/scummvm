@@ -60,10 +60,16 @@ static const int kLabelY = 163;
 static const int kLabelLeft = 46;
 
 // docs/dialog_system.md 3A: the block is placed against the midpoint of the
-// speaking object's bounding box. Until hotspots exist, the fridge's own centre
-// stands in for it.
-static const int kAnchorX = 96;
+// speaking object's bounding box. Dialog stepped through from the keyboard has
+// no object behind it and is anchored at the middle of the playfield.
+static const int kAnchorX = 160;
 static const int kAnchorY = 90;
+
+// docs/dialog_system.md 2: the auto-dismiss countdown is three per character of
+// text, floored at 0x46. It is decremented under the tick pair gate rather than
+// the animation one, so it runs at half the master rate, not a quarter of it.
+static const int kTicksPerCharacter = 3;
+static const int kMinSpeechTicks = 0x46;
 
 // SearchMan names a directory archive after the directory's own last component,
 // so registering TALFILES/ENG and NAMEROOM/ENG the usual way would have the
@@ -97,9 +103,14 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _labelSlot(1),
-		_dialogId(1), _dialogBand(false), _dirty(true), _quit(false) {
+		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _tick(0),
+		_spots(nullptr), _spotCount(0), _hover(-1), _pending(-1), _pendingOutcome(0),
+		_queueCount(0), _queueNext(0), _labelSlot(0), _dialogId(1), _dialogBand(false),
+		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
+		_dirty(true), _quit(false) {
 	memset(_palette, 0, sizeof(_palette));
+	memset(_outcomeCounter, 0, sizeof(_outcomeCounter));
+	memset(_queue, 0, sizeof(_queue));
 }
 
 AlienEngine::~AlienEngine() {
@@ -140,7 +151,7 @@ Common::Error AlienEngine::run() {
 
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
-		stepAnimation();
+		stepClock();
 		if (_dirty)
 			redraw();
 		g_system->updateScreen();
@@ -184,6 +195,14 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_walk.load(room, _assets);
 	_route.count = 0;
 
+	// The rectangles the room's overlay registers, lifted out of its code by
+	// tools/gen_hotspots.py. Rooms whose registrations all take their arguments
+	// from registers come back empty and stay scenery.
+	_spots = hotspotsForRoom(room, _spotCount);
+	_hover = -1;
+	_pending = -1;
+	stopSpeech();
+
 	// Where the character enters a room is the room script's business, and none
 	// of that is ported, so he is put on the first walk node -- a place the
 	// room itself says is floor.
@@ -219,15 +238,16 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 
 	debugC(1, kDebugResource,
-		   "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries, %u labels",
+		   "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries, "
+		   "%u labels, %u hotspots",
 		   room, secondPlate ? 'B' : 'A', plate.c_str(), _background.w, _background.h,
-		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries());
+		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries(), _spotCount);
 
 	_room = room;
 	_secondPlate = secondPlate;
 	_spriteFrame = 0;
 	_dialogId = 1;
-	_labelSlot = 1;
+	_labelSlot = 0;
 	_dirty = true;
 	return true;
 }
@@ -291,21 +311,153 @@ void AlienEngine::walkTo(int x, int y) {
 	_dirty = true;
 }
 
-void AlienEngine::stepAnimation() {
-	// docs/timing_model.md: everything animated runs off the vsync tick over
-	// four, so roughly 17.5 frames a second, and there is no other clock in the
-	// game code to keep in step with.
-	static const uint32 kTickMillis = 1000 * 4 / 70;
+void AlienEngine::stepClock() {
+	// docs/timing.md: the master tick is the ~70 Hz retrace, and two dividers
+	// sit under it. Animation runs on every fourth tick, roughly 17.5 Hz, while
+	// the dialog countdown is decremented under the first divider only
+	// (OBJ:0x617c, gated on the tick pair), so it runs on every second tick.
+	static const uint32 kTickMillis = 1000 / 70;
 
 	const uint32 now = g_system->getMillis();
 	if (now - _lastTick < kTickMillis)
 		return;
 	_lastTick = now;
+	_tick++;
 
-	if (!_ben.isWalking() && !_ben.isTurning())
+	if ((_tick & 1) == 0 && _speech && _speechTicks > 0 && --_speechTicks == 0)
+		nextSpeech();
+
+	if (_tick & 3)
 		return;
 
-	_ben.tick();
+	if (_ben.isWalking() || _ben.isTurning()) {
+		_ben.tick();
+		_dirty = true;
+	} else if (_pending >= 0) {
+		// He has arrived at what he was sent to; the outcome speaks now.
+		finishAction();
+	}
+}
+
+void AlienEngine::updateHover(int x, int y) {
+	// The original registers a room's rectangles one after another and each
+	// registration overwrites the globals on a hit, so where two overlap the
+	// one registered last is the one that answers -- hence the whole table is
+	// scanned rather than stopping at the first match.
+	int hit = -1;
+	for (uint i = 0; i < _spotCount; i++) {
+		if (_spots[i].contains(x, y))
+			hit = (int)i;
+	}
+
+	if (hit == _hover)
+		return;
+
+	_hover = hit;
+	_labelSlot = hit >= 0 ? _spots[hit].label : 0;
+	_dirty = true;
+}
+
+byte AlienEngine::rotateOutcome(const Hotspot &spot) {
+	// LOGIC:sub_120d4: a per-object counter walks the hotspot's outcome codes
+	// and wraps at its arity, which is what makes clicking the same thing twice
+	// give a different line.
+	const byte arity = MAX<byte>(spot.outcomeCount, 1);
+	byte &counter = _outcomeCounter[spot.obj];
+	if (counter >= arity)
+		counter = 0;
+
+	const byte code = spot.outcomes[counter];
+	counter++;
+	return code;
+}
+
+void AlienEngine::clickAt(int x, int y) {
+	// A click while someone is talking cuts the line short, the same as the
+	// countdown running out.
+	if (_speech) {
+		nextSpeech();
+		return;
+	}
+
+	updateHover(x, y);
+	walkTo(x, y);
+
+	_pending = _hover;
+	if (_pending < 0)
+		return;
+
+	const Hotspot &spot = _spots[_pending];
+	_pendingOutcome = rotateOutcome(spot);
+
+	debugC(1, kDebugGraphics, "click: object %u, verb %u (%s), outcome %u",
+		   spot.obj, spot.verb, _tables.verb(spot.verb).c_str(), _pendingOutcome);
+
+	// Rooms with no walk mask never start a route, so the action is due at once.
+	if (!_ben.isWalking() && !_ben.isTurning())
+		finishAction();
+}
+
+void AlienEngine::finishAction() {
+	const int index = _pending;
+	_pending = -1;
+	if (index < 0 || index >= (int)_spotCount)
+		return;
+
+	// docs/dialog_system.md 1: the speech is anchored on the horizontal midpoint
+	// of the clicked object's box, at its top edge.
+	const Hotspot &spot = _spots[index];
+	queueOutcome(_pendingOutcome, (spot.x1 + spot.x2) / 2, spot.y1);
+}
+
+void AlienEngine::queueOutcome(byte code, int anchorX, int anchorY) {
+	// An outcome code does not name one line: it names a chain of up to ten
+	// dialog ids in zone 1 of the room's TAL, played one after another.
+	const TalFile::Outcome &chain = _tal.outcome(code);
+
+	_queueCount = MIN<uint>(chain.count, TalFile::kMaxOutcomeIds);
+	_queueNext = 0;
+	for (uint i = 0; i < _queueCount; i++)
+		_queue[i] = chain.ids[i];
+
+	_speechX = anchorX;
+	_speechY = anchorY;
+
+	debugC(1, kDebugGraphics, "outcome %u: %u dialog ids", code, _queueCount);
+	nextSpeech();
+}
+
+void AlienEngine::nextSpeech() {
+	// Ids whose slot holds no text are stepped over rather than shown as an
+	// empty pause; the shipped files do carry a few of those.
+	while (_queueNext < _queueCount) {
+		const uint id = _queue[_queueNext++];
+		const TalFile::Entry &entry = _tal.entry(id);
+		if (entry.lines.empty())
+			continue;
+
+		uint length = 0;
+		for (uint i = 0; i < entry.lines.size(); i++)
+			length += entry.lines[i].size();
+
+		_dialogId = id;
+		_speech = true;
+		_speechTicks = MAX<int>((int)length * kTicksPerCharacter, kMinSpeechTicks);
+		_dirty = true;
+
+		debugC(1, kDebugGraphics, "speech %u: %u lines, %d ticks",
+			   id, entry.lines.size(), _speechTicks);
+		return;
+	}
+
+	stopSpeech();
+}
+
+void AlienEngine::stopSpeech() {
+	_speech = false;
+	_speechTicks = 0;
+	_queueCount = 0;
+	_queueNext = 0;
 	_dirty = true;
 }
 
@@ -355,25 +507,25 @@ void AlienEngine::setTextColor(byte r, byte g, byte b) {
 	_palette[Font::kInkColor * 3 + 2] = b * 255 / 63;
 }
 
-void AlienEngine::showLabel(uint slot) {
-	_labelSlot = slot;
-	_dirty = true;
-
-	const TalFile::Entry &e = _labels.entry(slot);
-	debugC(1, kDebugGraphics, "label %u: %s", slot,
-		   e.lines.empty() ? "" : e.lines[0].c_str());
-}
-
 void AlienEngine::drawLabel() {
-	// docs/game_logic.md 3: hovering an object writes its label slot and the
-	// status line under the playfield shows the verb and that name. The verb
-	// side needs the toolbar, which is not ported, so the name is drawn on its
-	// own; the slot is stepped through by hand until hotspots exist.
-	const TalFile::Entry &entry = _labels.entry(_labelSlot);
-	if (entry.lines.empty())
+	// docs/action_system.md 1: the status line is the hovered hotspot's verb and
+	// the object's name out of the room's label file, built as "<verb> <label>".
+	// With nothing under the cursor it reads "Walk to" on its own.
+	Common::String text = _tables.walkVerb();
+
+	if (_hover >= 0) {
+		const Hotspot &spot = _spots[_hover];
+		const TalFile::Entry &entry = _labels.entry(spot.label);
+		text = _tables.verb(spot.verb);
+		if (!entry.lines.empty()) {
+			text += " ";
+			text += entry.lines[0];
+		}
+	}
+
+	if (text.empty())
 		return;
 
-	const Common::String &text = entry.lines[0];
 	int x = kLabelCenterX - _labelFont.measure(text) / 2;
 	if (x < kLabelLeft)
 		x = kLabelLeft;
@@ -416,7 +568,13 @@ void AlienEngine::drawBand(const TalFile::Entry &entry) {
 }
 
 void AlienEngine::showDialog(uint id) {
+	// Stepping through the file by hand, for checking the text layer against the
+	// reference renders: no countdown, so the line stays up until the next key.
 	_dialogId = id;
+	_speech = true;
+	_speechTicks = 0;
+	_speechX = kAnchorX;
+	_speechY = kAnchorY;
 	_dirty = true;
 
 	const TalFile::Entry &e = _tal.entry(id);
@@ -442,11 +600,13 @@ void AlienEngine::redraw() {
 
 	drawLabel();
 
-	const TalFile::Entry &dialog = _tal.entry(_dialogId);
-	if (_dialogBand)
-		drawBand(dialog);
-	else
-		drawSpeech(dialog, kAnchorX, kAnchorY);
+	if (_speech) {
+		const TalFile::Entry &dialog = _tal.entry(_dialogId);
+		if (_dialogBand)
+			drawBand(dialog);
+		else
+			drawSpeech(dialog, _speechX, _speechY);
+	}
 
 	g_system->copyRectToScreen(_screen.getPixels(), _screen.pitch, 0, 0, _screen.w, _screen.h);
 	_dirty = false;
@@ -504,10 +664,6 @@ void AlienEngine::handleEvents() {
 				stepSpriteBank(1);
 			} else if (event.kbd.keycode == Common::KEYCODE_LEFTBRACKET) {
 				stepSpriteBank(-1);
-			} else if (event.kbd.keycode == Common::KEYCODE_n) {
-				showLabel((_labelSlot + 1) % TalFile::kEntryCount);
-			} else if (event.kbd.keycode == Common::KEYCODE_p) {
-				showLabel((_labelSlot + TalFile::kEntryCount - 1) % TalFile::kEntryCount);
 			} else if (event.kbd.keycode == Common::KEYCODE_w) {
 				_showWalk = !_showWalk;
 				_dirty = true;
@@ -517,8 +673,11 @@ void AlienEngine::handleEvents() {
 				loadRoom(_room, !_secondPlate);
 			}
 			break;
+		case Common::EVENT_MOUSEMOVE:
+			updateHover(event.mouse.x, event.mouse.y);
+			break;
 		case Common::EVENT_LBUTTONDOWN:
-			walkTo(event.mouse.x, event.mouse.y);
+			clickAt(event.mouse.x, event.mouse.y);
 			break;
 		default:
 			break;

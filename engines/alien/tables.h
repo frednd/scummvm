@@ -41,6 +41,9 @@ public:
 	/// The tables have 60 slots; the game itself only reaches 60 rooms.
 	static const int kRoomCount = 60;
 
+	/// Verb codes run 1..14; slot 0 of the table is empty.
+	static const int kVerbCount = 15;
+
 	StaticTables();
 
 	bool load();
@@ -55,9 +58,17 @@ public:
 	/// True when the room has a background of its own and can be entered.
 	bool hasRoom(int room) const { return !background(room).empty(); }
 
+	/// The status-line word for a verb code: "Look at", "Pick up", ...
+	const Common::String &verb(int code) const;
+
+	/// What the status line reads when nothing interactive is under the cursor.
+	const Common::String &walkVerb() const { return _walkVerb; }
+
 private:
 	Common::String _background[kRoomCount];
 	Common::String _secondPlate[kRoomCount];
+	Common::String _verb[kVerbCount];
+	Common::String _walkVerb;
 	Common::String _empty;
 	bool _loaded;
 };

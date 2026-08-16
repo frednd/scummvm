@@ -5,6 +5,7 @@ MODULE_OBJS = \
 	charanim.o \
 	dl1.o \
 	font.o \
+	hotspots.o \
 	metaengine.o \
 	overlay.o \
 	resources.o \
