@@ -45,10 +45,19 @@ static const int kStartRoom = 10;
 
 // One install ships all four text languages side by side. Picking the set is a
 // launcher option the engine does not have yet, so the English tree is wired up
-// for now.
-// NAMEROOM/ENG holds the hover labels and is not registered yet: both trees end
-// in the same directory name, and SearchMan keys an archive by that name.
-static const char *const kTextDir = "TALFILES/ENG";
+// for now. Both trees end in a directory of the same name, and SearchMan keys
+// an archive by that last name alone, so they are registered by hand under
+// names of the engine's own choosing rather than through
+// addSubDirectoryMatching.
+static const char *const kLanguageDir = "ENG";
+static const char *const kScriptTree = "TALFILES";
+static const char *const kLabelTree = "NAMEROOM";
+
+// docs/game_logic.md: the status line the hover label is set in. The text is
+// centred on x = 150 and its glyphs are blitted with their top row at y = 163.
+static const int kLabelCenterX = 150;
+static const int kLabelY = 163;
+static const int kLabelLeft = 46;
 
 // docs/dialog_system.md 3A: the block is placed against the midpoint of the
 // speaking object's bounding box. Until hotspots exist, the fridge's own centre
@@ -56,9 +65,39 @@ static const char *const kTextDir = "TALFILES/ENG";
 static const int kAnchorX = 96;
 static const int kAnchorY = 90;
 
+// SearchMan names a directory archive after the directory's own last component,
+// so registering TALFILES/ENG and NAMEROOM/ENG the usual way would have the
+// second one clash with the first and be dropped. The language directory is
+// found by hand instead -- caselessly, since the install writes ENG and Eng
+// alike -- and registered under the tree's name.
+static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
+	Common::FSList children;
+	if (!gameDataDir.getChildren(children, Common::FSNode::kListDirectoriesOnly))
+		return false;
+
+	for (const auto &treeNode : children) {
+		if (treeNode.getName().compareToIgnoreCase(tree))
+			continue;
+
+		Common::FSList languages;
+		if (!treeNode.getChildren(languages, Common::FSNode::kListDirectoriesOnly))
+			return false;
+
+		for (const auto &language : languages) {
+			if (language.getName().compareToIgnoreCase(kLanguageDir))
+				continue;
+			SearchMan.addDirectory(Common::String(tree), language);
+			return true;
+		}
+	}
+
+	warning("could not find %s/%s in the game directory", tree, kLanguageDir);
+	return false;
+}
+
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _walkX(0), _walkY(0), _showWalk(false),
+		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _labelSlot(1),
 		_dialogId(1), _dialogBand(false), _dirty(true), _quit(false) {
 	memset(_palette, 0, sizeof(_palette));
 }
@@ -74,7 +113,8 @@ Common::Error AlienEngine::run() {
 	// The text and label trees are subdirectories, so they need registering
 	// before Common::File can reach into them by name.
 	const Common::FSNode gameDataDir(ConfMan.getPath("path"));
-	SearchMan.addSubDirectoryMatching(gameDataDir, kTextDir);
+	addTextTree(gameDataDir, kScriptTree);
+	addTextTree(gameDataDir, kLabelTree);
 
 	_screen.create(kScreenWidth, kScreenHeight, Graphics::PixelFormat::createFormatCLUT8());
 
@@ -87,11 +127,20 @@ Common::Error AlienEngine::run() {
 	if (!_font.load())
 		return Common::Error(Common::kReadingFailed, "Could not load the font");
 
+	if (!_labelFont.load(Font::kLabel))
+		return Common::Error(Common::kReadingFailed, "Could not load the label font");
+
+	// The player character's frames are one set among six and live outside any
+	// room, so they are read once and kept for the whole session.
+	if (!_ben.load("BENANI"))
+		warning("could not load the player character's animation set");
+
 	if (!loadRoom(kStartRoom))
 		return Common::Error(Common::kReadingFailed, "Could not load the starting room");
 
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
+		stepAnimation();
 		if (_dirty)
 			redraw();
 		g_system->updateScreen();
@@ -135,15 +184,13 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_walk.load(room, _assets);
 	_route.count = 0;
 
-	// Ben is not on screen yet, so a route has to start somewhere: the first
-	// walk node stands in for him until the character sprites are ported.
-	if (_walk.nodes().count()) {
-		_walkX = _walk.nodes().x(0);
-		_walkY = _walk.nodes().y(0);
-	} else {
-		_walkX = kScreenWidth / 2;
-		_walkY = 140;
-	}
+	// Where the character enters a room is the room script's business, and none
+	// of that is ported, so he is put on the first walk node -- a place the
+	// room itself says is floor.
+	if (_walk.nodes().count())
+		_ben.place(_walk.nodes().x(0), _walk.nodes().y(0));
+	else
+		_ben.place(kScreenWidth / 2, 140);
 
 	// Most rooms name a room<n>.tal, but several speak through a shared file,
 	// and the ones without an overlay fall back to the naming convention.
@@ -156,20 +203,31 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	else
 		_tal.unload();
 
+	// The hover names live in a file of their own, laid out like the script but
+	// with only the text zone filled in. Rooms whose objects were never given
+	// names have no file at all.
+	const Common::Path labels(Common::String::format("R%d.TAL", room));
+	if (Common::File::exists(labels))
+		_labels.load(labels);
+	else
+		_labels.unload();
+
 	// White is what the dialog unit resets the text entry to before every
 	// line; the per-speaker colours are set by the room code that triggers
 	// the line, and none of that exists yet.
 	setTextColor(0x3F, 0x3F, 0x3F);
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 
-	debugC(1, kDebugResource, "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries",
+	debugC(1, kDebugResource,
+		   "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries, %u labels",
 		   room, secondPlate ? 'B' : 'A', plate.c_str(), _background.w, _background.h,
-		   _sprite.frameCount(), _tal.usedEntries());
+		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries());
 
 	_room = room;
 	_secondPlate = secondPlate;
 	_spriteFrame = 0;
 	_dialogId = 1;
+	_labelSlot = 1;
 	_dirty = true;
 	return true;
 }
@@ -220,21 +278,34 @@ void AlienEngine::walkTo(int x, int y) {
 	// The original converts the click into a walk target before routing --
 	// walk_target = click + (10, 64) -- but that offset belongs to the click
 	// pipeline, which is not ported, so the point is taken as it stands here.
-	if (!_walk.plotRoute(_walkX, _walkY, x, y, _route)) {
+	if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), x, y, _route)) {
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
 		return;
 	}
 
 	debugC(1, kDebugGraphics, "walk %d,%d -> %d,%d: %u waypoints, target %s",
-		   _walkX, _walkY, x, y, _route.count,
+		   _ben.walkX(), _ben.walkY(), x, y, _route.count,
 		   _walk.mask().blocked(x, y) ? "blocked" : "walkable");
 
-	// The walk itself is animation the character sprites have to drive, so the
-	// route only moves the stand-in to its end for now.
-	if (_route.count) {
-		_walkX = _route.points[_route.count - 1].x;
-		_walkY = _route.points[_route.count - 1].y;
-	}
+	_ben.follow(_route, x, y);
+	_dirty = true;
+}
+
+void AlienEngine::stepAnimation() {
+	// docs/timing_model.md: everything animated runs off the vsync tick over
+	// four, so roughly 17.5 frames a second, and there is no other clock in the
+	// game code to keep in step with.
+	static const uint32 kTickMillis = 1000 * 4 / 70;
+
+	const uint32 now = g_system->getMillis();
+	if (now - _lastTick < kTickMillis)
+		return;
+	_lastTick = now;
+
+	if (!_ben.isWalking() && !_ben.isTurning())
+		return;
+
+	_ben.tick();
 	_dirty = true;
 }
 
@@ -282,6 +353,32 @@ void AlienEngine::setTextColor(byte r, byte g, byte b) {
 	_palette[Font::kInkColor * 3 + 0] = r * 255 / 63;
 	_palette[Font::kInkColor * 3 + 1] = g * 255 / 63;
 	_palette[Font::kInkColor * 3 + 2] = b * 255 / 63;
+}
+
+void AlienEngine::showLabel(uint slot) {
+	_labelSlot = slot;
+	_dirty = true;
+
+	const TalFile::Entry &e = _labels.entry(slot);
+	debugC(1, kDebugGraphics, "label %u: %s", slot,
+		   e.lines.empty() ? "" : e.lines[0].c_str());
+}
+
+void AlienEngine::drawLabel() {
+	// docs/game_logic.md 3: hovering an object writes its label slot and the
+	// status line under the playfield shows the verb and that name. The verb
+	// side needs the toolbar, which is not ported, so the name is drawn on its
+	// own; the slot is stepped through by hand until hotspots exist.
+	const TalFile::Entry &entry = _labels.entry(_labelSlot);
+	if (entry.lines.empty())
+		return;
+
+	const Common::String &text = entry.lines[0];
+	int x = kLabelCenterX - _labelFont.measure(text) / 2;
+	if (x < kLabelLeft)
+		x = kLabelLeft;
+
+	_labelFont.drawString(_screen, text, x, kLabelY);
 }
 
 void AlienEngine::drawSpeech(const TalFile::Entry &entry, int anchorX, int anchorY) {
@@ -338,9 +435,12 @@ void AlienEngine::redraw() {
 	}
 
 	_sprite.drawFrame(_spriteFrame, _screen);
+	_ben.draw(_screen);
 
 	if (_showWalk)
 		drawWalkOverlay();
+
+	drawLabel();
 
 	const TalFile::Entry &dialog = _tal.entry(_dialogId);
 	if (_dialogBand)
@@ -404,6 +504,10 @@ void AlienEngine::handleEvents() {
 				stepSpriteBank(1);
 			} else if (event.kbd.keycode == Common::KEYCODE_LEFTBRACKET) {
 				stepSpriteBank(-1);
+			} else if (event.kbd.keycode == Common::KEYCODE_n) {
+				showLabel((_labelSlot + 1) % TalFile::kEntryCount);
+			} else if (event.kbd.keycode == Common::KEYCODE_p) {
+				showLabel((_labelSlot + TalFile::kEntryCount - 1) % TalFile::kEntryCount);
 			} else if (event.kbd.keycode == Common::KEYCODE_w) {
 				_showWalk = !_showWalk;
 				_dirty = true;

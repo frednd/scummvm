@@ -26,6 +26,7 @@
 #include "engines/engine.h"
 #include "graphics/surface.h"
 
+#include "alien/charanim.h"
 #include "alien/dl1.h"
 #include "alien/font.h"
 #include "alien/overlay.h"
@@ -61,9 +62,12 @@ private:
 	void dumpScreen();
 
 	void walkTo(int x, int y);
+	void stepAnimation();
 	void drawWalkOverlay();
 
 	void setTextColor(byte r, byte g, byte b);
+	void showLabel(uint slot);
+	void drawLabel();
 	void drawSpeech(const TalFile::Entry &entry, int anchorX, int anchorY);
 	void drawBand(const TalFile::Entry &entry);
 	void showDialog(uint id);
@@ -84,12 +88,16 @@ private:
 
 	Walk _walk;
 	WalkRoute _route;
-	int _walkX;						///< where a plotted route starts, Ben's stand-in
-	int _walkY;
 	bool _showWalk;					///< draw the mask, the node ring and the route
 
+	Walker _ben;					///< the player character walking that route
+	uint32 _lastTick;				///< when the animation clock last advanced
+
 	Font _font;
+	Font _labelFont;				///< the shorter face the status line is set in
 	TalFile _tal;
+	TalFile _labels;				///< NAMEROOM/<lang>/R<n>.TAL, the hover names
+	uint _labelSlot;
 	uint _dialogId;
 	bool _dialogBand;				///< bottom band layout instead of over the speaker
 
