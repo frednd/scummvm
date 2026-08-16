@@ -46,6 +46,8 @@ void TalFile::clear() {
 }
 
 bool TalFile::load(const Common::Path &path) {
+	clear();
+
 	Common::File f;
 	if (!f.open(path)) {
 		warning("Alien::TalFile: could not open %s", path.toString().c_str());

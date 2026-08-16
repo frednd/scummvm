@@ -28,6 +28,7 @@
 
 #include "alien/dl1.h"
 #include "alien/font.h"
+#include "alien/tables.h"
 #include "alien/tal.h"
 
 struct ADGameDescription;
@@ -49,7 +50,8 @@ public:
 	Common::Language getLanguage() const;
 
 private:
-	bool loadRoom(int room);
+	bool loadRoom(int room, bool secondPlate = false);
+	void stepRoom(int delta);
 	void redraw();
 	void handleEvents();
 	void dumpScreen();
@@ -65,6 +67,10 @@ private:
 
 	DL1Sprite _sprite;
 	uint _spriteFrame;
+
+	StaticTables _tables;
+	int _room;
+	bool _secondPlate;				///< showing the room's B plate rather than A
 
 	Font _font;
 	TalFile _tal;

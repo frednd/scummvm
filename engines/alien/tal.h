@@ -83,6 +83,9 @@ public:
 
 	bool isLoaded() const { return _loaded; }
 
+	/** Drop every entry, leaving the file empty. */
+	void unload() { clear(); }
+
 	/** The dialog entry for an id, or an empty one when the slot is unused. */
 	const Entry &entry(uint id) const;
 

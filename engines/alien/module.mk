@@ -6,6 +6,7 @@ MODULE_OBJS = \
 	font.o \
 	metaengine.o \
 	resources.o \
+	tables.o \
 	tal.o
 
 # This module can be built as a plugin

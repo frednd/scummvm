@@ -71,6 +71,9 @@ public:
 	bool load(const Common::Path &path);
 	bool loadStream(Common::SeekableReadStream &stream);
 
+	/** Drop the frames and the file buffer, leaving an empty sprite. */
+	void unload() { clear(); }
+
 	uint frameCount() const { return _frames.size(); }
 	const Frame &frame(uint index) const { return _frames[index]; }
 

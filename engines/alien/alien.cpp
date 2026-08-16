@@ -39,18 +39,22 @@
 
 namespace Alien {
 
-// Scaffolding for the first render milestone: the kitchen, its background
-// plate and the first frame of the fridge animation. Room selection becomes
-// table-driven once the room plate tables in the data segment are read.
-static const char *const kStartBackground = "GAME10.PCX";
-static const char *const kStartSprite = "FRIDGE_1.DL1";
-static const char *const kStartScript = "ROOM10.TAL";
+// The kitchen is where the game itself starts, and it is the room the render
+// milestones were checked against.
+static const int kStartRoom = 10;
+
+// The sprite banks a room loads are listed in its scene overlay, which the
+// engine cannot read yet, so the kitchen keeps its one hand-picked animation
+// until the manifests land.
+static const int kSpriteRoom = 10;
+static const char *const kRoomSprite = "FRIDGE_1.DL1";
 
 // One install ships all four text languages side by side. Picking the set is a
 // launcher option the engine does not have yet, so the English tree is wired up
 // for now.
+// NAMEROOM/ENG holds the hover labels and is not registered yet: both trees end
+// in the same directory name, and SearchMan keys an archive by that name.
 static const char *const kTextDir = "TALFILES/ENG";
-static const char *const kLabelDir = "NAMEROOM/ENG";
 
 // docs/dialog_system.md 3A: the block is placed against the midpoint of the
 // speaking object's bounding box. Until hotspots exist, the fridge's own centre
@@ -59,8 +63,9 @@ static const int kAnchorX = 96;
 static const int kAnchorY = 90;
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
-		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _dialogId(1),
-		_dialogBand(false), _dirty(true), _quit(false) {
+		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _room(0),
+		_secondPlate(false), _dialogId(1), _dialogBand(false), _dirty(true),
+		_quit(false) {
 	memset(_palette, 0, sizeof(_palette));
 }
 
@@ -76,17 +81,17 @@ Common::Error AlienEngine::run() {
 	// before Common::File can reach into them by name.
 	const Common::FSNode gameDataDir(ConfMan.getPath("path"));
 	SearchMan.addSubDirectoryMatching(gameDataDir, kTextDir);
-	SearchMan.addSubDirectoryMatching(gameDataDir, kLabelDir);
 
 	_screen.create(kScreenWidth, kScreenHeight, Graphics::PixelFormat::createFormatCLUT8());
+
+	if (!_tables.load())
+		return Common::Error(Common::kReadingFailed, "Could not read the tables in GAME.EXE");
 
 	if (!_font.load())
 		return Common::Error(Common::kReadingFailed, "Could not load the font");
 
-	if (!loadRoom(10))
+	if (!loadRoom(kStartRoom))
 		return Common::Error(Common::kReadingFailed, "Could not load the starting room");
-
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
@@ -99,29 +104,69 @@ Common::Error AlienEngine::run() {
 	return Common::kNoError;
 }
 
-bool AlienEngine::loadRoom(int room) {
+bool AlienEngine::loadRoom(int room, bool secondPlate) {
+	const Common::String &plate = secondPlate ? _tables.secondPlate(room)
+											  : _tables.background(room);
+	if (plate.empty()) {
+		debugC(1, kDebugResource, "room %d has no %s plate", room,
+			   secondPlate ? "second" : "background");
+		return false;
+	}
+
+	// Eleven of the names in the table belong to cut rooms whose art never
+	// shipped, so a failure here is expected and must leave the current room
+	// standing.
+	Graphics::Surface loaded;
+	byte palette[256 * 3];
+	if (!loadGamePCX(Common::Path(plate), loaded, palette)) {
+		loaded.free();
+		return false;
+	}
+
 	_background.free();
+	_background = loaded;
+	memcpy(_palette, palette, sizeof(_palette));
 
-	if (!loadGamePCX(Common::Path(kStartBackground), _background, _palette))
-		return false;
+	// Room scripts are named after the room, but only about half the rooms
+	// have one; the rest speak through the shared files in TALFILES.
+	_sprite.unload();
+	if (room == kSpriteRoom)
+		_sprite.load(Common::Path(kRoomSprite));
 
-	if (!_sprite.load(Common::Path(kStartSprite)))
-		return false;
-
-	if (!_tal.load(Common::Path(kStartScript)))
-		return false;
+	const Common::Path script(Common::String::format("ROOM%d.TAL", room));
+	if (Common::File::exists(script))
+		_tal.load(script);
+	else
+		_tal.unload();
 
 	// White is what the dialog unit resets the text entry to before every
 	// line; the per-speaker colours are set by the room code that triggers
 	// the line, and none of that exists yet.
 	setTextColor(0x3F, 0x3F, 0x3F);
+	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 
-	debugC(1, kDebugResource, "room %d: %dx%d plate, sprite with %u frames, %u dialog entries",
-		   room, _background.w, _background.h, _sprite.frameCount(), _tal.usedEntries());
+	debugC(1, kDebugResource, "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries",
+		   room, secondPlate ? 'B' : 'A', plate.c_str(), _background.w, _background.h,
+		   _sprite.frameCount(), _tal.usedEntries());
 
+	_room = room;
+	_secondPlate = secondPlate;
 	_spriteFrame = 0;
+	_dialogId = 1;
 	_dirty = true;
 	return true;
+}
+
+void AlienEngine::stepRoom(int delta) {
+	// Walks past the slots that hold no plate — those are the rooms that
+	// never had a background of their own, see docs/rooms.md.
+	for (int i = 0; i < StaticTables::kRoomCount; i++) {
+		int room = (_room - 1 + delta * (i + 1)) % StaticTables::kRoomCount;
+		if (room < 0)
+			room += StaticTables::kRoomCount;
+		if (loadRoom(room + 1))
+			return;
+	}
 }
 
 void AlienEngine::setTextColor(byte r, byte g, byte b) {
@@ -241,6 +286,14 @@ void AlienEngine::handleEvents() {
 			} else if (event.kbd.keycode == Common::KEYCODE_TAB) {
 				_dialogBand = !_dialogBand;
 				_dirty = true;
+			} else if (event.kbd.keycode == Common::KEYCODE_PAGEDOWN) {
+				stepRoom(1);
+			} else if (event.kbd.keycode == Common::KEYCODE_PAGEUP) {
+				stepRoom(-1);
+			} else if (event.kbd.keycode == Common::KEYCODE_b) {
+				// The second plate is the B state, the right half of a wide
+				// room or the close-up, depending on the room.
+				loadRoom(_room, !_secondPlate);
 			}
 			break;
 		default:
