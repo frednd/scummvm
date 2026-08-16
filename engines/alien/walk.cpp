@@ -271,7 +271,12 @@ bool Walk::losBlocked(int x0, int y0, int x1, int y1) const {
 }
 
 uint Walk::nearestVisibleNode(int fromX, int fromY, int toX, int toY) const {
-	// walk_nearest_node (OBJ 0x7816). Distance halves each axis before
+	// walk_nearest_node (OBJ 0x7816): the node nearest (toX, toY) that has a
+	// clear line from (fromX, fromY). The original measures against walk_from,
+	// the character, while testing visibility from walk_pos, the destination,
+	// so plotRoute passes the destination in as the "from" pair.
+	//
+	// Distance halves each axis before
 	// squaring, which is the original's guard against overflowing a 16 bit
 	// multiply rather than a perspective correction. The seeding is quirky and
 	// is reproduced as it stands: node 0 always sets the running distance
@@ -305,6 +310,11 @@ uint Walk::nearestVisibleNode(int fromX, int fromY, int toX, int toY) const {
 
 void Walk::buildRoute(int fromX, int fromY, int toX, int toY, bool forward,
 					  WalkRoute &route) const {
+	// walk_build_route (OBJ 0x7a36). In the original the route is seeded with
+	// walk_pos, the destination, and the ring is swept until a node can see
+	// walk_from, the character; the mover then reads the route back to front.
+	// plotRoute calls this that way round and turns the answer around, because
+	// neither this search nor the line sampler is symmetric.
 	route.count = 0;
 	route.points[route.count].x = (int16)fromX;
 	route.points[route.count].y = (int16)fromY;
@@ -313,8 +323,8 @@ void Walk::buildRoute(int fromX, int fromY, int toX, int toY, bool forward,
 	if (!_nodes.count())
 		return;
 
-	// Slot 0 is where the walk starts. When the target is already in sight no
-	// node is used at all, which is the common case in an open room.
+	// When the two ends can already see each other no node is used at all,
+	// which is the common case in an open room.
 	if (!losBlocked(toX, toY, fromX, fromY)) {
 		route.points[route.count] = route.points[0];
 		route.count++;
@@ -366,12 +376,31 @@ bool Walk::plotRoute(int fromX, int fromY, int toX, int toY, WalkRoute &route) c
 	if (!_mask.isLoaded())
 		return false;
 
-	// walk_plot_route: both directions around the ring, keep the shorter.
-	WalkRoute back;
-	buildRoute(fromX, fromY, toX, toY, true, route);
-	buildRoute(fromX, fromY, toX, toY, false, back);
-	if (back.count < route.count)
-		route = back;
+	// walk_plot_route: both directions around the ring, keep the shorter. The
+	// search runs from the destination toward the character, as the original's
+	// does.
+	WalkRoute forward, back;
+	buildRoute(toX, toY, fromX, fromY, true, forward);
+	buildRoute(toX, toY, fromX, fromY, false, back);
+	const WalkRoute &found = back.count < forward.count ? back : forward;
+
+	// Turned around, so the list reads start to destination: the character's own
+	// position, which the original never stores, and then the waypoints ending
+	// on the destination. A route that needed no node comes back as the
+	// destination twice, so equal points are collapsed.
+	route.count = 0;
+	route.points[route.count].x = (int16)fromX;
+	route.points[route.count].y = (int16)fromY;
+	route.count++;
+
+	for (int i = (int)found.count - 1; i >= 0; i--) {
+		const WalkRoute::Point &p = found.points[i];
+		const WalkRoute::Point &last = route.points[route.count - 1];
+		if (p.x == last.x && p.y == last.y)
+			continue;
+		route.points[route.count] = p;
+		route.count++;
+	}
 
 	return true;
 }

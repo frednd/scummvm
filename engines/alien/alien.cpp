@@ -378,6 +378,18 @@ void AlienEngine::sweepWalkGeometry() {
 
 		debugC(1, kDebugWalk, "geom: obj %3u click %3d,%3d -> %3d,%3d facing %2u submode %u",
 			   spot.obj, x, y, target.x, target.y, target.facing, target.submode);
+
+		// And the route the walker would take there from where he stands, so the
+		// router can be diffed against tools/kierra.py the same way.
+		WalkRoute route;
+		if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), target.x, target.y, route))
+			continue;
+
+		Common::String path;
+		for (uint p = 0; p < route.count; p++)
+			path += Common::String::format("%s%d,%d", p ? " " : "",
+										   route.points[p].x, route.points[p].y);
+		debugC(1, kDebugWalk, "route: %s", path.c_str());
 	}
 }
 
