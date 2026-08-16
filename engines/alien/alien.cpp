@@ -228,20 +228,20 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_pending = -1;
 	stopSpeech();
 
-	// What the room does with a click on its own account, lifted out of its
-	// overlay by tools/gen_roomscripts.py. The state block it reads and writes
-	// is not touched here: puzzle flags outlive the room they were set in.
-	_script.enterRoom(room);
-
 	// The banks the room's animation slots play, from the overlay's own load
-	// calls. Nothing is playing until a script body starts something: the
-	// original's room init sets the opening frame of every slot, and that code is
-	// the next milestone, so a door shows its initial state only once it is used.
+	// calls. Loaded before the script is entered, because entering it runs the
+	// room's opening plays against these slots.
 	_anims.loadRoom(room);
 
-	// With the anim channel on, the room opens with everything in it moving. It
-	// is the only way to see the slots run while the room init that sets their
-	// opening frames is still unported, and it is what the 'a' key repeats.
+	// What the room does with a click on its own account, lifted out of its
+	// overlay by tools/gen_roomscripts.py, plus the opening frame of every slot
+	// from tools/gen_roominit.py. The state block is not touched here: puzzle
+	// flags outlive the room they were set in.
+	_script.enterRoom(room);
+
+	// With the anim channel on, the room opens with everything in it moving
+	// rather than in its opening state -- a way to see every bank a room holds
+	// without hunting for the click that plays it. The 'a' key repeats it.
 	if (debugChannelSet(-1, kDebugAnim))
 		_anims.playAll(kDebugAnimRate);
 

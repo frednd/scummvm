@@ -24,6 +24,7 @@
 
 #include "alien/anim.h"
 #include "alien/detection.h"
+#include "alien/roominit.h"
 #include "alien/script.h"
 
 namespace Alien {
@@ -52,6 +53,18 @@ void RoomScript::enterRoom(int room) {
 	_room = room;
 	_blocks = scriptForRoom(room, _blockCount);
 	_queued = kNoEvent;
+
+	// The room's opening setup, out of the same overlay routine that loads its
+	// banks. Without it a slot stays blank until something plays it, so a door
+	// left open would open again from scratch.
+	uint count = 0;
+	const ScriptEffect *init = roomInitEffects(room, count);
+	if (!init)
+		return;
+
+	debugC(1, kDebugGraphics, "script: room %d opens with %u slot plays", room, count);
+	for (uint i = 0; i < count; i++)
+		runEffect(init[i]);
 }
 
 byte RoomScript::flag(uint16 addr) const {
@@ -94,65 +107,66 @@ bool RoomScript::matches(const ScriptBlock &block, byte obj, byte verb) const {
 }
 
 void RoomScript::execute(const ScriptBlock &block) {
-	for (uint i = 0; i < block.count; i++) {
-		const ScriptEffect &effect = *scriptEffect(block.first + i);
+	for (uint i = 0; i < block.count; i++)
+		runEffect(*scriptEffect(block.first + i));
+}
 
-		// The arms inside a body: the refusal and the success path of the same
-		// click sit side by side, each under its own guard.
-		bool guarded = true;
-		for (uint g = 0; guarded && g < effect.guardCount; g++)
-			guarded = holds(effect.guards[g]);
-		if (!guarded)
-			continue;
+void RoomScript::runEffect(const ScriptEffect &effect) {
+	// The arms inside a body: the refusal and the success path of the same click
+	// sit side by side, each under its own guard. A guard the port cannot answer
+	// -- an address outside the state block -- fails, so its arm is not taken.
+	for (uint g = 0; g < effect.guardCount; g++) {
+		if (!holds(effect.guards[g]))
+			return;
+	}
 
-		switch (effect.op) {
-		case kOpSetFlag:
-			setFlag((uint16)effect.args[0], (byte)effect.args[1]);
-			break;
+	switch (effect.op) {
+	case kOpSetFlag:
+		setFlag((uint16)effect.args[0], (byte)effect.args[1]);
+		break;
 
-		case kOpActionHandled:
-			setFlag(kActionHandled, (byte)effect.args[0]);
-			break;
+	case kOpActionHandled:
+		setFlag(kActionHandled, (byte)effect.args[0]);
+		break;
 
-		case kOpQueueEvent:
-			// The last one wins: the original writes them into one queue, and
-			// each call replaces what is standing there.
-			_queued = (byte)effect.args[0];
-			break;
+	case kOpQueueEvent:
+		// The last one wins: the original writes them into one queue, and each
+		// call replaces what is standing there.
+		_queued = (byte)effect.args[0];
+		break;
 
-		// Everything below belongs to a system the port has not reached. The
-		// arguments are in the table, so each of these becomes a call once the
-		// system behind it lands.
-		case kOpSubmode:
-			debugC(1, kDebugGraphics, "script: room %d enters submode %d",
-				   _room, effect.args[0]);
-			break;
+	case kOpAnimPlay1:
+	case kOpAnimPlay2:
+	case kOpAnimPlay3:
+		playAnim(effect);
+		break;
 
-		case kOpAnimPlay1:
-		case kOpAnimPlay2:
-		case kOpAnimPlay3:
-			playAnim(effect);
-			break;
+	// Everything below belongs to a system the port has not reached. The
+	// arguments are in the table, so each of these becomes a call once the
+	// system behind it lands.
+	case kOpSubmode:
+		debugC(1, kDebugGraphics, "script: room %d enters submode %d",
+			   _room, effect.args[0]);
+		break;
 
-		case kOpInvAdd:
-		case kOpInvRemove:
-		case kOpInvHas:
-			debugC(2, kDebugGraphics, "script: item %d %s", effect.args[0],
-				   effect.op == kOpInvAdd ? "picked up"
-										  : (effect.op == kOpInvRemove ? "given up"
-																	   : "tested for"));
-			break;
+	case kOpInvAdd:
+	case kOpInvRemove:
+	case kOpInvHas:
+		debugC(2, kDebugGraphics, "script: item %d %s", effect.args[0],
+			   effect.op == kOpInvAdd ? "picked up"
+									  : (effect.op == kOpInvRemove ? "given up"
+																   : "tested for"));
+		break;
 
-		case kOpSound:
-		case kOpPlaySample:
-			debugC(2, kDebugGraphics, "script: sound %d", effect.args[0]);
-			break;
+	case kOpSound:
+	case kOpPlaySample:
+		debugC(2, kDebugGraphics, "script: sound %d", effect.args[0]);
+		break;
 
-		default:
-			debugC(1, kDebugGraphics, "script: room %d has an effect this table "
-				   "could not recover", _room);
-			break;
-		}
+	default:
+		debugC(1, kDebugGraphics, "script: room %d has an effect this table "
+			   "could not recover", _room);
+		break;
 	}
 }
 

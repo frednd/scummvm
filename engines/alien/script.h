@@ -62,7 +62,11 @@ public:
 	/// Clears the whole state block, as starting a new game does.
 	void reset();
 
-	/// Binds the block table of a room. Rooms with no script bind nothing.
+	/**
+	 * Binds the block table of a room and runs the room's own opening setup --
+	 * the animation frame each of its slots starts on, under the puzzle-state
+	 * guards the overlay puts it under. Rooms with no script bind nothing.
+	 */
 	void enterRoom(int room);
 
 	/**
@@ -81,6 +85,7 @@ private:
 	bool holds(const ScriptCond &cond) const;
 	bool matches(const ScriptBlock &block, byte obj, byte verb) const;
 	void execute(const ScriptBlock &block);
+	void runEffect(const ScriptEffect &effect);
 	void playAnim(const ScriptEffect &effect);
 
 	AnimSlots *_anims;

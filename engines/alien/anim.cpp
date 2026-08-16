@@ -168,7 +168,18 @@ int AnimSlots::visibleFrame(const Slot &slot) const {
 	// pixels out of the slot itself.
 	const int lo = slot.forward ? slot.first : slot.first - slot.count + 1;
 	const int hi = slot.forward ? slot.first + slot.count - 1 : slot.first;
-	return CLIP(slot.frame, lo, hi);
+	int frame = CLIP(slot.frame, lo, hi);
+
+	// A range longer than the bank is a loop: the propeller in room 46 plays 33
+	// frames of a bank of 10, which is three passes of the eleven the bank plus
+	// its terminator make up, and the fire in room 11 and the candle in room 26
+	// are the same shape. The frame wraps in that cycle rather than walking past
+	// the bank into whatever was loaded after it.
+	const int cycle = (int)slot.bank.frameCount() + 1;
+	if (cycle > 1 && frame > cycle)
+		frame = (frame - 1) % cycle + 1;
+
+	return frame;
 }
 
 void AnimSlots::draw(Graphics::Surface &dest) const {
