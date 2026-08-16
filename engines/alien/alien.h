@@ -28,6 +28,7 @@
 
 #include "alien/dl1.h"
 #include "alien/font.h"
+#include "alien/overlay.h"
 #include "alien/tables.h"
 #include "alien/tal.h"
 
@@ -52,6 +53,8 @@ public:
 private:
 	bool loadRoom(int room, bool secondPlate = false);
 	void stepRoom(int delta);
+	void loadSpriteBank(uint bank);
+	void stepSpriteBank(int delta);
 	void redraw();
 	void handleEvents();
 	void dumpScreen();
@@ -67,8 +70,11 @@ private:
 
 	DL1Sprite _sprite;
 	uint _spriteFrame;
+	uint _spriteBank;				///< index into the room's manifest
 
 	StaticTables _tables;
+	OverlayIndex _overlays;
+	RoomAssets _assets;
 	int _room;
 	bool _secondPlate;				///< showing the room's B plate rather than A
 

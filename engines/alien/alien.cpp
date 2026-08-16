@@ -43,12 +43,6 @@ namespace Alien {
 // milestones were checked against.
 static const int kStartRoom = 10;
 
-// The sprite banks a room loads are listed in its scene overlay, which the
-// engine cannot read yet, so the kitchen keeps its one hand-picked animation
-// until the manifests land.
-static const int kSpriteRoom = 10;
-static const char *const kRoomSprite = "FRIDGE_1.DL1";
-
 // One install ships all four text languages side by side. Picking the set is a
 // launcher option the engine does not have yet, so the English tree is wired up
 // for now.
@@ -63,9 +57,9 @@ static const int kAnchorX = 96;
 static const int kAnchorY = 90;
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
-		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _room(0),
-		_secondPlate(false), _dialogId(1), _dialogBand(false), _dirty(true),
-		_quit(false) {
+		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
+		_room(0), _secondPlate(false), _dialogId(1), _dialogBand(false),
+		_dirty(true), _quit(false) {
 	memset(_palette, 0, sizeof(_palette));
 }
 
@@ -86,6 +80,9 @@ Common::Error AlienEngine::run() {
 
 	if (!_tables.load())
 		return Common::Error(Common::kReadingFailed, "Could not read the tables in GAME.EXE");
+
+	if (!_overlays.load())
+		return Common::Error(Common::kReadingFailed, "Could not index the scene overlays");
 
 	if (!_font.load())
 		return Common::Error(Common::kReadingFailed, "Could not load the font");
@@ -127,13 +124,18 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_background = loaded;
 	memcpy(_palette, palette, sizeof(_palette));
 
-	// Room scripts are named after the room, but only about half the rooms
-	// have one; the rest speak through the shared files in TALFILES.
-	_sprite.unload();
-	if (room == kSpriteRoom)
-		_sprite.load(Common::Path(kRoomSprite));
+	// The sprite banks and the dialog file are named by the room's own scene
+	// overlay. Rooms driven from a resident segment have no overlay, and those
+	// keep an empty manifest until their code is understood.
+	_overlays.readRoom(room, _assets);
+	loadSpriteBank(0);
 
-	const Common::Path script(Common::String::format("ROOM%d.TAL", room));
+	// Most rooms name a room<n>.tal, but several speak through a shared file,
+	// and the ones without an overlay fall back to the naming convention.
+	Common::Path script(_assets.script);
+	if (_assets.script.empty())
+		script = Common::Path(Common::String::format("ROOM%d.TAL", room));
+
 	if (Common::File::exists(script))
 		_tal.load(script);
 	else
@@ -167,6 +169,36 @@ void AlienEngine::stepRoom(int delta) {
 		if (loadRoom(room + 1))
 			return;
 	}
+}
+
+void AlienEngine::loadSpriteBank(uint bank) {
+	// One bank at a time: which of a room's banks are on screen, and at which
+	// frame, is what the room's own code decides, and none of that is ported
+	// yet, so drawing them all at once would only pile doors on top of doors.
+	_sprite.unload();
+	_spriteBank = bank;
+	_spriteFrame = 0;
+	_dirty = true;
+
+	if (bank >= _assets.spriteCount)
+		return;
+
+	if (!_sprite.load(Common::Path(_assets.sprites[bank])))
+		return;
+
+	debugC(1, kDebugResource, "sprite bank %u/%u: %s, %u frames", bank + 1,
+		   _assets.spriteCount, _assets.sprites[bank].c_str(), _sprite.frameCount());
+}
+
+void AlienEngine::stepSpriteBank(int delta) {
+	if (!_assets.spriteCount)
+		return;
+
+	const int count = (int)_assets.spriteCount;
+	int bank = ((int)_spriteBank + delta) % count;
+	if (bank < 0)
+		bank += count;
+	loadSpriteBank((uint)bank);
 }
 
 void AlienEngine::setTextColor(byte r, byte g, byte b) {
@@ -290,6 +322,10 @@ void AlienEngine::handleEvents() {
 				stepRoom(1);
 			} else if (event.kbd.keycode == Common::KEYCODE_PAGEUP) {
 				stepRoom(-1);
+			} else if (event.kbd.keycode == Common::KEYCODE_RIGHTBRACKET) {
+				stepSpriteBank(1);
+			} else if (event.kbd.keycode == Common::KEYCODE_LEFTBRACKET) {
+				stepSpriteBank(-1);
 			} else if (event.kbd.keycode == Common::KEYCODE_b) {
 				// The second plate is the B state, the right half of a wide
 				// room or the close-up, depending on the room.

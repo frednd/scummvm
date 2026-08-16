@@ -5,6 +5,7 @@ MODULE_OBJS = \
 	dl1.o \
 	font.o \
 	metaengine.o \
+	overlay.o \
 	resources.o \
 	tables.o \
 	tal.o
