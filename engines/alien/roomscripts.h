@@ -41,13 +41,13 @@ namespace Alien {
  * table: tools/roomlogic.py decodes the overlay disassembly and
  * tools/gen_roomscripts.py writes roomscripts.cpp from its dump. The blocks of
  * a room are in the overlay's own order, and the interpreter runs the first one
- * whose object, verb and preconditions all match, which is how the original
- * behaves once a body sets action_handled.
+ * whose object, verb, held item and preconditions all match, which is how the
+ * original behaves once a body sets action_handled.
  *
- * Effects belonging to systems the port has not reached yet (the inventory,
- * sound) are still in the table with their arguments, so wiring one up is an arm
- * in the interpreter's switch. Bodies the disassembler could not fully recover
- * carry kOpUnsupported.
+ * Effects belonging to a system the port has not reached yet -- sound -- are still
+ * in the table with their arguments, so wiring one up is an arm in the
+ * interpreter's switch. Bodies the disassembler could not fully recover carry
+ * kOpUnsupported.
  */
 enum ScriptOpcode {
 	kOpUnsupported = 0,	///< recovered as code, not as arguments; skipped
@@ -61,8 +61,9 @@ enum ScriptOpcode {
 	kOpSound,			///< args: sound slot
 	kOpPlaySample,		///< args: sample, ?, rate, volume, ?, delay
 	kOpInvAdd,			///< args: item id -- OBJ:0x69d5, append to the inventory
-	kOpInvRemove,		///< args: item id -- OBJ:0x6a71
-	kOpInvHas			///< args: item id -- OBJ:0x6add, a test in the original
+	kOpInvRemove,		///< args: item id -- OBJ:0x6a71, close the gap behind it
+	kOpInvHas			///< args: item id -- OBJ:0x6add; a test, and its answer went
+						///< into a register the decoder could not follow
 };
 
 /** One byte of the state block as a new game leaves it. */
@@ -87,10 +88,11 @@ struct ScriptEffect {
 	ScriptCond guards[3];
 };
 
-/** One guarded body: an (object, verb) pair in a given puzzle state. */
+/** One guarded body: an (object, verb, item) key in a given puzzle state. */
 struct ScriptBlock {
 	int16 obj;			///< -1 = any object
 	int16 verb;			///< -1 = any verb
+	int16 item;			///< -1 = any; otherwise the item being used on the object
 	byte condCount;
 	ScriptCond conds[4];
 	uint16 first;		///< first effect

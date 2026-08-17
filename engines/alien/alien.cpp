@@ -86,10 +86,18 @@ static const char *const kSharedScript = "TALKALL.TAL";
 // Code 3 there is the other one, "Using these things together doesn't seem to
 // work.", which the item-use verb needs once inventory is ported.
 static const byte kOutcomeNothingSpecial = 4;	///< "I can't see anything special about it."
+static const byte kOutcomeNoCombination = 3;	///< "Using these things together doesn't seem to work."
 
 // The status-line verb whose zero outcome falls back to a canned line. Any
 // other verb with a zero code is the room's own business.
 static const byte kVerbLookAt = 5;
+
+// "Use to", the verb an item in hand puts the click under.
+static const byte kVerbUseTo = 2;
+
+// docs/game_logic.md 3A: the playfield ends here. A click below it belongs to
+// the bar and the status line, and never sends the character anywhere.
+static const int kPlayfieldBottom = 0x9f;
 
 // SearchMan names a directory archive after the directory's own last component,
 // so registering TALFILES/ENG and NAMEROOM/ENG the usual way would have the
@@ -124,7 +132,9 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _tick(0),
-		_hover(-1), _pending(-1), _pendingOutcome(0),
+		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone),
+		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
+		_pending(-1), _pendingOutcome(0),
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
@@ -134,8 +144,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 	memset(_queue, 0, sizeof(_queue));
 
 	// An anim_play effect in a room script drives the slots directly, the way the
-	// overlay's own body calls MIDAS.
+	// overlay's own body calls MIDAS, and inv_add / inv_remove work the list.
 	_script.setAnims(&_anims);
+	_script.setInventory(&_inventory);
 }
 
 AlienEngine::~AlienEngine() {
@@ -171,6 +182,10 @@ Common::Error AlienEngine::run() {
 	if (!_talkall.load(Common::Path(kSharedScript)))
 		warning("could not load %s: objects with no outcome will stay silent", kSharedScript);
 
+	// The icon page, the bar's chrome and the item names. A failure here leaves
+	// the bar empty rather than stopping the game.
+	_inventory.load();
+
 	// The player character's frames are one set among six and live outside any
 	// room, so they are read once and kept for the whole session.
 	if (!_ben.load("BENANI"))
@@ -185,6 +200,26 @@ Common::Error AlienEngine::run() {
 
 	if (debugChannelSet(2, kDebugRooms))
 		tourRooms();
+
+	// The items channel prints what tools/check_inventory.py mirrors. Level 4 is a
+	// job of its own -- it clicks the room and needs the list a new game leaves --
+	// so the levels below it, which prime the list to show the bar paging and
+	// rotate the look counters, do not run under it.
+	if (debugChannelSet(4, kDebugItems)) {
+		sweepClicks();
+	} else if (debugChannelSet(-1, kDebugItems)) {
+		if (debugChannelSet(2, kDebugItems)) {
+			for (byte item = 1; item <= 13; item++)
+				_inventory.add(item);
+		}
+		dumpItems();
+		dumpItemUses();
+
+		// Level 3 rotates every item's own click counter past its end, which is
+		// the half of the record a single look never shows.
+		if (debugChannelSet(3, kDebugItems))
+			sweepItemLooks();
+	}
 
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
@@ -234,7 +269,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 
 	_spots.clear();
 	_hover = -1;
+	_hoverSlot = -1;
+	_hoverArrow = Inventory::kArrowNone;
 	_pending = -1;
+	_pendingItem = Inventory::kNoItem;
 	_armed = 0;
 	stopSpeech();
 
@@ -480,12 +518,177 @@ void AlienEngine::updateHover(int x, int y) {
 			hit = (int)i;
 	}
 
-	if (hit == _hover)
+	const int slot = _inventory.slotAt(x, y);
+	const Inventory::Arrow arrow = _inventory.arrowHover(x, y);
+
+	if (hit == _hover && slot == _hoverSlot && arrow == _hoverArrow)
 		return;
 
 	_hover = hit;
+	_hoverSlot = slot;
+	_hoverArrow = arrow;
 	_labelSlot = hit >= 0 ? _spots[hit].label : 0;
 	_dirty = true;
+}
+
+bool AlienEngine::clickBar(int x, int y, bool rightButton) {
+	// Everything below the playfield is the bar and the status line: the two
+	// scroll arrows, the six item slots, and dead space. None of it walks.
+	if (y <= kPlayfieldBottom)
+		return false;
+
+	const Inventory::Arrow arrow = _inventory.arrowAt(x, y);
+	if (arrow != Inventory::kArrowNone) {
+		if (!rightButton && _inventory.arrowEnabled(arrow)) {
+			const bool moved = arrow == Inventory::kArrowUp ? _inventory.pageUp()
+														   : _inventory.pageDown();
+			if (moved) {
+				debugC(1, kDebugItems, "bar: page %u of %u", _inventory.page(),
+					   _inventory.pageCount());
+				updateHover(x, y);
+				_dirty = true;
+			}
+		}
+		return true;
+	}
+
+	// A right click in the bar looks at the slot it is over and puts down
+	// whatever is in hand -- the original does the look first, then clears the
+	// mode (1021:0x754 and 1021:0x8f6) -- and a left click takes the item into
+	// the hand, which is what puts following clicks under "Use to".
+	const int slot = _inventory.slotAt(x, y);
+
+	if (rightButton) {
+		if (!_heldItem && slot >= 0)
+			lookAtItem(_inventory.slotItem((uint)slot));
+		if (_heldItem)
+			holdItem(Inventory::kNoItem);
+		return true;
+	}
+
+	if (slot >= 0)
+		holdItem(_inventory.slotItem((uint)slot));
+	return true;
+}
+
+void AlienEngine::holdItem(byte item) {
+	_heldItem = item;
+	_dirty = true;
+	debugC(1, kDebugItems, "bar: holding item %u (%s)", item,
+		   _inventory.name(item).c_str());
+}
+
+void AlienEngine::lookAtItem(byte item) {
+	if (!item)
+		return;
+
+	// The answers to a look at a carried item are in the shared file, not the
+	// room's own, and Ben is the one saying them.
+	const byte code = _inventory.lookOutcome(_tables, item);
+	if (!code)
+		return;
+
+	queueOutcome(_talkall, code, _ben.walkX(), _ben.walkY() - Walker::kWalkPointY);
+}
+
+void AlienEngine::sweepClicks() {
+	// Every hotspot of the room clicked in turn, with an empty hand, and the list
+	// printed after each one. This runs the room's own bodies, so the puzzle state
+	// moves as it would in play -- it is a diagnostic, not a way to play.
+	// tools/check_inventory.py --clicks-of ROOM mirrors it from the same tables.
+	debugC(1, kDebugItems, "click-sweep: room %d, %u hotspots", _room, _spots.size());
+
+	for (uint i = 0; i < _spots.size(); i++) {
+		const Hotspot spot = _spots[i];
+		const bool handled = _script.run(spot.obj, spot.verb);
+
+		Common::String carried;
+		for (uint index = 1; index < Inventory::kListSize; index++) {
+			if (_inventory.at(index))
+				carried += Common::String::format(" %u", _inventory.at(index));
+		}
+
+		debugC(1, kDebugItems, "click-sweep: object %3u verb %2u %s carrying:%s",
+			   spot.obj, spot.verb, handled ? "handled" : "passed ", carried.c_str());
+	}
+
+	// And then every combination the room's own script has a body for, with the
+	// item put in hand first: this is the path a click takes with something held,
+	// so it exercises the third part of the block key end to end.
+	uint count = 0;
+	const ScriptBlock *blocks = scriptForRoom(_room, count);
+	for (uint i = 0; i < count; i++) {
+		if (!blocks || blocks[i].item < 0)
+			continue;
+
+		const byte item = (byte)blocks[i].item;
+		const byte obj = blocks[i].obj < 0 ? 0 : (byte)blocks[i].obj;
+		_inventory.add(item);
+		const bool handled = _script.run(obj, kVerbUseTo, item);
+		debugC(1, kDebugItems, "use-sweep: item %2u on object %3u %s, %s",
+			   item, obj, handled ? "handled" : "passed ",
+			   _inventory.has(item) ? "still carried" : "given up");
+	}
+}
+
+void AlienEngine::dumpItemUses() {
+	// Every item-use combination the room-script table holds, in the order the
+	// overlays wrote them. This is the third part of a block's key, and it is
+	// what a click with something in hand matches on.
+	// tools/check_inventory.py --uses prints the same lines out of the overlays.
+	for (int room = 1; room <= StaticTables::kRoomCount; room++) {
+		uint count = 0;
+		const ScriptBlock *blocks = scriptForRoom(room, count);
+		if (!blocks)
+			continue;
+
+		for (uint i = 0; i < count; i++) {
+			if (blocks[i].item < 0)
+				continue;
+			debugC(1, kDebugItems, "use: room %2d block %2u item %2d (%s) on object %3d",
+				   room, i, blocks[i].item,
+				   _inventory.name((byte)blocks[i].item).c_str(), blocks[i].obj);
+		}
+	}
+}
+
+void AlienEngine::sweepItemLooks() {
+	// Look at every item until its counter has been round its record and then
+	// some, so the wrap or the stop shows. tools/check_inventory.py --look-sweep
+	// prints the same lines.
+	for (int item = 1; item <= StaticTables::kItemInUse; item++) {
+		const int clicks = _tables.itemArity(item) + 2;
+		for (int i = 0; i < clicks; i++)
+			_inventory.lookOutcome(_tables, (byte)item);
+	}
+}
+
+void AlienEngine::dumpItems() {
+	// The static half of the inventory: what each item is called, where its icon
+	// is cut from, and the codes a repeated look rotates through.
+	// tools/check_inventory.py prints the same lines out of GAME.EXE.
+	debugC(1, kDebugItems, "items: %d in the tables", StaticTables::kItemInUse);
+	for (int item = 1; item <= StaticTables::kItemInUse; item++) {
+		const byte arity = _tables.itemArity(item);
+		Common::String codes;
+		for (int c = 1; c <= arity; c++)
+			codes += Common::String::format(" %u", _tables.itemOutcome(item, c));
+
+		debugC(1, kDebugItems, "item %2d %-24s icon %3d,%3d arity %u %s outcomes:%s",
+			   item, _inventory.name((byte)item).c_str(), _tables.itemIconX(item),
+			   _tables.itemIconY(item), arity,
+			   _tables.itemCycles(item) ? "cycles" : "clamps", codes.c_str());
+	}
+
+	debugC(1, kDebugItems, "bar: page %u of %u showing", _inventory.page(),
+		   _inventory.pageCount());
+	for (uint page = 1; page <= _inventory.pageCount(); page++) {
+		for (uint slot = 0; slot < Inventory::kSlotCount; slot++) {
+			debugC(1, kDebugItems, "bar: page %u slot %u item %3u %s", page, slot,
+				   _inventory.itemOn(page, slot),
+				   _inventory.name(_inventory.itemOn(page, slot)).c_str());
+		}
+	}
 }
 
 void AlienEngine::dumpExits() {
@@ -653,7 +856,7 @@ byte AlienEngine::rotateOutcome(const Hotspot &spot) {
 	return code;
 }
 
-void AlienEngine::clickAt(int x, int y) {
+void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// A click while someone is talking cuts the line short, the same as the
 	// countdown running out.
 	if (_speech) {
@@ -662,6 +865,16 @@ void AlienEngine::clickAt(int x, int y) {
 	}
 
 	updateHover(x, y);
+
+	// The bar answers for itself, and a click there is never a walk.
+	if (clickBar(x, y, rightButton))
+		return;
+
+	// A right click in the playfield with an item in hand is turned into a left
+	// click at the same point (1021:0x6f7), so the item is used; with an empty
+	// hand it does nothing at all.
+	if (rightButton && !_heldItem)
+		return;
 
 	// The room's own walk geometry decides where the click sends him: an object
 	// has an approach point and a facing, a floor rectangle snaps the point onto
@@ -687,14 +900,26 @@ void AlienEngine::clickAt(int x, int y) {
 	}
 
 	_pending = _hover;
-	if (_pending < 0)
+	if (_pending < 0) {
+		// A click on the floor with something in hand is not an item use, and the
+		// original leaves the item in the hand for the next click.
 		return;
+	}
 
 	const Hotspot &spot = _spots[_pending];
-	_pendingOutcome = rotateOutcome(spot);
 
-	debugC(1, kDebugGraphics, "click: object %u, verb %u (%s), outcome %u",
-		   spot.obj, spot.verb, _tables.verb(spot.verb).c_str(), _pendingOutcome);
+	// With an item in hand the click is an item use: no outcome rotation, because
+	// the answer comes from the room's own combination body or from the shared
+	// refusal. LOGIC:sub_12336 sets the pair and walks; the body runs on arrival.
+	_pendingItem = _heldItem;
+	_pendingOutcome = _pendingItem ? 0 : rotateOutcome(spot);
+
+	if (_pendingItem)
+		debugC(1, kDebugItems, "click: item %u (%s) on object %u", _pendingItem,
+			   _inventory.name(_pendingItem).c_str(), spot.obj);
+	else
+		debugC(1, kDebugGraphics, "click: object %u, verb %u (%s), outcome %u",
+			   spot.obj, spot.verb, _tables.verb(spot.verb).c_str(), _pendingOutcome);
 
 	// Rooms with no walk mask never start a route, so the action is due at once.
 	if (!_ben.isWalking() && !_ben.isTurning())
@@ -703,7 +928,9 @@ void AlienEngine::clickAt(int x, int y) {
 
 void AlienEngine::finishAction() {
 	const int index = _pending;
+	const byte item = _pendingItem;
 	_pending = -1;
+	_pendingItem = Inventory::kNoItem;
 	if (index < 0 || index >= (int)_spots.size())
 		return;
 
@@ -717,7 +944,7 @@ void AlienEngine::finishAction() {
 	// Every overlay calls the generic dispatch (10c9:sub_11c10) before running
 	// its own bodies, so the outcome speaks first. A code of zero means the room
 	// answers for itself -- except under "Look at", where the shared script
-	// supplies the canned line.
+	// supplies the canned line. An item use has no outcome of its own at all.
 	if (_pendingOutcome != 0 && _pendingOutcome != 0xff)
 		queueOutcome(_tal, _pendingOutcome, anchorX, anchorY);
 	else if (_pendingOutcome == 0 && spot.verb == kVerbLookAt)
@@ -725,10 +952,20 @@ void AlienEngine::finishAction() {
 
 	// Then the room's own reaction. A body that queues an event of its own
 	// speaks over whatever the generic path put up, as it does in the original:
-	// both write the one queue, and the later call is the one that stands.
-	const bool handled = _script.run(spot.obj, spot.verb);
+	// both write the one queue, and the later call is the one that stands. An
+	// item use runs under verb 2 with the item as the third part of the key.
+	const byte verb = item ? kVerbUseTo : spot.verb;
+	const bool handled = _script.run(spot.obj, verb, item);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
+
+	// A combination no room owns gets the shared refusal, and either way the hand
+	// is empty once the click is spent.
+	if (item) {
+		if (!handled && _script.queuedEvent() == RoomScript::kNoEvent)
+			queueOutcome(_talkall, kOutcomeNoCombination, anchorX, anchorY);
+		holdItem(Inventory::kNoItem);
+	}
 
 	// The original re-registers every rectangle on the next frame, so a body
 	// that opened a door has already changed what is clickable by the time the
@@ -738,8 +975,8 @@ void AlienEngine::finishAction() {
 	const Common::Point mouse = g_system->getEventManager()->getMousePos();
 	updateHover(mouse.x, mouse.y);
 
-	debugC(1, kDebugGraphics, "action: object %u verb %u -> outcome %u, script %s",
-		   spot.obj, spot.verb, _pendingOutcome, handled ? "handled it" : "passed");
+	debugC(1, kDebugGraphics, "action: object %u verb %u item %u -> outcome %u, script %s",
+		   spot.obj, verb, item, _pendingOutcome, handled ? "handled it" : "passed");
 
 	// A body may end the scene on its own account rather than by arming an
 	// approach point -- set_game_submode in the table -- and that leaves the room
@@ -854,7 +1091,16 @@ void AlienEngine::drawLabel() {
 	// With nothing under the cursor it reads "Walk to" on its own.
 	Common::String text = _tables.walkVerb();
 
-	if (_hover >= 0) {
+	// With an item in hand the line is built the other way round: HOTSPOT:0x2a5
+	// writes "USE <item> WITH <object>" instead of "<verb> <object>".
+	if (_heldItem) {
+		text = _tables.useVerb() + " " + _inventory.name(_heldItem);
+		if (_hover >= 0) {
+			const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
+			if (!entry.lines.empty())
+				text += " " + _tables.withVerb() + " " + entry.lines[0];
+		}
+	} else if (_hover >= 0) {
 		const Hotspot &spot = _spots[_hover];
 		const TalFile::Entry &entry = _labels.entry(spot.label);
 		text = _tables.verb(spot.verb);
@@ -943,6 +1189,10 @@ void AlienEngine::redraw() {
 	if (_showWalk)
 		drawWalkOverlay();
 
+	// The bar sits below the playfield, so it goes on after the room but before
+	// the text layer, which is what the original's redraw order comes to.
+	_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow);
+
 	drawLabel();
 
 	if (_speech) {
@@ -1023,6 +1273,8 @@ void AlienEngine::handleEvents() {
 			} else if (event.kbd.keycode == Common::KEYCODE_w) {
 				_showWalk = !_showWalk;
 				_dirty = true;
+			} else if (event.kbd.keycode == Common::KEYCODE_i) {
+				dumpItems();
 			} else if (event.kbd.keycode == Common::KEYCODE_b) {
 				// The second plate is the B state, the right half of a wide
 				// room or the close-up, depending on the room.
@@ -1034,6 +1286,11 @@ void AlienEngine::handleEvents() {
 			break;
 		case Common::EVENT_LBUTTONDOWN:
 			clickAt(event.mouse.x, event.mouse.y);
+			break;
+		case Common::EVENT_RBUTTONDOWN:
+			// The right button looks at what it is over and puts a held item back;
+			// the original converts it into a left click while an item is in hand.
+			clickAt(event.mouse.x, event.mouse.y, true);
 			break;
 		default:
 			break;

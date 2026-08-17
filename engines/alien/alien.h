@@ -31,6 +31,7 @@
 #include "alien/dl1.h"
 #include "alien/font.h"
 #include "alien/hotspots.h"
+#include "alien/inventory.h"
 #include "alien/overlay.h"
 #include "alien/script.h"
 #include "alien/tables.h"
@@ -74,6 +75,13 @@ private:
 	void drawWalkOverlay();
 
 	void updateHover(int x, int y);
+	bool clickBar(int x, int y, bool rightButton);
+	void holdItem(byte item);
+	void lookAtItem(byte item);
+	void dumpItems();
+	void sweepItemLooks();
+	void dumpItemUses();
+	void sweepClicks();
 	void checkExit();
 	bool takeExit(byte submode);
 	void dumpExits();
@@ -81,7 +89,7 @@ private:
 	bool takeAnyExit(const int *avoid, uint avoidCount);
 	bool arriveAt(const WalkTarget &target);
 	void tourRooms();
-	void clickAt(int x, int y);
+	void clickAt(int x, int y, bool rightButton = false);
 	byte rotateOutcome(const Hotspot &spot);
 	void finishAction();
 	void queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY);
@@ -145,6 +153,21 @@ private:
 	/// it as a room's tick loop ends, so the pair the transition chain matches
 	/// on is (the room being left, the submode its exit armed).
 	byte _mode;
+
+	/// What the player carries, the bar it is shown in, and which part of that
+	/// bar the cursor is over.
+	Inventory _inventory;
+	int _hoverSlot;
+	Inventory::Arrow _hoverArrow;
+
+	/// [0xa6bb]: the item picked out of the bar and not yet used on anything.
+	/// While it is set the status line reads "USE <item> WITH <object>" and a
+	/// click on an object is an item use rather than the object's own verb.
+	byte _heldItem;
+
+	/// The item the click being resolved is using, kept apart from _heldItem so
+	/// the hand is empty again as soon as the click is spent.
+	byte _pendingItem;
 
 	/// The chain of dialog ids an outcome expanded into, played one at a time.
 	byte _queue[TalFile::kMaxOutcomeIds];

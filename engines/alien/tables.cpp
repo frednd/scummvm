@@ -38,12 +38,27 @@ static const uint32 kRoomStride = 13;
 static const uint kMaxNameLength = kRoomStride - 1;
 
 // The verb names, same stride, indexed by verb code. "Walk to" sits just in
-// front of the table and is the default hover text; "Swim to", "USE" and
-// "WITH" follow it and belong to the item-use line, which is not ported yet.
+// front of the table and is the default hover text, with "Swim to", "USE" and
+// "WITH" between them on an 11-byte stride of their own.
 static const uint32 kTableVerbs = 0x3221;
 static const uint32 kWalkVerb = 0x3202;
+static const uint32 kUseVerb = 0x3218;
+static const uint32 kWithVerb = 0x3223;
+
+// The item tables, all indexed by item id: how many outcome codes the item has
+// with bit 7 the wrap flag, the codes themselves, and where the item's icon sits
+// in the icon page. See docs/inventory_system.md.
+static const uint32 kTableItemArity = 0x2FEB;
+static const uint32 kTableItemOutcomes = 0x3019;
+static const uint32 kTableIconX = 0x30F6;
+static const uint32 kTableIconY = 0x3178;
+static const byte kItemCycleBit = 0x80;
 
 StaticTables::StaticTables() : _loaded(false) {
+	memset(_itemArity, 0, sizeof(_itemArity));
+	memset(_itemOutcome, 0, sizeof(_itemOutcome));
+	memset(_itemIconX, 0, sizeof(_itemIconX));
+	memset(_itemIconY, 0, sizeof(_itemIconY));
 }
 
 /**
@@ -95,9 +110,28 @@ bool StaticTables::load() {
 
 	exe.seek(kDataSegment + kWalkVerb);
 	_walkVerb = readName(exe);
+	exe.seek(kDataSegment + kUseVerb);
+	_useVerb = readName(exe);
+	exe.seek(kDataSegment + kWithVerb);
+	_withVerb = readName(exe);
+
+	exe.seek(kDataSegment + kTableItemArity);
+	if (exe.read(_itemArity, sizeof(_itemArity)) != sizeof(_itemArity))
+		return false;
+	exe.seek(kDataSegment + kTableItemOutcomes);
+	if (exe.read(_itemOutcome, sizeof(_itemOutcome)) != sizeof(_itemOutcome))
+		return false;
+
+	for (int i = 0; i < kItemCount; i++) {
+		exe.seek(kDataSegment + kTableIconX + i * 2);
+		_itemIconX[i] = exe.readUint16LE();
+		exe.seek(kDataSegment + kTableIconY + i * 2);
+		_itemIconY[i] = exe.readUint16LE();
+	}
 
 	debugC(1, kDebugResource, "room tables: %d rooms with a plate of their own, "
-		   "verb 5 is \"%s\"", rooms, _verb[5].c_str());
+		   "verb 5 is \"%s\", item 1 has %d outcomes", rooms, _verb[5].c_str(),
+		   itemArity(1));
 
 	_loaded = rooms > 0;
 	return _loaded;
@@ -119,6 +153,38 @@ const Common::String &StaticTables::verb(int code) const {
 	if (code < 0 || code >= kVerbCount)
 		return _empty;
 	return _verb[code];
+}
+
+byte StaticTables::itemArity(int item) const {
+	if (item < 1 || item >= kItemCount)
+		return 0;
+	return _itemArity[item] & ~kItemCycleBit;
+}
+
+bool StaticTables::itemCycles(int item) const {
+	if (item < 1 || item >= kItemCount)
+		return false;
+	return (_itemArity[item] & kItemCycleBit) != 0;
+}
+
+byte StaticTables::itemOutcome(int item, int counter) const {
+	// The original indexes one flat run, so the arithmetic is kept literal
+	// rather than folded into a per-item record.
+	if (item < 1 || item >= kItemCount || counter < 0 || counter > kItemOutcomes)
+		return 0;
+	return _itemOutcome[item * kItemOutcomes + counter];
+}
+
+int StaticTables::itemIconX(int item) const {
+	if (item < 1 || item >= kItemCount)
+		return 0;
+	return _itemIconX[item];
+}
+
+int StaticTables::itemIconY(int item) const {
+	if (item < 1 || item >= kItemCount)
+		return 0;
+	return _itemIconY[item];
 }
 
 } // End of namespace Alien

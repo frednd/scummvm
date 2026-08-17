@@ -32,6 +32,7 @@
 namespace Alien {
 
 class AnimSlots;
+class Inventory;
 
 /** Where a click sends the character, as the room's walk geometry decides. */
 struct WalkTarget {
@@ -70,6 +71,12 @@ public:
 	/// [0xa602], set by a body that has consumed the click.
 	static const uint16 kActionHandled = 0xa602;
 
+	/// The click the blocks match on, as LOGIC:sub_12198 and sub_12336 leave it:
+	/// the item being used, or zero, and the object it was used on. Room overlays
+	/// read these directly as well, so they live in the state block.
+	static const uint16 kUsedItem = 0xa64b;
+	static const uint16 kClickedObject = 0xa64c;
+
 	/// No outcome code queued. The original uses zero for "nothing to say".
 	static const byte kNoEvent = 0;
 
@@ -77,6 +84,9 @@ public:
 
 	/// The slots an anim_play effect drives. Not owned.
 	void setAnims(AnimSlots *anims) { _anims = anims; }
+
+	/// The list an inv_add / inv_remove / inv_has effect works on. Not owned.
+	void setInventory(Inventory *inventory) { _inventory = inventory; }
 
 	/// Clears the whole state block, as starting a new game does.
 	void reset();
@@ -89,10 +99,12 @@ public:
 	void enterRoom(int room);
 
 	/**
-	 * Runs the room's response to a click that resolved to (obj, verb).
-	 * Returns true when a body claimed the click, i.e. set action_handled.
+	 * Runs the room's response to a click that resolved to (obj, verb), with
+	 * `item` the inventory item being used on the object, or zero for a plain
+	 * verb click. Returns true when a body claimed the click, i.e. set
+	 * action_handled.
 	 */
-	bool run(byte obj, byte verb);
+	bool run(byte obj, byte verb, byte item = 0);
 
 	/// The outcome code the last run() queued, or kNoEvent.
 	byte queuedEvent() const { return _queued; }
@@ -147,15 +159,17 @@ public:
 
 private:
 	bool holds(const ScriptCond &cond) const;
-	bool matches(const ScriptBlock &block, byte obj, byte verb) const;
+	bool matches(const ScriptBlock &block, byte obj, byte verb, byte item) const;
 	void execute(const ScriptBlock &block);
 	void runEffect(const ScriptEffect &effect);
 	void playAnim(const ScriptEffect &effect);
+	void inventoryEffect(const ScriptEffect &effect);
 
 	byte *flagSlot(uint16 addr);
 	const byte *flagSlot(uint16 addr) const;
 
 	AnimSlots *_anims;
+	Inventory *_inventory;
 	byte _flags[kFlagCount];
 	byte _latches[kLatchCount];
 	const ScriptBlock *_blocks;

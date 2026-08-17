@@ -8,6 +8,7 @@ MODULE_OBJS = \
 	dl1.o \
 	font.o \
 	hotspots.o \
+	inventory.o \
 	metaengine.o \
 	overlay.o \
 	resources.o \

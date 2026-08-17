@@ -24,12 +24,13 @@
 
 #include "alien/anim.h"
 #include "alien/detection.h"
+#include "alien/inventory.h"
 #include "alien/roominit.h"
 #include "alien/script.h"
 
 namespace Alien {
 
-RoomScript::RoomScript() : _anims(nullptr), _blocks(nullptr), _blockCount(0),
+RoomScript::RoomScript() : _anims(nullptr), _inventory(nullptr), _blocks(nullptr), _blockCount(0),
 		_room(0), _queued(kNoEvent), _submode(kNoSubmode) {
 	reset();
 }
@@ -251,10 +252,16 @@ bool RoomScript::holds(const ScriptCond &cond) const {
 	return cond.negate ? !equal : equal;
 }
 
-bool RoomScript::matches(const ScriptBlock &block, byte obj, byte verb) const {
+bool RoomScript::matches(const ScriptBlock &block, byte obj, byte verb, byte item) const {
 	if (block.obj >= 0 && block.obj != obj)
 		return false;
 	if (block.verb >= 0 && block.verb != verb)
+		return false;
+
+	// A block that names an item is one item-use combination, and a click with
+	// nothing held matches none of them; one that names no item takes whatever
+	// is in hand, as the original's guard chain does.
+	if (block.item >= 0 && block.item != item)
 		return false;
 
 	for (uint i = 0; i < block.condCount; i++) {
@@ -306,18 +313,15 @@ void RoomScript::runEffect(const ScriptEffect &effect) {
 		_submode = (byte)effect.args[0];
 		break;
 
-	// Everything below belongs to a system the port has not reached. The
-	// arguments are in the table, so each of these becomes a call once the
-	// system behind it lands.
-
 	case kOpInvAdd:
 	case kOpInvRemove:
 	case kOpInvHas:
-		debugC(2, kDebugGraphics, "script: item %d %s", effect.args[0],
-			   effect.op == kOpInvAdd ? "picked up"
-									  : (effect.op == kOpInvRemove ? "given up"
-																   : "tested for"));
+		inventoryEffect(effect);
 		break;
+
+	// Everything below belongs to a system the port has not reached. The
+	// arguments are in the table, so each of these becomes a call once the
+	// system behind it lands.
 
 	case kOpSound:
 	case kOpPlaySample:
@@ -329,6 +333,23 @@ void RoomScript::runEffect(const ScriptEffect &effect) {
 			   "could not recover", _room);
 		break;
 	}
+}
+
+void RoomScript::inventoryEffect(const ScriptEffect &effect) {
+	const byte item = (byte)effect.args[0];
+	if (!_inventory)
+		return;
+
+	if (effect.op == kOpInvAdd)
+		_inventory->add(item);
+	else if (effect.op == kOpInvRemove)
+		_inventory->remove(item);
+	else
+		// A test, and its answer goes into a register the decoder could not
+		// follow, so the arm it guards is already flattened into the body. The
+		// answer is logged rather than acted on.
+		debugC(2, kDebugItems, "script: room %d asks for item %u: %s", _room, item,
+			   _inventory->has(item) ? "carried" : "not carried");
 }
 
 void RoomScript::playAnim(const ScriptEffect &effect) {
@@ -347,17 +368,22 @@ void RoomScript::playAnim(const ScriptEffect &effect) {
 				 (int)effect.args[3], mode);
 }
 
-bool RoomScript::run(byte obj, byte verb) {
+bool RoomScript::run(byte obj, byte verb, byte item) {
 	_queued = kNoEvent;
 	_submode = kNoSubmode;
 	setFlag(kActionHandled, 0);
 
+	// The click, where a room's own code reads it: an overlay tests these two
+	// directly as well as through the block guards.
+	setFlag(kUsedItem, item);
+	setFlag(kClickedObject, obj);
+
 	for (uint i = 0; i < _blockCount; i++) {
-		if (!matches(_blocks[i], obj, verb))
+		if (!matches(_blocks[i], obj, verb, item))
 			continue;
 
-		debugC(1, kDebugGraphics, "script: room %d block %u runs for object %u verb %u",
-			   _room, i, obj, verb);
+		debugC(1, kDebugGraphics, "script: room %d block %u runs for object %u verb %u item %u",
+			   _room, i, obj, verb, item);
 		execute(_blocks[i]);
 
 		// The overlay guards the blocks that follow on action_handled, so a
