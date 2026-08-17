@@ -25,17 +25,19 @@
 #include "common/scummsys.h"
 #include "common/util.h"
 
+#include "alien/roomscripts.h"
+
 namespace Alien {
 
 /**
  * One registered interactive rectangle.
  *
- * The original has no hotspot resource. Each room overlay calls one of five
- * routines in segment 1336 as it runs, passing the rectangle, the object id,
- * the verb and up to four outcome codes as immediate arguments; the routine
- * hit-tests the cursor there and then. The port lifts those arguments out of
- * the overlay disassembly instead -- see tools/gen_hotspots.py, which writes
- * hotspots.cpp -- and hit-tests the whole room's table in one pass.
+ * The original has no hotspot resource. Entry 1 of each room overlay calls one
+ * of five routines in segment 1336 as it runs, passing the rectangle, the
+ * object id, the verb and up to four outcome codes; the routine hit-tests the
+ * cursor there and then. The port lifts entry 1 out of the disassembly as the
+ * program below -- see tools/gen_hotspots.py, which writes hotspots.cpp -- runs
+ * it into an array of these, and hit-tests the whole room in one pass.
  *
  * Registration order matters: the overlay registers from the back of the room
  * forward, so where two rectangles overlap the one registered last is the one
@@ -61,12 +63,53 @@ struct Hotspot {
 	}
 };
 
+/** What one step of a room's registration program does. */
+enum HotspotOpKind {
+	kHotspotSet = 0,		///< a scratch global takes a value
+	kHotspotRegister		///< a rectangle joins the room's table
+};
+
 /**
- * The decoded hotspots of a room, in registration order. Returns null and a
- * count of zero for a room whose overlay registers nothing this table could
- * decode.
+ * One step of entry 1.
+ *
+ * A rectangle can be conditional -- the trapdoor is a hotspot only once it is
+ * open -- so every step carries the puzzle flags the overlay tests around it.
+ * A field can also be computed: the overlay writes a byte into one of the
+ * compiler temporaries it shares with the resident units and pushes that,
+ * which is how one cupboard says a different line depending on what is inside.
+ * kHotspotSet is such a write and `varOf` names the temporary a field reads.
  */
-const Hotspot *hotspotsForRoom(int room, uint &count);
+struct HotspotOp {
+	byte kind;
+	byte guardCount;
+	ScriptCond guards[3];
+
+	byte var;					///< kHotspotSet: the slot written
+	byte value;					///< kHotspotSet: what it takes
+
+	int16 x1, y1, x2, y2;
+	byte label;
+	byte obj;
+	byte verb;
+	byte outcomeCount;
+	byte outcomes[4];
+
+	/// Per field -- label, obj, verb, outcomes 1..4 -- the slot supplying it
+	/// plus one, or zero when the overlay pushed an immediate.
+	byte varOf[7];
+};
+
+/**
+ * A room's registration program in overlay order, or null with a count of zero
+ * for the one room that registers nothing at all.
+ */
+const HotspotOp *hotspotProgramForRoom(int room, uint &count);
+
+/// How many scratch slots the programs share, and what each one is in the
+/// original's data segment. An address inside the state block is a real flag
+/// the overlay reads rather than a temporary, so a slot starts from the state.
+uint hotspotVarCount();
+uint16 hotspotVarAddr(uint index);
 
 } // End of namespace Alien
 

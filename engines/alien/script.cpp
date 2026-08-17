@@ -36,6 +36,7 @@ RoomScript::RoomScript() : _anims(nullptr), _blocks(nullptr), _blockCount(0),
 
 void RoomScript::reset() {
 	memset(_flags, 0, sizeof(_flags));
+	memset(_latches, 0, sizeof(_latches));
 	_queued = kNoEvent;
 
 	// The state block is uninitialised data in the original, so a new game is
@@ -152,28 +153,99 @@ bool RoomScript::walkTarget(int clickX, int clickY, byte obj, WalkTarget &out) c
 	return true;
 }
 
+void RoomScript::buildHotspots(int room, Common::Array<Hotspot> &out) const {
+	out.clear();
+
+	uint count = 0;
+	const HotspotOp *ops = hotspotProgramForRoom(room, count);
+	if (!ops)
+		return;
+
+	// The scratch globals the program computes fields in. They are compiler
+	// temporaries in the original and carry nothing between runs, so each one
+	// starts at zero -- except where the overlay names a real flag instead, and
+	// then it starts at the flag's value and no kHotspotSet ever touches it.
+	byte vars[16];
+	const uint varCount = MIN<uint>(hotspotVarCount(), ARRAYSIZE(vars));
+	for (uint i = 0; i < varCount; i++)
+		vars[i] = flag(hotspotVarAddr(i));
+
+	for (uint i = 0; i < count; i++) {
+		const HotspotOp &op = ops[i];
+
+		bool guarded = true;
+		for (uint g = 0; g < op.guardCount && guarded; g++)
+			guarded = holds(op.guards[g]);
+		if (!guarded)
+			continue;
+
+		if (op.kind == kHotspotSet) {
+			if (op.var < varCount)
+				vars[op.var] = op.value;
+			continue;
+		}
+
+		Hotspot spot;
+		spot.x1 = op.x1;
+		spot.y1 = op.y1;
+		spot.x2 = op.x2;
+		spot.y2 = op.y2;
+		spot.label = op.label;
+		spot.obj = op.obj;
+		spot.verb = op.verb;
+		spot.outcomeCount = op.outcomeCount;
+		for (uint o = 0; o < ARRAYSIZE(spot.outcomes); o++)
+			spot.outcomes[o] = op.outcomes[o];
+
+		// varOf holds a slot plus one per field, in this order.
+		byte *fields[7] = { &spot.label, &spot.obj, &spot.verb,
+							&spot.outcomes[0], &spot.outcomes[1],
+							&spot.outcomes[2], &spot.outcomes[3] };
+		for (uint f = 0; f < ARRAYSIZE(fields); f++) {
+			const byte slot = op.varOf[f];
+			if (slot && slot - 1 < varCount)
+				*fields[f] = vars[slot - 1];
+		}
+
+		out.push_back(spot);
+	}
+}
+
+byte *RoomScript::flagSlot(uint16 addr) {
+	if (addr >= kFlagBase && addr < kFlagBase + kFlagCount)
+		return &_flags[addr - kFlagBase];
+	if (addr >= kLatchBase && addr < kLatchBase + kLatchCount)
+		return &_latches[addr - kLatchBase];
+	return nullptr;
+}
+
+const byte *RoomScript::flagSlot(uint16 addr) const {
+	return const_cast<RoomScript *>(this)->flagSlot(addr);
+}
+
 byte RoomScript::flag(uint16 addr) const {
-	if (addr < kFlagBase || addr >= kFlagBase + kFlagCount)
-		return 0;
-	return _flags[addr - kFlagBase];
+	const byte *slot = flagSlot(addr);
+	return slot ? *slot : 0;
 }
 
 void RoomScript::setFlag(uint16 addr, byte value) {
-	if (addr < kFlagBase || addr >= kFlagBase + kFlagCount) {
+	byte *slot = flagSlot(addr);
+	if (!slot) {
 		debugC(1, kDebugGraphics, "script: flag 0x%04x is outside the state block", addr);
 		return;
 	}
-	_flags[addr - kFlagBase] = value;
+	*slot = value;
 }
 
 bool RoomScript::holds(const ScriptCond &cond) const {
-	// A guard on an address outside the state block is one this port cannot
+	// A guard on an address outside the two state blocks is one this port cannot
 	// answer -- the handful that exist read the inventory and the game mode --
 	// so the arm it protects is treated as not taken rather than guessed at.
-	if (cond.addr < kFlagBase || cond.addr >= kFlagBase + kFlagCount)
+	const byte *slot = flagSlot(cond.addr);
+	if (!slot)
 		return false;
 
-	const bool equal = _flags[cond.addr - kFlagBase] == cond.value;
+	const bool equal = *slot == cond.value;
 	return cond.negate ? !equal : equal;
 }
 

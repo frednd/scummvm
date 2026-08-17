@@ -120,7 +120,7 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _tick(0),
-		_spots(nullptr), _spotCount(0), _hover(-1), _pending(-1), _pendingOutcome(0),
+		_hover(-1), _pending(-1), _pendingOutcome(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false) {
@@ -224,10 +224,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_walk.load(room, _assets);
 	_route.count = 0;
 
-	// The rectangles the room's overlay registers, lifted out of its code by
-	// tools/gen_hotspots.py. Rooms whose registrations all take their arguments
-	// from registers come back empty and stay scenery.
-	_spots = hotspotsForRoom(room, _spotCount);
+	_spots.clear();
 	_hover = -1;
 	_pending = -1;
 	stopSpeech();
@@ -242,6 +239,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// from tools/gen_roominit.py. The state block is not touched here: puzzle
 	// flags outlive the room they were set in.
 	_script.enterRoom(room);
+
+	// The rectangles the room registers, by running entry 1 of its overlay as
+	// tools/gen_hotspots.py lifted it. Which ones exist depends on the puzzle
+	// state, so this runs after the script has the room bound and again
+	// whenever a click has moved the state.
+	_script.buildHotspots(room, _spots);
 
 	// With the anim channel on, the room opens with everything in it moving
 	// rather than in its opening state -- a way to see every bank a room holds
@@ -287,7 +290,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		   "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries, "
 		   "%u labels, %u hotspots",
 		   room, secondPlate ? 'B' : 'A', plate.c_str(), _background.w, _background.h,
-		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries(), _spotCount);
+		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries(), _spots.size());
 
 	_room = room;
 
@@ -297,6 +300,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// 'g' key repeats it.
 	if (debugChannelSet(-1, kDebugWalk))
 		sweepWalkGeometry();
+	if (debugChannelSet(-1, kDebugHotspots))
+		dumpHotspots();
 	_secondPlate = secondPlate;
 	_spriteFrame = 0;
 	_dialogId = 1;
@@ -361,13 +366,30 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 	_dirty = true;
 }
 
+void AlienEngine::dumpHotspots() {
+	// What entry 1 registered for this room in the state the game is in.
+	// tools/check_hotspots.py --sweep prints the same lines out of the table it
+	// generated, so the interpreter can be diffed against the extraction.
+	debugC(1, kDebugHotspots, "spots: room %d, %u registered", _room, _spots.size());
+	for (uint i = 0; i < _spots.size(); i++) {
+		const Hotspot &spot = _spots[i];
+		Common::String outcomes;
+		for (uint o = 0; o < spot.outcomeCount; o++)
+			outcomes += Common::String::format("%s%u", o ? "," : "", spot.outcomes[o]);
+
+		debugC(1, kDebugHotspots, "spot: %3d,%3d..%3d,%3d obj %3u verb %3u label %3u -> %s",
+			   spot.x1, spot.y1, spot.x2, spot.y2, spot.obj, spot.verb, spot.label,
+			   outcomes.c_str());
+	}
+}
+
 void AlienEngine::sweepWalkGeometry() {
 	// Resolve a click on the middle of every hotspot in the room and print what
 	// the geometry made of it. tools/check_walkgeom.py --sweep prints the same
 	// lines straight from the table, so the two can be diffed to check the
 	// interpreter rather than only the extraction.
-	debugC(1, kDebugWalk, "geom: room %d, %u hotspots", _room, _spotCount);
-	for (uint i = 0; i < _spotCount; i++) {
+	debugC(1, kDebugWalk, "geom: room %d, %u hotspots", _room, _spots.size());
+	for (uint i = 0; i < _spots.size(); i++) {
 		const Hotspot &spot = _spots[i];
 		const int x = (spot.x1 + spot.x2) / 2;
 		const int y = (spot.y1 + spot.y2) / 2;
@@ -437,7 +459,7 @@ void AlienEngine::updateHover(int x, int y) {
 	// one registered last is the one that answers -- hence the whole table is
 	// scanned rather than stopping at the first match.
 	int hit = -1;
-	for (uint i = 0; i < _spotCount; i++) {
+	for (uint i = 0; i < _spots.size(); i++) {
 		if (_spots[i].contains(x, y))
 			hit = (int)i;
 	}
@@ -507,12 +529,13 @@ void AlienEngine::clickAt(int x, int y) {
 void AlienEngine::finishAction() {
 	const int index = _pending;
 	_pending = -1;
-	if (index < 0 || index >= (int)_spotCount)
+	if (index < 0 || index >= (int)_spots.size())
 		return;
 
 	// docs/dialog_system.md 1: the speech is anchored on the horizontal midpoint
-	// of the clicked object's box, at its top edge.
-	const Hotspot &spot = _spots[index];
+	// of the clicked object's box, at its top edge. Taken by value because the
+	// script below may rebuild the table this points into.
+	const Hotspot spot = _spots[index];
 	const int anchorX = (spot.x1 + spot.x2) / 2;
 	const int anchorY = spot.y1;
 
@@ -531,6 +554,14 @@ void AlienEngine::finishAction() {
 	const bool handled = _script.run(spot.obj, spot.verb);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
+
+	// The original re-registers every rectangle on the next frame, so a body
+	// that opened a door has already changed what is clickable by the time the
+	// player can click again.
+	_script.buildHotspots(_room, _spots);
+	_hover = -1;
+	const Common::Point mouse = g_system->getEventManager()->getMousePos();
+	updateHover(mouse.x, mouse.y);
 
 	debugC(1, kDebugGraphics, "action: object %u verb %u -> outcome %u, script %s",
 		   spot.obj, spot.verb, _pendingOutcome, handled ? "handled it" : "passed");
@@ -801,6 +832,8 @@ void AlienEngine::handleEvents() {
 				_dirty = true;
 			} else if (event.kbd.keycode == Common::KEYCODE_g) {
 				sweepWalkGeometry();
+			} else if (event.kbd.keycode == Common::KEYCODE_h) {
+				dumpHotspots();
 			} else if (event.kbd.keycode == Common::KEYCODE_w) {
 				_showWalk = !_showWalk;
 				_dirty = true;

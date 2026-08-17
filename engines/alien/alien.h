@@ -69,6 +69,7 @@ private:
 
 	void walkTo(int x, int y, int arrivalFacing = Walker::kFacingKeep);
 	void sweepWalkGeometry();
+	void dumpHotspots();
 	void stepClock();
 	void drawWalkOverlay();
 
@@ -111,9 +112,9 @@ private:
 	uint32 _lastTick;				///< when the master clock last advanced
 	uint32 _tick;					///< master ticks since the engine started
 
-	/// The room's registered rectangles, and which one the cursor is over.
-	const Hotspot *_spots;
-	uint _spotCount;
+	/// The room's registered rectangles as its overlay's entry 1 last built
+	/// them, and which one the cursor is over.
+	Common::Array<Hotspot> _spots;
 	int _hover;
 
 	/// Per object, how far its outcomes have been rotated through. The original

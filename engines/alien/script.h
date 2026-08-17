@@ -22,6 +22,9 @@
 #ifndef ALIEN_SCRIPT_H
 #define ALIEN_SCRIPT_H
 
+#include "common/array.h"
+
+#include "alien/hotspots.h"
 #include "alien/roomscripts.h"
 #include "alien/walkgeom.h"
 
@@ -56,6 +59,12 @@ public:
 	/// The state block: [0xa600, 0xa800). Includes action_handled at 0xa602.
 	static const uint16 kFlagBase = 0xa600;
 	static const uint kFlagCount = 0x200;
+
+	/// The second, smaller block: the one-shot latches the resident units set
+	/// the first time something happens ("Ben has already said this once").
+	/// Room overlays guard a dozen of their hotspots on these.
+	static const uint16 kLatchBase = 0x3380;
+	static const uint kLatchCount = 0x80;
 
 	/// [0xa602], set by a body that has consumed the click.
 	static const uint16 kActionHandled = 0xa602;
@@ -100,6 +109,16 @@ public:
 	 */
 	bool walkTarget(int clickX, int clickY, byte obj, WalkTarget &out) const;
 
+	/**
+	 * Runs a room's hotspot program -- entry 1 of its overlay -- into `out`.
+	 *
+	 * The original re-registers every rectangle on every frame, so which ones
+	 * exist follows the puzzle state for free. The port runs the program again
+	 * whenever the state may have moved, which comes to the same thing without
+	 * the per-frame cost.
+	 */
+	void buildHotspots(int room, Common::Array<Hotspot> &out) const;
+
 	byte flag(uint16 addr) const;
 	void setFlag(uint16 addr, byte value);
 
@@ -110,8 +129,12 @@ private:
 	void runEffect(const ScriptEffect &effect);
 	void playAnim(const ScriptEffect &effect);
 
+	byte *flagSlot(uint16 addr);
+	const byte *flagSlot(uint16 addr) const;
+
 	AnimSlots *_anims;
 	byte _flags[kFlagCount];
+	byte _latches[kLatchCount];
 	const ScriptBlock *_blocks;
 	uint _blockCount;
 	int _room;
