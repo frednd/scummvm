@@ -27,7 +27,7 @@
 // last one that matches wins, because in the original each call overwrites the
 // same two globals.
 //
-//   911 rows over 43 rooms.
+//   917 rows over 43 rooms.
 
 #include "alien/walkgeom.h"
 
@@ -251,6 +251,8 @@ static const WalkGeom kWalkGeom[] = {
 	{ kWalkSnapDown,    39,   97,   57,  147,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 39,97..57,147
 	{ kWalkZone,         0,  148,   34,  159,   50,  151,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,148..34,159 -> 50,151 facing 4
 	{ kWalkZone,        35,  152,   52,  159,   50,  151,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 35,152..52,159 -> 50,151 facing 4
+	{ kWalkObject,       1,    0,    0,    0,  114,  133,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 1 -> 114,133 facing 1
+	{ kWalkObject,       1,    0,    0,    0,  216,  141,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 1 -> 216,141 facing 1
 	{ kWalkObject,       2,    0,    0,    0,  114,  133,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 2 -> 114,133 facing 1
 	{ kWalkObject,       3,    0,    0,    0,   22,  129,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 3 -> 22,129 facing 1
 	{ kWalkObject,       4,    0,    0,    0,  319,  131,    2, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 4 -> 319,131 facing 2
@@ -273,7 +275,11 @@ static const WalkGeom kWalkGeom[] = {
 	{ kWalkSnapDown,   355,    3,  518,  109,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 355,3..518,109
 	{ kWalkSnapDown,   519,    3,  556,  105,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 519,3..556,105
 	{ kWalkSnapDown,   557,    3,  607,  118,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 557,3..607,118
+	{ kWalkObject,       1,    0,    0,    0,  327,   98,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 1 -> 327,98 facing 1
+	{ kWalkObject,       1,    0,    0,    0,  320,  116,    1, 1, { { 0xa6bb,   7, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 1 -> 320,116 facing 1
 	{ kWalkObject,       2,    0,    0,    0,  270,   98,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 2 -> 270,98 facing 4
+	{ kWalkObject,       6,    0,    0,    0,  427,  114,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 6 -> 427,114 facing 1
+	{ kWalkObject,       6,    0,    0,    0,  427,   36,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 6 -> 427,36 facing 1
 	{ kWalkObject,       4,    0,    0,    0,  536,  102,    2, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 4 -> 536,102 facing 2
 	{ kWalkObject,       8,    0,    0,    0,  190,  114,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 8 -> 190,114 facing 4
 	{ kWalkObject,       7,    0,    0,    0,   64,  122,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 7 -> 64,122 facing 4
@@ -961,42 +967,42 @@ static const WalkGeomRoom kWalkGeomRooms[] = {
 	{ 10,  126, 26 },
 	{ 11,  152, 15 },
 	{ 13,  167, 30 },
-	{ 14,  197, 30 },
-	{ 15,  227, 22 },
-	{ 17,  249, 13 },
-	{ 18,  262, 29 },
-	{ 19,  291, 20 },
-	{ 21,  311, 34 },
-	{ 22,  345, 26 },
-	{ 23,  371, 14 },
-	{ 25,  385, 16 },
-	{ 26,  401, 22 },
-	{ 27,  423, 19 },
-	{ 28,  442, 15 },
-	{ 30,  457,  1 },
-	{ 31,  458, 23 },
-	{ 32,  481, 25 },
-	{ 33,  506, 17 },
-	{ 34,  523, 12 },
-	{ 35,  535, 12 },
-	{ 40,  547, 14 },
-	{ 41,  561, 41 },
-	{ 43,  602, 26 },
-	{ 44,  628, 26 },
-	{ 45,  654, 26 },
-	{ 46,  680,  7 },
-	{ 48,  687, 13 },
-	{ 49,  700, 11 },
-	{ 50,  711, 12 },
-	{ 51,  723, 15 },
-	{ 52,  738, 21 },
-	{ 53,  759, 25 },
-	{ 54,  784, 23 },
-	{ 55,  807, 13 },
-	{ 56,  820, 24 },
-	{ 57,  844, 25 },
-	{ 58,  869, 22 },
-	{ 59,  891, 20 },
+	{ 14,  197, 32 },
+	{ 15,  229, 26 },
+	{ 17,  255, 13 },
+	{ 18,  268, 29 },
+	{ 19,  297, 20 },
+	{ 21,  317, 34 },
+	{ 22,  351, 26 },
+	{ 23,  377, 14 },
+	{ 25,  391, 16 },
+	{ 26,  407, 22 },
+	{ 27,  429, 19 },
+	{ 28,  448, 15 },
+	{ 30,  463,  1 },
+	{ 31,  464, 23 },
+	{ 32,  487, 25 },
+	{ 33,  512, 17 },
+	{ 34,  529, 12 },
+	{ 35,  541, 12 },
+	{ 40,  553, 14 },
+	{ 41,  567, 41 },
+	{ 43,  608, 26 },
+	{ 44,  634, 26 },
+	{ 45,  660, 26 },
+	{ 46,  686,  7 },
+	{ 48,  693, 13 },
+	{ 49,  706, 11 },
+	{ 50,  717, 12 },
+	{ 51,  729, 15 },
+	{ 52,  744, 21 },
+	{ 53,  765, 25 },
+	{ 54,  790, 23 },
+	{ 55,  813, 13 },
+	{ 56,  826, 24 },
+	{ 57,  850, 25 },
+	{ 58,  875, 22 },
+	{ 59,  897, 20 },
 };
 
 const WalkGeom *walkGeomForRoom(int room, uint &count) {

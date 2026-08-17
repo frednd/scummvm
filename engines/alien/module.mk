@@ -16,6 +16,7 @@ MODULE_OBJS = \
 	script.o \
 	tables.o \
 	tal.o \
+	transitions.o \
 	walk.o \
 	walkgeom.o
 

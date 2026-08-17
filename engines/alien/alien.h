@@ -74,6 +74,13 @@ private:
 	void drawWalkOverlay();
 
 	void updateHover(int x, int y);
+	void checkExit();
+	bool takeExit(byte submode);
+	void dumpExits();
+	bool takeFirstExit();
+	bool takeAnyExit(const int *avoid, uint avoidCount);
+	bool arriveAt(const WalkTarget &target);
+	void tourRooms();
 	void clickAt(int x, int y);
 	byte rotateOutcome(const Hotspot &spot);
 	void finishAction();
@@ -125,6 +132,19 @@ private:
 	/// the code the rotation picked when it was clicked.
 	int _pending;
 	byte _pendingOutcome;
+
+	/// The exit the last click armed, and the point and facing it fires at.
+	/// OBJ:sub_078dd tests all three every tick: the route has to have run out,
+	/// the arrival turn to have played, and the feet to be within three pixels.
+	byte _armed;
+	int _armedX;
+	int _armedY;
+	byte _armedFacing;
+
+	/// game_mode [0xa880]: the room the character came *from*. The original sets
+	/// it as a room's tick loop ends, so the pair the transition chain matches
+	/// on is (the room being left, the submode its exit armed).
+	byte _mode;
 
 	/// The chain of dialog ids an outcome expanded into, played one at a time.
 	byte _queue[TalFile::kMaxOutcomeIds];

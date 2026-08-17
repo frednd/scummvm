@@ -26,6 +26,7 @@
 
 #include "alien/hotspots.h"
 #include "alien/roomscripts.h"
+#include "alien/transitions.h"
 #include "alien/walkgeom.h"
 
 namespace Alien {
@@ -96,6 +97,28 @@ public:
 	/// The outcome code the last run() queued, or kNoEvent.
 	byte queuedEvent() const { return _queued; }
 
+	/// No submode. The original leaves a room only on a non-zero one.
+	static const byte kNoSubmode = 0;
+
+	/**
+	 * The submode the last run() entered, or kNoSubmode.
+	 *
+	 * A body that ends the scene sets game_submode itself rather than arming it
+	 * on an approach point, which is how a cutscene or a close-up is entered
+	 * from a click that never moved the character.
+	 */
+	byte submodeRequest() const { return _submode; }
+
+	/**
+	 * Where leaving `room` by `submode` leads, or 0 when the chain has no link
+	 * for that pair.
+	 *
+	 * This is the main loop's chain of check_event() calls, from the table in
+	 * transitions.h, scanned in the original's order: the first link whose
+	 * guards hold is the one that dispatches.
+	 */
+	int nextRoom(byte room, byte submode) const;
+
 	/**
 	 * Resolve a click into the point the character walks to.
 	 *
@@ -139,6 +162,7 @@ private:
 	uint _blockCount;
 	int _room;
 	byte _queued;
+	byte _submode;
 };
 
 } // End of namespace Alien

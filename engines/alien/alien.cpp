@@ -43,6 +43,10 @@ namespace Alien {
 // milestones were checked against.
 static const int kStartRoom = 10;
 
+// How far the debug room tour walks before it stops. The mansion's exits lead
+// back into each other, so a tour never ends on its own.
+static const uint kTourHops = 20;
+
 // Ticks per frame for the debug run-everything animation, slow enough to watch.
 static const int kDebugAnimRate = 4;
 
@@ -121,6 +125,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _tick(0),
 		_hover(-1), _pending(-1), _pendingOutcome(0),
+		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false) {
@@ -178,6 +183,9 @@ Common::Error AlienEngine::run() {
 	if (!loadRoom(start))
 		return Common::Error(Common::kReadingFailed, "Could not load the starting room");
 
+	if (debugChannelSet(2, kDebugRooms))
+		tourRooms();
+
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
 		stepClock();
@@ -227,6 +235,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_spots.clear();
 	_hover = -1;
 	_pending = -1;
+	_armed = 0;
 	stopSpeech();
 
 	// The banks the room's animation slots play, from the overlay's own load
@@ -302,6 +311,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		sweepWalkGeometry();
 	if (debugChannelSet(-1, kDebugHotspots))
 		dumpHotspots();
+	if (debugChannelSet(-1, kDebugRooms))
+		dumpExits();
 	_secondPlate = secondPlate;
 	_spriteFrame = 0;
 	_dialogId = 1;
@@ -450,6 +461,11 @@ void AlienEngine::stepClock() {
 	} else if (_pending >= 0) {
 		// He has arrived at what he was sent to; the outcome speaks now.
 		finishAction();
+	} else {
+		// And if what he was sent to was a way out of the room, the exit fires
+		// on the same arrival -- after the outcome, because the original tests
+		// it at the end of the room's tick.
+		checkExit();
 	}
 }
 
@@ -470,6 +486,157 @@ void AlienEngine::updateHover(int x, int y) {
 	_hover = hit;
 	_labelSlot = hit >= 0 ? _spots[hit].label : 0;
 	_dirty = true;
+}
+
+void AlienEngine::dumpExits() {
+	// Every way out of the room the player can click on: the object, the submode
+	// its approach point arms, and where the main loop's chain sends that pair.
+	// tools/check_transitions.py --sweep prints the same lines out of the tables,
+	// so the two interpreters can be diffed.
+	debugC(1, kDebugRooms, "exits: room %d, %u hotspots", _room, _spots.size());
+	for (uint i = 0; i < _spots.size(); i++) {
+		const Hotspot &spot = _spots[i];
+		const int x = (spot.x1 + spot.x2) / 2;
+		const int y = (spot.y1 + spot.y2) / 2;
+
+		WalkTarget target;
+		if (!_script.walkTarget(x, y, spot.obj, target) || !target.submode)
+			continue;
+
+		debugC(1, kDebugRooms, "exit: obj %3u submode %3u at %3d,%3d facing %2u -> room %d",
+			   spot.obj, target.submode, target.x, target.y, target.facing,
+			   _script.nextRoom((byte)_room, target.submode));
+	}
+}
+
+bool AlienEngine::takeFirstExit() {
+	// The debug shortcut behind the 'x' key: leave by the first exit the room
+	// has, without walking there. Puts the character on its approach point first
+	// so the arrival test sees what a real walk would leave behind.
+	return takeAnyExit(nullptr, 0);
+}
+
+bool AlienEngine::arriveAt(const WalkTarget &target) {
+	// Put the character where the walk would have left him and arm the exit the
+	// same way a click does, so the tour runs the real arrival test rather than
+	// jumping straight to the chain.
+	const int room = _room;
+	_ben.place(target.x, target.y,
+			   target.facing == Walker::kFacingKeep ? _ben.facing() : target.facing);
+	_armed = target.submode;
+	_armedX = target.x;
+	_armedY = target.y;
+	_armedFacing = target.facing;
+	checkExit();
+	return _room != room;
+}
+
+bool AlienEngine::takeAnyExit(const int *avoid, uint avoidCount) {
+	// The first exit of the room, preferring one that does not lead to a room in
+	// `avoid` -- which is how the tour covers ground instead of stepping through
+	// the same door and back again.
+	int fallback = -1;
+
+	for (uint i = 0; i < _spots.size(); i++) {
+		const Hotspot &spot = _spots[i];
+		WalkTarget target;
+		if (!_script.walkTarget((spot.x1 + spot.x2) / 2, (spot.y1 + spot.y2) / 2,
+								spot.obj, target) || !target.submode)
+			continue;
+
+		bool seen = false;
+		const int room = _script.nextRoom((byte)_room, target.submode);
+		for (uint a = 0; a < avoidCount; a++)
+			seen = seen || avoid[a] == room;
+
+		if (seen) {
+			if (fallback < 0)
+				fallback = (int)i;
+			continue;
+		}
+
+		return arriveAt(target);
+	}
+
+	if (fallback >= 0) {
+		const Hotspot &spot = _spots[fallback];
+		WalkTarget target;
+		if (_script.walkTarget((spot.x1 + spot.x2) / 2, (spot.y1 + spot.y2) / 2,
+							   spot.obj, target))
+			return arriveAt(target);
+	}
+
+	debugC(1, kDebugRooms, "exits: room %d has none", _room);
+	return false;
+}
+
+void AlienEngine::tourRooms() {
+	// --debugflags=rooms --debuglevel=2 walks the mansion instead of playing it:
+	// leave every room by its first exit and say where that landed, which runs
+	// the whole path -- geometry, arrival, chain, room load -- without a player.
+	// tools/check_transitions.py --tour prints the same lines from the tables.
+	int visited[kTourHops + 1];
+	uint count = 0;
+	visited[count++] = _room;
+
+	for (uint hop = 0; hop < kTourHops; hop++) {
+		const int from = _room;
+		if (!takeAnyExit(visited, count))
+			break;
+		debugC(2, kDebugRooms, "tour: room %d -> room %d", from, _room);
+		visited[count++] = _room;
+	}
+}
+
+void AlienEngine::checkExit() {
+	// OBJ:sub_078dd, the half of the exit mechanism the walk geometry does not
+	// hold: an armed submode fires only once the route has run out, the arrival
+	// turn has played, and the feet are within three pixels of the point the
+	// geometry named. Anything else -- he was interrupted, or the click sent him
+	// somewhere the router could not reach exactly -- leaves the exit armed.
+	if (!_armed || _speech)
+		return;
+
+	if (ABS(_ben.walkX() - _armedX) > 3 || ABS(_ben.walkY() - _armedY) > 3)
+		return;
+
+	// The facing test is a plain comparison in the original, against a global
+	// that holds 10 when no turn was owed -- and the character's own facing is
+	// only ever 1..4, so an exit whose approach point names no facing can never
+	// fire. Two rooms arm one of those; the original cannot take them either.
+	if (_ben.facing() != (int)_armedFacing)
+		return;
+
+	const byte submode = _armed;
+	_armed = 0;
+	takeExit(submode);
+}
+
+bool AlienEngine::takeExit(byte submode) {
+	// The room's tick loop ends here, and ending it is what sets game_mode to
+	// the room being left (OBJ:sub_0879a). The main loop then walks its chain of
+	// check_event() calls with that pair.
+	_mode = (byte)_room;
+
+	const int room = _script.nextRoom(_mode, submode);
+	if (!room) {
+		debugC(1, kDebugRooms, "exit: room %d submode %u has no link in the chain",
+			   _mode, submode);
+		return false;
+	}
+
+	debugC(1, kDebugRooms, "exit: room %d submode %u -> room %d", _mode, submode, room);
+
+	// Submode 111 names the room itself: a close-up or a cutscene that comes
+	// back to where it started. Reloading is the closest the port gets until
+	// those scenes are understood.
+	if (!loadRoom(room)) {
+		debugC(1, kDebugRooms, "exit: room %d would not load, staying in %d",
+			   room, _mode);
+		return false;
+	}
+
+	return true;
 }
 
 byte AlienEngine::rotateOutcome(const Hotspot &spot) {
@@ -502,10 +669,18 @@ void AlienEngine::clickAt(int x, int y) {
 	// use. See walkgeom.h and docs/walk_system.md.
 	const byte obj = _hover >= 0 ? _spots[_hover].obj : 0;
 	WalkTarget target;
+	// Every click rearms from scratch, as the original rewrites walk_submode
+	// [0xa87d] each time entry 0 runs.
+	_armed = 0;
 	if (_script.walkTarget(x, y, obj, target)) {
-		if (target.submode)
-			debugC(1, kDebugGraphics, "click: object %u arms submode %u",
-				   obj, target.submode);
+		if (target.submode) {
+			_armed = target.submode;
+			_armedX = target.x;
+			_armedY = target.y;
+			_armedFacing = target.facing;
+			debugC(1, kDebugRooms, "exit: object %u arms submode %u at %d,%d facing %u",
+				   obj, target.submode, target.x, target.y, target.facing);
+		}
 		walkTo(target.x, target.y, target.facing);
 	} else {
 		walkTo(x, y);
@@ -565,6 +740,14 @@ void AlienEngine::finishAction() {
 
 	debugC(1, kDebugGraphics, "action: object %u verb %u -> outcome %u, script %s",
 		   spot.obj, spot.verb, _pendingOutcome, handled ? "handled it" : "passed");
+
+	// A body may end the scene on its own account rather than by arming an
+	// approach point -- set_game_submode in the table -- and that leaves the room
+	// as soon as the click is over, with no arrival to wait for.
+	if (_script.submodeRequest() != RoomScript::kNoSubmode) {
+		_armed = 0;
+		takeExit(_script.submodeRequest());
+	}
 }
 
 void AlienEngine::queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY) {
@@ -834,6 +1017,9 @@ void AlienEngine::handleEvents() {
 				sweepWalkGeometry();
 			} else if (event.kbd.keycode == Common::KEYCODE_h) {
 				dumpHotspots();
+			} else if (event.kbd.keycode == Common::KEYCODE_x) {
+				dumpExits();
+				takeFirstExit();
 			} else if (event.kbd.keycode == Common::KEYCODE_w) {
 				_showWalk = !_showWalk;
 				_dirty = true;

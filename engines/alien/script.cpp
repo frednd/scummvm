@@ -30,7 +30,7 @@
 namespace Alien {
 
 RoomScript::RoomScript() : _anims(nullptr), _blocks(nullptr), _blockCount(0),
-		_room(0), _queued(kNoEvent) {
+		_room(0), _queued(kNoEvent), _submode(kNoSubmode) {
 	reset();
 }
 
@@ -38,6 +38,7 @@ void RoomScript::reset() {
 	memset(_flags, 0, sizeof(_flags));
 	memset(_latches, 0, sizeof(_latches));
 	_queued = kNoEvent;
+	_submode = kNoSubmode;
 
 	// The state block is uninitialised data in the original, so a new game is
 	// the run of writes MAIN makes before the first room -- the doors that
@@ -54,6 +55,7 @@ void RoomScript::enterRoom(int room) {
 	_room = room;
 	_blocks = scriptForRoom(room, _blockCount);
 	_queued = kNoEvent;
+	_submode = kNoSubmode;
 
 	// The room's opening setup, out of the same overlay routine that loads its
 	// banks. Without it a slot stays blank until something plays it, so a door
@@ -203,7 +205,7 @@ void RoomScript::buildHotspots(int room, Common::Array<Hotspot> &out) const {
 							&spot.outcomes[2], &spot.outcomes[3] };
 		for (uint f = 0; f < ARRAYSIZE(fields); f++) {
 			const byte slot = op.varOf[f];
-			if (slot && slot - 1 < varCount)
+			if (slot && (uint)(slot - 1) < varCount)
 				*fields[f] = vars[slot - 1];
 		}
 
@@ -298,13 +300,15 @@ void RoomScript::runEffect(const ScriptEffect &effect) {
 		playAnim(effect);
 		break;
 
+	case kOpSubmode:
+		// The room ends itself: the caller reads this back and takes the exit
+		// the chain has for it, the same as an arrival would.
+		_submode = (byte)effect.args[0];
+		break;
+
 	// Everything below belongs to a system the port has not reached. The
 	// arguments are in the table, so each of these becomes a call once the
 	// system behind it lands.
-	case kOpSubmode:
-		debugC(1, kDebugGraphics, "script: room %d enters submode %d",
-			   _room, effect.args[0]);
-		break;
 
 	case kOpInvAdd:
 	case kOpInvRemove:
@@ -345,6 +349,7 @@ void RoomScript::playAnim(const ScriptEffect &effect) {
 
 bool RoomScript::run(byte obj, byte verb) {
 	_queued = kNoEvent;
+	_submode = kNoSubmode;
 	setFlag(kActionHandled, 0);
 
 	for (uint i = 0; i < _blockCount; i++) {
@@ -364,6 +369,30 @@ bool RoomScript::run(byte obj, byte verb) {
 	}
 
 	return false;
+}
+
+int RoomScript::nextRoom(byte room, byte submode) const {
+	if (submode == kNoSubmode)
+		return 0;
+
+	uint count = 0;
+	const Transition *table = transitionTable(count);
+
+	for (uint i = 0; i < count; i++) {
+		const Transition &link = table[i];
+		if (link.mode != room || link.submode != submode)
+			continue;
+
+		bool ok = true;
+		for (uint g = 0; g < link.guardCount && ok; g++)
+			ok = holds(link.guards[g]);
+		if (!ok)
+			continue;
+
+		return link.room;
+	}
+
+	return 0;
 }
 
 } // End of namespace Alien

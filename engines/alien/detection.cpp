@@ -37,6 +37,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugAnim, "anim", "Play every animation slot on entering a room"},
 	{Alien::kDebugWalk, "walk", "Resolve a click on every hotspot on entering a room"},
 	{Alien::kDebugHotspots, "hotspots", "List the rectangles a room registers on entering it"},
+	{Alien::kDebugRooms, "rooms", "Room exits: what a click arms and where it leads"},
 	DEBUG_CHANNEL_END
 };
 
