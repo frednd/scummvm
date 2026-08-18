@@ -41,9 +41,10 @@ namespace Alien {
  * one carries the whole puzzle state, the character's position and the mode
  * bytes; the small ones carry the item tables and the click queue.
  *
- * SAVEVARS.TMP and SAVEGAME.AUT are exactly that block. A numbered slot is a
- * further 3754 bytes of still-unidentified data followed by the same block, so
- * the block is read as the tail of whichever file is given.
+ * SAVEVARS.TMP and SAVEGAME.AUT are exactly that block. A numbered slot carries
+ * the slot's preview thumbnail first -- u16 width 125, u16 height 30, then 3750
+ * bytes of a 2:1 downsample of the screen -- and the state block after it, so the
+ * block is read as the tail of whichever file is given.
  */
 struct DosRange {
 	uint16 address;		///< where the range sits in the data segment
@@ -182,8 +183,8 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 		return false;
 	}
 
-	// A numbered slot is the 3754-byte section of unidentified data followed by
-	// the state block, so the block is always the tail of the file.
+	// A numbered slot carries its 3754-byte preview thumbnail first, so the state
+	// block is always the tail of the file.
 	save->seek(save->size() - (int64)kDosStateSize);
 
 	byte *block = (byte *)malloc(kDosStateSize);
