@@ -50,6 +50,9 @@ static const uint32 kWithVerb = 0x3223;
 // MIDASmodule struct the game keeps in the executable. The music names sit in the
 // parallel table at 0x0008 and land with the replayer.
 static const uint32 kTableSfxBank = 0x1D97;
+static const uint32 kTableMusicNames = 0x0008;
+static const uint32 kTableSlotModule = 0x0B7E;
+static const uint32 kTableSlotOrder = 0x0B8C;
 static const uint32 kTableSfxNames = 0x0B9A;
 static const uint32 kModuleStride = 0x100;
 static const uint kMaxPathLength = 20;
@@ -64,6 +67,8 @@ static const uint32 kTableIconY = 0x3178;
 static const byte kItemCycleBit = 0x80;
 
 StaticTables::StaticTables() : _loaded(false) {
+	memset(_musicSlotModule, 0, sizeof(_musicSlotModule));
+	memset(_musicSlotOrder, 0, sizeof(_musicSlotOrder));
 	memset(_itemArity, 0, sizeof(_itemArity));
 	memset(_itemOutcome, 0, sizeof(_itemOutcome));
 	memset(_itemIconX, 0, sizeof(_itemIconX));
@@ -134,6 +139,18 @@ bool StaticTables::load() {
 	exe.seek(kDataSegment + kTableSfxBank);
 	if (exe.read(_sfxBank, sizeof(_sfxBank)) != sizeof(_sfxBank))
 		return false;
+
+	exe.seek(kDataSegment + kTableSlotModule);
+	if (exe.read(_musicSlotModule, sizeof(_musicSlotModule)) != sizeof(_musicSlotModule))
+		return false;
+	exe.seek(kDataSegment + kTableSlotOrder);
+	if (exe.read(_musicSlotOrder, sizeof(_musicSlotOrder)) != sizeof(_musicSlotOrder))
+		return false;
+
+	for (int i = 0; i < kMusicCount; i++) {
+		exe.seek(kDataSegment + kTableMusicNames + i * kModuleStride);
+		_musicName[i] = readName(exe, kMaxPathLength);
+	}
 
 	for (int i = 0; i < kSfxBankCount; i++) {
 		exe.seek(kDataSegment + kTableSfxNames + i * kModuleStride);
@@ -215,6 +232,24 @@ const Common::String &StaticTables::sfxName(int bank) const {
 	if (bank < 0 || bank >= kSfxBankCount)
 		return _empty;
 	return _sfxName[bank];
+}
+
+const Common::String &StaticTables::musicName(int module) const {
+	if (module < 0 || module >= kMusicCount)
+		return _empty;
+	return _musicName[module];
+}
+
+byte StaticTables::musicSlotModule(int slot) const {
+	if (slot < 0 || slot >= kMusicSlotCount)
+		return 0;
+	return _musicSlotModule[slot];
+}
+
+byte StaticTables::musicSlotOrder(int slot) const {
+	if (slot < 0 || slot >= kMusicSlotCount)
+		return 0;
+	return _musicSlotOrder[slot];
 }
 
 } // End of namespace Alien

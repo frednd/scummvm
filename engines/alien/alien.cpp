@@ -60,6 +60,12 @@ static const char *const kLanguageDir = "ENG";
 static const char *const kScriptTree = "TALFILES";
 static const char *const kLabelTree = "NAMEROOM";
 
+// The music sweeps: the rate the traces are rendered at, how many rows of each
+// slot's track the sequencer trace walks, and how long the loudness render runs.
+static const int kMusicRate = 22050;
+static const uint kMusicRows = 64;
+static const uint kMusicSeconds = 10;
+
 // The clips. The elevator sequence installs with the game; the two CDA2
 // cutscenes live on the CD, under CDA/, and are reached through --extrapath
 // when the disc's files are kept somewhere of their own.
@@ -149,7 +155,7 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _liftPlayed(false), _showWalk(false), _lastTick(0), _tick(0),
+		_room(0), _secondPlate(false), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _lastTick(0), _tick(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
@@ -256,6 +262,17 @@ Common::Error AlienEngine::run() {
 			sweepSounds();
 		if (debugChannelSet(3, kDebugSound))
 			sweepVoices();
+	}
+
+	// The music channel prints what tools/check_music.py mirrors: the module and
+	// slot tables, then the sequencer walked row by row, then the loudness of the
+	// rendered output second by second.
+	if (debugChannelSet(-1, kDebugMusic)) {
+		dumpMusic();
+		if (debugChannelSet(2, kDebugMusic))
+			sweepMusicRows();
+		if (debugChannelSet(3, kDebugMusic))
+			renderMusic();
 	}
 
 	// The video channel prints what tools/check_video.py mirrors: what the two
@@ -764,6 +781,137 @@ void AlienEngine::dumpSfx() {
 		const byte bank = _tables.sfxBank(room);
 		debugC(1, kDebugSound, "room %2d bank %3d %s", room, bank,
 			   bank == StaticTables::kSfxBankNone ? "-" : _tables.sfxName(bank).c_str());
+	}
+}
+
+/**
+ * Start a music slot, the way INPUT:music_play_slot does.
+ *
+ * The slot is not a module: two 14-byte tables turn it into a module index and
+ * the order in that module's own list the track starts at, which is why a search
+ * for module names over the overlays misses most of the music.
+ */
+void AlienEngine::playMusicSlot(uint slot) {
+	if (slot >= (uint)StaticTables::kMusicSlotCount)
+		return;
+
+	stopMusic();
+
+	const byte module = _tables.musicSlotModule(slot);
+	const byte order = _tables.musicSlotOrder(slot);
+	const Common::String &name = _tables.musicName(module);
+	if (name.empty() || !_music.load(name)) {
+		warning("could not load the music module for slot %u", slot);
+		return;
+	}
+
+	_musicSlot = (int)slot;
+	debugC(1, kDebugMusic, "slot %u: module %d %s at order %d, %u channels", slot, module,
+		   name.c_str(), order, _music.channelCount());
+
+	// The player owns nothing but the module, which outlives it, so the mixer is
+	// free to dispose of the stream when the track is stopped.
+	_mixer->playStream(Audio::Mixer::kMusicSoundType, &_musicHandle,
+					   new S3MPlayer(&_music, _mixer->getOutputRate(), order));
+}
+
+void AlienEngine::stopMusic() {
+	if (_mixer->isSoundHandleActive(_musicHandle))
+		_mixer->stopHandle(_musicHandle);
+	_musicSlot = -1;
+}
+
+void AlienEngine::dumpMusic() {
+	debugC(1, kDebugMusic, "music: %d modules, %d slots", StaticTables::kMusicCount,
+		   StaticTables::kMusicSlotCount);
+
+	for (int i = 0; i < StaticTables::kMusicCount; i++) {
+		S3MModule module;
+		if (!module.load(_tables.musicName(i)))
+			continue;
+
+		uint samples = 0;
+		for (uint s = 1; s < module.sampleCount(); s++) {
+			if (module.sample(s))
+				samples++;
+		}
+		debugC(1, kDebugMusic, "module %2d %-18s %2u channels %3u orders %2u patterns "
+			   "%2u samples speed %2u tempo %3u", i, _tables.musicName(i).c_str(),
+			   module.channelCount(), module.orderCount(), module.patternCount(), samples,
+			   module.speed(), module.tempo());
+	}
+
+	for (int slot = 0; slot < StaticTables::kMusicSlotCount; slot++) {
+		const byte module = _tables.musicSlotModule(slot);
+		debugC(1, kDebugMusic, "slot %2d module %2d order %3d %s", slot, module,
+			   _tables.musicSlotOrder(slot), _tables.musicName(module).c_str());
+	}
+}
+
+/**
+ * Step every slot's track row by row and print what the sequencer sees.
+ *
+ * This is the half of a replayer that can be checked exactly: which pattern each
+ * order names, where Bxx and Cxx send the song next, and what every cell of the
+ * rows it walks through holds.
+ */
+void AlienEngine::sweepMusicRows() {
+	for (int slot = 0; slot < StaticTables::kMusicSlotCount; slot++) {
+		const byte index = _tables.musicSlotModule(slot);
+		S3MModule module;
+		if (!module.load(_tables.musicName(index)))
+			continue;
+
+		S3MPlayer player(&module, kMusicRate, _tables.musicSlotOrder(slot));
+		for (uint i = 0; i < kMusicRows; i++) {
+			S3MPlayer::RowTrace trace;
+			if (!player.traceRow(trace))
+				break;
+
+			for (uint channel = 0; channel < module.channelCount(); channel++) {
+				const S3MModule::Cell &cell = module.cell(trace.pattern, trace.row, channel);
+				if (cell.note == S3MModule::kNoteEmpty && !cell.instrument &&
+					cell.volume == S3MModule::kVolumeEmpty && !cell.command)
+					continue;
+
+				debugC(2, kDebugMusic, "row slot %2d order %3u pat %3u row %2u ch %u "
+					   "note %3u ins %2u vol %3u fx %c%02X", slot, trace.order, trace.pattern,
+					   trace.row, channel, cell.note, cell.instrument, cell.volume,
+					   cell.command ? (char)('A' + cell.command - 1) : '-', cell.info);
+			}
+		}
+	}
+}
+
+/**
+ * Render each module from its own start and print the loudness second by second.
+ *
+ * A replayer can walk the right rows and still play them wrong, and that is not
+ * something a table mirror can catch. What it does show up in is the shape of the
+ * output, so tools/check_video.py's neighbour tools/check_music.py renders the
+ * same modules with a known-good tracker and compares these numbers.
+ */
+void AlienEngine::renderMusic() {
+	Common::Array<int16> buffer;
+	buffer.resize(kMusicRate);
+
+	for (int i = 0; i < StaticTables::kMusicCount; i++) {
+		S3MModule module;
+		if (!module.load(_tables.musicName(i)))
+			continue;
+
+		S3MPlayer player(&module, kMusicRate, 0);
+		for (uint second = 0; second < kMusicSeconds; second++) {
+			player.readBuffer(&buffer[0], kMusicRate);
+
+			uint64 square = 0;
+			for (int s = 0; s < kMusicRate; s++)
+				square += (int64)buffer[s] * buffer[s];
+
+			const uint rms = (uint)sqrt((double)(square / kMusicRate));
+			debugC(3, kDebugMusic, "rms %-18s second %2u %5u", _tables.musicName(i).c_str(),
+				   second, rms);
+		}
 	}
 }
 
@@ -1712,6 +1860,16 @@ void AlienEngine::handleEvents() {
 				// The second plate is the B state, the right half of a wide
 				// room or the close-up, depending on the room.
 				loadRoom(_room, !_secondPlate);
+			} else if (event.kbd.keycode == Common::KEYCODE_m) {
+				// Step through the music slots. Which slot a room asks for is
+				// not in any table -- the calls are inside the cluster code and
+				// have not been lifted yet -- so until they are, this is the
+				// only way the tracks are reached.
+				const int next = _musicSlot + 1;
+				if (next >= StaticTables::kMusicSlotCount)
+					stopMusic();
+				else
+					playMusicSlot((uint)next);
 			}
 			break;
 		case Common::EVENT_MOUSEMOVE:

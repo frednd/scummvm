@@ -33,6 +33,7 @@
 #include "alien/hotspots.h"
 #include "alien/inventory.h"
 #include "alien/overlay.h"
+#include "alien/s3m.h"
 #include "alien/script.h"
 #include "alien/sfx.h"
 #include "alien/tables.h"
@@ -82,6 +83,11 @@ private:
 	void lookAtItem(byte item);
 	void dumpItems();
 	void dumpSfx();
+	void playMusicSlot(uint slot);
+	void stopMusic();
+	void dumpMusic();
+	void sweepMusicRows();
+	void renderMusic();
 	void playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles = nullptr);
 	void drawSubtitle(const CDA2Decoder &video, const byte *palette);
 	uint subtitleLanguage() const;
@@ -134,6 +140,12 @@ private:
 
 	/// The resident sample bank, the three voices and the delay queue.
 	SoundFX _sound;
+
+	/// The module playing now, if any, and the mixer channel it is on. One track
+	/// is resident at a time, the way MIDAS holds one module.
+	S3MModule _music;
+	Audio::SoundHandle _musicHandle;
+	int _musicSlot;
 
 	/// [0x33de]: the elevator clip plays once per session, on the first entry
 	/// into one of the rooms the lift serves, and never again.

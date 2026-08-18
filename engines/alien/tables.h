@@ -54,6 +54,11 @@ public:
 	/// How many outcome codes an item's record holds.
 	static const int kItemOutcomes = 4;
 
+	/// The eleven music modules, and the fourteen slots most music changes name
+	/// instead of naming a module.
+	static const int kMusicCount = 11;
+	static const int kMusicSlotCount = 14;
+
 	/// The 18 SFX sample banks, one of which is resident at a time.
 	static const int kSfxBankCount = 18;
 
@@ -121,6 +126,18 @@ public:
 	/// The bank's file name, "SFX\\MAN_FX_1.S3M" and the like.
 	const Common::String &sfxName(int bank) const;
 
+	/// A music module's file name, "MUSIC\\LEOHOU2.S3M" and the like.
+	const Common::String &musicName(int module) const;
+
+	/**
+	 * What a music slot resolves to: which module, and the order in the module's
+	 * own list the track starts at. Most music changes call
+	 * INPUT:music_play_slot with a slot number rather than naming a module, so
+	 * neither the module nor its starting order appears at the call site.
+	 */
+	byte musicSlotModule(int slot) const;
+	byte musicSlotOrder(int slot) const;
+
 private:
 	Common::String _background[kRoomCount];
 	Common::String _secondPlate[kRoomCount];
@@ -142,6 +159,10 @@ private:
 
 	byte _sfxBank[kSfxRoomCount];
 	Common::String _sfxName[kSfxBankCount];
+
+	Common::String _musicName[kMusicCount];
+	byte _musicSlotModule[kMusicSlotCount];
+	byte _musicSlotOrder[kMusicSlotCount];
 
 	bool _loaded;
 };
