@@ -16,6 +16,7 @@ MODULE_OBJS = \
 	roomscripts.o \
 	script.o \
 	s3m.o \
+	saveload.o \
 	sfx.o \
 	tables.o \
 	tal.o \

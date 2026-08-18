@@ -23,6 +23,7 @@
 #define ALIEN_INVENTORY_H
 
 #include "common/scummsys.h"
+#include "common/serializer.h"
 #include "common/str.h"
 #include "graphics/surface.h"
 
@@ -127,6 +128,12 @@ public:
 
 	/** For the debug dump: the raw list, index 1..100. */
 	byte at(uint index) const { return index < kListSize ? _list[index] : kNoItem; }
+
+	/// Overwrite the per-item look counters, as an imported save does.
+	void setCounters(const byte *counters, uint count);
+
+	/// The list, the counters and which page of the bar is showing.
+	void syncGame(Common::Serializer &s);
 
 private:
 	void blit(Graphics::Surface &dest, const Graphics::Surface &src,

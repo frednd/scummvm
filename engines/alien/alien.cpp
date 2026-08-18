@@ -264,6 +264,15 @@ Common::Error AlienEngine::run() {
 			sweepVoices();
 	}
 
+	// The save channel prints what tools/check_save.py mirrors: what the
+	// original's own saves hold, and at level 3 the engine's state taken through
+	// a save and back.
+	if (debugChannelSet(-1, kDebugSave)) {
+		dumpSaves();
+		if (debugChannelSet(3, kDebugSave))
+			checkSaveRoundTrip();
+	}
+
 	// The music channel prints what tools/check_music.py mirrors: the module and
 	// slot tables, then the sequencer walked row by row, then the loudness of the
 	// rendered output second by second.
@@ -1860,6 +1869,12 @@ void AlienEngine::handleEvents() {
 				// The second plate is the B state, the right half of a wide
 				// room or the close-up, depending on the room.
 				loadRoom(_room, !_secondPlate);
+			} else if (event.kbd.keycode == Common::KEYCODE_F9) {
+				// Pick up where the original left off: the state block of its own
+				// save, applied to this engine. The room is not in that block, so
+				// what comes back is the puzzle state and the character, not the
+				// place.
+				importDosSave("SAVEGAME.0", true);
 			} else if (event.kbd.keycode == Common::KEYCODE_m) {
 				// Step through the music slots. Which slot a room asks for is
 				// not in any table -- the calls are inside the cluster code and

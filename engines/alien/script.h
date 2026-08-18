@@ -23,6 +23,7 @@
 #define ALIEN_SCRIPT_H
 
 #include "common/array.h"
+#include "common/serializer.h"
 
 #include "alien/hotspots.h"
 #include "alien/roomscripts.h"
@@ -160,6 +161,9 @@ public:
 
 	byte flag(uint16 addr) const;
 	void setFlag(uint16 addr, byte value);
+
+	/// The whole state block and the latches, which is all a save carries.
+	void syncGame(Common::Serializer &s);
 
 private:
 	bool holds(const ScriptCond &cond) const;

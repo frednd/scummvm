@@ -441,4 +441,11 @@ int RoomScript::nextRoom(byte room, byte submode) const {
 	return 0;
 }
 
+void RoomScript::syncGame(Common::Serializer &s) {
+	s.syncBytes(_flags, kFlagCount);
+	s.syncBytes(_latches, kLatchCount);
+	s.syncAsByte(_queued);
+	s.syncAsByte(_submode);
+}
+
 } // End of namespace Alien

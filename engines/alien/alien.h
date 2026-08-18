@@ -23,6 +23,7 @@
 #define ALIEN_ALIEN_H
 
 #include "common/language.h"
+#include "common/serializer.h"
 #include "engines/engine.h"
 #include "graphics/surface.h"
 
@@ -58,6 +59,12 @@ public:
 
 	Common::Error run() override;
 
+	bool hasFeature(EngineFeature f) const override;
+	Common::Error saveGameStream(Common::WriteStream *stream, bool isAutosave = false) override;
+	Common::Error loadGameStream(Common::SeekableReadStream *stream) override;
+	bool canSaveGameStateCurrently(Common::U32String *msg = nullptr) override;
+	bool canLoadGameStateCurrently(Common::U32String *msg = nullptr) override;
+
 	const ADGameDescription *_gameDescription;
 	const char *getGameId() const;
 	Common::Language getLanguage() const;
@@ -83,6 +90,10 @@ private:
 	void lookAtItem(byte item);
 	void dumpItems();
 	void dumpSfx();
+	void syncGame(Common::Serializer &s);
+	bool importDosSave(const Common::String &file, bool apply);
+	void dumpSaves();
+	void checkSaveRoundTrip();
 	void playMusicSlot(uint slot);
 	void stopMusic();
 	void dumpMusic();

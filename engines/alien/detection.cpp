@@ -40,6 +40,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugRooms, "rooms", "Room exits: what a click arms and where it leads"},
 	{Alien::kDebugItems, "items", "The inventory: the list, the bar and item use"},
 	{Alien::kDebugSound, "sound", "Sound effects: the sample banks, the voices and the queue"},
+	{Alien::kDebugSave, "save", "Save and load: the original saves and the round trip"},
 	{Alien::kDebugMusic, "music", "Music: the S3M replayer, its module table and its slots"},
 	{Alien::kDebugVideo, "video", "Video: the MA1 elevator clip and the CDA2 cutscenes"},
 	DEBUG_CHANNEL_END

@@ -378,4 +378,19 @@ void Inventory::draw(const StaticTables &tables, Graphics::Surface &dest,
 	drawThumb(dest);
 }
 
+void Inventory::setCounters(const byte *counters, uint count) {
+	for (uint i = 0; i < count && i < kListSize; i++)
+		_counter[i] = counters[i];
+}
+
+void Inventory::syncGame(Common::Serializer &s) {
+	s.syncBytes(_list, kListSize);
+	s.syncBytes(_counter, kListSize);
+
+	uint16 page = (uint16)_page;
+	s.syncAsUint16LE(page);
+	if (s.isLoading())
+		_page = page;
+}
+
 } // End of namespace Alien

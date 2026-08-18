@@ -52,7 +52,10 @@ Common::Error AlienMetaEngine::createInstance(OSystem *syst, Engine **engine, co
 }
 
 bool AlienMetaEngine::hasFeature(MetaEngineFeature f) const {
-	return false;
+	return f == kSupportsListSaves ||
+		   f == kSupportsLoadingDuringStartup ||
+		   f == kSupportsDeleteSave ||
+		   f == kSimpleSavesNames;
 }
 
 #if PLUGIN_ENABLED_DYNAMIC(ALIEN)
