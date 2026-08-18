@@ -34,6 +34,7 @@
 #include "alien/inventory.h"
 #include "alien/overlay.h"
 #include "alien/script.h"
+#include "alien/sfx.h"
 #include "alien/tables.h"
 #include "alien/tal.h"
 #include "alien/walk.h"
@@ -79,6 +80,9 @@ private:
 	void holdItem(byte item);
 	void lookAtItem(byte item);
 	void dumpItems();
+	void dumpSfx();
+	void sweepSounds();
+	void sweepVoices();
 	void sweepItemLooks();
 	void dumpItemUses();
 	void sweepClicks();
@@ -118,6 +122,9 @@ private:
 
 	RoomScript _script;			///< the room's own reaction to a click
 	AnimSlots _anims;			///< the room's DL1 banks and what is playing on them
+
+	/// The resident sample bank, the three voices and the delay queue.
+	SoundFX _sound;
 
 	Walk _walk;
 	WalkRoute _route;

@@ -32,9 +32,9 @@ namespace Alien {
  *
  * There is no separate resource file for these: the executable itself is the
  * table store, and the detection entry pins it by MD5, so the offsets can be
- * hardcoded. Only the two room plate tables are read for now; the same segment
- * also holds the music and SFX module paths and the verb names, which land
- * with the systems that need them.
+ * hardcoded. The room plates, the verb names, the item records and the SFX bank
+ * selector are read; the music module paths in the same segment land with the
+ * replayer.
  */
 class StaticTables {
 public:
@@ -53,6 +53,16 @@ public:
 
 	/// How many outcome codes an item's record holds.
 	static const int kItemOutcomes = 4;
+
+	/// The 18 SFX sample banks, one of which is resident at a time.
+	static const int kSfxBankCount = 18;
+
+	/// The bank selector is only meaningful up to the last scene handler; past
+	/// that the bytes belong to something else.
+	static const int kSfxRoomCount = 0x3C;
+
+	/// What the selector holds for a room that keeps whatever bank is loaded.
+	static const byte kSfxBankNone = 0xFF;
 
 	StaticTables();
 
@@ -97,6 +107,20 @@ public:
 	int itemIconX(int item) const;
 	int itemIconY(int item) const;
 
+	/**
+	 * Which SFX sample bank a room's effects come out of, or kSfxBankNone for a
+	 * room that keeps the bank it was entered with. The table at DS:0x1D97 is
+	 * indexed by the handler code, which is the room number itself.
+	 *
+	 * Index 0 is also the table's fill value, so a room reading 0 may have been
+	 * given MAN_FX_1 deliberately or may simply be unset. The original does not
+	 * tell the two apart either: only 0xFF suppresses the load.
+	 */
+	byte sfxBank(int room) const;
+
+	/// The bank's file name, "SFX\\MAN_FX_1.S3M" and the like.
+	const Common::String &sfxName(int bank) const;
+
 private:
 	Common::String _background[kRoomCount];
 	Common::String _secondPlate[kRoomCount];
@@ -115,6 +139,9 @@ private:
 
 	uint16 _itemIconX[kItemCount];
 	uint16 _itemIconY[kItemCount];
+
+	byte _sfxBank[kSfxRoomCount];
+	Common::String _sfxName[kSfxBankCount];
 
 	bool _loaded;
 };

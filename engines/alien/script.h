@@ -33,6 +33,7 @@ namespace Alien {
 
 class AnimSlots;
 class Inventory;
+class SoundFX;
 
 /** Where a click sends the character, as the room's walk geometry decides. */
 struct WalkTarget {
@@ -87,6 +88,9 @@ public:
 
 	/// The list an inv_add / inv_remove / inv_has effect works on. Not owned.
 	void setInventory(Inventory *inventory) { _inventory = inventory; }
+
+	/// The bank and voices a sound / play_sample effect triggers. Not owned.
+	void setSound(SoundFX *sound) { _sound = sound; }
 
 	/// Clears the whole state block, as starting a new game does.
 	void reset();
@@ -164,12 +168,14 @@ private:
 	void runEffect(const ScriptEffect &effect);
 	void playAnim(const ScriptEffect &effect);
 	void inventoryEffect(const ScriptEffect &effect);
+	void soundEffect(const ScriptEffect &effect);
 
 	byte *flagSlot(uint16 addr);
 	const byte *flagSlot(uint16 addr) const;
 
 	AnimSlots *_anims;
 	Inventory *_inventory;
+	SoundFX *_sound;
 	byte _flags[kFlagCount];
 	byte _latches[kLatchCount];
 	const ScriptBlock *_blocks;

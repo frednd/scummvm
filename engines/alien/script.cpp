@@ -27,10 +27,11 @@
 #include "alien/inventory.h"
 #include "alien/roominit.h"
 #include "alien/script.h"
+#include "alien/sfx.h"
 
 namespace Alien {
 
-RoomScript::RoomScript() : _anims(nullptr), _inventory(nullptr), _blocks(nullptr), _blockCount(0),
+RoomScript::RoomScript() : _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
 		_room(0), _queued(kNoEvent), _submode(kNoSubmode) {
 	reset();
 }
@@ -319,13 +320,9 @@ void RoomScript::runEffect(const ScriptEffect &effect) {
 		inventoryEffect(effect);
 		break;
 
-	// Everything below belongs to a system the port has not reached. The
-	// arguments are in the table, so each of these becomes a call once the
-	// system behind it lands.
-
 	case kOpSound:
 	case kOpPlaySample:
-		debugC(2, kDebugGraphics, "script: sound %d", effect.args[0]);
+		soundEffect(effect);
 		break;
 
 	default:
@@ -350,6 +347,29 @@ void RoomScript::inventoryEffect(const ScriptEffect &effect) {
 		// answer is logged rather than acted on.
 		debugC(2, kDebugItems, "script: room %d asks for item %u: %s", _room, item,
 			   _inventory->has(item) ? "carried" : "not carried");
+}
+
+void RoomScript::soundEffect(const ScriptEffect &effect) {
+	if (!_sound)
+		return;
+
+	// sound(n): INPUT:0x194 fills the rest in -- centred, full volume, 11000 Hz.
+	if (effect.op == kOpSound) {
+		_sound->play(effect.args[0], SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
+		return;
+	}
+
+	// play_sample(sample, rate high, rate low, volume, panning, delay): the rate
+	// reaches INPUT:0x55E as two words, and the panning is signed.
+	if (effect.argCount < 6) {
+		debugC(1, kDebugSound, "script: room %d queues a sample whose arguments "
+			   "the table does not have", _room);
+		return;
+	}
+
+	const uint32 rate = ((uint32)effect.args[1] << 16) | effect.args[2];
+	_sound->queue(effect.args[0], rate, (byte)effect.args[3],
+				  (int8)(int16)effect.args[4], effect.args[5]);
 }
 
 void RoomScript::playAnim(const ScriptEffect &effect) {

@@ -32,6 +32,7 @@ enum AlienDebugChannels {
 	kDebugHotspots,
 	kDebugRooms,
 	kDebugItems,
+	kDebugSound,
 };
 
 } // End of namespace Alien

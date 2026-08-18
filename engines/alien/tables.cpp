@@ -45,6 +45,15 @@ static const uint32 kWalkVerb = 0x3202;
 static const uint32 kUseVerb = 0x3218;
 static const uint32 kWithVerb = 0x3223;
 
+// The SFX side of the audio tables: a bank selector indexed by the room, and the
+// bank file names as Pascal strings on a 256-byte stride -- the tail of a
+// MIDASmodule struct the game keeps in the executable. The music names sit in the
+// parallel table at 0x0008 and land with the replayer.
+static const uint32 kTableSfxBank = 0x1D97;
+static const uint32 kTableSfxNames = 0x0B9A;
+static const uint32 kModuleStride = 0x100;
+static const uint kMaxPathLength = 20;
+
 // The item tables, all indexed by item id: how many outcome codes the item has
 // with bit 7 the wrap flag, the codes themselves, and where the item's icon sits
 // in the icon page. See docs/inventory_system.md.
@@ -65,12 +74,12 @@ StaticTables::StaticTables() : _loaded(false) {
  * Read one Pascal ShortString out of an already positioned stream. Slots the
  * game never uses hold a zero length or blanks, both of which come back empty.
  */
-static Common::String readName(Common::File &exe) {
+static Common::String readName(Common::File &exe, uint limit = kMaxNameLength) {
 	byte length = exe.readByte();
-	if (length > kMaxNameLength)
+	if (length > limit)
 		return Common::String();
 
-	char buffer[kMaxNameLength + 1];
+	char buffer[kMaxPathLength + 1];
 	if (exe.read(buffer, length) != length)
 		return Common::String();
 	buffer[length] = '\0';
@@ -121,6 +130,15 @@ bool StaticTables::load() {
 	exe.seek(kDataSegment + kTableItemOutcomes);
 	if (exe.read(_itemOutcome, sizeof(_itemOutcome)) != sizeof(_itemOutcome))
 		return false;
+
+	exe.seek(kDataSegment + kTableSfxBank);
+	if (exe.read(_sfxBank, sizeof(_sfxBank)) != sizeof(_sfxBank))
+		return false;
+
+	for (int i = 0; i < kSfxBankCount; i++) {
+		exe.seek(kDataSegment + kTableSfxNames + i * kModuleStride);
+		_sfxName[i] = readName(exe, kMaxPathLength);
+	}
 
 	for (int i = 0; i < kItemCount; i++) {
 		exe.seek(kDataSegment + kTableIconX + i * 2);
@@ -185,6 +203,18 @@ int StaticTables::itemIconY(int item) const {
 	if (item < 1 || item >= kItemCount)
 		return 0;
 	return _itemIconY[item];
+}
+
+byte StaticTables::sfxBank(int room) const {
+	if (room < 0 || room >= kSfxRoomCount)
+		return kSfxBankNone;
+	return _sfxBank[room];
+}
+
+const Common::String &StaticTables::sfxName(int bank) const {
+	if (bank < 0 || bank >= kSfxBankCount)
+		return _empty;
+	return _sfxName[bank];
 }
 
 } // End of namespace Alien

@@ -44,10 +44,10 @@ namespace Alien {
  * whose object, verb, held item and preconditions all match, which is how the
  * original behaves once a body sets action_handled.
  *
- * Effects belonging to a system the port has not reached yet -- sound -- are still
- * in the table with their arguments, so wiring one up is an arm in the
- * interpreter's switch. Bodies the disassembler could not fully recover carry
- * kOpUnsupported.
+ * Bodies the disassembler could not fully recover carry kOpUnsupported, and so do
+ * effects whose arguments it lost to a register: an effect that cannot be run
+ * with the arguments the original passed is not run at all, rather than run with
+ * guesses.
  */
 enum ScriptOpcode {
 	kOpUnsupported = 0,	///< recovered as code, not as arguments; skipped
@@ -58,8 +58,9 @@ enum ScriptOpcode {
 	kOpAnimPlay1,		///< args: slot, first frame, frame count, rate
 	kOpAnimPlay2,		///< as mode 1, then back to the frame it started on
 	kOpAnimPlay3,		///< as mode 1, but backward through the count
-	kOpSound,			///< args: sound slot
-	kOpPlaySample,		///< args: sample, ?, rate, volume, ?, delay
+	kOpSound,			///< args: sample -- INPUT:0x194, centred, full, 11000 Hz
+	kOpPlaySample,		///< args: sample, rate high, rate low, volume, panning
+						///< (signed), delay in ticks -- INPUT:0x55E, the queue
 	kOpInvAdd,			///< args: item id -- OBJ:0x69d5, append to the inventory
 	kOpInvRemove,		///< args: item id -- OBJ:0x6a71, close the gap behind it
 	kOpInvHas			///< args: item id -- OBJ:0x6add; a test, and its answer went

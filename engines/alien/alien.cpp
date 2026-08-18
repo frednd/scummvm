@@ -147,6 +147,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 	// overlay's own body calls MIDAS, and inv_add / inv_remove work the list.
 	_script.setAnims(&_anims);
 	_script.setInventory(&_inventory);
+	_script.setSound(&_sound);
 }
 
 AlienEngine::~AlienEngine() {
@@ -156,6 +157,7 @@ AlienEngine::~AlienEngine() {
 
 Common::Error AlienEngine::run() {
 	initGraphics(kScreenWidth, kScreenHeight);
+	_sound.init(_mixer);
 
 	// The text and label trees are subdirectories, so they need registering
 	// before Common::File can reach into them by name.
@@ -221,6 +223,17 @@ Common::Error AlienEngine::run() {
 			sweepItemLooks();
 	}
 
+	// The sound channel prints what tools/check_sfx.py mirrors: the banks and
+	// their samples with the room-to-bank table, and at level 2 every trigger the
+	// script table holds with the sample its own room's bank gives it.
+	if (debugChannelSet(-1, kDebugSound)) {
+		dumpSfx();
+		if (debugChannelSet(2, kDebugSound))
+			sweepSounds();
+		if (debugChannelSet(3, kDebugSound))
+			sweepVoices();
+	}
+
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
 		stepClock();
@@ -275,6 +288,13 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_pendingItem = Inventory::kNoItem;
 	_armed = 0;
 	stopSpeech();
+
+	// The room's sample bank, and with it the queue flush the original does on
+	// the way out of a room. Loaded before the script is entered, in case the
+	// room's opening setup triggers an effect.
+	if (_sound.enterRoom(_tables, room))
+		debugC(1, kDebugSound, "room %d: bank %d %s, %u slots", room, _sound.bankIndex(),
+			   _sound.bank().file().c_str(), _sound.bank().slotCount());
 
 	// The banks the room's animation slots play, from the overlay's own load
 	// calls. Loaded before the script is entered, because entering it runs the
@@ -477,6 +497,10 @@ void AlienEngine::stepClock() {
 	_lastTick = now;
 	_tick++;
 
+	// The delay queue is serviced every tick, but its countdowns only step on the
+	// tick pair -- INPUT:0x5D9 tests the same [0xa5fc] the slots do.
+	_sound.tick((_tick & 1) == 0);
+
 	if ((_tick & 1) == 0) {
 		// The animation slots advance under the same tick-pair gate as the
 		// dialog countdown -- MIDAS:0x1a6a tests [0xa5fc], not the animation
@@ -660,6 +684,115 @@ void AlienEngine::sweepItemLooks() {
 		const int clicks = _tables.itemArity(item) + 2;
 		for (int i = 0; i < clicks; i++)
 			_inventory.lookOutcome(_tables, (byte)item);
+	}
+}
+
+void AlienEngine::dumpSfx() {
+	debugC(1, kDebugSound, "banks: %d in the table", StaticTables::kSfxBankCount);
+
+	for (int bank = 0; bank < StaticTables::kSfxBankCount; bank++) {
+		SoundBank loaded;
+		if (!loaded.load(_tables.sfxName(bank)))
+			continue;
+
+		uint samples = 0;
+		for (uint slot = 1; slot <= loaded.slotCount(); slot++) {
+			if (loaded.sample(slot))
+				samples++;
+		}
+		debugC(1, kDebugSound, "bank %2d %-18s %2u slots %2u samples", bank,
+			   loaded.file().c_str(), loaded.slotCount(), samples);
+
+		for (uint slot = 1; slot <= loaded.slotCount(); slot++) {
+			const SoundBank::Sample *sample = loaded.sample(slot);
+			if (!sample)
+				continue;
+			debugC(1, kDebugSound, "sample %2d %2u %6u bytes %5u Hz %s", bank, slot,
+				   sample->length, sample->c2spd, sample->name.c_str());
+		}
+	}
+
+	// Which bank each room's effects come out of. Index 0 is also the table's
+	// fill value, so a room reading MAN_FX_1 may simply never have been assigned.
+	for (int room = 0; room < StaticTables::kSfxRoomCount; room++) {
+		const byte bank = _tables.sfxBank(room);
+		debugC(1, kDebugSound, "room %2d bank %3d %s", room, bank,
+			   bank == StaticTables::kSfxBankNone ? "-" : _tables.sfxName(bank).c_str());
+	}
+}
+
+void AlienEngine::sweepSounds() {
+	// Every sound the script table can make, with the sample it names resolved
+	// through the bank the room it belongs to loads. A trigger naming an empty
+	// slot would be silent in the original too, so it is reported rather than
+	// treated as an error.
+	SoundBank bank;
+	int loadedIndex = -1;
+
+	for (int room = 0; room < StaticTables::kSfxRoomCount; room++) {
+		uint blockCount = 0;
+		const ScriptBlock *blocks = scriptForRoom(room, blockCount);
+		if (!blocks)
+			continue;
+
+		const byte index = _tables.sfxBank(room);
+		if (index != StaticTables::kSfxBankNone && (int)index != loadedIndex)
+			loadedIndex = bank.load(_tables.sfxName(index)) ? (int)index : -1;
+
+		for (uint b = 0; b < blockCount; b++) {
+			const ScriptBlock &block = blocks[b];
+			for (uint e = 0; e < block.count; e++) {
+				const ScriptEffect &effect = *scriptEffect(block.first + e);
+				if (effect.op != kOpSound && effect.op != kOpPlaySample)
+					continue;
+
+				const uint slot = effect.args[0];
+				const bool queued = effect.op == kOpPlaySample;
+				const uint32 rate = queued ? (((uint32)effect.args[1] << 16) | effect.args[2])
+										   : SoundFX::kDefaultRate;
+				const byte volume = queued ? (byte)effect.args[3] : SoundFX::kFullVolume;
+				const int panning = queued ? (int)(int8)(int16)effect.args[4] : 0;
+				const uint delay = queued ? effect.args[5] : 0;
+				const SoundBank::Sample *sample = bank.sample(slot);
+
+				debugC(1, kDebugSound, "trigger: room %2d obj %3d verb %2d slot %2u "
+					   "%5u Hz vol %2u pan %3d delay %3u bank %3d %s", room, block.obj,
+					   block.verb, slot, rate, volume, panning, delay, loadedIndex,
+					   sample ? sample->name.c_str() : "(empty slot)");
+			}
+		}
+	}
+}
+
+void AlienEngine::sweepVoices() {
+	// The two things about playback that are behaviour rather than table: the
+	// three voices are handed out round-robin, so every fourth effect reuses the
+	// first, and a queued trigger waits out its countdown on the tick pair. Both
+	// are driven here against the room's own bank.
+	const SoundBank &bank = _sound.bank();
+	debugC(1, kDebugSound, "voices: bank %d %s, %u slots", _sound.bankIndex(),
+		   bank.file().c_str(), bank.slotCount());
+
+	Common::Array<uint> filled;
+	for (uint slot = 1; slot <= bank.slotCount(); slot++) {
+		if (bank.sample(slot))
+			filled.push_back(slot);
+	}
+
+	for (uint i = 0; i < filled.size(); i++)
+		_sound.play(filled[i], SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
+
+	// Queued out of order on purpose: the queue is scanned slot by slot, so what
+	// decides the firing order is the countdown, not when the trigger was made.
+	static const uint16 kDelays[] = { 3, 1, 0, 2 };
+	for (uint i = 0; i < ARRAYSIZE(kDelays) && i < filled.size(); i++)
+		_sound.queue(filled[i], SoundFX::kDefaultRate, SoundFX::kFullVolume, 0, kDelays[i]);
+
+	for (uint tick = 0; tick < 8; tick++) {
+		const bool pairTick = (tick & 1) == 0;
+		_sound.tick(pairTick);
+		debugC(1, kDebugSound, "queue: tick %u %s, %u waiting", tick,
+			   pairTick ? "pair" : "odd ", _sound.pending());
 	}
 }
 
