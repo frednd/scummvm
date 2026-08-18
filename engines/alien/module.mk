@@ -19,6 +19,7 @@ MODULE_OBJS = \
 	tables.o \
 	tal.o \
 	transitions.o \
+	video.o \
 	walk.o \
 	walkgeom.o
 

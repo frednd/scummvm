@@ -60,6 +60,24 @@ static const char *const kLanguageDir = "ENG";
 static const char *const kScriptTree = "TALFILES";
 static const char *const kLabelTree = "NAMEROOM";
 
+// The clips. The elevator sequence installs with the game; the two CDA2
+// cutscenes live on the CD, under CDA/, and are reached through --extrapath
+// when the disc's files are kept somewhere of their own.
+static const char *const kLiftClip = "ANIMS/SHIPLIFT.MA1";
+static const char *const kCutscenes[] = { "ALINTRO.CDA", "ALIEND.CDA" };
+
+// Where the CDA2 players put a subtitle: the records in the file carry y = 172
+// themselves, and a negative x means the line is centred.
+static const int kSubtitleY = 172;
+
+// How many frames of each cutscene the checksum sweep decodes. The intro is
+// 74 MB; a prefix proves the codec and keeps the run short.
+static const int kSweepFrames = 200;
+
+// The rooms the alien ship's lift serves: the lobby and the two hallways whose
+// overlays open with the 0FAE:sub_101a6 call that plays the clip.
+static const int kLiftRooms[] = { 51, 53, 57 };
+
 // docs/game_logic.md: the status line the hover label is set in. The text is
 // centred on x = 150 and its glyphs are blitted with their top row at y = 163.
 static const int kLabelCenterX = 150;
@@ -131,7 +149,7 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _showWalk(false), _lastTick(0), _tick(0),
+		_room(0), _secondPlate(false), _liftPlayed(false), _showWalk(false), _lastTick(0), _tick(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
@@ -200,6 +218,12 @@ Common::Error AlienEngine::run() {
 	if (!loadRoom(start))
 		return Common::Error(Common::kReadingFailed, "Could not load the starting room");
 
+	// AI.COM runs ANIMPLAY on the intro before it starts the game, so the intro
+	// belongs to a plain new game and to nothing else: a run that names a room
+	// or turns a debug channel on is a check, and goes straight to the room.
+	if (!ConfMan.hasKey("boot_param") && gDebugLevel <= 0)
+		playCutscene(kCutscenes[0]);
+
 	if (debugChannelSet(2, kDebugRooms))
 		tourRooms();
 
@@ -232,6 +256,17 @@ Common::Error AlienEngine::run() {
 			sweepSounds();
 		if (debugChannelSet(3, kDebugSound))
 			sweepVoices();
+	}
+
+	// The video channel prints what tools/check_video.py mirrors: what the two
+	// containers say about themselves, then a checksum of every decoded frame,
+	// then every subtitle line in every language the files carry.
+	if (debugChannelSet(-1, kDebugVideo)) {
+		dumpVideo();
+		if (debugChannelSet(2, kDebugVideo))
+			sweepVideoFrames();
+		if (debugChannelSet(3, kDebugVideo))
+			sweepSubtitles();
 	}
 
 	while (!shouldQuit() && !_quit) {
@@ -376,6 +411,17 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_dialogId = 1;
 	_labelSlot = 0;
 	_dirty = true;
+
+	// The elevator clip, on the way into one of the rooms the lift serves. The
+	// original plays it from the top of those rooms' overlay entry 2, which is
+	// the room's own opening code, so it runs after everything else is in place.
+	for (uint i = 0; i < ARRAYSIZE(kLiftRooms); i++) {
+		if (room == kLiftRooms[i] && gDebugLevel <= 0) {
+			playLift();
+			break;
+		}
+	}
+
 	return true;
 }
 
@@ -718,6 +764,260 @@ void AlienEngine::dumpSfx() {
 		const byte bank = _tables.sfxBank(room);
 		debugC(1, kDebugSound, "room %2d bank %3d %s", room, bank,
 			   bank == StaticTables::kSfxBankNone ? "-" : _tables.sfxName(bank).c_str());
+	}
+}
+
+/**
+ * Show a clip, from its first frame to its last, with everything else stopped.
+ *
+ * Both players in the original are the same shape: the screen belongs to the
+ * clip, the game loop does not run, and a keypress or a click ends it early.
+ */
+void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) {
+	video.start();
+
+	bool skipped = false;
+	while (!shouldQuit() && !skipped && !video.endOfVideo()) {
+		if (video.needsUpdate()) {
+			const Graphics::Surface *frame = video.decodeNextFrame();
+			if (frame) {
+				const int w = MIN<int>(frame->w, _screen.w);
+				const int h = MIN<int>(frame->h, _screen.h);
+				for (int y = 0; y < h; y++)
+					memcpy(_screen.getBasePtr(0, y), frame->getBasePtr(0, y), w);
+
+				// getPalette() clears the dirty flag, so what it says has to be
+				// asked before the palette is taken.
+				const bool changed = video.hasDirtyPalette();
+				const byte *palette = video.getPalette();
+				if (changed)
+					g_system->getPaletteManager()->setPalette(palette, 0, 256);
+
+				if (subtitles)
+					drawSubtitle(*subtitles, palette);
+
+				g_system->copyRectToScreen(_screen.getPixels(), _screen.pitch, 0, 0,
+										   _screen.w, _screen.h);
+			}
+			g_system->updateScreen();
+		}
+
+		Common::Event event;
+		while (g_system->getEventManager()->pollEvent(event)) {
+			if (event.type == Common::EVENT_KEYDOWN || event.type == Common::EVENT_LBUTTONDOWN ||
+				event.type == Common::EVENT_RBUTTONDOWN)
+				skipped = true;
+		}
+
+		g_system->delayMillis(10);
+	}
+
+	video.stop();
+	video.close();
+
+	// The room the clip interrupted owns the screen again, palette and all.
+	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	_dirty = true;
+}
+
+/**
+ * Draw the line the clip is on, in the brightest index its own palette holds.
+ *
+ * The original's player has a font of its own; this uses the game's, which puts
+ * the line in the same place but not in the same face.
+ */
+void AlienEngine::drawSubtitle(const CDA2Decoder &video, const byte *palette) {
+	const Common::String line = video.subtitle();
+	if (line.empty() || !palette)
+		return;
+
+	byte ink = 0;
+	int best = -1;
+	for (int i = 0; i < 256; i++) {
+		const int sum = palette[i * 3] + palette[i * 3 + 1] + palette[i * 3 + 2];
+		if (sum > best) {
+			best = sum;
+			ink = (byte)i;
+		}
+	}
+
+	// y is 172 in the file's own records, and a line break is '@'.
+	int y = kSubtitleY;
+	uint start = 0;
+	while (start <= line.size()) {
+		uint end = start;
+		while (end < line.size() && line[end] != '\n')
+			end++;
+
+		const Common::String part(line.c_str() + start, end - start);
+		if (!part.empty()) {
+			const int x = (kScreenWidth - _font.measure(part)) / 2;
+			_font.drawStringInk(_screen, part, x, y, ink);
+			y += _font.glyphHeight() + 1;
+		}
+
+		if (end >= line.size())
+			break;
+		start = end + 1;
+	}
+}
+
+/**
+ * The elevator clip, on the first entry into a room the lift serves.
+ *
+ * 0FAE:sub_101a6 guards it with [0x33de], so it plays once a session however
+ * often the player rides the lift afterwards.
+ */
+bool AlienEngine::playLift() {
+	if (_liftPlayed)
+		return false;
+
+	MA1Decoder video;
+	if (!video.loadFile(Common::Path(kLiftClip))) {
+		debugC(1, kDebugVideo, "could not open %s", kLiftClip);
+		return false;
+	}
+
+	_liftPlayed = true;
+	debugC(1, kDebugVideo, "%s: %d frames", kLiftClip, video.getFrameCount());
+	playVideo(video);
+	return true;
+}
+
+/**
+ * One of the two CDA2 cutscenes, if the CD's files are reachable.
+ *
+ * They live on the CD rather than in the installed game directory, so a copy
+ * that was installed without them simply has no intro, which is what the
+ * original does when the disc is missing too.
+ */
+bool AlienEngine::playCutscene(const char *file) {
+	CDA2Decoder video;
+	if (!video.loadFile(Common::Path(file))) {
+		debugC(1, kDebugVideo, "could not open %s", file);
+		return false;
+	}
+
+	video.setLanguage(subtitleLanguage());
+	debugC(1, kDebugVideo, "%s: %u frames, %u Hz, %u languages, showing %u", file,
+		   video.frameCount(), video.sampleRate(), video.languageCount(), video.language());
+
+	playVideo(video, &video);
+	return true;
+}
+
+/// Which of the file's four subtitle tracks this run's language asks for.
+uint AlienEngine::subtitleLanguage() const {
+	switch (getLanguage()) {
+	case Common::DE_DEU:
+		return CDA2Decoder::kGerman;
+	case Common::FR_FRA:
+		return CDA2Decoder::kFrench;
+	case Common::FI_FIN:
+		return CDA2Decoder::kFinnish;
+	default:
+		return CDA2Decoder::kEnglish;
+	}
+}
+
+void AlienEngine::dumpVideo() {
+	// What the two containers say about themselves, mirrored by
+	// tools/check_video.py --info.
+	MA1Decoder lift;
+	if (lift.loadFile(Common::Path(kLiftClip))) {
+		debugC(1, kDebugVideo, "ma1 %s: %d frames %dx%d", kLiftClip, lift.getFrameCount(),
+			   lift.getWidth(), lift.getHeight());
+		lift.close();
+	}
+
+	for (uint i = 0; i < ARRAYSIZE(kCutscenes); i++) {
+		CDA2Decoder video;
+		if (!video.loadFile(Common::Path(kCutscenes[i])))
+			continue;
+		debugC(1, kDebugVideo, "cda2 %s: %u frames %dx%d %u Hz %u languages",
+			   kCutscenes[i], video.frameCount(), video.getWidth(), video.getHeight(),
+			   video.sampleRate(), video.languageCount());
+		video.close();
+	}
+}
+
+/**
+ * Decode frames without showing them and print a checksum of each.
+ *
+ * Frames are differences against the frames before them, so a checksum that
+ * matches the Python decoder's for frame n says every frame up to n decoded the
+ * same way, palette and all.
+ */
+static uint32 frameChecksum(const Graphics::Surface &frame, const byte *palette) {
+	uint32 sum = 2166136261u;
+	const byte *pixels = (const byte *)frame.getPixels();
+	for (int i = 0; i < frame.w * frame.h; i++)
+		sum = (sum ^ pixels[i]) * 16777619u;
+	if (palette) {
+		for (int i = 0; i < 256 * 3; i++)
+			sum = (sum ^ palette[i]) * 16777619u;
+	}
+	return sum;
+}
+
+void AlienEngine::sweepVideoFrames() {
+	MA1Decoder lift;
+	if (lift.loadFile(Common::Path(kLiftClip))) {
+		for (uint i = 0; i < lift.getFrameCount() && !shouldQuit(); i++) {
+			const Graphics::Surface *frame = lift.decodeNextFrame();
+			if (!frame)
+				break;
+			debugC(2, kDebugVideo, "ma1 frame %4u %08x", i, frameChecksum(*frame, lift.getPalette()));
+		}
+		lift.close();
+	}
+
+	for (uint i = 0; i < ARRAYSIZE(kCutscenes); i++) {
+		CDA2Decoder video;
+		if (!video.loadFile(Common::Path(kCutscenes[i])))
+			continue;
+
+		// The intro is 74 MB and the ending 41 MB; a prefix is enough to prove
+		// the codec, and the whole file is what tools/check_video.py --frames
+		// takes when it is asked for it.
+		for (int f = 0; f < kSweepFrames && !shouldQuit(); f++) {
+			const Graphics::Surface *frame = video.decodeNextFrame();
+			if (!frame)
+				break;
+			debugC(2, kDebugVideo, "cda2 %s frame %4d %08x", kCutscenes[i], f,
+				   frameChecksum(*frame, video.getPalette()));
+		}
+		video.close();
+	}
+}
+
+void AlienEngine::sweepSubtitles() {
+	for (uint i = 0; i < ARRAYSIZE(kCutscenes); i++) {
+		CDA2Decoder video;
+		if (!video.loadFile(Common::Path(kCutscenes[i])))
+			continue;
+
+		for (uint lang = 0; lang < video.languageCount(); lang++) {
+			video.setLanguage(lang);
+			Common::String last;
+			for (uint frame = 0; frame < video.frameCount(); frame++) {
+				const Common::String line = video.subtitle(frame);
+				if (line == last)
+					continue;
+				last = line;
+				if (line.empty())
+					continue;
+
+				Common::String flat(line);
+				for (uint c = 0; c < flat.size(); c++) {
+					if (flat[c] == '\n')
+						flat.setChar('@', c);
+				}
+				debugC(3, kDebugVideo, "subtitle %s lang %u frame %4u %s", kCutscenes[i],
+					   lang, frame, flat.c_str());
+			}
+		}
+		video.close();
 	}
 }
 

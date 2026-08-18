@@ -37,6 +37,7 @@
 #include "alien/sfx.h"
 #include "alien/tables.h"
 #include "alien/tal.h"
+#include "alien/video.h"
 #include "alien/walk.h"
 
 struct ADGameDescription;
@@ -81,6 +82,14 @@ private:
 	void lookAtItem(byte item);
 	void dumpItems();
 	void dumpSfx();
+	void playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles = nullptr);
+	void drawSubtitle(const CDA2Decoder &video, const byte *palette);
+	uint subtitleLanguage() const;
+	bool playLift();
+	bool playCutscene(const char *file);
+	void dumpVideo();
+	void sweepVideoFrames();
+	void sweepSubtitles();
 	void sweepSounds();
 	void sweepVoices();
 	void sweepItemLooks();
@@ -125,6 +134,10 @@ private:
 
 	/// The resident sample bank, the three voices and the delay queue.
 	SoundFX _sound;
+
+	/// [0x33de]: the elevator clip plays once per session, on the first entry
+	/// into one of the rooms the lift serves, and never again.
+	bool _liftPlayed;
 
 	Walk _walk;
 	WalkRoute _route;
