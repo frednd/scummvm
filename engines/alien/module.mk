@@ -11,6 +11,7 @@ MODULE_OBJS = \
 	inventory.o \
 	metaengine.o \
 	overlay.o \
+	play.o \
 	resources.o \
 	roominit.o \
 	roomscripts.o \

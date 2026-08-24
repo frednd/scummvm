@@ -34,6 +34,7 @@
 #include "alien/hotspots.h"
 #include "alien/inventory.h"
 #include "alien/overlay.h"
+#include "alien/play.h"
 #include "alien/s3m.h"
 #include "alien/script.h"
 #include "alien/sfx.h"
@@ -76,7 +77,12 @@ private:
 	void stepSpriteBank(int delta);
 	void redraw();
 	void handleEvents();
-	void dumpScreen();
+	void dumpScreen(const Common::String &name = Common::String());
+
+	bool loadPlayScript(const Common::String &path);
+	void stepPlayScript();
+	bool playIdle() const;
+	void runPlayCommand(const PlayCommand &cmd);
 
 	void walkTo(int x, int y, int arrivalFacing = Walker::kFacingKeep);
 	void sweepWalkGeometry();
@@ -233,6 +239,17 @@ private:
 
 	bool _dirty;
 	bool _quit;
+
+	/// The scripted playthrough (milestone S), if --debugflags=play named one
+	/// through the ALIEN_PLAY_SCRIPT environment variable.
+	PlayScript _play;
+	uint _playIndex;
+	bool _playActive;
+	uint32 _playLastTick;			///< the master tick stepPlayScript last acted on
+	int _playWaitTicks;			///< ticks still to burn before the next command
+	int _playSettleTimeout;		///< ticks left before a "settle" gives up
+	bool _playSettling;
+	uint _playFails;				///< number of failed "expect" assertions so far
 };
 
 } // End of namespace Alien

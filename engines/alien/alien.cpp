@@ -162,7 +162,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
-		_dirty(true), _quit(false) {
+		_dirty(true), _quit(false),
+		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
+		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
 	memset(_outcomeCounter, 0, sizeof(_outcomeCounter));
 	memset(_queue, 0, sizeof(_queue));
@@ -295,9 +297,25 @@ Common::Error AlienEngine::run() {
 			sweepSubtitles();
 	}
 
+	// The play channel drives the game from a command file instead of the
+	// event queue -- see play.h and docs/port_plan.md, milestone S -- because
+	// a headless run has no interactive input to script against.
+	if (debugChannelSet(-1, kDebugPlay)) {
+		// No generic --key=value escape hatch exists on the ScummVM command
+		// line (unrecognized options abort with "usage"), so the script path
+		// comes from the target's config file: -c a-throwaway.ini with a
+		// "playscript" key in the [alien] section.
+		if (!ConfMan.hasKey("playscript"))
+			warning("play: no 'playscript' key in the config; nothing to run");
+		else if (loadPlayScript(ConfMan.get("playscript")))
+			_playActive = true;
+	}
+
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
 		stepClock();
+		if (_playActive)
+			stepPlayScript();
 		if (_dirty)
 			redraw();
 		g_system->updateScreen();
@@ -305,6 +323,152 @@ Common::Error AlienEngine::run() {
 	}
 
 	return Common::kNoError;
+}
+
+bool AlienEngine::loadPlayScript(const Common::String &path) {
+	if (!_play.load(path))
+		return false;
+	_playIndex = 0;
+	_playLastTick = _tick;
+	_playWaitTicks = 0;
+	_playSettling = false;
+	_playFails = 0;
+	debugC(1, kDebugPlay, "play: %u commands loaded from %s", _play.commands().size(),
+		   path.c_str());
+	return true;
+}
+
+bool AlienEngine::playIdle() const {
+	return !_ben.isWalking() && !_ben.isTurning() && !_speech && !_anims.isBusy() &&
+		   _pending < 0 && !_armed;
+}
+
+void AlienEngine::stepPlayScript() {
+	// Paced on the master tick, not the loop iteration -- the loop spins
+	// faster than 70Hz while it waits for stepClock()'s own gate.
+	if (_tick == _playLastTick)
+		return;
+	_playLastTick = _tick;
+
+	if (_playWaitTicks > 0) {
+		_playWaitTicks--;
+		return;
+	}
+
+	if (_playSettling) {
+		if (playIdle()) {
+			_playSettling = false;
+		} else if (--_playSettleTimeout <= 0) {
+			_playSettling = false;
+			debugC(1, kDebugPlay, "play: %u: STUCK, gave up waiting to settle",
+				   _play.commands()[_playIndex - 1].sourceLine);
+		} else {
+			return;
+		}
+	}
+
+	if (_playIndex >= _play.commands().size()) {
+		debugC(1, kDebugPlay, "play: script complete, %u assertion failure(s)", _playFails);
+		_playActive = false;
+		_quit = true;
+		return;
+	}
+
+	runPlayCommand(_play.commands()[_playIndex++]);
+}
+
+void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
+	switch (cmd.type) {
+	case PlayCommand::kClick:
+		debugC(1, kDebugPlay, "play: %u: click %d,%d", cmd.sourceLine, cmd.a, cmd.b);
+		clickAt(cmd.a, cmd.b, false);
+		break;
+
+	case PlayCommand::kRightClick:
+		debugC(1, kDebugPlay, "play: %u: rclick %d,%d", cmd.sourceLine, cmd.a, cmd.b);
+		clickAt(cmd.a, cmd.b, true);
+		break;
+
+	case PlayCommand::kUse:
+		debugC(1, kDebugPlay, "play: %u: use %d (%s)", cmd.sourceLine, cmd.a,
+			   _inventory.name((byte)cmd.a).c_str());
+		holdItem((byte)cmd.a);
+		break;
+
+	case PlayCommand::kUnuse:
+		debugC(1, kDebugPlay, "play: %u: unuse", cmd.sourceLine);
+		holdItem(Inventory::kNoItem);
+		break;
+
+	case PlayCommand::kWait:
+		debugC(1, kDebugPlay, "play: %u: wait %d", cmd.sourceLine, cmd.a);
+		_playWaitTicks = cmd.a;
+		break;
+
+	case PlayCommand::kSettle:
+		debugC(1, kDebugPlay, "play: %u: settle (timeout %d)", cmd.sourceLine, cmd.a);
+		_playSettling = true;
+		_playSettleTimeout = cmd.a;
+		break;
+
+	case PlayCommand::kExpectRoom:
+		if (_room == cmd.a) {
+			debugC(1, kDebugPlay, "play: %u: PASS room %d", cmd.sourceLine, cmd.a);
+		} else {
+			debugC(1, kDebugPlay, "play: %u: FAIL room: expected %d, got %d", cmd.sourceLine,
+				   cmd.a, _room);
+			_playFails++;
+		}
+		break;
+
+	case PlayCommand::kExpectItem:
+		if (_inventory.has((byte)cmd.a)) {
+			debugC(1, kDebugPlay, "play: %u: PASS item %d held", cmd.sourceLine, cmd.a);
+		} else {
+			debugC(1, kDebugPlay, "play: %u: FAIL item: expected %d held", cmd.sourceLine, cmd.a);
+			_playFails++;
+		}
+		break;
+
+	case PlayCommand::kExpectNoItem:
+		if (!_inventory.has((byte)cmd.a)) {
+			debugC(1, kDebugPlay, "play: %u: PASS noitem %d", cmd.sourceLine, cmd.a);
+		} else {
+			debugC(1, kDebugPlay, "play: %u: FAIL noitem: %d unexpectedly held", cmd.sourceLine,
+				   cmd.a);
+			_playFails++;
+		}
+		break;
+
+	case PlayCommand::kExpectFlag: {
+		const byte got = _script.flag((uint16)cmd.a);
+		if (got == (byte)cmd.b) {
+			debugC(1, kDebugPlay, "play: %u: PASS flag 0x%04x == %d", cmd.sourceLine, cmd.a,
+				   cmd.b);
+		} else {
+			debugC(1, kDebugPlay, "play: %u: FAIL flag 0x%04x: expected %d, got %d",
+				   cmd.sourceLine, cmd.a, cmd.b, got);
+			_playFails++;
+		}
+		break;
+	}
+
+	case PlayCommand::kSnap: {
+		const Common::String name =
+			cmd.s.empty() ? Common::String::format("play-%u.png", cmd.sourceLine)
+						  : cmd.s + ".png";
+		debugC(1, kDebugPlay, "play: %u: snap %s", cmd.sourceLine, name.c_str());
+		redraw();
+		dumpScreen(name);
+		break;
+	}
+
+	case PlayCommand::kQuit:
+		debugC(1, kDebugPlay, "play: %u: quit", cmd.sourceLine);
+		_playActive = false;
+		_quit = true;
+		break;
+	}
 }
 
 bool AlienEngine::loadRoom(int room, bool secondPlate) {
@@ -1799,15 +1963,18 @@ void AlienEngine::redraw() {
 	dumpScreen();
 }
 
-void AlienEngine::dumpScreen() {
+void AlienEngine::dumpScreen(const Common::String &name) {
 	// Writes the composed staging buffer out so it can be diffed against the
 	// renders the reverse-engineering tools produce, which is the only way to
-	// check the decoders while the engine has no interactive state yet.
-	if (!debugChannelSet(3, kDebugGraphics))
+	// check the decoders while the engine has no interactive state yet. A
+	// named call (from the play channel's "snap" command) always writes;
+	// the default, unnamed call is gated on the graphics channel.
+	if (name.empty() && !debugChannelSet(3, kDebugGraphics))
 		return;
 
 	Common::DumpFile out;
-	if (!out.open(Common::Path("alien-screen.png"))) {
+	const Common::String file = name.empty() ? Common::String("alien-screen.png") : name;
+	if (!out.open(Common::Path(file))) {
 		warning("could not open the screen dump for writing");
 		return;
 	}
