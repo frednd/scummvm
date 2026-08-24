@@ -48,6 +48,9 @@ namespace Alien {
  *   expect flag ADDR VAL    assert a state-block byte (hex address, e.g.
  *                           0xa650) equals VAL
  *   snap NAME               write the composed screen to NAME.png
+ *   spots                   log the room's current hotspot list on the play
+ *                           channel (independent of --debugflags=hotspots),
+ *                           for checking what a state change revealed
  *   quit                    stop the script early
  */
 struct PlayCommand {
@@ -63,6 +66,7 @@ struct PlayCommand {
 		kExpectNoItem,
 		kExpectFlag,
 		kSnap,
+		kSpots,
 		kQuit
 	};
 

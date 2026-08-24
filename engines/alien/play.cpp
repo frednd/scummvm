@@ -100,6 +100,8 @@ bool PlayScript::load(const Common::String &path) {
 		} else if (verb == "snap") {
 			cmd.type = PlayCommand::kSnap;
 			cmd.s = tok.nextToken();
+		} else if (verb == "spots") {
+			cmd.type = PlayCommand::kSpots;
 		} else if (verb == "quit") {
 			cmd.type = PlayCommand::kQuit;
 		} else {

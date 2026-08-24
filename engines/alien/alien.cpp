@@ -463,6 +463,20 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		break;
 	}
 
+	case PlayCommand::kSpots:
+		debugC(1, kDebugPlay, "play: %u: spots: room %d, %u registered", cmd.sourceLine, _room,
+			   _spots.size());
+		for (uint i = 0; i < _spots.size(); i++) {
+			const Hotspot &spot = _spots[i];
+			Common::String outcomes;
+			for (uint o = 0; o < spot.outcomeCount; o++)
+				outcomes += Common::String::format("%s%u", o ? "," : "", spot.outcomes[o]);
+			debugC(1, kDebugPlay, "play: spot: %3d,%3d..%3d,%3d obj %3u verb %3u label %3u -> %s",
+				   spot.x1, spot.y1, spot.x2, spot.y2, spot.obj, spot.verb, spot.label,
+				   outcomes.c_str());
+		}
+		break;
+
 	case PlayCommand::kQuit:
 		debugC(1, kDebugPlay, "play: %u: quit", cmd.sourceLine);
 		_playActive = false;
