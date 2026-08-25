@@ -73,6 +73,8 @@ public:
 private:
 	bool loadRoom(int room, bool secondPlate = false);
 	void stepRoom(int delta);
+	static int roomWidth(int room);
+	void updateScroll();
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);
 	void redraw();
@@ -151,6 +153,8 @@ private:
 	RoomAssets _assets;
 	int _room;
 	bool _secondPlate;				///< showing the room's B plate rather than A
+	int _roomWidth;					///< room's total pixel width; 320 unless wide (see [0xa0c0])
+	int _scrollX;						///< live horizontal scroll offset (see [0xa0c4], sub_13bce)
 
 	RoomScript _script;			///< the room's own reaction to a click
 	AnimSlots _anims;			///< the room's DL1 banks and what is playing on them

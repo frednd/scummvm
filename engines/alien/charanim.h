@@ -148,7 +148,7 @@ public:
 	/** One animation tick: the original runs these at the vsync rate over 4. */
 	void tick();
 
-	void draw(Graphics::Surface &dest) const;
+	void draw(Graphics::Surface &dest, int scrollX = 0) const;
 
 	int walkX() const { return _x + kWalkPointX; }
 	int walkY() const { return _y + kWalkPointY; }

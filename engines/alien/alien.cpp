@@ -155,7 +155,7 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _lastTick(0), _tick(0),
+		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _lastTick(0), _tick(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
@@ -485,9 +485,44 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 	}
 }
 
+/**
+ * Room's total pixel width, `[0xa0c0]` as set by that room's own overlay init
+ * code (default 0x140 = 320, `seg_main.asm:544`). Found by grepping every
+ * overlay for `[0xa0c0]`; see docs/playthrough_findings.md. 15 rooms are wider
+ * than the 320px screen and pan with `_scrollX` (sub_13bce); the rest are a
+ * no-op override (<= 320) and stay fixed.
+ */
+int AlienEngine::roomWidth(int room) {
+	switch (room) {
+	case 3:  return 0x18e;
+	case 8:  return 0x17c;
+	case 15: return 0x260;
+	case 21: return 0x268;
+	case 22: return 0x27e;
+	case 27: return 0x1f0;
+	case 32: return 0x1e0;
+	case 50: return 0x190;
+	case 52: return 0x27e;
+	case 53:
+	case 54:
+	case 55:
+	case 56:
+	case 57: return 0x1b8;
+	case 58: return 0x27e;
+	default: return kScreenWidth;
+	}
+}
+
 bool AlienEngine::loadRoom(int room, bool secondPlate) {
-	const Common::String &plate = secondPlate ? _tables.secondPlate(room)
-											  : _tables.background(room);
+	const int width = roomWidth(room);
+	const bool wide = width > kScreenWidth;
+
+	// Wide rooms show both plates stitched side by side and panned by the
+	// scroll offset; the manual A/B toggle (the 'b' debug key) only makes
+	// sense for the narrow rooms whose B plate is a genuine alternate view,
+	// not a second half.
+	const Common::String &plate = (secondPlate && !wide) ? _tables.secondPlate(room)
+														  : _tables.background(room);
 	if (plate.empty()) {
 		debugC(1, kDebugResource, "room %d has no %s plate", room,
 			   secondPlate ? "second" : "background");
@@ -504,8 +539,37 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		return false;
 	}
 
+	if (wide) {
+		// Plate A supplies the left 320 columns, plate B the remainder
+		// (docs/room_deck.md), mirroring the two EMS pages the original pans
+		// between. A room missing its B plate just shows padding past 320.
+		Graphics::Surface stitched;
+		stitched.create(width, loaded.h, loaded.format);
+		stitched.fillRect(Common::Rect(0, 0, width, loaded.h), 0);
+		for (int y = 0; y < loaded.h; y++)
+			memcpy(stitched.getBasePtr(0, y), loaded.getBasePtr(0, y), loaded.w);
+
+		const Common::String &secondName = _tables.secondPlate(room);
+		if (!secondName.empty()) {
+			Graphics::Surface second;
+			byte palette2[256 * 3];
+			if (loadGamePCX(Common::Path(secondName), second, palette2)) {
+				const int copyW = MIN<int>(second.w, width - kScreenWidth);
+				const int copyH = MIN<int>(second.h, loaded.h);
+				for (int y = 0; y < copyH; y++)
+					memcpy(stitched.getBasePtr(kScreenWidth, y), second.getBasePtr(0, y), copyW);
+			}
+			second.free();
+		}
+
+		loaded.free();
+		loaded = stitched;
+	}
+
 	_background.free();
 	_background = loaded;
+	_roomWidth = wide ? width : kScreenWidth;
+	_scrollX = 0;
 	memcpy(_palette, palette, sizeof(_palette));
 
 	// The sprite banks and the dialog file are named by the room's own scene
@@ -626,7 +690,29 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		}
 	}
 
+	updateScroll();
+
 	return true;
+}
+
+/**
+ * Recompute the live scroll offset the way `sub_13bce` does every frame:
+ * `clamp(ben.x - 160, 0, roomWidth - 320)`, camera centered on Ben. Narrow
+ * rooms (`_roomWidth == kScreenWidth`) always resolve to zero.
+ */
+void AlienEngine::updateScroll() {
+	int scroll = 0;
+	if (_roomWidth > kScreenWidth) {
+		scroll = _ben.walkX() - kScreenWidth / 2;
+		if (scroll < 0)
+			scroll = 0;
+		if (scroll > _roomWidth - kScreenWidth)
+			scroll = _roomWidth - kScreenWidth;
+	}
+	if (scroll != _scrollX) {
+		_scrollX = scroll;
+		_dirty = true;
+	}
 }
 
 void AlienEngine::stepRoom(int delta) {
@@ -769,6 +855,7 @@ void AlienEngine::stepClock() {
 
 	if (_ben.isWalking() || _ben.isTurning()) {
 		_ben.tick();
+		updateScroll();
 		_dirty = true;
 	} else if (_pending >= 0) {
 		// He has arrived at what he was sent to; the outcome speaks now.
@@ -782,13 +869,19 @@ void AlienEngine::stepClock() {
 }
 
 void AlienEngine::updateHover(int x, int y) {
+	// Hotspot boxes are room-space (an object past x=320 in a wide room keeps
+	// its authored coordinates); the incoming x is screen-space, so the scroll
+	// offset goes back in before testing them. The bar below the playfield is
+	// never panned, so it keeps the raw screen x.
+	const int roomX = x + _scrollX;
+
 	// The original registers a room's rectangles one after another and each
 	// registration overwrites the globals on a hit, so where two overlap the
 	// one registered last is the one that answers -- hence the whole table is
 	// scanned rather than stopping at the first match.
 	int hit = -1;
 	for (uint i = 0; i < _spots.size(); i++) {
-		if (_spots[i].contains(x, y))
+		if (_spots[i].contains(roomX, y))
 			hit = (int)i;
 	}
 
@@ -1648,12 +1741,16 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// has an approach point and a facing, a floor rectangle snaps the point onto
 	// the room's floor line. Without it he walks onto whatever he was sent to
 	// use. See walkgeom.h and docs/walk_system.md.
+	// The room's own walk geometry and a plain floor click both work in
+	// room-space, same as the hotspot boxes updateHover just tested.
+	const int roomX = x + _scrollX;
+
 	const byte obj = _hover >= 0 ? _spots[_hover].obj : 0;
 	WalkTarget target;
 	// Every click rearms from scratch, as the original rewrites walk_submode
 	// [0xa87d] each time entry 0 runs.
 	_armed = 0;
-	if (_script.walkTarget(x, y, obj, target)) {
+	if (_script.walkTarget(roomX, y, obj, target)) {
 		if (target.submode) {
 			_armed = target.submode;
 			_armedX = target.x;
@@ -1664,7 +1761,7 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		}
 		walkTo(target.x, target.y, target.facing);
 	} else {
-		walkTo(x, y);
+		walkTo(roomX, y);
 	}
 
 	_pending = _hover;
@@ -1942,17 +2039,21 @@ void AlienEngine::redraw() {
 	_screen.fillRect(Common::Rect(0, 0, _screen.w, _screen.h), 0);
 
 	if (_background.getPixels()) {
-		int w = MIN<int>(_background.w, _screen.w);
+		int w = MIN<int>(_background.w - _scrollX, _screen.w);
 		int h = MIN<int>(_background.h, _screen.h);
 		for (int y = 0; y < h; y++)
-			memcpy(_screen.getBasePtr(0, y), _background.getBasePtr(0, y), w);
+			memcpy(_screen.getBasePtr(0, y), _background.getBasePtr(_scrollX, y), w);
 	}
 
 	// The animation slots come first: they are the room's own furniture, and the
-	// character walks in front of them.
+	// character walks in front of them. Neither slot draw is scroll-aware yet
+	// (their strip addresses are page-relative, not room-space -- see
+	// docs/playthrough_findings.md), so past x=320 they only line up on the
+	// page that happens to be showing; only the background pan and Ben's own
+	// position are corrected here.
 	_anims.draw(_screen);
 	_sprite.drawFrame(_spriteFrame, _screen);
-	_ben.draw(_screen);
+	_ben.draw(_screen, _scrollX);
 
 	if (_showWalk)
 		drawWalkOverlay();

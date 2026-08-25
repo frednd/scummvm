@@ -393,9 +393,9 @@ void Walker::tick() {
 	updateFrame();
 }
 
-void Walker::draw(Graphics::Surface &dest) const {
+void Walker::draw(Graphics::Surface &dest, int scrollX) const {
 	if (_anim.isLoaded())
-		_anim.drawFrame(_frame, dest, _x, _y);
+		_anim.drawFrame(_frame, dest, _x - scrollX, _y);
 }
 
 } // End of namespace Alien
