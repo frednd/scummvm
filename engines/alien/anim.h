@@ -111,8 +111,8 @@ public:
 	/** True while any slot still has frames to advance. */
 	bool isBusy() const;
 
-	/** Composites the current frame of every slot that has one. */
-	void draw(Graphics::Surface &dest) const;
+	/** Composites the current frame of every slot that has one, scroll-adjusted like Walker::draw. */
+	void draw(Graphics::Surface &dest, int scrollX = 0) const;
 
 	/** The bank a slot holds, for the debug console. */
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }

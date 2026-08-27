@@ -278,13 +278,24 @@ void RoomScript::execute(const ScriptBlock &block) {
 		runEffect(*scriptEffect(block.first + i));
 }
 
-void RoomScript::runEffect(const ScriptEffect &effect) {
+void RoomScript::runEffect(const ScriptEffect &original) {
 	// The arms inside a body: the refusal and the success path of the same click
 	// sit side by side, each under its own guard. A guard the port cannot answer
 	// -- an address outside the state block -- fails, so its arm is not taken.
-	for (uint g = 0; g < effect.guardCount; g++) {
-		if (!holds(effect.guards[g]))
+	for (uint g = 0; g < original.guardCount; g++) {
+		if (!holds(original.guards[g]))
 			return;
+	}
+
+	// A handful of arguments the original loaded into a register instead of
+	// pushing as an immediate; roomlogic.py could still resolve them exactly
+	// where the register held a byte this port already tracks as state (see
+	// roomscripts.h), and marks them in dynArgs rather than as literals. Read
+	// them now, once, so the switch below can treat every arg the same way.
+	ScriptEffect effect = original;
+	for (uint a = 0; a < effect.argCount; a++) {
+		if (effect.dynArgs & (1 << a))
+			effect.args[a] = flag((uint16)effect.args[a]);
 	}
 
 	switch (effect.op) {

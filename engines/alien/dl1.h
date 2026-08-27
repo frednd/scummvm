@@ -84,8 +84,19 @@ public:
 	 * Blit one frame onto an 8bpp surface, skipping gaps and index 0. The
 	 * surface is addressed the way the original staging buffer was, so a
 	 * strip's address maps straight to a pixel position.
+	 *
+	 * @param scrollX the room's current camera offset (see Alien::AlienEngine::_scrollX).
+	 *   Long-form strips carry an absolute room-space column (roomX) and are placed at
+	 *   roomX - scrollX. Short-form strips have no explicit column (kNoRoomX) -- their
+	 *   addr encodes it as (addr % kScreenWidth), but correction (2026-08-26): this does
+	 *   NOT mean the room is narrow (room 15's HALLDOO1.DL1 is short-form and lives in a
+	 *   608px-wide room) -- it means the sprite's own content never spans past column 320
+	 *   in room-space, so addr % kScreenWidth already recovers its true room-space column,
+	 *   which still needs scrollX subtracted like the long-form case. A short-form strip
+	 *   whose true room-space column is >= 320 cannot be expressed by this format at all
+	 *   (unconfirmed whether any such sprite exists -- not yet found in a sweep).
 	 */
-	void drawFrame(uint index, Graphics::Surface &dest) const;
+	void drawFrame(uint index, Graphics::Surface &dest, int scrollX = 0) const;
 
 private:
 	struct ParseResult {

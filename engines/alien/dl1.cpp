@@ -264,14 +264,14 @@ bool DL1Sprite::parse() {
 	return true;
 }
 
-void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest) const {
+void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest, int scrollX) const {
 	if (index >= _frames.size())
 		return;
 
 	const Frame &frame = _frames[index];
 	for (uint i = 0; i < frame.strips.size(); i++) {
 		const Strip &strip = frame.strips[i];
-		int x = strip.addr % kScreenWidth;
+		int x = ((strip.roomX != kNoRoomX) ? (int)strip.roomX : (int)(strip.addr % kScreenWidth)) - scrollX;
 		int y = strip.addr / kScreenWidth;
 		if (y < 0 || y >= dest.h)
 			continue;

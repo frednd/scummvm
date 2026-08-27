@@ -182,7 +182,7 @@ int AnimSlots::visibleFrame(const Slot &slot) const {
 	return frame;
 }
 
-void AnimSlots::draw(Graphics::Surface &dest) const {
+void AnimSlots::draw(Graphics::Surface &dest, int scrollX) const {
 	for (uint i = 0; i < kSlotCount; i++) {
 		const Slot &slot = _slots[i];
 		if (!slot.started || !slot.bank.frameCount())
@@ -207,7 +207,7 @@ void AnimSlots::draw(Graphics::Surface &dest) const {
 			continue;
 		}
 
-		slot.bank.drawFrame((uint)frame, dest);
+		slot.bank.drawFrame((uint)frame, dest, scrollX);
 	}
 }
 

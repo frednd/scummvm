@@ -513,6 +513,35 @@ int AlienEngine::roomWidth(int room) {
 	}
 }
 
+const char *AlienEngine::charPaletteFile(int room) {
+	// Ben's own colours (palette indices 1..24) are not part of the room's
+	// background plate -- the original reloads them from a separate PCX after
+	// every room's palette fade (seg_util.asm sub_02091, fed by
+	// load_char_palette in seg_obj.asm), which is why a background PCX is
+	// free to put anything unrelated in that range. VAKIPAL.PCX is the
+	// default (set at boot, seg_main.asm); room 52 is the one confirmed
+	// override found so far (SEC_BPAL.PCX, ovr_34_0f96). MANPAL0/1/2.PCX also
+	// ship but their room association hasn't been traced in disasm/ yet --
+	// left as a TODO rather than guessed.
+	switch (room) {
+	case 52: return "SEC_BPAL.PCX";
+	default: return "VAKIPAL.PCX";
+	}
+}
+
+void AlienEngine::applyCharPalette(int room) {
+	Graphics::Surface dummy;
+	byte charPalette[256 * 3];
+	if (!loadGamePCX(Common::Path(charPaletteFile(room)), dummy, charPalette)) {
+		dummy.free();
+		return;
+	}
+	dummy.free();
+
+	// Indices 1..24 only -- everything else in this file is unused filler.
+	memcpy(_palette + 1 * 3, charPalette + 1 * 3, 24 * 3);
+}
+
 bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	const int width = roomWidth(room);
 	const bool wide = width > kScreenWidth;
@@ -571,6 +600,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_roomWidth = wide ? width : kScreenWidth;
 	_scrollX = 0;
 	memcpy(_palette, palette, sizeof(_palette));
+	applyCharPalette(room);
 
 	// The sprite banks and the dialog file are named by the room's own scene
 	// overlay. Rooms driven from a resident segment have no overlay, and those
@@ -2046,13 +2076,9 @@ void AlienEngine::redraw() {
 	}
 
 	// The animation slots come first: they are the room's own furniture, and the
-	// character walks in front of them. Neither slot draw is scroll-aware yet
-	// (their strip addresses are page-relative, not room-space -- see
-	// docs/playthrough_findings.md), so past x=320 they only line up on the
-	// page that happens to be showing; only the background pan and Ben's own
-	// position are corrected here.
-	_anims.draw(_screen);
-	_sprite.drawFrame(_spriteFrame, _screen);
+	// character walks in front of them.
+	_anims.draw(_screen, _scrollX);
+	_sprite.drawFrame(_spriteFrame, _screen, _scrollX);
 	_ben.draw(_screen, _scrollX);
 
 	if (_showWalk)

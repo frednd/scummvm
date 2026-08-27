@@ -47,7 +47,11 @@ namespace Alien {
  * Bodies the disassembler could not fully recover carry kOpUnsupported, and so do
  * effects whose arguments it lost to a register: an effect that cannot be run
  * with the arguments the original passed is not run at all, rather than run with
- * guesses.
+ * guesses. One shape of register argument *is* recoverable without guessing: a
+ * `mov al, [addr]; push ax` that re-reads a byte inside the state block this
+ * port already tracks (see RoomScript::_flags). Such an argument is exactly
+ * known at run time even though it was never an immediate, and is marked in
+ * ScriptEffect::dynArgs rather than dropped.
  */
 enum ScriptOpcode {
 	kOpUnsupported = 0,	///< recovered as code, not as arguments; skipped
@@ -85,6 +89,7 @@ struct ScriptEffect {
 	byte op;
 	byte argCount;
 	uint16 args[6];		///< flag addresses reach 0xa7ff, so these are unsigned
+	byte dynArgs;		///< bit i set: args[i] is a state address, read at run time
 	byte guardCount;
 	ScriptCond guards[3];
 };

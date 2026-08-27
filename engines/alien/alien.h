@@ -74,6 +74,8 @@ private:
 	bool loadRoom(int room, bool secondPlate = false);
 	void stepRoom(int delta);
 	static int roomWidth(int room);
+	static const char *charPaletteFile(int room);
+	void applyCharPalette(int room);
 	void updateScroll();
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);
