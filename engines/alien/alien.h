@@ -70,6 +70,14 @@ public:
 	const char *getGameId() const;
 	Common::Language getLanguage() const;
 
+	/**
+	 * Start a music slot, as INPUT:music_play_slot does.
+	 *
+	 * Public because a room's own script starts its theme: the interpreter runs
+	 * a kOpMusic effect straight out of the room's lifted table (see script.h).
+	 */
+	void playMusicSlot(uint slot);
+
 private:
 	bool loadRoom(int room, bool secondPlate = false);
 	void stepRoom(int delta);
@@ -104,9 +112,9 @@ private:
 	bool importDosSave(const Common::String &file, bool apply);
 	void dumpSaves();
 	void checkSaveRoundTrip();
-	void playMusicSlot(uint slot);
 	void stopMusic();
 	void dumpMusic();
+	void sweepMusicCues();
 	void sweepMusicRows();
 	void renderMusic();
 	void playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles = nullptr);

@@ -36,6 +36,7 @@
 #include "alien/alien.h"
 #include "alien/detection.h"
 #include "alien/resources.h"
+#include "alien/roominit.h"
 
 namespace Alien {
 
@@ -174,6 +175,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 	_script.setAnims(&_anims);
 	_script.setInventory(&_inventory);
 	_script.setSound(&_sound);
+	_script.setEngine(this);
 }
 
 AlienEngine::~AlienEngine() {
@@ -280,6 +282,7 @@ Common::Error AlienEngine::run() {
 	// rendered output second by second.
 	if (debugChannelSet(-1, kDebugMusic)) {
 		dumpMusic();
+		sweepMusicCues();
 		if (debugChannelSet(2, kDebugMusic))
 			sweepMusicRows();
 		if (debugChannelSet(3, kDebugMusic))
@@ -1155,6 +1158,62 @@ void AlienEngine::dumpMusic() {
 		const byte module = _tables.musicSlotModule(slot);
 		debugC(1, kDebugMusic, "slot %2d module %2d order %3d %s", slot, module,
 			   _tables.musicSlotOrder(slot), _tables.musicName(module).c_str());
+	}
+}
+
+/** One effect's or block's guards, as `when [0xa6fa] == 0`. */
+static Common::String condText(const ScriptCond *conds, uint count) {
+	Common::String out;
+	for (uint i = 0; i < count; i++) {
+		out += i ? " && " : " when ";
+		out += Common::String::format("[0x%04x] %s %d", conds[i].addr,
+									  conds[i].negate ? "!=" : "==", conds[i].value);
+	}
+	return out;
+}
+
+/**
+ * Every music cue the port can fire, room by room.
+ *
+ * The original has no room-to-music table: a room starts its theme from its own
+ * code, so the cues are wherever the lift found them -- in a room's opening
+ * effects, or in the body of a click. Printing them together is the only way to
+ * see which rooms have music at all, and tools/check_music.py --cues mirrors it
+ * from the disassembly.
+ */
+void AlienEngine::sweepMusicCues() {
+	for (int room = 0; room < StaticTables::kSfxRoomCount; room++) {
+		uint initCount = 0;
+		const ScriptEffect *init = roomInitEffects(room, initCount);
+		for (uint i = 0; init && i < initCount; i++) {
+			if (init[i].op != kOpMusic)
+				continue;
+			debugC(1, kDebugMusic, "cue room %2d entry           slot %2d%s", room,
+				   init[i].args[0], condText(init[i].guards, init[i].guardCount).c_str());
+		}
+
+		uint blockCount = 0;
+		const ScriptBlock *blocks = scriptForRoom(room, blockCount);
+		for (uint b = 0; blocks && b < blockCount; b++) {
+			const ScriptBlock &block = blocks[b];
+			for (uint e = 0; e < block.count; e++) {
+				const ScriptEffect &effect = *scriptEffect(block.first + e);
+				if (effect.op != kOpMusic)
+					continue;
+
+				// A click's cue is guarded twice over: by the state the whole
+				// body sits under, and by the arm inside it the cue is in.
+				Common::String conds = condText(block.conds, block.condCount);
+				const Common::String arms = condText(effect.guards, effect.guardCount);
+				if (conds.empty())
+					conds = arms;
+				else if (!arms.empty())
+					conds += " && " + Common::String(arms.c_str() + 6);
+
+				debugC(1, kDebugMusic, "cue room %2d obj %3d verb %2d slot %2d%s", room,
+					   block.obj, block.verb, effect.args[0], conds.c_str());
+			}
+		}
 	}
 }
 

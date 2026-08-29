@@ -22,6 +22,7 @@
 #include "common/debug.h"
 #include "common/textconsole.h"
 
+#include "alien/alien.h"
 #include "alien/anim.h"
 #include "alien/detection.h"
 #include "alien/inventory.h"
@@ -31,7 +32,7 @@
 
 namespace Alien {
 
-RoomScript::RoomScript() : _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
+RoomScript::RoomScript() : _vm(nullptr), _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
 		_room(0), _queued(kNoEvent), _submode(kNoSubmode) {
 	reset();
 }
@@ -334,6 +335,13 @@ void RoomScript::runEffect(const ScriptEffect &original) {
 	case kOpSound:
 	case kOpPlaySample:
 		soundEffect(effect);
+		break;
+
+	case kOpMusic:
+		// The original starts a track from a room's own code, so a room that
+		// changes the music does it here rather than from a table of its own.
+		if (_vm)
+			_vm->playMusicSlot(effect.args[0]);
 		break;
 
 	default:

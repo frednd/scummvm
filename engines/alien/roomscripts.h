@@ -67,8 +67,10 @@ enum ScriptOpcode {
 						///< (signed), delay in ticks -- INPUT:0x55E, the queue
 	kOpInvAdd,			///< args: item id -- OBJ:0x69d5, append to the inventory
 	kOpInvRemove,		///< args: item id -- OBJ:0x6a71, close the gap behind it
-	kOpInvHas			///< args: item id -- OBJ:0x6add; a test, and its answer went
+	kOpInvHas,			///< args: item id -- OBJ:0x6add; a test, and its answer went
 						///< into a register the decoder could not follow
+	kOpMusic			///< args: music slot -- INPUT:0x53c, which resolves the slot
+						///< into a module and a starting order of its own
 };
 
 /** One byte of the state block as a new game leaves it. */

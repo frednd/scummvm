@@ -491,6 +491,7 @@ static const ScriptEffect kEffects[] = {
 	{ kOpInvAdd,         1, {     3,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_add(3)
 	{ kOpQueueEvent,     1, {     3,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// queue_event(3)
 	{ kOpAnimPlay1,      4, {     6,     2,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(6, 2, 1, 0)
+	{ kOpSetFlag,        2, { 13224,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33a8, 0)
 	{ kOpInvAdd,         1, {     6,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_add(6)
 	{ kOpAnimPlay1,      4, {     7,     2,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(7, 2, 1, 0)
 	{ kOpSetFlag,        2, { 42785,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa721, 1)
@@ -549,6 +550,7 @@ static const ScriptEffect kEffects[] = {
 	{ kOpQueueEvent,     1, {    15,     0,     0,     0,     0,     0 }, 0x00, 1, { { 0xa6d7, 1, true }, { 0, 0, false }, { 0, 0, false } } },	// queue_event(15)
 	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// call 2567:184c(3)
 	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// queue_event()
+	{ kOpSetFlag,        2, { 13222,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33a6, 0)
 	{ kOpInvAdd,         1, {    11,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_add(11)
 	{ kOpSetFlag,        2, { 42852,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa764, 0)
 	{ kOpActionHandled,  1, {     1,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_action_handled(1)
@@ -587,10 +589,12 @@ static const ScriptEffect kEffects[] = {
 	{ kOpAnimPlay1,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(5, 1, 1, 0)
 	{ kOpSetFlag,        2, { 42778,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa71a, 0)
 	{ kOpInvAdd,         1, {    33,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_add(33)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// call 0166:053c(7)
+	{ kOpMusic,          1, {     7,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// music_play_slot(7)
 	{ kOpAnimPlay1,      4, {     6,     1,     5,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(6, 1, 5, 2)
 	{ kOpAnimPlay1,      4, {     7,     1,     5,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(7, 1, 5, 2)
 	{ kOpAnimPlay1,      4, {     8,     1,     2,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(8, 1, 2, 0)
+	{ kOpSetFlag,        2, { 13230,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33ae, 1)
+	{ kOpSetFlag,        2, { 13230,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33ae, 0)
 	{ kOpAnimPlay1,      4, {     6,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(6, 1, 1, 0)
 	{ kOpAnimPlay1,      4, {     7,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(7, 1, 1, 0)
 	{ kOpAnimPlay1,      4, {     8,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(8, 1, 1, 0)
@@ -644,9 +648,11 @@ static const ScriptEffect kEffects[] = {
 	{ kOpQueueEvent,     1, {    54,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// queue_event(54)
 	{ kOpActionHandled,  1, {     1,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_action_handled(1)
 	{ kOpAnimPlay2,      4, {    10,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(10, 1, 1, 0)
+	{ kOpSetFlag,        2, { 13235,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33b3, 1)
 	{ kOpInvRemove,      1, {    35,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_remove(35)
 	{ kOpActionHandled,  1, {     1,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_action_handled(1)
 	{ kOpAnimPlay2,      4, {    10,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(10, 1, 1, 0)
+	{ kOpSetFlag,        2, { 13235,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33b3, 1)
 	{ kOpInvRemove,      1, {    35,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_remove(35)
 	{ kOpActionHandled,  1, {     1,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_action_handled(1)
 	{ kOpInvHas,         1, {    40,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_has(40)
@@ -657,15 +663,18 @@ static const ScriptEffect kEffects[] = {
 	{ kOpQueueEvent,     1, {    56,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// queue_event(56)
 	{ kOpInvHas,         1, {    21,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_has(21)
 	{ kOpInvHas,         1, {    22,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_has(22)
+	{ kOpSetFlag,        2, { 13236,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33b4, 0)
 	{ kOpInvAdd,         1, {    22,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_add(22)
 	{ kOpAnimPlay2,      4, {     7,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(7, 1, 1, 0)
 	{ kOpInvHas,         1, {    21,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_has(21)
+	{ kOpSetFlag,        2, { 13236,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33b4, 0)
 	{ kOpQueueEvent,     1, {    57,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// queue_event(57)
 	{ kOpInvRemove,      1, {    21,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_remove(21)
 	{ kOpInvAdd,         1, {    22,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_add(22)
 	{ kOpAnimPlay2,      4, {     7,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(7, 1, 1, 0)
 	{ kOpAnimPlay2,      4, {    10,     2,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(10, 2, 1, 0)
 	{ kOpInvAdd,         1, {    35,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// inv_add(35)
+	{ kOpSetFlag,        2, { 13235,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33b3, 0)
 	{ kOpSetFlag,        2, { 42856,     3,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa768, 3)
 	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// call 0251:716e(0)
 	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// call 0251:716e(7)
@@ -745,6 +754,7 @@ static const ScriptEffect kEffects[] = {
 	{ kOpSetFlag,        2, { 42871,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa777, 0)
 	{ kOpAnimPlay1,      4, {     1,     2,    42,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(1, 2, 42, 3)
 	{ kOpSetFlag,        2, { 42872,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa778, 1)
+	{ kOpSetFlag,        2, { 13247,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33bf, 1)
 	{ kOpActionHandled,  1, {     1,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_action_handled(1)
 	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// call 11f3:0577(8)
 	{ kOpQueueEvent,     1, {     1,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// queue_event(1)
@@ -929,128 +939,129 @@ static const ScriptBlock kBlocks[] = {
 	{  21,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  194,  3 },	// Room 10 - Kitchen +0x1d9
 	{  25,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  197,  3 },	// Room 10 - Kitchen +0x20c
 	{  29,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  200,  4 },	// Room 10 - Kitchen +0x22c
-	{  40,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  204,  2 },	// Room 10 - Kitchen +0x253
-	{   2,  -1,  25, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  206,  4 },	// Room 11 - Living Room +0x117
-	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  210,  4 },	// Room 11 - Living Room +0x191
-	{   9,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  214,  4 },	// Room 11 - Living Room +0x1b6
-	{  10,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  218,  3 },	// Room 11 - Living Room +0x1db
-	{  11,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  221,  3 },	// Room 11 - Living Room +0x1fb
-	{   5,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  224,  1 },	// Room 11 - Living Room +0x21b
-	{   2,  -1,   8, 1, { { 0xa6ee, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  225,  4 },	// Room 13 - Basement +0xa7
-	{  11,  -1,  26, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  229,  7 },	// Room 13 - Basement +0xd3
-	{   3,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  236,  4 },	// Room 13 - Basement +0x13a
-	{  12,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  240,  5 },	// Room 13 - Basement +0x15f
-	{   6,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  245,  2 },	// Room 14 - Closet Shaft / Chimney +0x69
-	{   8,  -1,  -1, 1, { { 0xa647, 5, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  247,  1 },	// Room 14 - Closet Shaft / Chimney +0x9e
-	{   7,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  248,  2 },	// Room 15 - Entrance Hall (Sali) +0x86
-	{   1,  -1,  -1, 1, { { 0xa6f1, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  250,  7 },	// Room 15 - Entrance Hall (Sali) +0xaf
-	{   7,  -1,  -1, 1, { { 0xa6d6, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  257,  3 },	// Room 15 - Entrance Hall (Sali) +0x160
-	{  -1,   3,  -1, 1, { { 0xa6d7, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  260,  2 },	// Room 15 - Entrance Hall (Sali) +0x16e
-	{  20,  -1,  -1, 1, { { 0x33a6, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  262,  1 },	// Room 15 - Entrance Hall (Sali) +0x1a2
-	{   1,  -1,  31, 2, { { 0xa763, 1, false }, { 0xa764, 1, false }, { 0, 0, false }, { 0, 0, false } },  263,  4 },	// Room 17 - Observatory Entrance +0x5f
-	{   1,  -1,  31, 1, { { 0xa763, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  267,  2 },	// Room 17 - Observatory Entrance +0xa9
-	{   1,   3,  -1, 1, { { 0xa764, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  269,  4 },	// Room 17 - Observatory Entrance +0xf0
-	{   1,   4,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  273,  3 },	// Room 17 - Observatory Entrance +0x130
-	{  13,  -1,  25, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  276,  6 },	// Room 18 - Sitting Room +0x46
-	{   8,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  282,  5 },	// Room 18 - Sitting Room +0xa4
-	{  13,   3,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  287,  3 },	// Room 18 - Sitting Room +0xde
-	{  13,   4,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  290,  3 },	// Room 18 - Sitting Room +0x118
-	{  16,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  293,  4 },	// Room 18 - Sitting Room +0x138
-	{  20,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  297,  3 },	// Room 18 - Sitting Room +0x15f
-	{  -1,   7,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  300,  4 },	// Room 18 - Sitting Room +0x189
-	{  -1,   8,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  304,  3 },	// Room 18 - Sitting Room +0x1cd
-	{  -1,  -1,   6, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  307,  7 },	// Room 19 - Observatory Interior +0xfe
-	{   9,  -1,  -1, 3, { { 0xa759, 0, false }, { 0xa758, 0, false }, { 0xa75a, 0, false }, { 0, 0, false } },  314,  5 },	// Room 19 - Observatory Interior +0x121
-	{   3,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  319,  1 },	// Room 19 - Observatory Interior +0x188
-	{   3,   9,  -1, 1, { { 0xa602, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  320,  3 },	// Room 19 - Observatory Interior +0x1c2
-	{  11,   1,  -1, 2, { { 0xa602, 0, false }, { 0xa75a, 0, false }, { 0, 0, false }, { 0, 0, false } },  323,  4 },	// Room 19 - Observatory Interior +0x213
-	{   1,  10,  -1, 1, { { 0xa75a, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  327,  6 },	// Room 19 - Observatory Interior +0x254
-	{   1,  10,  -1, 2, { { 0xa75a, 1, false }, { 0xa602, 0, false }, { 0, 0, false }, { 0, 0, false } },  333,  4 },	// Room 19 - Observatory Interior +0x2c2
-	{   1,  -1,   1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  337,  2 },	// Room 21 - Yodle's Tree Hut +0x3ce
-	{   6,  -1,  -1, 1, { { 0xa74b, 2, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  339,  2 },	// Room 21 - Yodle's Tree Hut +0x44e
-	{   3,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  341,  2 },	// Room 21 - Yodle's Tree Hut +0x4af
-	{   7,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  343,  5 },	// Room 21 - Yodle's Tree Hut +0x55f
-	{   2,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  348,  2 },	// Room 21 - Yodle's Tree Hut +0x598
-	{  -1,  -1,  40, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  350,  1 },	// Room 22 - Parlor / Teleport +0x51
-	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  351,  1 },	// Room 22 - Parlor / Teleport +0x5f
-	{  -1,  -1,  40, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  352,  2 },	// Room 22 - Parlor / Teleport +0x77
-	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  354,  2 },	// Room 22 - Parlor / Teleport +0x85
-	{  -1,  -1,  35, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  356,  3 },	// Room 22 - Parlor / Teleport +0x98
-	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  359,  3 },	// Room 22 - Parlor / Teleport +0xa6
-	{   5,  10,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  362,  2 },	// Room 22 - Parlor / Teleport +0xf8
-	{   9,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  364,  2 },	// Room 22 - Parlor / Teleport +0x142
-	{  20,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  366, 11 },	// Room 22 - Parlor / Teleport +0x166
-	{  30,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  377,  2 },	// Room 22 - Parlor / Teleport +0x1e7
-	{   1,  -1,  33, 2, { { 0xa767, 1, false }, { 0xa766, 0, false }, { 0, 0, false }, { 0, 0, false } },  379,  2 },	// Room 23 - Crossroads +0x54
-	{   1,   6,  -1, 2, { { 0xa768, 0, false }, { 0xa767, 0, false }, { 0, 0, false }, { 0, 0, false } },  381,  1 },	// Room 23 - Crossroads +0x9d
-	{  -1,  -1,   1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  382,  2 },	// Room 25 - Park / Mailbox +0x65
-	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  384,  2 },	// Room 25 - Park / Mailbox +0x73
-	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  386,  3 },	// Room 25 - Park / Mailbox +0x92
-	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  389,  1 },	// Room 25 - Park / Mailbox +0xd7
-	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  390,  3 },	// Room 26 - Forest +0x67
-	{   6,  -1,   3, 1, { { 0xa752, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  393,  1 },	// Room 26 - Forest +0xaa
-	{  18,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  394,  5 },	// Room 26 - Forest +0x105
-	{  20,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  399,  1 },	// Room 26 - Forest +0x138
-	{  22,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  400,  2 },	// Room 26 - Forest +0x15a
-	{   3,  -1,  30, 1, { { 0xa75f, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  402,  6 },	// Room 28 - Telescope Room +0xa7
-	{  10,  -1,  20, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  408,  4 },	// Room 28 - Telescope Room +0xf4
-	{   6,  13,  -1, 1, { { 0xa75f, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  412,  6 },	// Room 28 - Telescope Room +0x14d
-	{   6,  13,  -1, 2, { { 0xa75f, 1, false }, { 0xa602, 0, false }, { 0, 0, false }, { 0, 0, false } },  418,  4 },	// Room 28 - Telescope Room +0x1b0
-	{   5,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  422,  3 },	// Room 28 - Telescope Room +0x1e9
-	{  11,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  425,  3 },	// Room 28 - Telescope Room +0x210
-	{   9,  13,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  428,  2 },	// Room 28 - Telescope Room +0x237
-	{   9,  13,  -1, 3, { { 0xa760, 0, false }, { 0xa75a, 1, false }, { 0xa759, 1, false }, { 0, 0, false } },  430,  2 },	// Room 28 - Telescope Room +0x274
-	{   9,  13,  -1, 4, { { 0xa760, 1, false }, { 0xa602, 0, false }, { 0xa75a, 1, false }, { 0xa759, 1, false } },  432,  2 },	// Room 28 - Telescope Room +0x2cc
-	{   4,  10,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  434,  1 },	// Room 28 - Telescope Room +0x308
-	{   2,   5,  -1, 1, { { 0xa75f, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  435,  1 },	// Room 28 - Telescope Room +0x331
-	{   2,   6,  -1, 1, { { 0xa72e, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  436,  4 },	// Room 32 - Cemetery +0x78
-	{   2,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  440,  1 },	// Room 32 - Cemetery +0xb8
-	{   3,  11,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  441,  1 },	// Room 32 - Cemetery +0xd5
-	{   2,  -1,  31, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  442,  2 },	// Room 34 - Hippie / Pal Area +0x51
-	{   2,  -1,  15, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  444,  2 },	// Room 34 - Hippie / Pal Area +0x6b
-	{   1,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  446,  3 },	// Room 35 - Sewer +0xc3
-	{   2,  12,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  449,  7 },	// Room 35 - Sewer +0xea
-	{   3,  10,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  456,  1 },	// Room 35 - Sewer +0x153
-	{   4,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  457,  1 },	// Room 35 - Sewer +0x16c
-	{  10,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  458,  3 },	// Room 40 - Cave Entrance +0x66
-	{  10,  -1,  27, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  461,  3 },	// Room 40 - Cave Entrance +0x98
-	{  10,  -1,   1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  464,  3 },	// Room 40 - Cave Entrance +0xc5
-	{  -1,  -1,  39, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  467,  2 },	// Room 41 - Shore / Underwater Entry +0x4a
-	{   7,  -1,  -1, 1, { { 0xa77f, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  469,  2 },	// Room 41 - Shore / Underwater Entry +0x66
-	{   2,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  471,  7 },	// Room 41 - Shore / Underwater Entry +0xf7
-	{  -1,   4,  -1, 1, { { 0xa77f, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  478,  6 },	// Room 41 - Shore / Underwater Entry +0x10c
-	{  11,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  484,  3 },	// Rooms 43/44/45 - Maze + Crystal Entry +0x7b
-	{   1,  -1,  37, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  487,  2 },	// Room 46 - Diving Area / Underwater +0x4e
-	{   2,  -1,  -1, 1, { { 0xa788, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  489,  4 },	// Room 46 - Diving Area / Underwater +0x95
-	{   2,  -1,  38, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  493,  6 },	// Room 48 - Alien Ship Upper Level +0x4e
-	{   3,  13,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  499,  7 },	// Room 49 - Engine Room +0x74
-	{   4,  12,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  506,  4 },	// Room 49 - Engine Room +0xe3
-	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  510,  2 },	// Room 50 - Steam Room +0x55
-	{   6,  13,  -1, 2, { { 0xa798, 0, false }, { 0xa789, 0, false }, { 0, 0, false }, { 0, 0, false } },  512,  1 },	// Room 50 - Steam Room +0xa0
-	{   4,  -1,  42, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  513,  3 },	// Rooms 53/57 - Hallways +0x58
-	{   4,  -1,  43, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  516,  2 },	// Rooms 53/57 - Hallways +0xa6
-	{   5,  -1,  43, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  518,  7 },	// Rooms 53/57 - Hallways +0xc0
-	{   3,   6,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  525,  2 },	// Rooms 53/57 - Hallways +0x150
-	{   8,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  527,  2 },	// Rooms 53/57 - Hallways +0x195
-	{   9,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  529,  2 },	// Room 54 - Waiting Room +0x51
-	{  10,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  531,  2 },	// Room 54 - Waiting Room +0x84
-	{  16,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  533,  2 },	// Room 54 - Waiting Room +0xb8
-	{  12,  12,  -1, 1, { { 0xa7e0, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  535,  1 },	// Room 54 - Waiting Room +0x14e
-	{  13,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  536,  8 },	// Room 54 - Waiting Room +0x20a
-	{   4,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  544,  4 },	// Room 54 - Waiting Room +0x261
-	{  18,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  548,  3 },	// Room 54 - Waiting Room +0x2a5
-	{   8,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  551,  3 },	// Room 56 - Transporter Chamber +0x6d
-	{  13,  -1,  43, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  554,  7 },	// Room 58 - Jail +0x9e
-	{  21,  -1,  48, 1, { { 0xa7ab, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  561,  2 },	// Room 58 - Jail +0xf7
-	{  21,  -1,  48, 1, { { 0xa7ab, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  563,  4 },	// Room 58 - Jail +0x118
-	{  20,   5,  -1, 1, { { 0xa7ab, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  567,  1 },	// Room 58 - Jail +0x19c
-	{   5,   6,  -1, 1, { { 0xa7b1, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  568,  1 },	// Room 58 - Jail +0x1b6
-	{   6,   6,  -1, 1, { { 0xa7b1, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  569,  2 },	// Room 58 - Jail +0x1f0
-	{  12,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  571,  1 },	// Room 58 - Jail +0x240
-	{  14,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  572,  2 },	// Room 58 - Jail +0x253
-	{   7,  -1,  42, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  574,  2 },	// Room 59 - Escape Pod +0x58
-	{   7,  -1,  43, 1, { { 0xa7d1, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  576,  2 },	// Room 59 - Escape Pod +0x79
-	{   9,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  578,  1 },	// Room 59 - Escape Pod +0xd9
+	{  40,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  204,  3 },	// Room 10 - Kitchen +0x253
+	{   2,  -1,  25, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  207,  4 },	// Room 11 - Living Room +0x117
+	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  211,  4 },	// Room 11 - Living Room +0x191
+	{   9,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  215,  4 },	// Room 11 - Living Room +0x1b6
+	{  10,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  219,  3 },	// Room 11 - Living Room +0x1db
+	{  11,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  222,  3 },	// Room 11 - Living Room +0x1fb
+	{   5,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  225,  1 },	// Room 11 - Living Room +0x21b
+	{   2,  -1,   8, 1, { { 0xa6ee, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  226,  4 },	// Room 13 - Basement +0xa7
+	{  11,  -1,  26, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  230,  7 },	// Room 13 - Basement +0xd3
+	{   3,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  237,  4 },	// Room 13 - Basement +0x13a
+	{  12,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  241,  5 },	// Room 13 - Basement +0x15f
+	{   6,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  246,  2 },	// Room 14 - Closet Shaft / Chimney +0x69
+	{   8,  -1,  -1, 1, { { 0xa647, 5, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  248,  1 },	// Room 14 - Closet Shaft / Chimney +0x9e
+	{   7,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  249,  2 },	// Room 15 - Entrance Hall (Sali) +0x86
+	{   1,  -1,  -1, 1, { { 0xa6f1, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  251,  7 },	// Room 15 - Entrance Hall (Sali) +0xaf
+	{   7,  -1,  -1, 1, { { 0xa6d6, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  258,  3 },	// Room 15 - Entrance Hall (Sali) +0x160
+	{  -1,   3,  -1, 1, { { 0xa6d7, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  261,  2 },	// Room 15 - Entrance Hall (Sali) +0x16e
+	{  20,  -1,  -1, 1, { { 0x33a6, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  263,  2 },	// Room 15 - Entrance Hall (Sali) +0x1a2
+	{   1,  -1,  31, 2, { { 0xa763, 1, false }, { 0xa764, 1, false }, { 0, 0, false }, { 0, 0, false } },  265,  4 },	// Room 17 - Observatory Entrance +0x5f
+	{   1,  -1,  31, 1, { { 0xa763, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  269,  2 },	// Room 17 - Observatory Entrance +0xa9
+	{   1,   3,  -1, 1, { { 0xa764, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  271,  4 },	// Room 17 - Observatory Entrance +0xf0
+	{   1,   4,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  275,  3 },	// Room 17 - Observatory Entrance +0x130
+	{  13,  -1,  25, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  278,  6 },	// Room 18 - Sitting Room +0x46
+	{   8,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  284,  5 },	// Room 18 - Sitting Room +0xa4
+	{  13,   3,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  289,  3 },	// Room 18 - Sitting Room +0xde
+	{  13,   4,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  292,  3 },	// Room 18 - Sitting Room +0x118
+	{  16,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  295,  4 },	// Room 18 - Sitting Room +0x138
+	{  20,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  299,  3 },	// Room 18 - Sitting Room +0x15f
+	{  -1,   7,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  302,  5 },	// Room 18 - Sitting Room +0x189
+	{  -1,   8,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  307,  4 },	// Room 18 - Sitting Room +0x1cd
+	{  -1,  -1,   6, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  311,  7 },	// Room 19 - Observatory Interior +0xfe
+	{   9,  -1,  -1, 3, { { 0xa759, 0, false }, { 0xa758, 0, false }, { 0xa75a, 0, false }, { 0, 0, false } },  318,  5 },	// Room 19 - Observatory Interior +0x121
+	{   3,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  323,  1 },	// Room 19 - Observatory Interior +0x188
+	{   3,   9,  -1, 1, { { 0xa602, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  324,  3 },	// Room 19 - Observatory Interior +0x1c2
+	{  11,   1,  -1, 2, { { 0xa602, 0, false }, { 0xa75a, 0, false }, { 0, 0, false }, { 0, 0, false } },  327,  4 },	// Room 19 - Observatory Interior +0x213
+	{   1,  10,  -1, 1, { { 0xa75a, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  331,  6 },	// Room 19 - Observatory Interior +0x254
+	{   1,  10,  -1, 2, { { 0xa75a, 1, false }, { 0xa602, 0, false }, { 0, 0, false }, { 0, 0, false } },  337,  4 },	// Room 19 - Observatory Interior +0x2c2
+	{   1,  -1,   1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  341,  2 },	// Room 21 - Yodle's Tree Hut +0x3ce
+	{   6,  -1,  -1, 1, { { 0xa74b, 2, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  343,  2 },	// Room 21 - Yodle's Tree Hut +0x44e
+	{   3,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  345,  2 },	// Room 21 - Yodle's Tree Hut +0x4af
+	{   7,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  347,  5 },	// Room 21 - Yodle's Tree Hut +0x55f
+	{   2,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  352,  2 },	// Room 21 - Yodle's Tree Hut +0x598
+	{  -1,  -1,  40, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  354,  1 },	// Room 22 - Parlor / Teleport +0x51
+	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  355,  1 },	// Room 22 - Parlor / Teleport +0x5f
+	{  -1,  -1,  40, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  356,  2 },	// Room 22 - Parlor / Teleport +0x77
+	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  358,  2 },	// Room 22 - Parlor / Teleport +0x85
+	{  -1,  -1,  35, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  360,  4 },	// Room 22 - Parlor / Teleport +0x98
+	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  364,  4 },	// Room 22 - Parlor / Teleport +0xa6
+	{   5,  10,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  368,  2 },	// Room 22 - Parlor / Teleport +0xf8
+	{   9,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  370,  2 },	// Room 22 - Parlor / Teleport +0x142
+	{  20,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  372, 13 },	// Room 22 - Parlor / Teleport +0x166
+	{  30,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  385,  3 },	// Room 22 - Parlor / Teleport +0x1e7
+	{   1,  -1,  33, 2, { { 0xa767, 1, false }, { 0xa766, 0, false }, { 0, 0, false }, { 0, 0, false } },  388,  2 },	// Room 23 - Crossroads +0x54
+	{   1,   6,  -1, 2, { { 0xa768, 0, false }, { 0xa767, 0, false }, { 0, 0, false }, { 0, 0, false } },  390,  1 },	// Room 23 - Crossroads +0x9d
+	{  -1,  -1,   1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  391,  2 },	// Room 25 - Park / Mailbox +0x65
+	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  393,  2 },	// Room 25 - Park / Mailbox +0x73
+	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  395,  3 },	// Room 25 - Park / Mailbox +0x92
+	{   1,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  398,  1 },	// Room 25 - Park / Mailbox +0xd7
+	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  399,  3 },	// Room 26 - Forest +0x67
+	{   6,  -1,   3, 1, { { 0xa752, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  402,  1 },	// Room 26 - Forest +0xaa
+	{  18,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  403,  5 },	// Room 26 - Forest +0x105
+	{  20,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  408,  1 },	// Room 26 - Forest +0x138
+	{  22,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  409,  2 },	// Room 26 - Forest +0x15a
+	{   3,  -1,  30, 1, { { 0xa75f, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  411,  6 },	// Room 28 - Telescope Room +0xa7
+	{  10,  -1,  20, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  417,  4 },	// Room 28 - Telescope Room +0xf4
+	{   6,  13,  -1, 1, { { 0xa75f, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  421,  6 },	// Room 28 - Telescope Room +0x14d
+	{   6,  13,  -1, 2, { { 0xa75f, 1, false }, { 0xa602, 0, false }, { 0, 0, false }, { 0, 0, false } },  427,  4 },	// Room 28 - Telescope Room +0x1b0
+	{   5,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  431,  3 },	// Room 28 - Telescope Room +0x1e9
+	{  11,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  434,  3 },	// Room 28 - Telescope Room +0x210
+	{   9,  13,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  437,  2 },	// Room 28 - Telescope Room +0x237
+	{   9,  13,  -1, 3, { { 0xa760, 0, false }, { 0xa75a, 1, false }, { 0xa759, 1, false }, { 0, 0, false } },  439,  2 },	// Room 28 - Telescope Room +0x274
+	{   9,  13,  -1, 4, { { 0xa760, 1, false }, { 0xa602, 0, false }, { 0xa75a, 1, false }, { 0xa759, 1, false } },  441,  2 },	// Room 28 - Telescope Room +0x2cc
+	{   4,  10,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  443,  1 },	// Room 28 - Telescope Room +0x308
+	{   2,   5,  -1, 1, { { 0xa75f, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  444,  1 },	// Room 28 - Telescope Room +0x331
+	{   2,   6,  -1, 1, { { 0xa72e, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  445,  4 },	// Room 32 - Cemetery +0x78
+	{   2,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  449,  1 },	// Room 32 - Cemetery +0xb8
+	{   3,  11,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  450,  1 },	// Room 32 - Cemetery +0xd5
+	{   2,  -1,  31, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  451,  2 },	// Room 34 - Hippie / Pal Area +0x51
+	{   2,  -1,  15, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  453,  2 },	// Room 34 - Hippie / Pal Area +0x6b
+	{   1,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  455,  3 },	// Room 35 - Sewer +0xc3
+	{   2,  12,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  458,  7 },	// Room 35 - Sewer +0xea
+	{   3,  10,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  465,  1 },	// Room 35 - Sewer +0x153
+	{   4,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  466,  1 },	// Room 35 - Sewer +0x16c
+	{  10,  10,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  467,  1 },	// Room 35 - Sewer +0x17f
+	{  10,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  468,  3 },	// Room 40 - Cave Entrance +0x66
+	{  10,  -1,  27, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  471,  3 },	// Room 40 - Cave Entrance +0x98
+	{  10,  -1,   1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  474,  3 },	// Room 40 - Cave Entrance +0xc5
+	{  -1,  -1,  39, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  477,  2 },	// Room 41 - Shore / Underwater Entry +0x4a
+	{   7,  -1,  -1, 1, { { 0xa77f, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  479,  2 },	// Room 41 - Shore / Underwater Entry +0x66
+	{   2,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  481,  7 },	// Room 41 - Shore / Underwater Entry +0xf7
+	{  -1,   4,  -1, 1, { { 0xa77f, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  488,  6 },	// Room 41 - Shore / Underwater Entry +0x10c
+	{  11,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  494,  3 },	// Rooms 43/44/45 - Maze + Crystal Entry +0x7b
+	{   1,  -1,  37, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  497,  2 },	// Room 46 - Diving Area / Underwater +0x4e
+	{   2,  -1,  -1, 1, { { 0xa788, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  499,  4 },	// Room 46 - Diving Area / Underwater +0x95
+	{   2,  -1,  38, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  503,  6 },	// Room 48 - Alien Ship Upper Level +0x4e
+	{   3,  13,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  509,  7 },	// Room 49 - Engine Room +0x74
+	{   4,  12,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  516,  4 },	// Room 49 - Engine Room +0xe3
+	{   6,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  520,  2 },	// Room 50 - Steam Room +0x55
+	{   6,  13,  -1, 2, { { 0xa798, 0, false }, { 0xa789, 0, false }, { 0, 0, false }, { 0, 0, false } },  522,  1 },	// Room 50 - Steam Room +0xa0
+	{   4,  -1,  42, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  523,  3 },	// Rooms 53/57 - Hallways +0x58
+	{   4,  -1,  43, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  526,  2 },	// Rooms 53/57 - Hallways +0xa6
+	{   5,  -1,  43, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  528,  7 },	// Rooms 53/57 - Hallways +0xc0
+	{   3,   6,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  535,  2 },	// Rooms 53/57 - Hallways +0x150
+	{   8,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  537,  2 },	// Rooms 53/57 - Hallways +0x195
+	{   9,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  539,  2 },	// Room 54 - Waiting Room +0x51
+	{  10,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  541,  2 },	// Room 54 - Waiting Room +0x84
+	{  16,  -1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  543,  2 },	// Room 54 - Waiting Room +0xb8
+	{  12,  12,  -1, 1, { { 0xa7e0, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  545,  1 },	// Room 54 - Waiting Room +0x14e
+	{  13,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  546,  8 },	// Room 54 - Waiting Room +0x20a
+	{   4,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  554,  4 },	// Room 54 - Waiting Room +0x261
+	{  18,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  558,  3 },	// Room 54 - Waiting Room +0x2a5
+	{   8,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  561,  3 },	// Room 56 - Transporter Chamber +0x6d
+	{  13,  -1,  43, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  564,  7 },	// Room 58 - Jail +0x9e
+	{  21,  -1,  48, 1, { { 0xa7ab, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  571,  2 },	// Room 58 - Jail +0xf7
+	{  21,  -1,  48, 1, { { 0xa7ab, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  573,  4 },	// Room 58 - Jail +0x118
+	{  20,   5,  -1, 1, { { 0xa7ab, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  577,  1 },	// Room 58 - Jail +0x19c
+	{   5,   6,  -1, 1, { { 0xa7b1, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  578,  1 },	// Room 58 - Jail +0x1b6
+	{   6,   6,  -1, 1, { { 0xa7b1, 1, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  579,  2 },	// Room 58 - Jail +0x1f0
+	{  12,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  581,  1 },	// Room 58 - Jail +0x240
+	{  14,   1,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  582,  2 },	// Room 58 - Jail +0x253
+	{   7,  -1,  42, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  584,  2 },	// Room 59 - Escape Pod +0x58
+	{   7,  -1,  43, 1, { { 0xa7d1, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  586,  2 },	// Room 59 - Escape Pod +0x79
+	{   9,   5,  -1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },  588,  1 },	// Room 59 - Escape Pod +0xd9
 };
 
 struct ScriptRoom {
@@ -1080,22 +1091,22 @@ static const ScriptRoom kRooms[] = {
 	{  28,  123, 11 },	// Room 28 - Telescope Room
 	{  32,  134,  3 },	// Room 32 - Cemetery
 	{  34,  137,  2 },	// Room 34 - Hippie / Pal Area
-	{  35,  139,  4 },	// Room 35 - Sewer
-	{  40,  143,  3 },	// Room 40 - Cave Entrance
-	{  41,  146,  4 },	// Room 41 - Shore / Underwater Entry
-	{  43,  150,  1 },	// Rooms 43/44/45 - Maze + Crystal Entry
-	{  44,  150,  1 },	// Rooms 43/44/45 - Maze + Crystal Entry
-	{  45,  150,  1 },	// Rooms 43/44/45 - Maze + Crystal Entry
-	{  46,  151,  2 },	// Room 46 - Diving Area / Underwater
-	{  48,  153,  1 },	// Room 48 - Alien Ship Upper Level
-	{  49,  154,  2 },	// Room 49 - Engine Room
-	{  50,  156,  2 },	// Room 50 - Steam Room
-	{  53,  158,  5 },	// Rooms 53/57 - Hallways
-	{  54,  163,  7 },	// Room 54 - Waiting Room
-	{  56,  170,  1 },	// Room 56 - Transporter Chamber
-	{  57,  158,  5 },	// Rooms 53/57 - Hallways
-	{  58,  171,  8 },	// Room 58 - Jail
-	{  59,  179,  3 },	// Room 59 - Escape Pod
+	{  35,  139,  5 },	// Room 35 - Sewer
+	{  40,  144,  3 },	// Room 40 - Cave Entrance
+	{  41,  147,  4 },	// Room 41 - Shore / Underwater Entry
+	{  43,  151,  1 },	// Rooms 43/44/45 - Maze + Crystal Entry
+	{  44,  151,  1 },	// Rooms 43/44/45 - Maze + Crystal Entry
+	{  45,  151,  1 },	// Rooms 43/44/45 - Maze + Crystal Entry
+	{  46,  152,  2 },	// Room 46 - Diving Area / Underwater
+	{  48,  154,  1 },	// Room 48 - Alien Ship Upper Level
+	{  49,  155,  2 },	// Room 49 - Engine Room
+	{  50,  157,  2 },	// Room 50 - Steam Room
+	{  53,  159,  5 },	// Rooms 53/57 - Hallways
+	{  54,  164,  7 },	// Room 54 - Waiting Room
+	{  56,  171,  1 },	// Room 56 - Transporter Chamber
+	{  57,  159,  5 },	// Rooms 53/57 - Hallways
+	{  58,  172,  8 },	// Room 58 - Jail
+	{  59,  180,  3 },	// Room 59 - Escape Pod
 };
 
 const ScriptBlock *scriptForRoom(int room, uint &count) {

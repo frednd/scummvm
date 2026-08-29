@@ -32,6 +32,7 @@
 
 namespace Alien {
 
+class AlienEngine;
 class AnimSlots;
 class Inventory;
 class SoundFX;
@@ -92,6 +93,10 @@ public:
 
 	/// The bank and voices a sound / play_sample effect triggers. Not owned.
 	void setSound(SoundFX *sound) { _sound = sound; }
+
+	/// Where a music effect starts its slot: the module and the mixer stream
+	/// belong to the engine, not to a subsystem of its own. Not owned.
+	void setEngine(AlienEngine *vm) { _vm = vm; }
 
 	/// Clears the whole state block, as starting a new game does.
 	void reset();
@@ -177,6 +182,7 @@ private:
 	byte *flagSlot(uint16 addr);
 	const byte *flagSlot(uint16 addr) const;
 
+	AlienEngine *_vm;
 	AnimSlots *_anims;
 	Inventory *_inventory;
 	SoundFX *_sound;

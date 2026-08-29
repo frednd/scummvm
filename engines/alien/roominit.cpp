@@ -25,7 +25,7 @@
 // The frame every animation slot opens on, as the room's own enter routine sets
 // it: the effects it runs, with the puzzle-state guards they sit under.
 //
-//   122 plays over 30 rooms.
+//   127 plays over 31 rooms.
 
 #include "alien/roominit.h"
 
@@ -33,6 +33,7 @@ namespace Alien {
 
 static const ScriptEffect kRoomInit[] = {
 	{ kOpAnimPlay1,      4, {     2,     1,     4,     9,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(2, 1, 4, 9)
+	{ kOpMusic,          1, {     2,     0,     0,     0,     0,     0 }, 0x00, 1, { { 0xa6fa, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// music_play_slot(2)
 	{ kOpAnimPlay1,      4, {     8,     1,    39,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(8, 1, 39, 3)
 	{ kOpAnimPlay1,      4, {     5,     1,    13,     3,     0,     0 }, 0x00, 1, { { 0xa6f0, 1, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(5, 1, 13, 3)
 	{ kOpAnimPlay1,      4, {     7,     1,     7,     3,     0,     0 }, 0x00, 1, { { 0xa6f0, 1, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(7, 1, 7, 3)
@@ -41,6 +42,10 @@ static const ScriptEffect kRoomInit[] = {
 	{ kOpAnimPlay2,      4, {     1,    11,     1,     0,     0,     0 }, 0x00, 1, { { 0xa713, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(1, 11, 1, 0)
 	{ kOpAnimPlay1,      4, {     1,     1,    25,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(1, 1, 25, 2)
 	{ kOpAnimPlay1,      4, {     4,     1,    64,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(4, 1, 64, 2)
+	{ kOpMusic,          1, {     7,     0,     0,     0,     0,     0 }, 0x00, 1, { { 0x33ae, 1, false }, { 0, 0, false }, { 0, 0, false } } },	// music_play_slot(7)
+	{ kOpAnimPlay1,      4, {     6,     1,     5,     2,     0,     0 }, 0x00, 1, { { 0x33ae, 1, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(6, 1, 5, 2)
+	{ kOpAnimPlay1,      4, {     7,     1,     5,     2,     0,     0 }, 0x00, 1, { { 0x33ae, 1, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(7, 1, 5, 2)
+	{ kOpAnimPlay1,      4, {     8,     1,     2,     0,     0,     0 }, 0x00, 1, { { 0x33ae, 1, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(8, 1, 2, 0)
 	{ kOpAnimPlay1,      4, {     4,     1,    17,     2,     0,     0 }, 0x00, 2, { { 0xa49f, 100, false }, { 0xa49c, 15, false }, { 0, 0, false } } },	// anim_play_mode1(4, 1, 17, 2)
 	{ kOpAnimPlay1,      4, {     0,    26,    13,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(0, 26, 13, 3)
 	{ kOpAnimPlay1,      4, {     5,     1,    27,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(5, 1, 27, 2)
@@ -166,35 +171,36 @@ struct RoomInitRoom {
 
 static const RoomInitRoom kRoomInitRooms[] = {
 	{  3,   0,  1 },
-	{ 10,   1,  1 },
-	{ 13,   2,  4 },
-	{ 15,   6,  1 },
-	{ 17,   7,  1 },
-	{ 18,   8,  1 },
-	{ 19,   9,  1 },
-	{ 22,  10,  5 },
-	{ 23,  15,  1 },
-	{ 26,  16,  5 },
-	{ 30,  21,  1 },
-	{ 32,  22, 11 },
-	{ 33,  33,  3 },
-	{ 41,  36,  8 },
-	{ 43,  44,  6 },
-	{ 44,  50,  6 },
-	{ 45,  56,  6 },
-	{ 46,  62,  3 },
-	{ 48,  65,  3 },
-	{ 49,  68,  5 },
-	{ 50,  73,  2 },
-	{ 51,  75,  3 },
-	{ 52,  78,  6 },
-	{ 53,  84,  4 },
-	{ 54,  88,  6 },
-	{ 55,  94,  9 },
-	{ 56, 103,  5 },
-	{ 57, 108,  4 },
-	{ 58, 112,  4 },
-	{ 59, 116,  6 },
+	{  7,   1,  1 },
+	{ 10,   2,  1 },
+	{ 13,   3,  4 },
+	{ 15,   7,  1 },
+	{ 17,   8,  1 },
+	{ 18,   9,  5 },
+	{ 19,  14,  1 },
+	{ 22,  15,  5 },
+	{ 23,  20,  1 },
+	{ 26,  21,  5 },
+	{ 30,  26,  1 },
+	{ 32,  27, 11 },
+	{ 33,  38,  3 },
+	{ 41,  41,  8 },
+	{ 43,  49,  6 },
+	{ 44,  55,  6 },
+	{ 45,  61,  6 },
+	{ 46,  67,  3 },
+	{ 48,  70,  3 },
+	{ 49,  73,  5 },
+	{ 50,  78,  2 },
+	{ 51,  80,  3 },
+	{ 52,  83,  6 },
+	{ 53,  89,  4 },
+	{ 54,  93,  6 },
+	{ 55,  99,  9 },
+	{ 56, 108,  5 },
+	{ 57, 113,  4 },
+	{ 58, 117,  4 },
+	{ 59, 121,  6 },
 };
 
 const ScriptEffect *roomInitEffects(int room, uint &count) {
