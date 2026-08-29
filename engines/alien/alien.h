@@ -136,6 +136,12 @@ private:
 	void playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles = nullptr);
 	void drawSubtitle(const CDA2Decoder &video, const byte *palette);
 	uint subtitleLanguage() const;
+	void startEnding();
+	void armEnding();
+	void stepEnding();
+	void speakEnding(byte code);
+	bool endingLineDone() const;
+	void winGame();
 	bool playLift();
 	bool playCutscene(const char *file);
 	void dumpVideo();
@@ -270,6 +276,14 @@ private:
 
 	bool _dirty;
 	bool _quit;
+
+	/// Room 59's escape-pod sequence: its step [0xa49f], the timeline [0xa49c]
+	/// one step waits on, the slot-4 cycle [0xa53e] leaves running, and the win
+	/// flag [0x7dc5] the last step sets (ending.cpp).
+	byte _endingStep;
+	uint _endingPos;
+	bool _endingLoop;
+	bool _won;
 
 	/// A cutscene owns the screen: no character, no inventory bar, no hover name.
 	bool _cutscene;

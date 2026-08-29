@@ -118,6 +118,9 @@ public:
 	/** True while any slot still has frames to advance. */
 	bool isBusy() const;
 
+	/** True while this one slot still has frames to advance. */
+	bool isBusy(uint slot) const { return _slots[slot].remaining > 0; }
+
 	/** Composites the current frame of every slot that has one, scroll-adjusted like Walker::draw. */
 	void draw(Graphics::Surface &dest, int scrollX = 0) const;
 

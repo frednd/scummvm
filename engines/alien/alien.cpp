@@ -160,6 +160,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false),
+		_endingStep(0), _endingPos(0), _endingLoop(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -233,6 +234,11 @@ Common::Error AlienEngine::run() {
 
 	if (debugChannelSet(2, kDebugRooms))
 		tourRooms();
+
+	// Nothing in a scripted run reaches the pod with [0xa7d2] set yet, so the
+	// channel starts the sequence itself: --debugflags=ending -b 59.
+	if (debugChannelSet(-1, kDebugEnding))
+		armEnding();
 
 	// The items channel prints what tools/check_inventory.py mirrors. Level 4 is a
 	// job of its own -- it clicks the room and needs the list a new game leaves --
@@ -329,6 +335,17 @@ Common::Error AlienEngine::run() {
 		g_system->updateScreen();
 		g_system->delayMillis(10);
 	}
+
+	// AI.COM plays the ending clip when GAME.EXE leaves with 0x7b, so the port
+	// plays it after its own loop has ended rather than inside the last room
+	// (ending.cpp, docs/playthrough_findings.md finding #19).
+	// A debug run is a check rather than a game, so it stops at the win the way
+	// it starts without the intro instead of sitting through eleven minutes of
+	// video.
+	if (_won && !shouldQuit() && gDebugLevel <= 0)
+		playCutscene(kCutscenes[1]);
+	else if (_won)
+		debugC(1, kDebugEnding, "ending: %s not played in a debug run", kCutscenes[1]);
 
 	return Common::kNoError;
 }
@@ -708,6 +725,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 
 	_room = room;
 
+	// The escape pod runs its own sequence as it opens, once the pod is ready
+	// to leave; every other room, and the pod before then, does nothing here.
+	startEnding();
+
 	// And with the walk channel on, every hotspot of the room is clicked on
 	// paper and the resolved walk target printed, which is what
 	// tools/check_walkgeom.py --sweep prints from the table it generated. The
@@ -896,6 +917,8 @@ void AlienEngine::stepClock() {
 
 	if (_tick & 3)
 		return;
+
+	stepEnding();
 
 	if (_ben.isWalking() || _ben.isTurning()) {
 		_ben.tick();

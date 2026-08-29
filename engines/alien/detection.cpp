@@ -46,6 +46,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugPlay, "play", "Run a scripted playthrough from a command file"},
 	{Alien::kDebugCutscene, "cutscene", "Cutscenes: the scene-id dispatch, the records and their procedures"},
 	{Alien::kDebugOcclusion, "occlusion", "The foreground rectangles that hide the character"},
+	{Alien::kDebugEnding, "ending", "Room 59's escape-pod sequence, and the ending clip after it"},
 	DEBUG_CHANNEL_END
 };
 

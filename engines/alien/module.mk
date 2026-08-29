@@ -8,6 +8,7 @@ MODULE_OBJS = \
 	cutscenes.o \
 	cutsceneplay.o \
 	dl1.o \
+	ending.o \
 	font.o \
 	hotspots.o \
 	inventory.o \
