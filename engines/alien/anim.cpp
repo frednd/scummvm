@@ -43,6 +43,33 @@ void AnimSlots::Slot::clear() {
 AnimSlots::AnimSlots() : _room(0) {
 }
 
+void AnimSlots::loadBanks(const char *const *names, uint count) {
+	for (uint i = 0; i < kSlotCount; i++) {
+		_slots[i].clear();
+		_slots[i].bank.unload();
+		_slots[i].name.clear();
+	}
+
+	_room = -1;
+
+	for (uint i = 0; i < count && i < kSlotCount; i++) {
+		if (!names[i] || !*names[i])
+			continue;
+
+		Slot &slot = _slots[i];
+		const Common::String name(names[i]);
+		if (!slot.bank.load(Common::Path(name))) {
+			debugC(1, kDebugResource, "cutscene slot %u: could not load %s", i,
+				   name.c_str());
+			continue;
+		}
+
+		slot.name = name;
+		debugC(2, kDebugResource, "cutscene slot %u: %s, %u frames", i, name.c_str(),
+			   slot.bank.frameCount());
+	}
+}
+
 void AnimSlots::reset() {
 	for (uint i = 0; i < kSlotCount; i++) {
 		const bool loaded = _slots[i].started;

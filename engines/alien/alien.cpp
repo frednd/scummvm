@@ -98,12 +98,6 @@ static const int kLabelLeft = 46;
 static const int kAnchorX = 160;
 static const int kAnchorY = 90;
 
-// docs/dialog_system.md 2: the auto-dismiss countdown is three per character of
-// text, floored at 0x46. It is decremented under the tick pair gate rather than
-// the animation one, so it runs at half the master rate, not a quarter of it.
-static const int kTicksPerCharacter = 3;
-static const int kMinSpeechTicks = 0x46;
-
 // TALKALL.TAL holds the answers that belong to no room: the descriptions of the
 // carried items, and the two refusals the generic click path falls back on when
 // an object's outcome code is zero -- 10c9:sub_11c10 and 10c9:0x257 raise the
@@ -164,7 +158,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
-		_dirty(true), _quit(false),
+		_dirty(true), _quit(false), _cutscene(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -459,6 +453,11 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		}
 		break;
 	}
+
+	case PlayCommand::kCutscene:
+		debugC(1, kDebugPlay, "play: %u: cutscene %d", cmd.sourceLine, cmd.a);
+		triggerCutscene((byte)cmd.a);
+		break;
 
 	case PlayCommand::kSnap: {
 		const Common::String name =
@@ -1230,13 +1229,29 @@ void AlienEngine::dumpCutscenes() {
 			subs += Common::String::format("%s%d", s ? "," : "", rec.subProcs[s]);
 
 		debugC(1, kDebugCutscene,
-			   "record %2d %-13s %-13s music %2d f216 %2d proc %2d subs %s"
+			   "record %2d %-13s %-13s music %2d proc %2d subs %s"
 			   " pts %d,%d,%d,%d rgb %d,%d,%d,%d,%d,%d banks%s",
-			   n, rec.pcx, rec.tal ? rec.tal : "-", rec.music, rec.tail,
+			   n, rec.pcx, rec.tal ? rec.tal : "-", rec.music,
 			   rec.mainProc, subs.c_str(),
 			   rec.points[0], rec.points[1], rec.points[2], rec.points[3],
 			   rec.colors[0], rec.colors[1], rec.colors[2], rec.colors[3],
 			   rec.colors[4], rec.colors[5], banks.c_str());
+
+		uint stepCount = 0;
+		const CutsceneStep *steps = cutsceneSteps(rec, stepCount);
+		Common::String stream;
+		for (uint s = 0; s < stepCount; s++) {
+			stream += s ? " " : "";
+			if (steps[s].op == kStepPause)
+				stream += Common::String::format("pause %d", steps[s].arg);
+			else if (steps[s].op == kStepBeat)
+				stream += "beat";
+			else
+				stream += Common::String::format("%c:%d",
+												 steps[s].op == kStepSpeakA ? 'a' : 'b',
+												 steps[s].arg);
+		}
+		debugC(1, kDebugCutscene, "steps %2d %s", n, stream.c_str());
 	}
 
 	for (uint p = 0; p < cutsceneProcCount(); p++) {
@@ -2219,17 +2234,23 @@ void AlienEngine::redraw() {
 	// The animation slots come first: they are the room's own furniture, and the
 	// character walks in front of them.
 	_anims.draw(_screen, _scrollX);
-	_sprite.drawFrame(_spriteFrame, _screen, _scrollX);
-	_ben.draw(_screen, _scrollX);
 
-	if (_showWalk)
-		drawWalkOverlay();
+	// A cutscene is the record's plate and its own slots and nothing else: the
+	// character is not in it, and the original hides the bar for its duration.
+	if (!_cutscene) {
+		_sprite.drawFrame(_spriteFrame, _screen, _scrollX);
+		_ben.draw(_screen, _scrollX);
 
-	// The bar sits below the playfield, so it goes on after the room but before
-	// the text layer, which is what the original's redraw order comes to.
-	_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow);
+		if (_showWalk)
+			drawWalkOverlay();
 
-	drawLabel();
+		// The bar sits below the playfield, so it goes on after the room but
+		// before the text layer, which is what the original's redraw order
+		// comes to.
+		_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow);
+
+		drawLabel();
+	}
 
 	if (_speech) {
 		const TalFile::Entry &dialog = (_speechTal ? _speechTal : &_tal)->entry(_dialogId);

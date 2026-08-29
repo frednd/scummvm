@@ -6,6 +6,7 @@ MODULE_OBJS = \
 	anims.o \
 	charanim.o \
 	cutscenes.o \
+	cutsceneplay.o \
 	dl1.o \
 	font.o \
 	hotspots.o \

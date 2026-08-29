@@ -38,11 +38,34 @@ namespace Alien {
  *
  * A record is 218 bytes of data segment 271a: the background, the dialog, the
  * music slot, the animation banks by slot, the two speaker anchors and colours,
- * the position the scene ends at, and eight far pointers to the scene's own
- * code. Those procedures are written in the same effect vocabulary the room
- * scripts are, so they are lifted into ScriptEffect and run by the same
- * interpreter rather than by one of their own.
+ * eight far pointers to the scene's own code, and three more pointers holding
+ * the scene's *step stream* and a list of dialog ids for each speaker. Those
+ * procedures are written in the same effect vocabulary the room scripts are, so
+ * they are lifted into ScriptEffect and run by the same interpreter rather than
+ * by one of their own.
+ *
+ * The stream is what makes a scene a scene: a cursor walks it, and each step
+ * either holds for a number of animation ticks, puts one speaker's next line up
+ * at that speaker's anchor in that speaker's colour, or is a wordless beat. The
+ * cursor moves on when the line on screen has been read or the hold has run out,
+ * and the scene ends when it reaches the end of the stream. Four of the eight
+ * procedures hang off the stream (one per speaker as a line starts, one per
+ * speaker as it ends), one runs after every step, one runs once as the scene
+ * loads and one once as it finishes.
  */
+
+/** One step of a scene's stream. */
+struct CutsceneStep {
+	byte op;			///< kStepPause, kStepSpeakA, kStepSpeakB or kStepBeat
+	byte arg;			///< a pause's length in animation ticks, else a dialog id
+};
+
+enum {
+	kStepPause = 0,		///< hold for `arg` animation ticks
+	kStepSpeakA = 1,	///< the first speaker says dialog `arg`
+	kStepSpeakB = 2,	///< the second speaker says dialog `arg`
+	kStepBeat = 0x14	///< run the beat procedure and move straight on
+};
 
 /** One lifted scene procedure. */
 struct CutsceneProc {
@@ -57,11 +80,19 @@ struct CutsceneRecord {
 	const char *tal;		///< dialog script, or null for a silent scene
 	int16 music;			///< music slot, -1 for none
 	const char *banks[10];	///< DL1 banks by animation slot, null where unused
-	uint16 mainProc;		///< the procedure run every step
-	uint16 subProcs[7];		///< the procedures the main one calls, by index
+	uint16 mainProc;		///< run once, after the banks are in
+	/**
+	 * 0, 1: as the first / second speaker's line goes up
+	 * 2, 3: as that line is about to come down
+	 * 4: on a wordless beat
+	 * 5: once, as the scene ends
+	 * 6: after every step
+	 */
+	uint16 subProcs[7];
 	int16 points[4];		///< two (x, y) speaker anchors
 	byte colors[6];			///< two RGB triples, components 0..63
-	int16 tail;				///< +216: an int16 in 4..23 whose meaning is still open
+	uint16 firstStep;		///< the scene's step stream
+	uint16 stepCount;
 };
 
 /** One arm of the scene-id dispatch. */
@@ -87,6 +118,9 @@ const CutsceneArm *cutsceneArmAt(uint index);
 /** One record by the loader's own numbering, which runs 1..15. */
 const CutsceneRecord *cutsceneRecord(uint number);
 uint cutsceneRecordCount();
+
+/** A record's step stream. */
+const CutsceneStep *cutsceneSteps(const CutsceneRecord &record, uint &count);
 
 /** One scene procedure's effects. Procedure 0 is the empty one. */
 const ScriptEffect *cutsceneProcEffects(uint proc, uint &count);

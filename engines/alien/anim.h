@@ -85,6 +85,13 @@ public:
 	/// Drops every slot and loads the banks the room's overlay names.
 	void loadRoom(int room);
 
+	/**
+	 * Drops every slot and loads banks named one per slot, as a cutscene record
+	 * names them (see cutscenes.h). Unlike a room's manifest the slot is the
+	 * position in the list, and a null entry leaves that slot empty.
+	 */
+	void loadBanks(const char *const *names, uint count);
+
 	/// Clears the slots without touching the loaded banks.
 	void reset();
 

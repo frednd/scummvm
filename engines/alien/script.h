@@ -164,6 +164,13 @@ public:
 	 */
 	void buildHotspots(int room, Common::Array<Hotspot> &out) const;
 
+	/**
+	 * Runs a run of effects that came from somewhere other than a room's own
+	 * script -- a cutscene procedure (see cutscenes.h), which is written in the
+	 * same vocabulary and plays against the same slots and state.
+	 */
+	void runEffects(const ScriptEffect *effects, uint count);
+
 	byte flag(uint16 addr) const;
 	void setFlag(uint16 addr, byte value);
 

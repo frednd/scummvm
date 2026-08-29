@@ -279,6 +279,11 @@ void RoomScript::execute(const ScriptBlock &block) {
 		runEffect(*scriptEffect(block.first + i));
 }
 
+void RoomScript::runEffects(const ScriptEffect *effects, uint count) {
+	for (uint i = 0; i < count; i++)
+		runEffect(effects[i]);
+}
+
 void RoomScript::runEffect(const ScriptEffect &original) {
 	// The arms inside a body: the refusal and the success path of the same click
 	// sit side by side, each under its own guard. A guard the port cannot answer

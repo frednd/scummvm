@@ -55,6 +55,13 @@ public:
 	/// Object ids are bytes, and the outcome rotation is kept per object.
 	static const uint kObjectCount = 256;
 
+	// docs/dialog_system.md 2: the auto-dismiss countdown is three per character
+	// of text, floored at 0x46. It is decremented under the tick pair gate rather
+	// than the animation one, so it runs at half the master rate, not a quarter
+	// of it. A cutscene's lines are timed the same way, so both files need them.
+	static const int kTicksPerCharacter = 3;
+	static const int kMinSpeechTicks = 0x46;
+
 	AlienEngine(OSystem *syst, const ADGameDescription *gameDesc);
 	~AlienEngine() override;
 
@@ -114,6 +121,10 @@ private:
 	void checkSaveRoundTrip();
 	void stopMusic();
 	void dumpCutscenes();
+	bool triggerCutscene(byte id);
+	void playCutsceneRecord(uint number);
+	void runCutsceneProc(uint proc);
+	void speakCutsceneLine(uint id, int anchorX, int anchorY);
 	void dumpMusic();
 	void sweepMusicCues();
 	void sweepMusicRows();
@@ -254,6 +265,9 @@ private:
 
 	bool _dirty;
 	bool _quit;
+
+	/// A cutscene owns the screen: no character, no inventory bar, no hover name.
+	bool _cutscene;
 
 	/// The scripted playthrough (milestone S), if --debugflags=play named one
 	/// through the ALIEN_PLAY_SCRIPT environment variable.

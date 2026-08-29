@@ -47,6 +47,7 @@ namespace Alien {
  *   expect noitem N         assert the item is not held
  *   expect flag ADDR VAL    assert a state-block byte (hex address, e.g.
  *                           0xa650) equals VAL
+ *   cutscene N              raise scene id N, the way a room's own code does
  *   snap NAME               write the composed screen to NAME.png
  *   spots                   log the room's current hotspot list on the play
  *                           channel (independent of --debugflags=hotspots),
@@ -65,6 +66,7 @@ struct PlayCommand {
 		kExpectItem,
 		kExpectNoItem,
 		kExpectFlag,
+		kCutscene,
 		kSnap,
 		kSpots,
 		kQuit

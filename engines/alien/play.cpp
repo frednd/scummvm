@@ -97,6 +97,9 @@ bool PlayScript::load(const Common::String &path) {
 				warning("play: %s:%u: unknown expect '%s'", path.c_str(), lineNo, what.c_str());
 				continue;
 			}
+		} else if (verb == "cutscene") {
+			cmd.type = PlayCommand::kCutscene;
+			cmd.a = parseInt(tok.nextToken());
 		} else if (verb == "snap") {
 			cmd.type = PlayCommand::kSnap;
 			cmd.s = tok.nextToken();
