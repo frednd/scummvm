@@ -122,8 +122,12 @@ private:
 	void stopMusic();
 	void dumpCutscenes();
 	void dumpOcclusion();
+	Common::String roomPlate(int room) const;
 	Common::String occluderPlate(int room) const;
 	void loadOccluder(int room);
+	void reloadPlates();
+	void bedroomSwitch(int anchorX, int anchorY);
+	bool isBedroomSwitch(int obj) const;
 	void applyOcclusion();
 	bool triggerCutscene(byte id);
 	void playCutsceneRecord(uint number);

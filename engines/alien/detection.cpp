@@ -47,6 +47,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugCutscene, "cutscene", "Cutscenes: the scene-id dispatch, the records and their procedures"},
 	{Alien::kDebugOcclusion, "occlusion", "The foreground rectangles that hide the character"},
 	{Alien::kDebugEnding, "ending", "Room 59's escape-pod sequence, and the ending clip after it"},
+	{Alien::kDebugBedroom, "bedroom", "Room 7's light switch, and the plates it swaps"},
 	DEBUG_CHANNEL_END
 };
 

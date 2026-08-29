@@ -364,8 +364,13 @@ bool AlienEngine::loadPlayScript(const Common::String &path) {
 }
 
 bool AlienEngine::playIdle() const {
-	return !_ben.isWalking() && !_ben.isTurning() && !_speech && !_anims.isBusy() &&
-		   _pending < 0 && !_armed;
+	// The speech queue counts as well as the line standing on screen: a body
+	// that queued two lines is between them for a tick or two, and a click
+	// landing in that gap is eaten as "cut the line short" rather than acted
+	// on -- which is what made a scripted second click on the same box look
+	// like it had hit nothing.
+	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
+		   _queueNext >= _queueCount && !_anims.isBusy() && _pending < 0 && !_armed;
 }
 
 void AlienEngine::stepPlayScript() {
@@ -580,8 +585,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// scroll offset; the manual A/B toggle (the 'b' debug key) only makes
 	// sense for the narrow rooms whose B plate is a genuine alternate view,
 	// not a second half.
-	const Common::String &plate = (secondPlate && !wide) ? _tables.secondPlate(room)
-														  : _tables.background(room);
+	const Common::String plate = (secondPlate && !wide) ? _tables.secondPlate(room)
+														 : roomPlate(room);
 	if (plate.empty()) {
 		debugC(1, kDebugResource, "room %d has no %s plate", room,
 			   secondPlate ? "second" : "background");
@@ -1301,17 +1306,34 @@ void AlienEngine::dumpCutscenes() {
 }
 
 /**
+ * The room's background plate.
+ *
+ * Room 7 is the one room that swaps its whole set on [0xa6fa]: its loader
+ * (ovr_07_0e63:0x3f) takes the X names -- GAME7X/MSCR7X/FADE7X, the bedroom
+ * with the light off -- while the flag is clear, and the plain ones once the
+ * light switch sets it (bedroom.cpp). The room is entered in the dark, so the
+ * table's own name is the exception here rather than the rule. Every other room
+ * takes the table entry.
+ */
+Common::String AlienEngine::roomPlate(int room) const {
+	if (room == 7 && !_script.flag(0xa6fa))
+		return "GAME7X.PCX";
+
+	return _tables.background(room);
+}
+
+/**
  * The room's foreground sheet: the page the original keeps at [0xd136].
  *
  * A narrow room's sheet is the second-plate table entry -- which is what the
  * table holds for it, mscr<n>.pcx -- while a wide room's entry is its plate B,
- * and the sheet is named by the room's own overlay instead. Room 7 swaps its
- * whole set of plates on [0xa6fa] (GAME7X/MSCR7X/FADE7X against
- * GAME7/MSCR7/FADE7, ovr_07_0e63:0x3f), so its sheet follows that flag.
+ * and the sheet is named by the room's own overlay instead. Room 7's sheet
+ * follows [0xa6fa] the same way its plate does, MSCR7X.PCX while the light is
+ * off and MSCR7.PCX once it is on.
  */
 Common::String AlienEngine::occluderPlate(int room) const {
 	if (room == 7)
-		return _script.flag(0xa6fa) ? "MSCR7X.PCX" : "MSCR7.PCX";
+		return _script.flag(0xa6fa) ? "MSCR7.PCX" : "MSCR7X.PCX";
 
 	const Common::String &second = _tables.secondPlate(room);
 	if (second.hasPrefixIgnoreCase("mscr"))
@@ -2183,6 +2205,11 @@ void AlienEngine::finishAction() {
 	// item use runs under verb 2 with the item as the third part of the key.
 	const byte verb = item ? kVerbUseTo : spot.verb;
 	const bool handled = _script.run(spot.obj, verb, item);
+
+	// One object in the game is answered by a hook of its room's own rather
+	// than by a script body: room 7's light switch (bedroom.cpp).
+	if (!item && isBedroomSwitch(spot.obj))
+		bedroomSwitch(anchorX, anchorY);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
 

@@ -40,6 +40,7 @@ enum AlienDebugChannels {
 	kDebugCutscene,
 	kDebugOcclusion,
 	kDebugEnding,
+	kDebugBedroom,
 };
 
 } // End of namespace Alien

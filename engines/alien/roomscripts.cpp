@@ -284,6 +284,21 @@ static const ScriptFlagInit kInitialFlags[] = {
 	{ 0xa79c,   0 },
 	{ 0xa79d,   1 },
 	{ 0xa636,   1 },
+
+	// And the latch block, which MAIN does not write: these are the
+	// bytes GAME.EXE ships for 0x3380..0x33ff.
+	{ 0x3384,  10 },
+	{ 0x33a6,   1 },
+	{ 0x33a8,   1 },
+	{ 0x33b0,  22 },
+	{ 0x33b4,   1 },
+	{ 0x33b8,   1 },
+	{ 0x33ba,   1 },
+	{ 0x33be,   1 },
+	{ 0x33ce,   1 },
+	{ 0x33e6,   1 },
+	{ 0x33fc,  86 },
+	{ 0x33fe, 104 },
 };
 
 static const ScriptEffect kEffects[] = {

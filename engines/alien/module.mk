@@ -7,6 +7,7 @@ MODULE_OBJS = \
 	charanim.o \
 	cutscenes.o \
 	cutsceneplay.o \
+	bedroom.o \
 	dl1.o \
 	ending.o \
 	font.o \
