@@ -44,6 +44,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugMusic, "music", "Music: the S3M replayer, its module table and its slots"},
 	{Alien::kDebugVideo, "video", "Video: the MA1 elevator clip and the CDA2 cutscenes"},
 	{Alien::kDebugPlay, "play", "Run a scripted playthrough from a command file"},
+	{Alien::kDebugCutscene, "cutscene", "Cutscenes: the scene-id dispatch, the records and their procedures"},
 	DEBUG_CHANNEL_END
 };
 

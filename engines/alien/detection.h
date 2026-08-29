@@ -37,6 +37,7 @@ enum AlienDebugChannels {
 	kDebugMusic,
 	kDebugSave,
 	kDebugPlay,
+	kDebugCutscene,
 };
 
 } // End of namespace Alien

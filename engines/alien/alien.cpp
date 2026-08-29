@@ -36,6 +36,7 @@
 #include "alien/alien.h"
 #include "alien/detection.h"
 #include "alien/resources.h"
+#include "alien/cutscenes.h"
 #include "alien/roominit.h"
 
 namespace Alien {
@@ -280,6 +281,9 @@ Common::Error AlienEngine::run() {
 	// The music channel prints what tools/check_music.py mirrors: the module and
 	// slot tables, then the sequencer walked row by row, then the loudness of the
 	// rendered output second by second.
+	if (debugChannelSet(-1, kDebugCutscene))
+		dumpCutscenes();
+
 	if (debugChannelSet(-1, kDebugMusic)) {
 		dumpMusic();
 		sweepMusicCues();
@@ -1170,6 +1174,84 @@ static Common::String condText(const ScriptCond *conds, uint count) {
 									  conds[i].negate ? "!=" : "==", conds[i].value);
 	}
 	return out;
+}
+
+/** The lifted opcodes by name, so a dumped effect reads as its call did. */
+static const char *opName(byte op) {
+	static const char *const kNames[] = {
+		"unsupported", "set_flag", "set_action_handled", "set_game_submode",
+		"queue_event", "anim_play_mode1", "anim_play_mode2", "anim_play_mode3",
+		"sound", "play_sample", "inv_add", "inv_remove", "inv_has",
+		"music_play_slot"
+	};
+	return op < ARRAYSIZE(kNames) ? kNames[op] : "?";
+}
+
+/**
+ * The cutscenes: the scene-id dispatch, the records, and the lifted procedures.
+ *
+ * Nothing here runs a scene yet -- this is the table half of the launcher, and
+ * printing it is how tools/check_cutscenes.py can check the lift against the
+ * data segment and the CUTSCENE listing it came from.
+ */
+void AlienEngine::dumpCutscenes() {
+	debugC(1, kDebugCutscene, "cutscenes: %d arms, %d records, %d procedures",
+		   cutsceneArmCount(), cutsceneRecordCount(), cutsceneProcCount());
+
+	for (uint i = 0; i < cutsceneArmCount(); i++) {
+		const CutsceneArm &arm = *cutsceneArmAt(i);
+		Common::String records;
+		for (uint r = 0; r < arm.recordCount; r++)
+			records += Common::String::format("%s%d", r ? "," : "", arm.records[r]);
+		if (arm.studio)
+			records = "studio";
+
+		Common::String flags;
+		uint count = 0;
+		const ScriptEffect *effects = cutsceneArmEffects(arm, count);
+		for (uint e = 0; e < count; e++)
+			flags += Common::String::format(" [0x%04x] = %d", effects[e].args[0],
+											effects[e].args[1]);
+
+		debugC(1, kDebugCutscene, "arm %2d latch 0x%04x records %-6s%s%s", arm.id,
+			   arm.latch, records.c_str(),
+			   condText(arm.guards, arm.guardCount).c_str(), flags.c_str());
+	}
+
+	for (uint n = 1; n <= cutsceneRecordCount(); n++) {
+		const CutsceneRecord &rec = *cutsceneRecord(n);
+		Common::String banks;
+		for (uint b = 0; b < ARRAYSIZE(rec.banks); b++)
+			if (rec.banks[b])
+				banks += Common::String::format(" %d:%s", b, rec.banks[b]);
+
+		Common::String subs;
+		for (uint s = 0; s < ARRAYSIZE(rec.subProcs); s++)
+			subs += Common::String::format("%s%d", s ? "," : "", rec.subProcs[s]);
+
+		debugC(1, kDebugCutscene,
+			   "record %2d %-13s %-13s music %2d f216 %2d proc %2d subs %s"
+			   " pts %d,%d,%d,%d rgb %d,%d,%d,%d,%d,%d banks%s",
+			   n, rec.pcx, rec.tal ? rec.tal : "-", rec.music, rec.tail,
+			   rec.mainProc, subs.c_str(),
+			   rec.points[0], rec.points[1], rec.points[2], rec.points[3],
+			   rec.colors[0], rec.colors[1], rec.colors[2], rec.colors[3],
+			   rec.colors[4], rec.colors[5], banks.c_str());
+	}
+
+	for (uint p = 0; p < cutsceneProcCount(); p++) {
+		uint count = 0;
+		const ScriptEffect *effects = cutsceneProcEffects(p, count);
+		for (uint e = 0; e < count; e++) {
+			const ScriptEffect &effect = effects[e];
+			Common::String args;
+			for (uint a = 0; a < effect.argCount; a++)
+				args += Common::String::format("%s%d", a ? ", " : "", effect.args[a]);
+			debugC(1, kDebugCutscene, "proc %2d 0c55:%04x %s(%s)%s", p,
+				   cutsceneProcAddr(p), opName(effect.op), args.c_str(),
+				   condText(effect.guards, effect.guardCount).c_str());
+		}
+	}
 }
 
 /**

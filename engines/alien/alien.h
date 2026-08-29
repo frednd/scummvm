@@ -113,6 +113,7 @@ private:
 	void dumpSaves();
 	void checkSaveRoundTrip();
 	void stopMusic();
+	void dumpCutscenes();
 	void dumpMusic();
 	void sweepMusicCues();
 	void sweepMusicRows();
