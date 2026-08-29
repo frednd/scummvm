@@ -24,6 +24,7 @@
 
 #include "common/array.h"
 #include "common/scummsys.h"
+#include "common/rect.h"
 #include "common/str.h"
 
 #include "alien/walk.h"
@@ -149,6 +150,18 @@ public:
 	void tick();
 
 	void draw(Graphics::Surface &dest, int scrollX = 0) const;
+
+	/**
+	 * The box the current frame occupies in room space, which is what the
+	 * original leaves in [0xa97a]..[0xa980] as it blits the character and what
+	 * the foreground rectangles are tested against. False when nothing is
+	 * loaded, and so nothing was drawn.
+	 */
+	bool bounds(Common::Rect &box) const;
+
+	/// The sprite's own origin, the original's [0xa8ec] and [0xa8ee].
+	int spriteX() const { return _x; }
+	int spriteY() const { return _y; }
 
 	int walkX() const { return _x + kWalkPointX; }
 	int walkY() const { return _y + kWalkPointY; }

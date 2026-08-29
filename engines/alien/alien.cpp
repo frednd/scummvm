@@ -37,6 +37,7 @@
 #include "alien/detection.h"
 #include "alien/resources.h"
 #include "alien/cutscenes.h"
+#include "alien/occlusion.h"
 #include "alien/roominit.h"
 
 namespace Alien {
@@ -176,6 +177,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 AlienEngine::~AlienEngine() {
 	_screen.free();
 	_background.free();
+	_occluder.free();
 }
 
 Common::Error AlienEngine::run() {
@@ -277,6 +279,11 @@ Common::Error AlienEngine::run() {
 	// rendered output second by second.
 	if (debugChannelSet(-1, kDebugCutscene))
 		dumpCutscenes();
+
+	// The occlusion channel prints what tools/check_occlusion.py mirrors: every
+	// foreground rectangle a room stamps back over the character.
+	if (debugChannelSet(-1, kDebugOcclusion))
+		dumpOcclusion();
 
 	if (debugChannelSet(-1, kDebugMusic)) {
 		dumpMusic();
@@ -607,6 +614,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_scrollX = 0;
 	memcpy(_palette, palette, sizeof(_palette));
 	applyCharPalette(room);
+	loadOccluder(room);
 
 	// The sprite banks and the dialog file are named by the room's own scene
 	// overlay. Rooms driven from a resident segment have no overlay, and those
@@ -1265,6 +1273,151 @@ void AlienEngine::dumpCutscenes() {
 			debugC(1, kDebugCutscene, "proc %2d 0c55:%04x %s(%s)%s", p,
 				   cutsceneProcAddr(p), opName(effect.op), args.c_str(),
 				   condText(effect.guards, effect.guardCount).c_str());
+		}
+	}
+}
+
+/**
+ * The room's foreground sheet: the page the original keeps at [0xd136].
+ *
+ * A narrow room's sheet is the second-plate table entry -- which is what the
+ * table holds for it, mscr<n>.pcx -- while a wide room's entry is its plate B,
+ * and the sheet is named by the room's own overlay instead. Room 7 swaps its
+ * whole set of plates on [0xa6fa] (GAME7X/MSCR7X/FADE7X against
+ * GAME7/MSCR7/FADE7, ovr_07_0e63:0x3f), so its sheet follows that flag.
+ */
+Common::String AlienEngine::occluderPlate(int room) const {
+	if (room == 7)
+		return _script.flag(0xa6fa) ? "MSCR7X.PCX" : "MSCR7.PCX";
+
+	const Common::String &second = _tables.secondPlate(room);
+	if (second.hasPrefixIgnoreCase("mscr"))
+		return second;
+
+	return Common::String::format("MSCR%d.PCX", room);
+}
+
+void AlienEngine::loadOccluder(int room) {
+	_occluder.free();
+
+	uint count = 0;
+	if (!occlusionRects(room, count))
+		return;			// nothing in this room the character can walk behind
+
+	Graphics::Surface sheet;
+	byte palette[256 * 3];
+	const Common::String name = occluderPlate(room);
+	if (!loadGamePCX(Common::Path(name), sheet, palette)) {
+		sheet.free();
+		warning("room %d: could not load the foreground sheet %s", room, name.c_str());
+		return;
+	}
+
+	// The sheet's own palette is not loaded: the original reads it as indices
+	// into the room's, which is why the pieces match the plate they came from.
+	_occluder = sheet;
+	debugC(1, kDebugOcclusion, "room %d: foreground sheet %s, %dx%d, %u rectangles",
+		   room, name.c_str(), _occluder.w, _occluder.h, count);
+}
+
+/**
+ * Stamp the room's foreground back over the character, as OBJ:sub_03400 does.
+ *
+ * Called with the character already drawn, once per rectangle the room's tick
+ * lists. Only the part of a rectangle the character reaches into is copied --
+ * the original tests his bounding box first and clips to it -- so an animation
+ * slot playing under the same foreground keeps whatever it drew.
+ */
+void AlienEngine::applyOcclusion() {
+	uint count = 0;
+	const OcclusionRect *rects = occlusionRects(_room, count);
+	if (!count || !_occluder.getPixels())
+		return;
+
+	Common::Rect ben;
+	if (!_ben.bounds(ben))
+		return;
+
+	for (uint i = 0; i < count; i++) {
+		const OcclusionRect &rect = rects[i];
+
+		if (rect.benYBelow >= 0 && _ben.spriteY() >= rect.benYBelow)
+			continue;
+
+		uint guardCount = 0;
+		const ScriptCond *guards = occlusionGuards(rect, guardCount);
+		bool guarded = false;
+		for (uint g = 0; g < guardCount; g++)
+			guarded |= (_script.flag(guards[g].addr) == guards[g].value) == guards[g].negate;
+		if (guarded)
+			continue;
+
+		Common::Rect area(rect.dstX, rect.dstY,
+						  rect.dstX + rect.width, rect.dstY + rect.height);
+		area.clip(ben);
+		if (area.isEmpty())
+			continue;
+
+		// The blit moves whole words, so an odd overlap loses its last column
+		// rather than rounding up. Keeping that is the difference between the
+		// port's edges and the original's.
+		const int width = area.width() & ~1;
+		if (width <= 0)
+			continue;
+
+		for (int y = 0; y < area.height(); y++) {
+			const int srcY = rect.srcY + (area.top - rect.dstY) + y;
+			const int dstY = area.top + y;
+			if (srcY < 0 || srcY >= _occluder.h || dstY < 0 || dstY >= _screen.h)
+				continue;
+
+			const byte *in = (const byte *)_occluder.getBasePtr(0, srcY);
+			byte *out = (byte *)_screen.getBasePtr(0, dstY);
+			for (int x = 0; x < width; x++) {
+				const int srcX = rect.srcX + (area.left - rect.dstX) + x;
+				const int dstX = area.left + x - _scrollX;
+				if (srcX < 0 || srcX >= _occluder.w || dstX < 0 || dstX >= _screen.w)
+					continue;
+				if (in[srcX])
+					out[dstX] = in[srcX];
+			}
+		}
+
+		debugC(2, kDebugOcclusion, "room %d: rect %u covers %d,%d..%d,%d of the character",
+			   _room, i, area.left, area.top, area.right, area.bottom);
+	}
+}
+
+/**
+ * Every foreground rectangle the port knows, room by room.
+ *
+ * tools/check_occlusion.py mirrors this from the overlay disassembly, which is
+ * where tools/gen_occlusion.py lifted it from in the first place.
+ */
+void AlienEngine::dumpOcclusion() {
+	debugC(1, kDebugOcclusion, "occlusion: %u rectangles", occlusionRectCount());
+
+	for (int room = 0; room <= StaticTables::kRoomCount; room++) {
+		uint count = 0;
+		const OcclusionRect *rects = occlusionRects(room, count);
+		for (uint i = 0; i < count; i++) {
+			const OcclusionRect &rect = rects[i];
+			Common::String ben;
+			if (rect.benYBelow >= 0)
+				ben = Common::String::format(" y < %d", rect.benYBelow);
+
+			uint guardCount = 0;
+			const ScriptCond *guards = occlusionGuards(rect, guardCount);
+			Common::String flags;
+			for (uint g = 0; g < guardCount; g++)
+				flags += Common::String::format(" [0x%04x] %s %d", guards[g].addr,
+												guards[g].negate ? "!=" : "==",
+												guards[g].value);
+
+			debugC(1, kDebugOcclusion,
+				   "rect room %2d src %3d,%3d dst %3d,%3d size %3dx%3d%s%s", room,
+				   rect.srcX, rect.srcY, rect.dstX, rect.dstY, rect.width, rect.height,
+				   ben.c_str(), flags.c_str());
 		}
 	}
 }
@@ -2240,6 +2393,10 @@ void AlienEngine::redraw() {
 	if (!_cutscene) {
 		_sprite.drawFrame(_spriteFrame, _screen, _scrollX);
 		_ben.draw(_screen, _scrollX);
+
+		// And the foreground the room authored over him, which is the whole of
+		// the original's depth model (occlusion.h).
+		applyOcclusion();
 
 		if (_showWalk)
 			drawWalkOverlay();

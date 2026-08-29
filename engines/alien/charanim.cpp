@@ -398,4 +398,17 @@ void Walker::draw(Graphics::Surface &dest, int scrollX) const {
 		_anim.drawFrame(_frame, dest, _x - scrollX, _y);
 }
 
+bool Walker::bounds(Common::Rect &box) const {
+	if (!_anim.isLoaded() || _frame >= _anim.frameCount())
+		return false;
+
+	// The same corner drawFrame() starts from: the character's position plus
+	// the frame's own hotspot, which is an offset into his box rather than a
+	// pivot.
+	const CharAnim::Frame &f = _anim.frame(_frame);
+	box = Common::Rect(_x + f.hotspotX, _y + f.hotspotY,
+					   _x + f.hotspotX + f.width, _y + f.hotspotY + f.height);
+	return true;
+}
+
 } // End of namespace Alien

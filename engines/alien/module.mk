@@ -12,6 +12,7 @@ MODULE_OBJS = \
 	hotspots.o \
 	inventory.o \
 	metaengine.o \
+	occlusion.o \
 	overlay.o \
 	play.o \
 	resources.o \

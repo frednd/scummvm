@@ -121,6 +121,10 @@ private:
 	void checkSaveRoundTrip();
 	void stopMusic();
 	void dumpCutscenes();
+	void dumpOcclusion();
+	Common::String occluderPlate(int room) const;
+	void loadOccluder(int room);
+	void applyOcclusion();
 	bool triggerCutscene(byte id);
 	void playCutsceneRecord(uint number);
 	void runCutsceneProc(uint proc);
@@ -164,6 +168,7 @@ private:
 
 	Graphics::Surface _screen;		///< 320x200 staging buffer, 8bpp
 	Graphics::Surface _background;	///< the room plate as decoded
+	Graphics::Surface _occluder;	///< the room's MSCR sheet, its foreground pieces
 	byte _palette[256 * 3];
 
 	DL1Sprite _sprite;

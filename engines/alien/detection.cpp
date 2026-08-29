@@ -45,6 +45,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugVideo, "video", "Video: the MA1 elevator clip and the CDA2 cutscenes"},
 	{Alien::kDebugPlay, "play", "Run a scripted playthrough from a command file"},
 	{Alien::kDebugCutscene, "cutscene", "Cutscenes: the scene-id dispatch, the records and their procedures"},
+	{Alien::kDebugOcclusion, "occlusion", "The foreground rectangles that hide the character"},
 	DEBUG_CHANNEL_END
 };
 
