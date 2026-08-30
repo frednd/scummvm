@@ -159,7 +159,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
-		_dirty(true), _quit(false), _cutscene(false),
+		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
@@ -278,19 +278,29 @@ Common::Error AlienEngine::run() {
 		dumpSaves();
 		if (debugChannelSet(3, kDebugSave))
 			checkSaveRoundTrip();
+		// Level 4 is the one the install's own saves cannot reach: they all carry
+		// an empty inventory, so the list is patched into a real block first.
+		if (debugChannelSet(4, kDebugSave))
+			checkDosItemImport();
 	}
 
-	// The music channel prints what tools/check_music.py mirrors: the module and
-	// slot tables, then the sequencer walked row by row, then the loudness of the
-	// rendered output second by second.
-	if (debugChannelSet(-1, kDebugCutscene))
+	// The cutscene channel prints what tools/check_cutscenes.py mirrors: the
+	// lifted tables, and at level 2 every record played end to end -- the same
+	// step interpreter a triggered scene runs, with the clock taken out.
+	if (debugChannelSet(-1, kDebugCutscene)) {
 		dumpCutscenes();
+		if (debugChannelSet(2, kDebugCutscene))
+			sweepCutscenes();
+	}
 
 	// The occlusion channel prints what tools/check_occlusion.py mirrors: every
 	// foreground rectangle a room stamps back over the character.
 	if (debugChannelSet(-1, kDebugOcclusion))
 		dumpOcclusion();
 
+	// The music channel prints what tools/check_music.py mirrors: the module and
+	// slot tables, then the sequencer walked row by row, then the loudness of the
+	// rendered output second by second.
 	if (debugChannelSet(-1, kDebugMusic)) {
 		dumpMusic();
 		sweepMusicCues();

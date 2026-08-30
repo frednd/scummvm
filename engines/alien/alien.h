@@ -116,11 +116,15 @@ private:
 	void dumpItems();
 	void dumpSfx();
 	void syncGame(Common::Serializer &s);
+	byte *readDosSave(const Common::String &file);
+	void applyDosItems(const byte *block);
 	bool importDosSave(const Common::String &file, bool apply);
 	void dumpSaves();
 	void checkSaveRoundTrip();
+	void checkDosItemImport();
 	void stopMusic();
 	void dumpCutscenes();
+	void sweepCutscenes();
 	void dumpOcclusion();
 	Common::String roomPlate(int room) const;
 	Common::String occluderPlate(int room) const;
@@ -291,6 +295,10 @@ private:
 
 	/// A cutscene owns the screen: no character, no inventory bar, no hover name.
 	bool _cutscene;
+
+	/// The sweep plays the scenes with the clock taken out: same step
+	/// interpreter, same debug lines, no waiting on holds or on lines being read.
+	bool _cutsceneFast;
 
 	/// The scripted playthrough (milestone S), if --debugflags=play named one
 	/// through the ALIEN_PLAY_SCRIPT environment variable.

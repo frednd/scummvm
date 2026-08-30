@@ -43,8 +43,9 @@ namespace Alien {
  *
  * SAVEVARS.TMP and SAVEGAME.AUT are exactly that block. A numbered slot carries
  * the slot's preview thumbnail first -- u16 width 125, u16 height 30, then 3750
- * bytes of a 2:1 downsample of the screen -- and the state block after it, so the
- * block is read as the tail of whichever file is given.
+ * bytes of a 250 by 60 crop of the screen taken every second pixel, centred on
+ * the character (docs/playthrough_findings.md finding #31) -- and the state block
+ * after it, so the block is read as the tail of whichever file is given.
  */
 struct DosRange {
 	uint16 address;		///< where the range sits in the data segment
@@ -165,7 +166,7 @@ bool AlienEngine::canLoadGameStateCurrently(Common::U32String *msg) {
  * rather than guessed at, and the unidentified 3754-byte tail of a numbered slot
  * is not read at all.
  */
-bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
+byte *AlienEngine::readDosSave(const Common::String &file) {
 	// The saves live in a subdirectory of the game directory, which is not one of
 	// the trees SearchMan indexes, so the file is reached through the directory
 	// itself rather than by name.
@@ -174,13 +175,13 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 	Common::SeekableReadStream *save = node.createReadStream();
 	if (!save) {
 		debugC(1, kDebugSave, "could not open %s", file.c_str());
-		return false;
+		return nullptr;
 	}
 
 	if (save->size() < (int64)kDosStateSize) {
 		warning("%s is %d bytes, too short for a save", file.c_str(), (int)save->size());
 		delete save;
-		return false;
+		return nullptr;
 	}
 
 	// A numbered slot carries its 3754-byte preview thumbnail first, so the state
@@ -190,23 +191,51 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 	byte *block = (byte *)malloc(kDosStateSize);
 	if (!block) {
 		delete save;
-		return false;
+		return nullptr;
 	}
 	const bool complete = save->read(block, kDosStateSize) == kDosStateSize;
 	delete save;
 	if (!complete) {
 		free(block);
-		return false;
+		return nullptr;
 	}
+	return block;
+}
 
-	// Rebuild the address-to-offset mapping the writes imply, so the fields can
-	// be named by the addresses the disassembly uses.
-	uint32 offset[ARRAYSIZE(kDosLayout)];
+/**
+ * Where each of the nine ranges starts in the block.
+ *
+ * The file is the ranges written back to back, so the mapping from a data
+ * segment address to a byte of the file is the writes' own order.
+ */
+static void dosOffsets(uint32 *offset) {
 	uint32 at = 0;
 	for (uint i = 0; i < ARRAYSIZE(kDosLayout); i++) {
 		offset[i] = at;
 		at += kDosLayout[i].length;
 	}
+}
+
+/** The carried list and the per-item look counters, as an import restores them. */
+void AlienEngine::applyDosItems(const byte *block) {
+	uint32 offset[ARRAYSIZE(kDosLayout)];
+	dosOffsets(offset);
+	const byte *list = block + offset[2];
+
+	_inventory.reset();
+	for (uint i = 0; i < kDosLayout[2].length && list[i]; i++)
+		_inventory.add(list[i]);
+	_inventory.setCounters(block + offset[0] + (kDosItemCounter - kDosBase),
+						   Inventory::kListSize);
+}
+
+bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
+	byte *block = readDosSave(file);
+	if (!block)
+		return false;
+
+	uint32 offset[ARRAYSIZE(kDosLayout)];
+	dosOffsets(offset);
 
 	const byte *big = block + offset[0];
 	// Range 2 is the carried-item list, which starts one byte in front of the
@@ -254,10 +283,7 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 		for (uint i = 0; i < RoomScript::kFlagCount; i++)
 			_script.setFlag(RoomScript::kFlagBase + i, big[(kDosFlags - kDosBase) + i]);
 
-		_inventory.reset();
-		for (uint i = 0; i < kDosLayout[2].length && list[i]; i++)
-			_inventory.add(list[i]);
-		_inventory.setCounters(big + (kDosItemCounter - kDosBase), Inventory::kListSize);
+		applyDosItems(block);
 
 		memcpy(_outcomeCounter, big + (kDosOutcomeCounter - kDosBase), kObjectCount);
 
@@ -284,6 +310,75 @@ void AlienEngine::dumpSaves() {
 
 	for (uint i = 0; i < ARRAYSIZE(kDosSaves); i++)
 		importDosSave(kDosSaves[i], false);
+}
+
+/**
+ * Import a carried list, which no save the install holds has.
+ *
+ * All four of the original's saves were taken with an empty inventory, so the
+ * half of `importDosSave` that fills the list has never run against real data.
+ * This gives it data: a real block off disk with a list patched into it, at the
+ * offset the layout puts the list at, carrying more items than the bar shows at
+ * once and counters that are not all one -- so a list read short, a counter
+ * range not copied, or a list that does not page would all show. The list then
+ * goes through a save and back, which is the other thing the empty saves never
+ * exercised.
+ */
+void AlienEngine::checkDosItemImport() {
+	static const char *const kSource = "SAVEVARS.TMP";
+	// 13 items is three pages of the six-slot bar, and the counters are the
+	// item's own id folded into the 1..5 a look rotates through.
+	const uint kItems = 13;
+
+	byte *block = readDosSave(kSource);
+	if (!block)
+		return;
+
+	uint32 offset[ARRAYSIZE(kDosLayout)];
+	dosOffsets(offset);
+
+	byte *list = block + offset[2];
+	byte *counters = block + offset[0] + (kDosItemCounter - kDosBase);
+	for (uint i = 0; i < kDosLayout[2].length; i++)
+		list[i] = i < kItems ? (byte)(i + 1) : 0;
+	for (uint i = 0; i < kItems; i++)
+		counters[i + 1] = (byte)(i % 5 + 1);
+
+	applyDosItems(block);
+	free(block);
+
+	uint carried = 0;
+	for (uint i = 1; i < Inventory::kListSize; i++)
+		if (_inventory.at(i))
+			carried++;
+
+	debugC(4, kDebugSave, "import %s: %u items, %u pages", kSource, carried,
+		   _inventory.pageCount());
+	for (uint i = 1; i <= carried; i++)
+		debugC(4, kDebugSave, "import item %2u %3u counter %3u", i, _inventory.at(i),
+			   _inventory.lookCounter(_inventory.at(i)));
+
+	// And back out through the engine's own save, since an imported list is a
+	// list like any other once it is in.
+	Common::MemoryWriteStreamDynamic out(DisposeAfterUse::YES);
+	{
+		Common::Serializer s(nullptr, &out);
+		syncGame(s);
+	}
+	_inventory.reset();
+	Common::MemoryReadStream in(out.getData(), out.size());
+	{
+		Common::Serializer s(&in, nullptr);
+		syncGame(s);
+	}
+
+	bool same = _inventory.pageCount() == (carried + Inventory::kSlotCount - 1) /
+											  Inventory::kSlotCount;
+	for (uint i = 1; i <= carried && same; i++)
+		same = _inventory.at(i) == (byte)i &&
+			   _inventory.lookCounter((byte)i) == (byte)((i - 1) % 5 + 1);
+
+	debugC(4, kDebugSave, "import roundtrip %s", same ? "identical" : "DIFFERS");
 }
 
 /**

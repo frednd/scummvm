@@ -132,6 +132,9 @@ public:
 	/// Overwrite the per-item look counters, as an imported save does.
 	void setCounters(const byte *counters, uint count);
 
+	/// One item's click counter, for the debug dumps.
+	byte lookCounter(byte item) const { return item < kListSize ? _counter[item] : 0; }
+
 	/// The list, the counters and which page of the bar is showing.
 	void syncGame(Common::Serializer &s);
 

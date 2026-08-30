@@ -186,8 +186,10 @@ void AlienEngine::playCutsceneRecord(uint number) {
 			}
 		}
 
+		// The sweep runs the same loop with the clock out of it: one tick per
+		// pass, so holds and lines expire as fast as the steps can be walked.
 		const uint32 now = g_system->getMillis();
-		if (now - last >= kTickMillis) {
+		if (_cutsceneFast || now - last >= kTickMillis) {
 			last = now;
 			tick++;
 
@@ -279,7 +281,8 @@ void AlienEngine::playCutsceneRecord(uint number) {
 											  cursor ? cursor - 1 : 0));
 
 		g_system->updateScreen();
-		g_system->delayMillis(10);
+		if (!_cutsceneFast)
+			g_system->delayMillis(10);
 	}
 
 	// The closing procedure, then the room the scene interrupted takes the
@@ -295,6 +298,22 @@ void AlienEngine::playCutsceneRecord(uint number) {
 		_ben.place(benX, benY, benFacing);
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 	_dirty = true;
+}
+
+/**
+ * Play every record end to end, for the mirror.
+ *
+ * No scripted run raises a scene id yet -- the per-room triggers are the half of
+ * the cutscene work still open -- so the channel plays the records itself, in
+ * their own numbering. `_cutsceneFast` only takes the waits out: the steps, the
+ * procedures and the lines are the ones a triggered scene would run, and they
+ * print the same lines tools/check_cutscenes.py --play prints from the files.
+ */
+void AlienEngine::sweepCutscenes() {
+	_cutsceneFast = true;
+	for (uint n = 1; n <= cutsceneRecordCount() && !shouldQuit() && !_quit; n++)
+		playCutsceneRecord(n);
+	_cutsceneFast = false;
 }
 
 /** One of a record's eight procedures, or nothing for the empty slot 0. */
