@@ -23,8 +23,8 @@
 // repository -- do not edit by hand.
 //
 // The cutscenes: 14 dispatch arms, 15 records out of GAME.EXE's data
-// segment, and 44 scene procedures lifted out of disasm/seg_cutscene.asm
-// into 61 effects.
+// segment, 44 scene procedures lifted out of disasm/seg_cutscene.asm into
+// 61 effects, and the 15 call sites 11 rooms raise their ids from.
 
 #include "alien/cutscenes.h"
 
@@ -32,67 +32,67 @@ namespace Alien {
 
 // Every effect any scene procedure runs, in procedure order.
 static const ScriptEffect kCutsceneEffects[] = {
-	{ kOpAnimPlay2,      4, {     0,     1,     6,     4,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 1, 6, 4)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(1, 0, 12, 3)
-	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     1,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(1, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     0,     6,    14,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 6, 14, 3)
-	{ kOpMusic,          1, {     5,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// music_play_slot(5)
-	{ kOpAnimPlay2,      4, {     1,     5,    22,     4,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(1, 5, 22, 4)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// call 13b8:0f76(140)
-	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     1,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(1, 1, 1, 0)
-	{ kOpAnimPlay1,      4, {     0,     1,    63,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(0, 1, 63, 2)
-	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 1, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(0, 0, 5, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 1, { { 0xa498, 8, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(0, 0, 24, 3)
-	{ kOpAnimPlay2,      4, {     0,     7,    26,     3,     0,     0 }, 0x00, 1, { { 0xa498, 9, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 7, 26, 3)
-	{ kOpAnimPlay1,      4, {     2,    12,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(2, 12, 1, 0)
-	{ kOpAnimPlay2,      4, {     5,    21,    19,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(5, 21, 19, 2)
-	{ kOpAnimPlay2,      4, {     7,     1,    27,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(7, 1, 27, 3)
-	{ kOpAnimPlay2,      4, {     7,    20,     8,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(7, 20, 8, 3)
-	{ kOpAnimPlay1,      4, {     0,     1,    33,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(0, 1, 33, 2)
-	{ kOpAnimPlay1,      4, {     1,     1,     3,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(1, 1, 3, 0)
-	{ kOpAnimPlay1,      4, {     6,     1,    15,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(6, 1, 15, 2)
-	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(5, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     3,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(3, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(5, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(5, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     2,     1,    12,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 12, 3)
-	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(5, 0, 17, 4)
-	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(5, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 1, { { 0xa4ee, 2, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpAnimPlay1,      4, {     3,     1,    41,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(3, 1, 41, 2)
-	{ kOpAnimPlay1,      4, {     4,     1,    25,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(4, 1, 25, 2)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(2, 0, 41, 4)
-	{ kOpAnimPlay2,      4, {     2,     1,     1,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 1, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(2, 0, 14, 3)
-	{ kOpAnimPlay1,      4, {     2,     6,    40,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(2, 6, 40, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(3, 0, 25, 4)
-	{ kOpAnimPlay1,      4, {     0,     1,    21,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(0, 1, 21, 2)
-	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(2, 0, 13, 3)
-	{ kOpAnimPlay2,      4, {     3,    17,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(3, 17, 1, 0)
-	{ kOpAnimPlay2,      4, {     3,     7,    11,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(3, 7, 11, 3)
-	{ kOpAnimPlay1,      4, {     2,     4,    58,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(2, 4, 58, 2)
-	{ kOpAnimPlay2,      4, {     6,    10,     5,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(6, 10, 5, 3)
-	{ kOpAnimPlay2,      4, {     7,     9,     9,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(7, 9, 9, 3)
-	{ kOpAnimPlay2,      4, {     6,    10,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(6, 10, 1, 0)
-	{ kOpAnimPlay2,      4, {     7,     9,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(7, 9, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(6, 0, 5, 7)
-	{ kOpAnimPlay2,      4, {     6,     1,     5,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(6, 1, 5, 3)
-	{ kOpAnimPlay2,      4, {     6,     5,     9,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(6, 5, 9, 3)
-	{ kOpAnimPlay2,      4, {     7,     1,     9,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(7, 1, 9, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_list(1, 0, 37, 3)
-	{ kOpAnimPlay1,      4, {     0,     1,    17,     2,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(0, 1, 17, 2)
-	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 1, 1, 0)
-	{ kOpAnimPlay1,      4, {     0,     1,    53,     1,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode1(0, 1, 53, 1)
-	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 1, 1, 0)
-	{ kOpAnimPlay2,      4, {     0,     1,    11,     3,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// anim_play_mode2(0, 1, 11, 3)
+	{ kOpAnimPlay2,      4, {     0,     1,     6,     4,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 6, 4)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(1, 0, 12, 3)
+	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     1,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(1, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     0,     6,    14,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 6, 14, 3)
+	{ kOpMusic,          1, {     5,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// music_play_slot(5)
+	{ kOpAnimPlay2,      4, {     1,     5,    22,     4,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(1, 5, 22, 4)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// call 13b8:0f76(140)
+	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     1,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(1, 1, 1, 0)
+	{ kOpAnimPlay1,      4, {     0,     1,    63,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 63, 2)
+	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(0, 0, 5, 3)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 1, { { 0xa498, 8, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(0, 0, 24, 3)
+	{ kOpAnimPlay2,      4, {     0,     7,    26,     3,     0,     0 }, 0x00, 1, { { 0xa498, 9, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 7, 26, 3)
+	{ kOpAnimPlay1,      4, {     2,    12,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 12, 1, 0)
+	{ kOpAnimPlay2,      4, {     5,    21,    19,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 21, 19, 2)
+	{ kOpAnimPlay2,      4, {     7,     1,    27,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 1, 27, 3)
+	{ kOpAnimPlay2,      4, {     7,    20,     8,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 20, 8, 3)
+	{ kOpAnimPlay1,      4, {     0,     1,    33,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 33, 2)
+	{ kOpAnimPlay1,      4, {     1,     1,     3,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 3, 0)
+	{ kOpAnimPlay1,      4, {     6,     1,    15,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 15, 2)
+	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     3,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(3, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     2,     1,    12,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 12, 3)
+	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(5, 0, 17, 4)
+	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 1, { { 0xa4ee, 2, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
+	{ kOpAnimPlay1,      4, {     3,     1,    41,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 41, 2)
+	{ kOpAnimPlay1,      4, {     4,     1,    25,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 25, 2)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(2, 0, 41, 4)
+	{ kOpAnimPlay2,      4, {     2,     1,     1,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 3)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(2, 0, 14, 3)
+	{ kOpAnimPlay1,      4, {     2,     6,    40,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 6, 40, 3)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(3, 0, 25, 4)
+	{ kOpAnimPlay1,      4, {     0,     1,    21,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 21, 2)
+	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(2, 0, 13, 3)
+	{ kOpAnimPlay2,      4, {     3,    17,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(3, 17, 1, 0)
+	{ kOpAnimPlay2,      4, {     3,     7,    11,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(3, 7, 11, 3)
+	{ kOpAnimPlay1,      4, {     2,     4,    58,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 4, 58, 2)
+	{ kOpAnimPlay2,      4, {     6,    10,     5,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 10, 5, 3)
+	{ kOpAnimPlay2,      4, {     7,     9,     9,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 9, 9, 3)
+	{ kOpAnimPlay2,      4, {     6,    10,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 10, 1, 0)
+	{ kOpAnimPlay2,      4, {     7,     9,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 9, 1, 0)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(6, 0, 5, 7)
+	{ kOpAnimPlay2,      4, {     6,     1,     5,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 1, 5, 3)
+	{ kOpAnimPlay2,      4, {     6,     5,     9,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 5, 9, 3)
+	{ kOpAnimPlay2,      4, {     7,     1,     9,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 1, 9, 3)
+	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(1, 0, 37, 3)
+	{ kOpAnimPlay1,      4, {     0,     1,    17,     2,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 17, 2)
+	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
+	{ kOpAnimPlay1,      4, {     0,     1,    53,     1,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 53, 1)
+	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
+	{ kOpAnimPlay2,      4, {     0,     1,    11,     3,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 11, 3)
 };
 
 // One scene procedure: where it sat in segment 0c55, and its effects. Index 0 is
@@ -384,28 +384,48 @@ static const CutsceneRecord kCutsceneRecords[] = {
 
 // The flag stores the dispatch arms run besides their latch.
 static const ScriptEffect kCutsceneArmEffects[] = {
-	{ kOpSetFlag,        2, { 42827,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa74b, 0)
-	{ kOpSetFlag,        2, { 13256,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0x33c8, 1)
-	{ kOpSetFlag,        2, { 42710,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa6d6, 0)
-	{ kOpSetFlag,        2, { 42711,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// set_flag(0xa6d7, 1)
+	{ kOpSetFlag,        2, { 42827,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa74b, 0)
+	{ kOpSetFlag,        2, { 13256,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0x33c8, 1)
+	{ kOpSetFlag,        2, { 42710,     0,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d6, 0)
+	{ kOpSetFlag,        2, { 42711,     1,     0,     0,     0,     0 }, 0x00, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d7, 1)
 };
 
 // One arm of CUTSCENE:sub_0de60, keyed by the scene id a room raises.
 static const CutsceneArm kCutsceneArms[] = {
-	{  1, 0x3395, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 2, { 1, 2 },   0, 2, false },
-	{  2, 0x3396, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 13, 0 },   2, 0, false },
-	{  3, 0x33d4, 1, { { 0xa7b4, 0, false }, { 0x0000, 0, false } }, 1, { 12, 0 },   2, 0, false },
-	{  4, 0x0000, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 14, 0 },   2, 0, false },
-	{  5, 0x3399, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 3, 0 },   2, 0, false },
-	{  6, 0x339a, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 11, 0 },   2, 2, false },
-	{  7, 0x339b, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 8, 0 },   4, 0, false },
-	{  8, 0x339c, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 5, 0 },   4, 0, false },
-	{  9, 0x339d, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 4, 0 },   4, 0, false },
-	{ 10, 0x339e, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 10, 0 },   4, 0, false },
-	{ 11, 0x339f, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 7, 0 },   4, 0, false },
-	{ 12, 0x33a0, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 1, { 6, 0 },   4, 0, false },
-	{ 13, 0x33a1, 1, { { 0xa7e4, 1, false }, { 0x0000, 0, false } }, 1, { 9, 0 },   4, 0, false },
-	{ 14, 0x33a2, 0, { { 0x0000, 0, false }, { 0x0000, 0, false } }, 0, { 0, 0 },   4, 0, true },
+	{  1, 0x3395, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 2, { 1, 2 },   0, 2, false },
+	{  2, 0x3396, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 13, 0 },   2, 0, false },
+	{  3, 0x33d4, 1, { { 0xa7b4, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 12, 0 },   2, 0, false },
+	{  4, 0x0000, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 14, 0 },   2, 0, false },
+	{  5, 0x3399, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 3, 0 },   2, 0, false },
+	{  6, 0x339a, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 11, 0 },   2, 2, false },
+	{  7, 0x339b, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 8, 0 },   4, 0, false },
+	{  8, 0x339c, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 5, 0 },   4, 0, false },
+	{  9, 0x339d, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 4, 0 },   4, 0, false },
+	{ 10, 0x339e, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 10, 0 },   4, 0, false },
+	{ 11, 0x339f, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 7, 0 },   4, 0, false },
+	{ 12, 0x33a0, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 6, 0 },   4, 0, false },
+	{ 13, 0x33a1, 1, { { 0xa7e4, 1, false, 0 }, { 0x0000, 0, false, 0 } }, 1, { 9, 0 },   4, 0, false },
+	{ 14, 0x33a2, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } }, 0, { 0, 0 },   4, 0, true },
+};
+
+// Which room raises which id, in room order and, within a room, in the order the
+// room's own enter routine reaches them.
+static const CutsceneTrigger kCutsceneTriggers[] = {
+	{  3,  9, 1, { { 0x000e, 1, false, 1 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{  6,  7, 2, { { 0xa880, 7, false, 0 }, { 0x0011, 1, false, 1 }, { 0x0000, 0, false, 0 } } },
+	{  6,  8, 1, { { 0xa708, 1, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 13, 10, 1, { { 0x0008, 1, false, 1 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 23, 12, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 27,  2, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 31, 14, 1, { { 0xa77d, 1, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 35,  6, 2, { { 0xa880, 35, false, 0 }, { 0xa87e, 20, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 35,  4, 2, { { 0xa880, 13, false, 0 }, { 0xa87e, 10, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 35,  5, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 40, 14, 1, { { 0xa77d, 1, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 51,  3, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 51, 13, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 55, 13, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
+	{ 57, 13, 0, { { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 }, { 0x0000, 0, false, 0 } } },
 };
 
 const CutsceneArm *cutsceneArm(byte id) {
@@ -457,6 +477,27 @@ uint cutsceneProcCount() {
 const ScriptEffect *cutsceneArmEffects(const CutsceneArm &arm, uint &count) {
 	count = arm.count;
 	return count ? &kCutsceneArmEffects[arm.first] : nullptr;
+}
+
+const CutsceneTrigger *cutsceneTriggers(int room, uint &count) {
+	count = 0;
+	for (uint i = 0; i < ARRAYSIZE(kCutsceneTriggers); i++) {
+		if (kCutsceneTriggers[i].room != room)
+			continue;
+		while (i + count < ARRAYSIZE(kCutsceneTriggers)
+			   && kCutsceneTriggers[i + count].room == room)
+			count++;
+		return &kCutsceneTriggers[i];
+	}
+	return nullptr;
+}
+
+uint cutsceneTriggerCount() {
+	return ARRAYSIZE(kCutsceneTriggers);
+}
+
+const CutsceneTrigger *cutsceneTriggerAt(uint index) {
+	return index < ARRAYSIZE(kCutsceneTriggers) ? &kCutsceneTriggers[index] : nullptr;
 }
 
 } // End of namespace Alien

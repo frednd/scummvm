@@ -40,6 +40,23 @@ static const int kLineTailTicks = 0xF;
 static const int kEmptyLineTicks = 1;
 
 /**
+ * The three elapsed-time scenes, as OBJ:sub_029ac counts them and
+ * CUTSCENE:sub_0dfda decides them. Each counter is a long in the latch block,
+ * with its enable byte two in front of it.
+ */
+static const struct {
+	uint16 enable;
+	uint16 counter;		///< low word; the high word follows it
+	uint32 limit;		///< in animation ticks: about four, fourteen and sixteen minutes
+	byte scene;
+	bool notInRoom21;	///< the original tests handler_code against 0x15
+} kTimers[] = {
+	{ 0x33c2, 0x33c4, 0x1068, 1, true },
+	{ 0x33c8, 0x33ca, 0x396c, 11, false },
+	{ 0x33ce, 0x33d0, 0x41a0, 7, false }
+};
+
+/**
  * Raise a scene id, the way a room's own code does.
  *
  * The id is not a record number: the arm for it (see cutscenes.h) carries the
@@ -56,8 +73,7 @@ bool AlienEngine::triggerCutscene(byte id) {
 
 	for (uint g = 0; g < arm->guardCount; g++) {
 		const ScriptCond &cond = arm->guards[g];
-		const bool holds = (_script.flag(cond.addr) == cond.value) != cond.negate;
-		if (!holds) {
+		if (!_script.condHolds(cond)) {
 			debugC(1, kDebugCutscene, "scene %d: guard [0x%04x] == %d does not hold",
 				   id, cond.addr, cond.value);
 			return false;
@@ -80,7 +96,9 @@ bool AlienEngine::triggerCutscene(byte id) {
 
 	if (arm->studio) {
 		// CUTSCENE:sub_0c6dd, which names its own files in code and drives itself
-		// off cutscene_pos rather than off a record's step stream.
+		// off cutscene_pos rather than off a record's step stream: 709 lines of
+		// hand-written timeline calling OBJ:obj_action_a..d, none of which the
+		// port has lifted. It is a milestone of its own, not part of the tables.
 		warning("scene %d: the TV news studio is not ported yet", id);
 		return false;
 	}
@@ -89,6 +107,85 @@ bool AlienEngine::triggerCutscene(byte id) {
 		playCutsceneRecord(arm->records[r]);
 
 	return true;
+}
+
+/**
+ * The scenes a room raises as it opens, in the order its own enter routine does.
+ *
+ * The original runs these from inside the routine that loads the room's banks,
+ * before the room is finished; the port runs them once the room is up, because
+ * a scene plays over the room -- own plate, own dialog, own banks -- and hands
+ * it back at the end, so what the room looked like while the scene loaded is
+ * not observable. The guards are the overlay's own, and are answered against
+ * the same state a script guard is (see RoomScript::holds): a puzzle flag, the
+ * transition globals, or an item being carried.
+ */
+void AlienEngine::roomCutscenes(int room) {
+	// CUTSCENE:sub_0e042, which every enter routine calls first: the three
+	// elapsed-time scenes get their chance before the room's own.
+	stepCutsceneTimers();
+
+	uint count = 0;
+	const CutsceneTrigger *triggers = cutsceneTriggers(room, count);
+	for (uint i = 0; i < count; i++) {
+		const CutsceneTrigger &trigger = triggers[i];
+
+		bool guarded = true;
+		for (uint g = 0; g < trigger.guardCount; g++)
+			guarded = guarded && _script.condHolds(trigger.guards[g]);
+
+		debugC(1, kDebugCutscene, "raise room %2d scene %2d: %s",
+			   room, trigger.scene, guarded ? "raised" : "guard does not hold");
+		if (guarded)
+			triggerCutscene(trigger.scene);
+	}
+}
+
+/**
+ * The three elapsed-time scenes, as CUTSCENE:sub_0dfda decides them.
+ *
+ * Each is a 32-bit counter in the latch block with an enable byte of its own,
+ * and each fires its scene once the counter passes a threshold: 4200 animation
+ * ticks (about four minutes), 14700 and 16800. The first is also suppressed
+ * while the player is in room 21 -- the original compares handler_code against
+ * 0x15 -- which is the room whose own overlay starts that timer running.
+ *
+ * The third timer has no writer anywhere in the game: nothing sets [0x33ce], so
+ * its scene can never come up. That is the original's behaviour, not a gap here.
+ */
+void AlienEngine::stepCutsceneTimers() {
+	for (uint i = 0; i < ARRAYSIZE(kTimers); i++) {
+		if (kTimers[i].notInRoom21 && _room == 21)
+			continue;
+		if (cutsceneTimer(kTimers[i].counter) <= kTimers[i].limit)
+			continue;
+		debugC(1, kDebugCutscene, "timer 0x%04x past %u: scene %d",
+			   kTimers[i].counter, kTimers[i].limit, kTimers[i].scene);
+		triggerCutscene(kTimers[i].scene);
+	}
+}
+
+/** One idle timer's count, the word pair the original compares as a long. */
+uint32 AlienEngine::cutsceneTimer(uint16 addr) const {
+	const uint32 low = _script.flag(addr) | ((uint32)_script.flag(addr + 1) << 8);
+	const uint32 high = _script.flag(addr + 2) | ((uint32)_script.flag(addr + 3) << 8);
+	return (high << 16) | low;
+}
+
+/**
+ * The idle timers, advanced on the animation tick pair as OBJ:sub_029ac does.
+ *
+ * They live in the latch block, so a save carries them the way the original's
+ * does, and each only runs while its own enable byte is set.
+ */
+void AlienEngine::tickCutsceneTimers() {
+	for (uint i = 0; i < ARRAYSIZE(kTimers); i++) {
+		if (_script.flag(kTimers[i].enable) != 1)
+			continue;
+		const uint32 next = cutsceneTimer(kTimers[i].counter) + 1;
+		for (uint b = 0; b < 4; b++)
+			_script.setFlag(kTimers[i].counter + b, (byte)(next >> (8 * b)));
+	}
 }
 
 /**

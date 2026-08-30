@@ -157,6 +157,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
+		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
@@ -744,6 +745,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// to leave; every other room, and the pod before then, does nothing here.
 	startEnding();
 
+	// And the scenes the room raises on entry, which is the last thing the
+	// original's enter routine does that the port had not got to.
+	roomCutscenes(room);
+
 	// And with the walk channel on, every hotspot of the room is clicked on
 	// paper and the resolved walk target printed, which is what
 	// tools/check_walkgeom.py --sweep prints from the table it generated. The
@@ -918,6 +923,10 @@ void AlienEngine::stepClock() {
 	_sound.tick((_tick & 1) == 0);
 
 	if ((_tick & 1) == 0) {
+		// The elapsed-time counters the timed scenes run off, which the original
+		// advances from the same tick pair (OBJ:sub_029ac).
+		tickCutsceneTimers();
+
 		// The animation slots advance under the same tick-pair gate as the
 		// dialog countdown -- MIDAS:0x1a6a tests [0xa5fc], not the animation
 		// gate -- so a slot's rate is in half ticks, about 35 Hz.
@@ -1215,8 +1224,13 @@ static Common::String condText(const ScriptCond *conds, uint count) {
 	Common::String out;
 	for (uint i = 0; i < count; i++) {
 		out += i ? " && " : " when ";
-		out += Common::String::format("[0x%04x] %s %d", conds[i].addr,
-									  conds[i].negate ? "!=" : "==", conds[i].value);
+		// An item guard names an item id, not an address (ScriptCondKind).
+		if (conds[i].kind == kCondItem)
+			out += Common::String::format("item %d %s %d", conds[i].addr,
+										  conds[i].negate ? "!=" : "==", conds[i].value);
+		else
+			out += Common::String::format("[0x%04x] %s %d", conds[i].addr,
+										  conds[i].negate ? "!=" : "==", conds[i].value);
 	}
 	return out;
 }
@@ -1261,6 +1275,12 @@ void AlienEngine::dumpCutscenes() {
 		debugC(1, kDebugCutscene, "arm %2d latch 0x%04x records %-6s%s%s", arm.id,
 			   arm.latch, records.c_str(),
 			   condText(arm.guards, arm.guardCount).c_str(), flags.c_str());
+	}
+
+	for (uint i = 0; i < cutsceneTriggerCount(); i++) {
+		const CutsceneTrigger &trigger = *cutsceneTriggerAt(i);
+		debugC(1, kDebugCutscene, "trigger room %2d scene %2d%s", trigger.room,
+			   trigger.scene, condText(trigger.guards, trigger.guardCount).c_str());
 	}
 
 	for (uint n = 1; n <= cutsceneRecordCount(); n++) {
@@ -2075,6 +2095,7 @@ bool AlienEngine::takeExit(byte submode) {
 	// the room being left (OBJ:sub_0879a). The main loop then walks its chain of
 	// check_event() calls with that pair.
 	_mode = (byte)_room;
+	_lastSubmode = submode;
 
 	const int room = _script.nextRoom(_mode, submode);
 	if (!room) {

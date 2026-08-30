@@ -71,6 +71,25 @@ enum ScriptOpcode {
 						///< into a register the decoder could not follow
 	kOpMusic			///< args: music slot -- INPUT:0x53c, which resolves the slot
 						///< into a module and a starting order of its own
+						///<
+						///< A room's `cutscene_trigger` calls are deliberately not
+						///< an opcode: they are lifted into a table of their own
+						///< (see cutscenes.h) because a scene plays over the room
+						///< rather than as one of its opening effects.
+};
+
+/**
+ * What a guard reads.
+ *
+ * Nearly every one is a byte of the state block, which is a plain load. The
+ * exception is the inventory: the original asks OBJ:0x6add whether an item is
+ * carried and branches on the answer in AL, so the address field holds an item
+ * id rather than an address. Room 3's cutscene trigger is the case that forced
+ * this -- it plays only while Ben is holding item 14.
+ */
+enum ScriptCondKind {
+	kCondFlag = 0,		///< [addr] == value, in the state or the latch block
+	kCondItem			///< inv_has(addr) == value, a call rather than a load
 };
 
 /** One byte of the state block as a new game leaves it. */
@@ -81,9 +100,10 @@ struct ScriptFlagInit {
 
 /** One `[address] == value` guard, as the overlay's `cmp`/`jne` pair. */
 struct ScriptCond {
-	uint16 addr;
+	uint16 addr;		///< a state address, or an item id when kind is kCondItem
 	byte value;
 	bool negate;
+	byte kind;			///< a ScriptCondKind; zero, and so a flag test, by default
 };
 
 /** One effect, with the branch arms it sits under inside its body. */

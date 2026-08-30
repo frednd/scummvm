@@ -243,14 +243,30 @@ void RoomScript::setFlag(uint16 addr, byte value) {
 }
 
 bool RoomScript::holds(const ScriptCond &cond) const {
-	// A guard on an address outside the two state blocks is one this port cannot
-	// answer -- the handful that exist read the inventory and the game mode --
-	// so the arm it protects is treated as not taken rather than guessed at.
-	const byte *slot = flagSlot(cond.addr);
-	if (!slot)
-		return false;
+	bool equal = false;
 
-	const bool equal = *slot == cond.value;
+	if (cond.kind == kCondItem) {
+		// OBJ:0x6add returns 1 when the item is carried, and every guard lifted
+		// this way compares that answer against an immediate.
+		const byte carried = (_inventory && _inventory->has((byte)cond.addr)) ? 1 : 0;
+		equal = carried == cond.value;
+	} else if (cond.addr == kGameMode || cond.addr == kGameSubmode) {
+		// The two transition globals live in the engine rather than in the state
+		// block: they are how the room being left and the exit it was left by
+		// reach the room being entered.
+		const byte value = !_vm ? 0
+			: (cond.addr == kGameMode ? _vm->gameMode() : _vm->gameSubmode());
+		equal = value == cond.value;
+	} else {
+		// A guard on an address outside the two state blocks is one this port
+		// cannot answer, so the arm it protects is treated as not taken rather
+		// than guessed at.
+		const byte *slot = flagSlot(cond.addr);
+		if (!slot)
+			return false;
+		equal = *slot == cond.value;
+	}
+
 	return cond.negate ? !equal : equal;
 }
 

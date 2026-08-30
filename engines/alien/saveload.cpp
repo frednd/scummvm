@@ -29,6 +29,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/resources.h"
 
 namespace Alien {
 
@@ -65,6 +66,25 @@ static const DosRange kDosLayout[] = {
 };
 
 static const uint32 kDosStateSize = 5412;
+
+// The preview picture a numbered slot carries in front of its state: a 125 x 30
+// crop of the screen taken every second pixel, so a 250 x 60 window, over the
+// grey ramp OBJ:sub_0692c leaves the screen in before the menu is drawn. The
+// window is clamped into the playfield rows, [0x98e4] and [0x98e8].
+static const uint32 kDosThumbnailSize = 3754;
+static const int kThumbWidth = 125;
+static const int kThumbHeight = 30;
+static const int kCropTop = 14;
+static const int kCropBottom = 156;
+static const byte kRampBase = 0xC0;
+
+// How far from where the saved feet put it the window is looked for, and what
+// counts as having found it. A plate the picture came from scores over 90% and
+// every other plate under 45% (tools/check_save.py --room), so the floor sits
+// clear of both.
+static const int kThumbSearchY = 12;
+static const int kThumbSample = 4;
+static const int kThumbFloorPercent = 50;
 
 /// Where the installed game keeps them.
 static const char *const kDosSaveDir = "SAVEGAME";
@@ -229,6 +249,144 @@ void AlienEngine::applyDosItems(const byte *block) {
 						   Inventory::kListSize);
 }
 
+/**
+ * The preview picture at the head of a numbered slot, or null when there is none.
+ *
+ * `RESTART.GAM` and the autosave carry only the state block; a slot the player
+ * made carries the picture in front of it.
+ */
+byte *AlienEngine::readDosThumbnail(const Common::String &file, int &width, int &height) {
+	const Common::FSNode gameDataDir(ConfMan.getPath("path"));
+	Common::FSNode node = gameDataDir.getChild(kDosSaveDir).getChild(file);
+	Common::SeekableReadStream *save = node.createReadStream();
+	if (!save)
+		return nullptr;
+
+	if (save->size() < (int64)(kDosStateSize + kDosThumbnailSize)) {
+		delete save;
+		return nullptr;
+	}
+
+	width = save->readUint16LE();
+	height = save->readUint16LE();
+	if (width != kThumbWidth || height != kThumbHeight) {
+		delete save;
+		return nullptr;
+	}
+
+	const uint32 pixels = (uint32)width * height;
+	byte *thumb = (byte *)malloc(pixels);
+	if (!thumb) {
+		delete save;
+		return nullptr;
+	}
+	const bool complete = save->read(thumb, pixels) == pixels;
+	delete save;
+	if (!complete) {
+		free(thumb);
+		return nullptr;
+	}
+	return thumb;
+}
+
+/** One plate turned into the grey the save menu leaves the screen in. */
+static void rampOf(const byte *palette, byte *ramp) {
+	for (uint i = 0; i < 256; i++) {
+		const int grey = ((palette[i * 3] >> 2) + (palette[i * 3 + 1] >> 2)
+						  + (palette[i * 3 + 2] >> 2)) / 3;
+		ramp[i] = (byte)(kRampBase + grey);
+	}
+}
+
+/**
+ * How well the picture sits on one plate at one offset, as a percentage.
+ *
+ * `stride` samples the picture rather than reading all of it, which is what
+ * makes sweeping every column affordable; the right plate at the right offset
+ * is exact, so a quarter of its pixels separate it from the rest just as well.
+ */
+static int scoreWindow(const byte *thumb, const Graphics::Surface &plate,
+					   const byte *ramp, int originX, int originY, int stride) {
+	int matched = 0, total = 0;
+	for (int y = 0; y < kThumbHeight; y += stride) {
+		const byte *row = (const byte *)plate.getBasePtr(originX, originY + y * 2);
+		const byte *want = thumb + y * kThumbWidth;
+		for (int x = 0; x < kThumbWidth; x += stride) {
+			total++;
+			if (ramp[row[x * 2]] == want[x])
+				matched++;
+		}
+	}
+	return total ? matched * 100 / total : 0;
+}
+
+/**
+ * Which room a save's thumbnail was taken in.
+ *
+ * The state block does not carry the room: game_mode is the room being *left*,
+ * and the room itself is erased before the write (docs/playthrough_findings.md
+ * finding #31). What does carry it is the picture, which is an exact crop of a
+ * plate once the grey ramp is reproduced -- so every room's plates are scored
+ * against it and the best one wins.
+ *
+ * The saved feet position narrows the search: the crop is taken around the
+ * character, and a room's vertical extent is not scrolled, so the rows worth
+ * trying are the ones near where his feet were. The columns are all swept,
+ * because a wide room's crop is in screen space and the scroll it was taken at
+ * is not saved.
+ */
+int AlienEngine::thumbnailRoom(const byte *thumb, int feetX, int feetY, int &score) {
+	int best = 0;
+	score = 0;
+
+	for (int room = 1; room <= StaticTables::kRoomCount; room++) {
+		for (uint which = 0; which < 2; which++) {
+			const Common::String name = which ? _tables.secondPlate(room) : roomPlate(room);
+			if (name.empty())
+				continue;
+
+			Graphics::Surface plate;
+			byte palette[256 * 3];
+			if (!loadGamePCX(Common::Path(name), plate, palette)) {
+				plate.free();
+				continue;
+			}
+
+			byte ramp[256];
+			rampOf(palette, ramp);
+
+			const int lastX = plate.w - kThumbWidth * 2;
+			const int lastY = MIN<int>(plate.h, kCropBottom) - kThumbHeight * 2;
+			if (lastX >= 0 && lastY >= kCropTop) {
+				// The original takes the window at `(box.y1 + box.y2) / 2 - 30`,
+				// the character's vertical middle (docs/playthrough_findings.md
+				// finding #31). The save keeps his feet rather than his box, and
+				// he is about 56 rows tall, so `feetY - 60` lands within a few
+				// rows of it -- near enough to search around.
+				const int centred = CLIP(feetY - kThumbHeight * 2, kCropTop, lastY);
+				const int fromY = feetY > 0 ? MAX(kCropTop, centred - kThumbSearchY) : kCropTop;
+				const int toY = feetY > 0 ? MIN(lastY, centred + kThumbSearchY) : lastY;
+
+				for (int y = fromY; y <= toY; y++) {
+					for (int x = 0; x <= lastX; x++) {
+						const int sampled = scoreWindow(thumb, plate, ramp, x, y,
+														kThumbSample);
+						if (sampled <= score)
+							continue;
+						score = sampled;
+						best = room;
+					}
+				}
+			}
+			plate.free();
+		}
+	}
+
+	debugC(1, kDebugSave, "thumbnail: feet %d,%d matches room %d at %d%%",
+		   feetX, feetY, best, score);
+	return score >= kThumbFloorPercent ? best : 0;
+}
+
 bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 	byte *block = readDosSave(file);
 	if (!block)
@@ -242,13 +400,28 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 	// range at 0x2F87; a save keeps the 36 entries after that head byte.
 	const byte *list = block + offset[2];
 
-	const byte room = big[kDosMode - kDosBase];
+	const byte mode = big[kDosMode - kDosBase];
 	const byte submode = big[kDosSubmode - kDosBase];
 	const int x = READ_LE_UINT16(big + (kDosCharacterX - kDosBase));
 	const int y = READ_LE_UINT16(big + (kDosCharacterY - kDosBase));
 
+	// The room the save was taken in is only in the picture, so a slot that has
+	// one is matched against the plates; game_mode -- the room being left -- is
+	// what is left when there is no picture to match.
+	byte room = mode;
+	int width = 0, height = 0, score = 0;
+	byte *thumb = readDosThumbnail(file, width, height);
+	if (thumb) {
+		const int matched = thumbnailRoom(thumb, x, y, score);
+		free(thumb);
+		if (matched)
+			room = (byte)matched;
+	}
+
+	// The mirrored line keeps naming what the block itself holds; which room the
+	// picture was taken in is a separate line, because it is a separate fact.
 	debugC(1, kDebugSave, "dos save %s: room %d submode %d, character at %d,%d",
-		   file.c_str(), room, submode, x, y);
+		   file.c_str(), mode, submode, x, y);
 
 	uint carried = 0;
 	for (uint i = 0; i < kDosLayout[2].length; i++) {
@@ -287,7 +460,7 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 
 		memcpy(_outcomeCounter, big + (kDosOutcomeCounter - kDosBase), kObjectCount);
 
-		_mode = room;
+		_mode = mode;
 		_heldItem = Inventory::kNoItem;
 		if (loadRoom(room)) {
 			_ben.place(x, y);

@@ -108,6 +108,27 @@ struct CutsceneArm {
 	bool studio;			///< the TV news studio, which has no record
 };
 
+/**
+ * One `sub_0de60` call site: a room raising a scene id as it opens.
+ *
+ * The guards are the overlay's own, and are not all flag tests: two rooms gate
+ * a scene on the transition globals, so which scene plays depends on the way in,
+ * and three gate it on an item being carried (kCondItem).
+ */
+struct CutsceneTrigger {
+	byte room;
+	byte scene;
+	byte guardCount;
+	ScriptCond guards[3];
+};
+
+/** The triggers `room` raises, in the order its enter routine reaches them. */
+const CutsceneTrigger *cutsceneTriggers(int room, uint &count);
+
+/** All of them, for the debug channel. */
+uint cutsceneTriggerCount();
+const CutsceneTrigger *cutsceneTriggerAt(uint index);
+
 /** The arm for one scene id, or null when no arm handles it. */
 const CutsceneArm *cutsceneArm(byte id);
 

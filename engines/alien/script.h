@@ -74,6 +74,11 @@ public:
 	/// [0xa602], set by a body that has consumed the click.
 	static const uint16 kActionHandled = 0xa602;
 
+	/// The two transition globals a guard may read. They sit outside the state
+	/// block, and the engine rather than the block holds them.
+	static const uint16 kGameMode = 0xa880;
+	static const uint16 kGameSubmode = 0xa87e;
+
 	/// The click the blocks match on, as LOGIC:sub_12198 and sub_12336 leave it:
 	/// the item being used, or zero, and the object it was used on. Room overlays
 	/// read these directly as well, so they live in the state block.
@@ -173,6 +178,10 @@ public:
 
 	byte flag(uint16 addr) const;
 	void setFlag(uint16 addr, byte value);
+
+	/// Whether one lifted guard holds right now. Public because the cutscene
+	/// tables carry guards of their own and answer them against this state.
+	bool condHolds(const ScriptCond &cond) const { return holds(cond); }
 
 	/// The whole state block and the latches, which is all a save carries.
 	void syncGame(Common::Serializer &s);

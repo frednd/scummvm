@@ -85,6 +85,12 @@ public:
 	 */
 	void playMusicSlot(uint slot);
 
+	/// game_mode and game_submode as the last transition left them. Public for
+	/// the same reason: a guard lifted on [0xa880] or [0xa87e] is answered from
+	/// here rather than from the state block (see RoomScript::holds).
+	byte gameMode() const { return _mode; }
+	byte gameSubmode() const { return _lastSubmode; }
+
 private:
 	bool loadRoom(int room, bool secondPlate = false);
 	void stepRoom(int delta);
@@ -117,6 +123,8 @@ private:
 	void dumpSfx();
 	void syncGame(Common::Serializer &s);
 	byte *readDosSave(const Common::String &file);
+	byte *readDosThumbnail(const Common::String &file, int &width, int &height);
+	int thumbnailRoom(const byte *thumb, int feetX, int feetY, int &score);
 	void applyDosItems(const byte *block);
 	bool importDosSave(const Common::String &file, bool apply);
 	void dumpSaves();
@@ -134,6 +142,10 @@ private:
 	bool isBedroomSwitch(int obj) const;
 	void applyOcclusion();
 	bool triggerCutscene(byte id);
+	void roomCutscenes(int room);
+	void stepCutsceneTimers();
+	void tickCutsceneTimers();
+	uint32 cutsceneTimer(uint16 addr) const;
 	void playCutsceneRecord(uint number);
 	void runCutsceneProc(uint proc);
 	void speakCutsceneLine(uint id, int anchorX, int anchorY);
@@ -247,6 +259,11 @@ private:
 	/// it as a room's tick loop ends, so the pair the transition chain matches
 	/// on is (the room being left, the submode its exit armed).
 	byte _mode;
+
+	/// game_submode [0xa87e] as that same moment leaves it: the exit taken. A
+	/// room reads the pair back on entry -- room 35 plays a different scene
+	/// depending on which way in it was.
+	byte _lastSubmode;
 
 	/// What the player carries, the bar it is shown in, and which part of that
 	/// bar the cursor is over.
