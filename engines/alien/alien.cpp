@@ -42,9 +42,13 @@
 
 namespace Alien {
 
-// The kitchen is where the game itself starts, and it is the room the render
-// milestones were checked against.
-static const int kStartRoom = 10;
+// Where a new game opens. MAIN's boot run -- everything between `entry_point`
+// and `main_loop_start`, the same span the initial state block is lifted from --
+// ends by setting handler_code to 3 and dispatching it, and a handler code is
+// its room number in plain decimal, so the game starts in uncle's lab. The
+// kitchen, which this used to say, is only where the render milestones were
+// checked; `-b 10` still goes there.
+static const int kStartRoom = 3;
 
 // How far the debug room tour walks before it stops. The mansion's exits lead
 // back into each other, so a tour never ends on its own.
@@ -224,14 +228,17 @@ Common::Error AlienEngine::run() {
 	// checks are driven without clicking through the game to get there.
 	const int start = ConfMan.hasKey("boot_param") ? ConfMan.getInt("boot_param")
 												   : kStartRoom;
-	if (!loadRoom(start))
-		return Common::Error(Common::kReadingFailed, "Could not load the starting room");
-
 	// AI.COM runs ANIMPLAY on the intro before it starts the game, so the intro
 	// belongs to a plain new game and to nothing else: a run that names a room
 	// or turns a debug channel on is a check, and goes straight to the room.
-	if (!ConfMan.hasKey("boot_param") && gDebugLevel <= 0)
-		playCutscene(kCutscenes[0]);
+	// It plays before the first room for the same reason it did there.
+	if (!ConfMan.hasKey("boot_param") && gDebugLevel <= 0 && !playCutscene(kCutscenes[0]))
+		warning("%s is not in the search path, so the intro is being skipped: it ships "
+				"on the CD rather than in the installed game, and reaching it needs "
+				"--extrapath pointed at the CDA directory", kCutscenes[0]);
+
+	if (!loadRoom(start))
+		return Common::Error(Common::kReadingFailed, "Could not load the starting room");
 
 	if (debugChannelSet(2, kDebugRooms))
 		tourRooms();
