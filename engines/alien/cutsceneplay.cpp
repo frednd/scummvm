@@ -21,6 +21,7 @@
 
 #include "common/events.h"
 #include "common/system.h"
+#include "graphics/cursorman.h"
 #include "graphics/paletteman.h"
 
 #include "alien/alien.h"
@@ -224,6 +225,9 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	const int benFacing = _ben.facing();
 	stopSpeech();
 
+	// A scene owns the screen the way a clip does, and the original clears
+	// cursor_visible [0xa948] for the length of one.
+	CursorMan.showMouse(false);
 	_cutscene = true;
 	_background.free();
 	_background = plate;
@@ -394,6 +398,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	if (room > 0 && loadRoom(room))
 		_ben.place(benX, benY, benFacing);
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	CursorMan.showMouse(true);
 	_dirty = true;
 }
 

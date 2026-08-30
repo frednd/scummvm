@@ -30,6 +30,7 @@
 #include "common/system.h"
 #include "engines/util.h"
 #include "graphics/palette.h"
+#include "graphics/cursorman.h"
 #include "graphics/paletteman.h"
 #include "image/png.h"
 
@@ -82,6 +83,20 @@ static const char *const kCutscenes[] = { "ALINTRO.CDA", "ALIEND.CDA" };
 // Where the CDA2 players put a subtitle: the records in the file carry y = 172
 // themselves, and a negative x means the line is centred.
 static const int kSubtitleY = 172;
+
+// The mouse pointer: one 11 by 14 outlined arrow in the right margin of
+// OBJFILE.PCX, the same page the font atlas and the inventory chrome come from
+// (docs/game_logic.md 3F). The original blits it into the frame buffer itself,
+// from (306,15), and never swaps it: there is no shape-change mechanism in the
+// game at all, and the only INT 33h call it makes is the position set at boot.
+// Index 0 is the transparent one, and the arrow is drawn in whatever palette the
+// room left behind, which is why no cursor palette is pushed here either.
+static const char *const kCursorPage = "OBJFILE.PCX";
+static const int kCursorSrcX = 306;
+static const int kCursorSrcY = 15;
+static const int kCursorWidth = 11;
+static const int kCursorHeight = 14;
+static const byte kCursorTransparent = 0;
 
 // How many frames of each cutscene the checksum sweep decodes. The intro is
 // 74 MB; a prefix proves the codec and keeps the run short.
@@ -209,6 +224,10 @@ Common::Error AlienEngine::run() {
 
 	if (!_labelFont.load(Font::kLabel))
 		return Common::Error(Common::kReadingFailed, "Could not load the label font");
+
+	if (!loadCursor())
+		warning("could not cut the pointer out of OBJFILE.PCX: the game is playable "
+				"but the mouse has no arrow");
 
 	// The shared script is resident in the original for the whole game, and the
 	// generic click path reads it whatever room the player is in.
@@ -1623,6 +1642,9 @@ void AlienEngine::renderMusic() {
  * clip, the game loop does not run, and a keypress or a click ends it early.
  */
 void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) {
+	// A clip owns the whole screen, and the original clears cursor_visible
+	// [0xa948] before one plays.
+	CursorMan.showMouse(false);
 	video.start();
 
 	bool skipped = false;
@@ -1666,6 +1688,7 @@ void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) 
 
 	// The room the clip interrupted owns the screen again, palette and all.
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	CursorMan.showMouse(true);
 	_dirty = true;
 }
 
@@ -1740,6 +1763,42 @@ bool AlienEngine::playLift() {
  * that was installed without them simply has no intro, which is what the
  * original does when the disc is missing too.
  */
+/**
+ * Install the pointer, which is a crop of a plate rather than a resource.
+ *
+ * The original owns its cursor: it saves the pixels under the arrow, blits the
+ * arrow, and puts the backing store back next frame, all in the same page the
+ * art is cut from. The port hands the same 11 by 14 crop to the backend and lets
+ * it do the compositing, which is the one place the two differ and the one place
+ * it does not matter -- nothing in the game reads the pixels the arrow covers.
+ */
+bool AlienEngine::loadCursor() {
+	Graphics::Surface page;
+	byte palette[256 * 3];
+	if (!loadGamePCX(Common::Path(kCursorPage), page, palette)) {
+		page.free();
+		return false;
+	}
+
+	if (page.w < kCursorSrcX + kCursorWidth || page.h < kCursorSrcY + kCursorHeight) {
+		warning("%s is %dx%d, too small to hold the pointer", kCursorPage, page.w, page.h);
+		page.free();
+		return false;
+	}
+
+	byte arrow[kCursorWidth * kCursorHeight];
+	for (int y = 0; y < kCursorHeight; y++)
+		memcpy(arrow + y * kCursorWidth, page.getBasePtr(kCursorSrcX, kCursorSrcY + y),
+			   kCursorWidth);
+	page.free();
+
+	// The arrow's point is its top left corner: the original blits it straight
+	// at cursor_x, cursor_y with no offset of its own.
+	CursorMan.replaceCursor(arrow, kCursorWidth, kCursorHeight, 0, 0, kCursorTransparent);
+	CursorMan.showMouse(true);
+	return true;
+}
+
 bool AlienEngine::playCutscene(const char *file) {
 	CDA2Decoder video;
 	if (!video.loadFile(Common::Path(file))) {

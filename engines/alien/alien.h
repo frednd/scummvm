@@ -101,6 +101,7 @@ private:
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);
 	void redraw();
+	bool loadCursor();
 	void handleEvents();
 	void dumpScreen(const Common::String &name = Common::String());
 
