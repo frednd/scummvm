@@ -725,13 +725,22 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	if (debugChannelSet(-1, kDebugAnim))
 		_anims.playAll(kDebugAnimRate);
 
-	// Where the character enters a room is the room script's business, and none
-	// of that is ported, so he is put on the first walk node -- a place the
-	// room itself says is floor.
-	if (_walk.nodes().count())
+	// Where the character enters is the room's own business: its opening effects
+	// carry a CHARANIM:0x4e call, often one per way in under a guard on the room
+	// that was left. A room that says nothing leaves him on the first walk node,
+	// which is at least a place the room itself calls floor.
+	int placeX = 0, placeY = 0, placeFacing = 0;
+	if (_script.placeRequest(placeX, placeY, placeFacing)) {
+		// What the call passes is the sprite's own origin, [0xa8ec] and [0xa8ee],
+		// not the point the walk system routes -- those differ by (10, 64).
+		_ben.placeSprite(placeX, placeY, placeFacing);
+		debugC(1, kDebugRooms, "room %d: opens with the character at %d,%d facing %d",
+			   room, _ben.walkX(), _ben.walkY(), placeFacing);
+	} else if (_walk.nodes().count()) {
 		_ben.place(_walk.nodes().x(0), _walk.nodes().y(0));
-	else
+	} else {
 		_ben.place(kScreenWidth / 2, 140);
+	}
 
 	// Most rooms name a room<n>.tal, but several speak through a shared file,
 	// and the ones without an overlay fall back to the naming convention.
@@ -766,6 +775,17 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries(), _spots.size());
 
 	_room = room;
+
+	// What the room says as it opens, if its opening effects queued an outcome:
+	// room 3's two-line monologue is how the game itself starts. It is spoken
+	// here rather than where the effect ran, because the effects run before the
+	// room's dialog file is loaded and before the character has been placed.
+	if (_script.queuedEvent() != RoomScript::kNoEvent) {
+		const byte code = _script.queuedEvent();
+		_script.clearQueuedEvent();
+		debugC(1, kDebugRooms, "room %d: opens by speaking outcome %d", room, code);
+		queueOutcome(_tal, code, _ben.walkX(), _ben.walkY());
+	}
 
 	// The escape pod runs its own sequence as it opens, once the pod is ready
 	// to leave; every other room, and the pod before then, does nothing here.
@@ -1267,7 +1287,7 @@ static const char *opName(byte op) {
 		"unsupported", "set_flag", "set_action_handled", "set_game_submode",
 		"queue_event", "anim_play_mode1", "anim_play_mode2", "anim_play_mode3",
 		"sound", "play_sample", "inv_add", "inv_remove", "inv_has",
-		"music_play_slot"
+		"add_flag", "char_place", "music_play_slot"
 	};
 	return op < ARRAYSIZE(kNames) ? kNames[op] : "?";
 }

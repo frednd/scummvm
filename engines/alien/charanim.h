@@ -125,6 +125,12 @@ public:
 	/** Put the character down with its feet at a walk point, facing forward. */
 	void place(int walkX, int walkY, int facing = 3);
 
+	/// The same, given the sprite origin instead of the walk point -- which is
+	/// what a room's own CHARANIM:0x4e call passes (kOpCharPlace).
+	void placeSprite(int spriteX, int spriteY, int facing = 3) {
+		place(spriteX + kWalkPointX, spriteY + kWalkPointY, facing);
+	}
+
 	/**
 	 * Take a route from Walk::plotRoute and start walking it. The router only
 	 * ever ends its route on a walk node -- the last leg, from that node to the

@@ -124,6 +124,19 @@ public:
 	/// The outcome code the last run() queued, or kNoEvent.
 	byte queuedEvent() const { return _queued; }
 
+	/// Clears it, for a caller that has spoken what was standing there.
+	void clearQueuedEvent() { _queued = kNoEvent; }
+
+	/**
+	 * Where the room being entered stands the character, if it says at all.
+	 *
+	 * A room's opening effects can carry a CHARANIM:0x4e call -- often several,
+	 * one per way in, under guards on the room that was left. The last one whose
+	 * guards hold wins, as it does in the original, and a room with none leaves
+	 * the caller to place him however it likes.
+	 */
+	bool placeRequest(int &x, int &y, int &facing) const;
+
 	/// No submode. The original leaves a room only on a non-zero one.
 	static const byte kNoSubmode = 0;
 
@@ -209,6 +222,12 @@ private:
 	int _room;
 	byte _queued;
 	byte _submode;
+
+	/// The CHARANIM:0x4e call the room's opening effects last made, if any.
+	bool _placed;
+	int _placeX;
+	int _placeY;
+	int _placeFacing;
 };
 
 } // End of namespace Alien

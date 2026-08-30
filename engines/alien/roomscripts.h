@@ -69,6 +69,11 @@ enum ScriptOpcode {
 	kOpInvRemove,		///< args: item id -- OBJ:0x6a71, close the gap behind it
 	kOpInvHas,			///< args: item id -- OBJ:0x6add; a test, and its answer went
 						///< into a register the decoder could not follow
+	kOpAddFlag,			///< args: state address, how much to add -- an `inc` in place
+	kOpCharPlace,		///< args: x high, x low, y high, y low, facing -- CHARANIM:0x4e,
+						///< in the order the original pushes them: the two
+						///< coordinates are longs, and their high words are always
+						///< zero. Where a room stands the character as it opens.
 	kOpMusic			///< args: music slot -- INPUT:0x53c, which resolves the slot
 						///< into a module and a starting order of its own
 						///<
@@ -112,6 +117,9 @@ struct ScriptEffect {
 	byte argCount;
 	uint16 args[6];		///< flag addresses reach 0xa7ff, so these are unsigned
 	byte dynArgs;		///< bit i set: args[i] is a state address, read at run time
+	byte bias;			///< added to that byte once it is read: three call sites turn
+						///< a counter into an outcome code, and no effect has more
+						///< than one dynamic argument for it to be ambiguous about
 	byte guardCount;
 	ScriptCond guards[3];
 };

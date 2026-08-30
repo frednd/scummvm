@@ -33,7 +33,8 @@
 namespace Alien {
 
 RoomScript::RoomScript() : _vm(nullptr), _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
-		_room(0), _queued(kNoEvent), _submode(kNoSubmode) {
+		_room(0), _queued(kNoEvent), _submode(kNoSubmode),
+		_placed(false), _placeX(0), _placeY(0), _placeFacing(0) {
 	reset();
 }
 
@@ -59,6 +60,7 @@ void RoomScript::enterRoom(int room) {
 	_blocks = scriptForRoom(room, _blockCount);
 	_queued = kNoEvent;
 	_submode = kNoSubmode;
+	_placed = false;
 
 	// The room's opening setup, out of the same overlay routine that loads its
 	// banks. Without it a slot stays blank until something plays it, so a door
@@ -71,6 +73,15 @@ void RoomScript::enterRoom(int room) {
 	debugC(1, kDebugGraphics, "script: room %d opens with %u slot plays", room, count);
 	for (uint i = 0; i < count; i++)
 		runEffect(init[i]);
+}
+
+bool RoomScript::placeRequest(int &x, int &y, int &facing) const {
+	if (!_placed)
+		return false;
+	x = _placeX;
+	y = _placeY;
+	facing = _placeFacing;
+	return true;
 }
 
 bool RoomScript::walkTarget(int clickX, int clickY, byte obj, WalkTarget &out) const {
@@ -317,12 +328,26 @@ void RoomScript::runEffect(const ScriptEffect &original) {
 	ScriptEffect effect = original;
 	for (uint a = 0; a < effect.argCount; a++) {
 		if (effect.dynArgs & (1 << a))
-			effect.args[a] = flag((uint16)effect.args[a]);
+			effect.args[a] = (uint16)(flag((uint16)effect.args[a]) + effect.bias);
 	}
 
 	switch (effect.op) {
 	case kOpSetFlag:
 		setFlag((uint16)effect.args[0], (byte)effect.args[1]);
+		break;
+
+	case kOpAddFlag:
+		setFlag((uint16)effect.args[0],
+				(byte)(flag((uint16)effect.args[0]) + effect.args[1]));
+		break;
+
+	case kOpCharPlace:
+		// The coordinates are longs in the original and their high words are
+		// always zero, which is why only the low ones are read here.
+		_placed = true;
+		_placeX = effect.args[1];
+		_placeY = effect.args[3];
+		_placeFacing = effect.args[4];
 		break;
 
 	case kOpActionHandled:
