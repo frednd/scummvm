@@ -2579,15 +2579,14 @@ void AlienEngine::handleEvents() {
 				loadRoom(_room, !_secondPlate);
 			} else if (event.kbd.keycode == Common::KEYCODE_F9) {
 				// Pick up where the original left off: the state block of its own
-				// save, applied to this engine. The room is not in that block, so
-				// what comes back is the puzzle state and the character, not the
-				// place.
+				// save, applied to this engine. The room is not in that block --
+				// it comes out of the slot's preview picture instead, matched
+				// against the plates (AlienEngine::thumbnailRoom).
 				importDosSave("SAVEGAME.0", true);
 			} else if (event.kbd.keycode == Common::KEYCODE_m) {
-				// Step through the music slots. Which slot a room asks for is
-				// not in any table -- the calls are inside the cluster code and
-				// have not been lifted yet -- so until they are, this is the
-				// only way the tracks are reached.
+				// Step through the music slots. Only two rooms start a theme on
+				// entry and the rest of the tracks belong to scenes, so this is
+				// still the quickest way to hear one on its own.
 				const int next = _musicSlot + 1;
 				if (next >= StaticTables::kMusicSlotCount)
 					stopMusic();
