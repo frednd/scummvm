@@ -15,6 +15,7 @@ MODULE_OBJS = \
 	inventory.o \
 	metaengine.o \
 	occlusion.o \
+	opening.o \
 	overlay.o \
 	play.o \
 	resources.o \

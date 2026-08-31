@@ -140,6 +140,11 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 	s.syncBytes(_outcomeCounter, kObjectCount);
 
 	if (s.isLoading()) {
+		// MAIN clears [0x7dc4] on the branch that has just restored a save, so a
+		// loaded game never opens with the monologue -- and never hides the
+		// cursor for it either.
+		cancelOpening();
+
 		// The room is reloaded from scratch, which is what puts its script,
 		// its hotspots and its banks back the way the state says they are.
 		if (!loadRoom(room, _secondPlate != 0))
@@ -462,6 +467,7 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 
 		_mode = mode;
 		_heldItem = Inventory::kNoItem;
+		cancelOpening();
 		if (loadRoom(room)) {
 			_ben.place(x, y);
 			_ben.stop();

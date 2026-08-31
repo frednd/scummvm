@@ -180,7 +180,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
-		_endingStep(0), _endingPos(0), _endingLoop(false), _won(false),
+		_endingStep(0), _endingPos(0), _endingLoop(false),
+		_openingStep(0), _openingPending(true), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -251,6 +252,11 @@ Common::Error AlienEngine::run() {
 	// belongs to a plain new game and to nothing else: a run that names a room
 	// or turns a debug channel on is a check, and goes straight to the room.
 	// It plays before the first room for the same reason it did there.
+	// A run that names a room or turns a channel on skips the opening monologue
+	// for the same reason it skips the intro: it is a check, not a playthrough.
+	if (ConfMan.hasKey("boot_param") || gDebugLevel > 0)
+		cancelOpening();
+
 	if (!ConfMan.hasKey("boot_param") && gDebugLevel <= 0 && !playCutscene(kCutscenes[0]))
 		warning("%s is not in the search path, so the intro is being skipped: it ships "
 				"on the CD rather than in the installed game, and reaching it needs "
@@ -791,6 +797,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// to leave; every other room, and the pod before then, does nothing here.
 	startEnding();
 
+	// And the lab does the same at the other end of the game: a new game opens
+	// with the character talking to himself before the player gets the cursor.
+	startOpening();
+
 	// And the scenes the room raises on entry, which is the last thing the
 	// original's enter routine does that the port had not got to.
 	roomCutscenes(room);
@@ -989,6 +999,7 @@ void AlienEngine::stepClock() {
 		return;
 
 	stepEnding();
+	stepOpening();
 
 	// The character ticks whether or not he is going anywhere: standing still is
 	// what drives OBJ:sub_098d1's idle machine, which fidgets him and turns him

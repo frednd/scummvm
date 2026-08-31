@@ -159,6 +159,9 @@ private:
 	uint subtitleLanguage() const;
 	void startEnding();
 	void armEnding();
+	void startOpening();
+	void stepOpening();
+	void cancelOpening();
 	void stepEnding();
 	void speakEnding(byte code);
 	bool endingLineDone() const;
@@ -307,6 +310,12 @@ private:
 	/// one step waits on, the slot-4 cycle [0xa53e] leaves running, and the win
 	/// flag [0x7dc5] the last step sets (ending.cpp).
 	byte _endingStep;
+
+	/// Room 3's opening machine: the step it is on, and [0x7dc4] -- whether the
+	/// game has yet to say its first words. A restored save clears the flag the
+	/// way MAIN's load branch does.
+	byte _openingStep;
+	bool _openingPending;
 	uint _endingPos;
 	bool _endingLoop;
 	bool _won;
