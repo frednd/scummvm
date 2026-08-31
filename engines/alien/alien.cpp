@@ -990,18 +990,29 @@ void AlienEngine::stepClock() {
 
 	stepEnding();
 
-	if (_ben.isWalking() || _ben.isTurning()) {
-		_ben.tick();
+	// The character ticks whether or not he is going anywhere: standing still is
+	// what drives OBJ:sub_098d1's idle machine, which fidgets him and turns him
+	// back to face the player.
+	const bool moving = _ben.isWalking() || _ben.isTurning();
+	const uint wasFrame = _ben.frame();
+	_ben.tick(_script.flag(0xa605) != 0);
+
+	if (moving) {
 		updateScroll();
 		_dirty = true;
-	} else if (_pending >= 0) {
-		// He has arrived at what he was sent to; the outcome speaks now.
-		finishAction();
 	} else {
-		// And if what he was sent to was a way out of the room, the exit fires
-		// on the same arrival -- after the outcome, because the original tests
-		// it at the end of the room's tick.
-		checkExit();
+		if (_ben.frame() != wasFrame)
+			_dirty = true;
+
+		if (_pending >= 0) {
+			// He has arrived at what he was sent to; the outcome speaks now.
+			finishAction();
+		} else {
+			// And if what he was sent to was a way out of the room, the exit
+			// fires on the same arrival -- after the outcome, because the
+			// original tests it at the end of the room's tick.
+			checkExit();
+		}
 	}
 }
 
@@ -2227,6 +2238,11 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	}
 
 	updateHover(x, y);
+
+	// LOGIC's dispatch zeroes the idle count on the way past, so any click at
+	// all settles the character back to standing rather than only one that
+	// sends him somewhere.
+	_ben.resetIdle();
 
 	// The bar answers for itself, and a click there is never a walk.
 	if (clickBar(x, y, rightButton))

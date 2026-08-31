@@ -187,9 +187,66 @@ static const int kTurnFrameBase = 0x3f;
 static const int kSpeedX = 96;
 static const int kSpeedY = 40;
 
+// The idle machine's canned animations, from the frame lists at ds:0x283a,
+// ds:0x2870 and ds:0x28b4. The original stores them one-based and subtracts one
+// as it hands each to the blitter, so they are stored that way here too: the
+// value that ends every list is the facing's own standing frame, which is how
+// the character settles back rather than snapping.
+static const byte kIdleShiftFront[] = {
+	0x57,
+	0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58,
+	0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58,
+	0x57, 0x41, 0x55,
+	0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56,
+	0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56,
+	0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56, 0x56,
+	0x55
+};
+
+static const byte kIdleShiftRight[] = {
+	0x5b,
+	0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c,
+	0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c,
+	0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c,
+	0x5b, 0x4d, 0x59,
+	0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a,
+	0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a,
+	0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a,
+	0x5a, 0x5a, 0x5a, 0x5a, 0x5a,
+	0x59
+};
+
+static const byte kIdleStretch[] = {
+	0x51, 0x51, 0x52, 0x52, 0x53, 0x53,
+	0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54,
+	0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54,
+	0x54, 0x54, 0x54, 0x54, 0x54, 0x54, 0x54,
+	0x53, 0x53, 0x52, 0x52, 0x51, 0x51,
+	0x41
+};
+
+/** One canned idle animation and the moment in the count it starts at. */
+struct IdlePlay {
+	int at;					///< the value of [0xa808] the original compares
+	int facing;				///< only played from this standing frame
+	const byte *frames;
+	int count;
+};
+
+static const IdlePlay kIdlePlays[] = {
+	{ 0x38, 3, kIdleShiftFront, ARRAYSIZE(kIdleShiftFront) },
+	{ 0x38, 2, kIdleShiftRight, ARRAYSIZE(kIdleShiftRight) },
+	{ 0x96, 3, kIdleStretch,    ARRAYSIZE(kIdleStretch) }
+};
+
+/// The count wraps here and carries into the cycle, as the original's 0xc8.
+static const int kIdleWrap = 200;
+
+
 Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY(0),
 		_steps(0), _facing(3), _arrivalFacing(kFacingKeep), _phase(0),
-		_frame(kIdleFrame[3]), _turnLeft(0) {
+		_frame(kIdleFrame[3]), _turnLeft(0), _idleCount(0), _idleCycle(0),
+		_idleStream(nullptr), _idleIndex(0), _idleLeft(0), _idleFrame(0) {
 	memset(_turn, 0, sizeof(_turn));
 }
 
@@ -205,6 +262,7 @@ void Walker::place(int walkX, int walkY, int facing) {
 	_turnLeft = 0;
 	_route.count = 0;
 	_waypoint = 0;
+	resetIdle();
 	updateFrame();
 }
 
@@ -212,13 +270,23 @@ void Walker::stop() {
 	_route.count = 0;
 	_waypoint = 0;
 	_steps = 0;
+	resetIdle();
 	updateFrame();
+}
+
+void Walker::resetIdle() {
+	_idleCount = 0;
+	_idleCycle = 0;
+	_idleIndex = 0;
+	_idleLeft = 0;
+	_idleStream = nullptr;
 }
 
 void Walker::follow(const WalkRoute &route, int targetX, int targetY,
 					int arrivalFacing) {
 	_route = route;
 	_arrivalFacing = arrivalFacing;
+	resetIdle();
 
 	// Slot 0 is where the walk starts, and the nodes follow; the clicked point
 	// is not in the route at all, so it goes on the end.
@@ -343,10 +411,63 @@ void Walker::updateFrame() {
 		return;
 	}
 
+	if (_idleLeft > 0) {
+		_frame = _idleFrame;
+		return;
+	}
+
 	_frame = kIdleFrame[_facing];
 }
 
-void Walker::tick() {
+void Walker::stepIdle(bool inventoryOpen) {
+	if (++_idleCount >= kIdleWrap) {
+		_idleCount = 0;
+		_idleCycle++;
+	}
+
+	// A canned animation starts only from a standing frame, and only while the
+	// inventory bar is down. Nothing stops the count while one plays, so the
+	// two that share a starting point never collide: they want different
+	// facings.
+	if (!inventoryOpen) {
+		for (uint i = 0; i < ARRAYSIZE(kIdlePlays); i++) {
+			const IdlePlay &play = kIdlePlays[i];
+			if (_idleCount != play.at || _facing != play.facing)
+				continue;
+			_idleStream = play.frames;
+			_idleLeft = play.count;
+			_idleIndex = 0;
+			debugC(1, kDebugAnim, "idle: play %d frames facing %d at count %d",
+				   play.count, _facing, _idleCount);
+		}
+	}
+
+	// Left alone long enough, the character turns to face the player. The
+	// original keeps the moment in [0x98fc] and [0x98fe], which it fills from
+	// the facing: a quarter turn from the back or from screen left is a shorter
+	// wait than the one from screen right.
+	const bool quick = _facing == 1 || _facing == 4;
+	if (_facing != 3 && _idleCount == (quick ? 5 : 0x28) &&
+			_idleCycle == (quick ? 1 : 2)) {
+		_idleIndex = 0;
+		_idleLeft = 0;
+		debugC(1, kDebugAnim, "idle: turn to face front after %d cycles",
+			   _idleCycle);
+		turnTo(3);
+		return;
+	}
+
+	// The frame comes off the list between the countdown and the step, which is
+	// what makes the last frame of a list the one the character is left holding.
+	if (_idleLeft > 0) {
+		_idleLeft--;
+		_idleFrame = (uint)(_idleStream[_idleIndex] - 1);
+		if (_idleLeft > 0)
+			_idleIndex++;
+	}
+}
+
+void Walker::tick(bool inventoryOpen) {
 	// A queued turn plays out before anything moves, the way the original
 	// blocks the mover while its countdown is running.
 	if (_turnLeft) {
@@ -358,6 +479,7 @@ void Walker::tick() {
 	}
 
 	if (!isWalking()) {
+		stepIdle(inventoryOpen);
 		updateFrame();
 		return;
 	}

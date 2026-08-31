@@ -152,8 +152,24 @@ public:
 	bool isWalking() const { return _waypoint < _route.count; }
 	bool isTurning() const { return _turnLeft != 0; }
 
-	/** One animation tick: the original runs these at the vsync rate over 4. */
-	void tick();
+	/**
+	 * Restart the idle machine, which every click reaching LOGIC's walk
+	 * dispatch does: it zeroes [0xa808] and [0xa80a] whether or not the click
+	 * ended up plotting a route.
+	 */
+	void resetIdle();
+
+	/// Whether an idle animation is playing right now -- the original's
+	/// [0xa0ba], the frames left in the stream, being non-zero.
+	bool isIdlePlaying() const { return _idleLeft > 0; }
+
+	/**
+	 * One animation tick: the original runs these at the vsync rate over 4.
+	 *
+	 * `inventoryOpen` is the original's [0xa605], which suppresses the idle
+	 * machine: nothing fidgets while the bar is up.
+	 */
+	void tick(bool inventoryOpen = false);
 
 	void draw(Graphics::Surface &dest, int scrollX = 0) const;
 
@@ -180,6 +196,7 @@ private:
 	void turnTo(int facing);
 	void arrive();
 	void updateFrame();
+	void stepIdle(bool inventoryOpen);
 
 	CharAnim _anim;
 
@@ -201,6 +218,17 @@ private:
 
 	byte _turn[kMaxTurnFrames];
 	uint _turnLeft;
+
+	/// The idle machine, OBJ:sub_098d1. It counts the ticks the character has
+	/// spent standing -- [0xa808] up to 200, then [0xa80a] one cycle on -- and
+	/// at fixed points in that count starts a canned animation or turns him
+	/// round to face the player.
+	int _idleCount;
+	int _idleCycle;
+	const byte *_idleStream;	///< the frame list being played, [0xa0bc]:[0xa0be]
+	int _idleIndex;				///< how far into it, [0xa0b8]
+	int _idleLeft;				///< frames still to play, [0xa0ba]
+	uint _idleFrame;			///< the one this tick chose
 };
 
 } // End of namespace Alien
