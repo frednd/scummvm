@@ -239,12 +239,55 @@ const byte *RoomScript::flagSlot(uint16 addr) const {
 	return const_cast<RoomScript *>(this)->flagSlot(addr);
 }
 
+/**
+ * Answers a read of one of the animation-slot arrays.
+ *
+ * The original keeps its sixteen slots as parallel arrays in the data segment
+ * (anim.h lists them), and a room's guards read two of those arrays as plain
+ * memory: `0xa4ca`, the current frame as a word per slot, and `0xa4ea`, the
+ * frames left to advance as a byte per slot. That is how a room says "only
+ * start this if the slot is idle" ([0xa4eb] == 0 gates a play on slot 1) or
+ * "start this two frames before the other one runs out" ([0xa4ef] == 2 gates a
+ * play on slot 5). The port keeps that state in AnimSlots rather than in a
+ * memory image, so the reads are forwarded there.
+ */
+bool RoomScript::animSlotByte(uint16 addr, byte &out) const {
+	if (!_anims)
+		return false;
+
+	if (addr >= kAnimFrameBase && addr < kAnimFrameBase + 2 * AnimSlots::kSlotCount) {
+		const uint16 offset = addr - kAnimFrameBase;
+		const uint16 frame = (uint16)_anims->frame(offset / 2);
+		out = (offset & 1) ? (byte)(frame >> 8) : (byte)frame;
+		return true;
+	}
+
+	if (addr >= kAnimRemainingBase && addr < kAnimRemainingBase + AnimSlots::kSlotCount) {
+		out = (byte)_anims->remaining(addr - kAnimRemainingBase);
+		return true;
+	}
+
+	return false;
+}
+
 byte RoomScript::flag(uint16 addr) const {
+	byte value;
+	if (animSlotByte(addr, value))
+		return value;
+
 	const byte *slot = flagSlot(addr);
 	return slot ? *slot : 0;
 }
 
 void RoomScript::setFlag(uint16 addr, byte value) {
+	byte animValue;
+	if (animSlotByte(addr, animValue)) {
+		// The play routines own these; nothing lifted out of the game writes
+		// them, and letting a write through here would desynchronise the slot.
+		debugC(1, kDebugGraphics, "script: 0x%04x is animation slot state, not a flag", addr);
+		return;
+	}
+
 	byte *slot = flagSlot(addr);
 	if (!slot) {
 		debugC(1, kDebugGraphics, "script: flag 0x%04x is outside the state block", addr);
@@ -272,10 +315,17 @@ bool RoomScript::holds(const ScriptCond &cond) const {
 		// A guard on an address outside the two state blocks is one this port
 		// cannot answer, so the arm it protects is treated as not taken rather
 		// than guessed at.
-		const byte *slot = flagSlot(cond.addr);
-		if (!slot)
-			return false;
-		equal = *slot == cond.value;
+		byte value;
+		if (animSlotByte(cond.addr, value)) {
+			equal = value == cond.value;
+			debugC(2, kDebugGraphics, "script: anim state 0x%04x is %d, guard wants %d",
+				   cond.addr, value, cond.value);
+		} else {
+			const byte *slot = flagSlot(cond.addr);
+			if (!slot)
+				return false;
+			equal = *slot == cond.value;
+		}
 	}
 
 	return cond.negate ? !equal : equal;

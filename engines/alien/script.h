@@ -85,6 +85,14 @@ public:
 	static const uint16 kUsedItem = 0xa64b;
 	static const uint16 kClickedObject = 0xa64c;
 
+	/// Two of the sixteen-slot animation arrays (see anim.h) that room scripts
+	/// read as if they were flags: the current frame, a word per slot, and the
+	/// frames a slot has left to advance, a byte per slot. Nothing in the game
+	/// writes them this way -- the play routines own them -- so the port answers
+	/// reads out of AnimSlots and refuses writes.
+	static const uint16 kAnimFrameBase = 0xa4ca;
+	static const uint16 kAnimRemainingBase = 0xa4ea;
+
 	/// No outcome code queued. The original uses zero for "nothing to say".
 	static const byte kNoEvent = 0;
 
@@ -210,6 +218,7 @@ private:
 
 	byte *flagSlot(uint16 addr);
 	const byte *flagSlot(uint16 addr) const;
+	bool animSlotByte(uint16 addr, byte &out) const;
 
 	AlienEngine *_vm;
 	AnimSlots *_anims;

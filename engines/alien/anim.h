@@ -128,6 +128,10 @@ public:
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }
 	int frame(uint slot) const { return _slots[slot].frame; }
 
+	/// Frames a slot still has to advance: the original's `0xa4ea` array, which
+	/// room scripts guard on directly (see RoomScript::animSlotByte).
+	int remaining(uint slot) const { return _slots[slot].remaining; }
+
 private:
 	struct Slot {
 		DL1Sprite bank;
