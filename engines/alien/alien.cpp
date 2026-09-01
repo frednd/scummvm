@@ -591,18 +591,36 @@ int AlienEngine::roomWidth(int room) {
 	}
 }
 
-const char *AlienEngine::charPaletteFile(int room) {
+const char *AlienEngine::charPaletteFile(int room) const {
 	// Ben's own colours (palette indices 1..24) are not part of the room's
 	// background plate -- the original reloads them from a separate PCX after
 	// every room's palette fade (seg_util.asm sub_02091, fed by
-	// load_char_palette in seg_obj.asm), which is why a background PCX is
-	// free to put anything unrelated in that range. VAKIPAL.PCX is the
-	// default (set at boot, seg_main.asm); room 52 is the one confirmed
-	// override found so far (SEC_BPAL.PCX, ovr_34_0f96). MANPAL0/1/2.PCX also
-	// ship but their room association hasn't been traced in disasm/ yet --
-	// left as a TODO rather than guessed.
+	// load_char_palette, OBJ:sub_073bf), which is why a background PCX is free
+	// to put anything unrelated in that range. VAKIPAL.PCX is the default (set
+	// at boot, seg_main.asm) and most rooms re-load exactly that; the rooms
+	// below are every overlay whose own call to load_char_palette names
+	// something else, read out of the manifest string each call points at.
+	//
+	// While the pump suit is worn the alien-ship rooms re-apply the suit's own
+	// palette after their room palette (CHARANIM:sub_14679, called from all of
+	// rooms 51..59), so the suit wins there. Room 52 is the exception: the
+	// scanner overwrites the suit again with its own SEC_BPAL, and only while
+	// the suit is on (ovr_34_0f96:0x62b guards the call on the same flag).
+	if (_script.flag(0xa79b) == 1 && room >= 51 && room <= 59)
+		return room == 52 ? "SEC_BPAL.PCX" : "PUMP_PAL.PCX";
+
 	switch (room) {
-	case 52: return "SEC_BPAL.PCX";
+	case 14: return "MANPAL0.PCX";		// ovr_0e_0e83:0x505
+	case 21: return "GAME21A.PCX";		// ovr_15_0ea7:0xb2e
+	case 26: return "GAME26.PCX";		// ovr_1a_0eaf:0x637
+	case 28: return "GAME28.PCX";		// ovr_1c_0eb7:0x66c
+	case 35: return "MANPAL1.PCX";		// ovr_23_0e7b:0x537
+	case 46: return "WATER1.PCX";		// ovr_2e_0ec3:0x313
+	// Room 49 loads MANPAL2 first, stashes the 24 triples it produced, then
+	// loads VAKIPAL over them (ovr_31_0f85:0x374..0x399), so VAKIPAL is what
+	// the room opens with. The stash is the far half of the engine room: its
+	// tick swaps to it whenever Ben walks past x=0xcd (OBJ:sub_0a74c), which
+	// is a per-frame effect this function cannot express.
 	default: return "VAKIPAL.PCX";
 	}
 }
@@ -610,10 +628,13 @@ const char *AlienEngine::charPaletteFile(int room) {
 void AlienEngine::applyCharPalette(int room) {
 	Graphics::Surface dummy;
 	byte charPalette[256 * 3];
-	if (!loadGamePCX(Common::Path(charPaletteFile(room)), dummy, charPalette)) {
+	const char *name = charPaletteFile(room);
+	if (!loadGamePCX(Common::Path(name), dummy, charPalette)) {
+		debugC(1, kDebugResource, "room %d: no character palette %s", room, name);
 		dummy.free();
 		return;
 	}
+	debugC(1, kDebugResource, "room %d: character palette %s", room, name);
 	dummy.free();
 
 	// Indices 1..24 only -- everything else in this file is unused filler.
