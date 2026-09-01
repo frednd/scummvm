@@ -164,6 +164,18 @@ public:
 	bool isIdlePlaying() const { return _idleLeft > 0; }
 
 	/**
+	 * Whether a line is being spoken, the original's [0x2938].
+	 *
+	 * BENANI's top twelve frames are a mouth cycle, four lists of them, one per
+	 * facing. The dialog unit raises this flag as it dispatches a line and the
+	 * tick drops it 25 half ticks before the line clears; while it is up and the
+	 * character has been standing still for a moment, the cycle replaces his
+	 * standing frame.
+	 */
+	void setTalking(bool talking);
+	bool isTalking() const { return _talking; }
+
+	/**
 	 * One animation tick: the original runs these at the vsync rate over 4.
 	 *
 	 * `inventoryOpen` is the original's [0xa605], which suppresses the idle
@@ -197,6 +209,7 @@ private:
 	void arrive();
 	void updateFrame();
 	void stepIdle(bool inventoryOpen);
+	void stepTalk();
 
 	CharAnim _anim;
 
@@ -229,6 +242,14 @@ private:
 	int _idleIndex;				///< how far into it, [0xa0b8]
 	int _idleLeft;				///< frames still to play, [0xa0ba]
 	uint _idleFrame;			///< the one this tick chose
+
+	/// The talk cycle: whether a line is up [0x2938], whether he has stood still
+	/// long enough for the mouth to open [0x293a], how far into the facing's
+	/// frame list it is [0x2939], and the toggle that halves its rate [0x2937].
+	bool _talking;
+	bool _talkReady;
+	uint _talkPhase;
+	bool _talkHalf;
 };
 
 } // End of namespace Alien

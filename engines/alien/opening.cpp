@@ -67,10 +67,13 @@ void AlienEngine::stepOpening() {
 		return;
 
 	switch (_openingStep) {
-	case 0x64:
-		queueOutcome(_tal, kOpeningLine, _ben.walkX(), _ben.walkY());
+	case 0x64: {
+		int anchorX, anchorY;
+		characterAnchor(anchorX, anchorY);
+		queueOutcome(_tal, kOpeningLine, anchorX, anchorY);
 		_openingStep = 0x6e;
 		break;
+	}
 
 	case 0x6e:
 		// [0xad1c], the pulse the dialog unit leaves when a line clears and

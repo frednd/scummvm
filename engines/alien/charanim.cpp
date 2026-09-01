@@ -225,6 +225,26 @@ static const byte kIdleStretch[] = {
 	0x41
 };
 
+// The talk cycle, from the four frame lists at ds:0x28dc, 0x28e2, 0x28ea and
+// 0x28ee (OBJ:0x9be6 reads them, one list per facing). They are stored one
+// based in the executable and the player subtracts one as it hands a frame to
+// the blitter, so they are already zero based here. The frames sit at the top
+// of BENANI, 0x64..0x6f, which is the range nothing else uses.
+static const byte kTalkFrames[5][7] = {
+	{ 0, 0, 0, 0, 0, 0, 0 },
+	{ 0x6a, 0x6b, 0x6a, 0x6b, 0x6b, 0, 0 },					// 1, back
+	{ 0x64, 0x65, 0x64, 0x66, 0x64, 0x65, 0x66 },			// 2, screen right
+	{ 0x6c, 0x6d, 0x6e, 0x6f, 0, 0, 0 },					// 3, front
+	{ 0x67, 0x68, 0x67, 0x69, 0x67, 0x68, 0x69 }			// 4, screen left
+};
+
+/// How much of each list is used, the counts OBJ:0x9a05 picks per facing.
+static const uint kTalkCount[5] = { 0, 5, 7, 4, 7 };
+
+/// [0xa808] has to be past this before the mouth opens, which is what keeps the
+/// cycle out of the tick a walk ends on (OBJ:0x9995).
+static const int kTalkSettle = 3;
+
 /** One canned idle animation and the moment in the count it starts at. */
 struct IdlePlay {
 	int at;					///< the value of [0xa808] the original compares
@@ -246,7 +266,8 @@ static const int kIdleWrap = 200;
 Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY(0),
 		_steps(0), _facing(3), _arrivalFacing(kFacingKeep), _phase(0),
 		_frame(kIdleFrame[3]), _turnLeft(0), _idleCount(0), _idleCycle(0),
-		_idleStream(nullptr), _idleIndex(0), _idleLeft(0), _idleFrame(0) {
+		_idleStream(nullptr), _idleIndex(0), _idleLeft(0), _idleFrame(0),
+		_talking(false), _talkReady(false), _talkPhase(0), _talkHalf(false) {
 	memset(_turn, 0, sizeof(_turn));
 }
 
@@ -411,12 +432,50 @@ void Walker::updateFrame() {
 		return;
 	}
 
+	// Talking wins over the idle machine: the original reads the mouth frame
+	// after the idle stream has already put one in [0xa8e6] (OBJ:0x9be6).
+	if (_talking && _talkReady) {
+		_frame = kTalkFrames[_facing][_talkPhase];
+		return;
+	}
+
 	if (_idleLeft > 0) {
 		_frame = _idleFrame;
 		return;
 	}
 
 	_frame = kIdleFrame[_facing];
+}
+
+void Walker::setTalking(bool talking) {
+	// [0x2938]. The dialog unit raises it as it dispatches a line and drops it
+	// 25 half ticks before the line clears, so the mouth stops a moment before
+	// the text does.
+	_talking = talking;
+	if (!talking)
+		_talkHalf = false;
+}
+
+void Walker::stepTalk() {
+	// [0x293a], which the standing path sets once the idle count is past three
+	// and every branch that moves him clears.
+	if (_idleCount > kTalkSettle)
+		_talkReady = true;
+
+	if (!_talking || !_talkReady)
+		return;
+
+	// A mouth frame replaces whatever the idle machine had started, which is
+	// the original zeroing [0xa0ba] here rather than letting the two fight.
+	_idleLeft = 0;
+
+	// [0x2937] halves the rate: the list steps on every second animation tick.
+	if (!_talkHalf)
+		_talkPhase++;
+	_talkHalf = !_talkHalf;
+
+	if (_talkPhase >= kTalkCount[_facing])
+		_talkPhase = 0;
 }
 
 void Walker::stepIdle(bool inventoryOpen) {
@@ -474,15 +533,19 @@ void Walker::tick(bool inventoryOpen) {
 		for (uint i = 1; i < _turnLeft; i++)
 			_turn[i - 1] = _turn[i];
 		_turnLeft--;
+		_talkReady = false;
 		updateFrame();
 		return;
 	}
 
 	if (!isWalking()) {
 		stepIdle(inventoryOpen);
+		stepTalk();
 		updateFrame();
 		return;
 	}
+
+	_talkReady = false;
 
 	if (_steps > 0) {
 		_fx += _stepX;

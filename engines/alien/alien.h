@@ -62,6 +62,9 @@ public:
 	static const int kTicksPerCharacter = 3;
 	static const int kMinSpeechTicks = 0x46;
 
+	/// And the mouth stops with this many of those half ticks left, OBJ:0x86df.
+	static const int kTalkStopTicks = 0x19;
+
 	AlienEngine(OSystem *syst, const ADGameDescription *gameDesc);
 	~AlienEngine() override;
 
@@ -191,6 +194,12 @@ private:
 	void stopSpeech();
 
 	void setTextColor(byte r, byte g, byte b);
+	void characterAnchor(int &x, int &y) const;
+	Common::String labelText(int x, int y) const;
+	void refreshLabel(int x, int y);
+	void resetLabelColors();
+	void stepLabelFade();
+	void applyLabelColors();
 	void drawLabel();
 	void drawSpeech(const TalFile::Entry &entry, int anchorX, int anchorY);
 	void drawBand(const TalFile::Entry &entry);
@@ -296,6 +305,16 @@ private:
 	TalFile _talkall;				///< TALKALL.TAL, the answers no room owns
 	const TalFile *_speechTal;		///< which of the two the queue came out of
 	uint _labelSlot;
+
+	/// The status line's own three colours, [0xa80d]..[0xa812], and whether they
+	/// are on their way out. The label font draws in palette entries 66..68 and
+	/// the original fades those to black once the cursor leaves whatever it was
+	/// naming, rather than blanking the line (OBJ:sub_06d66 and sub_082fd).
+	byte _labelColors[6];
+	bool _labelFading;
+	Common::String _labelText;		///< [0xaaec], what the line reads this frame
+	Common::String _labelShown;		///< and what is still drawn, fade included
+
 	uint _dialogId;
 	bool _dialogBand;				///< bottom band layout instead of over the speaker
 	bool _speech;					///< a line is on screen

@@ -112,6 +112,11 @@ static const int kLabelCenterX = 150;
 static const int kLabelY = 163;
 static const int kLabelLeft = 46;
 
+// The label font draws in three palette entries of its own, 66..68, which the
+// original programs directly rather than taking from the room's plate: OBJ's
+// sub_0a6c4 writes them out of [0xa80d]..[0xa812] whenever the line changes.
+static const int kLabelInkFirst = 66;
+
 // docs/dialog_system.md 3A: the block is placed against the midpoint of the
 // speaking object's bounding box. Dialog stepped through from the keyboard has
 // no object behind it and is anchored at the middle of the playfield.
@@ -177,7 +182,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_pending(-1), _pendingOutcome(0),
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
-		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _dialogId(1), _dialogBand(false),
+		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false),
+		_dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
@@ -185,6 +191,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
+	memset(_labelColors, 0, sizeof(_labelColors));
 	memset(_outcomeCounter, 0, sizeof(_outcomeCounter));
 	memset(_queue, 0, sizeof(_queue));
 
@@ -795,6 +802,14 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	setTextColor(0x3F, 0x3F, 0x3F);
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 
+	// The status line's own three entries are the game's, not the plate's, so
+	// they go back over whatever the room's palette put there. The line itself
+	// starts empty: the new room has not been hovered yet.
+	_labelText.clear();
+	_labelShown.clear();
+	_labelFading = false;
+	resetLabelColors();
+
 	debugC(1, kDebugResource,
 		   "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries, "
 		   "%u labels, %u hotspots",
@@ -811,7 +826,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		const byte code = _script.queuedEvent();
 		_script.clearQueuedEvent();
 		debugC(1, kDebugRooms, "room %d: opens by speaking outcome %d", room, code);
-		queueOutcome(_tal, code, _ben.walkX(), _ben.walkY());
+		int anchorX, anchorY;
+		characterAnchor(anchorX, anchorY);
+		queueOutcome(_tal, code, anchorX, anchorY);
 	}
 
 	// The escape pod runs its own sequence as it opens, once the pod is ready
@@ -1014,7 +1031,14 @@ void AlienEngine::stepClock() {
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
 			nextSpeech();
+
+		// OBJ:0x86df drops the talk flag once the line has under 25 half ticks
+		// left, so the mouth closes a moment before the text goes.
+		_ben.setTalking(_speech && (_speechTicks == 0 || _speechTicks >= kTalkStopTicks));
 	}
+
+	// The status line's fade runs off the frame, not off the animation gate.
+	stepLabelFade();
 
 	if (_tick & 3)
 		return;
@@ -1053,6 +1077,11 @@ void AlienEngine::updateHover(int x, int y) {
 	// its authored coordinates); the incoming x is screen-space, so the scroll
 	// offset goes back in before testing them. The bar below the playfield is
 	// never panned, so it keeps the raw screen x.
+	// Nothing hovers while the cursor is gone: the opening keeps the status line
+	// as empty as it keeps the arrow invisible.
+	if (_openingStep)
+		return;
+
 	const int roomX = x + _scrollX;
 
 	// The original registers a room's rectangles one after another and each
@@ -1068,14 +1097,18 @@ void AlienEngine::updateHover(int x, int y) {
 	const int slot = _inventory.slotAt(x, y);
 	const Inventory::Arrow arrow = _inventory.arrowHover(x, y);
 
-	if (hit == _hover && slot == _hoverSlot && arrow == _hoverArrow)
-		return;
+	if (hit != _hover || slot != _hoverSlot || arrow != _hoverArrow) {
+		_hover = hit;
+		_hoverSlot = slot;
+		_hoverArrow = arrow;
+		_labelSlot = hit >= 0 ? _spots[hit].label : 0;
+		_dirty = true;
+	}
 
-	_hover = hit;
-	_hoverSlot = slot;
-	_hoverArrow = arrow;
-	_labelSlot = hit >= 0 ? _spots[hit].label : 0;
-	_dirty = true;
+	// The status line is rebuilt whether or not the hover changed: over bare
+	// floor it reads the walk verb, and the point can cross onto a wall without
+	// any rectangle being involved.
+	refreshLabel(x, y);
 }
 
 bool AlienEngine::clickBar(int x, int y, bool rightButton) {
@@ -1121,6 +1154,11 @@ bool AlienEngine::clickBar(int x, int y, bool rightButton) {
 void AlienEngine::holdItem(byte item) {
 	_heldItem = item;
 	_dirty = true;
+
+	// Picking an item up rewrites the line as "USE <item> WITH ...", which is a
+	// change the cursor never moved for.
+	const Common::Point mouse = g_system->getEventManager()->getMousePos();
+	refreshLabel(mouse.x, mouse.y);
 	debugC(1, kDebugItems, "bar: holding item %u (%s)", item,
 		   _inventory.name(item).c_str());
 }
@@ -1135,7 +1173,9 @@ void AlienEngine::lookAtItem(byte item) {
 	if (!code)
 		return;
 
-	queueOutcome(_talkall, code, _ben.walkX(), _ben.walkY() - Walker::kWalkPointY);
+	int anchorX, anchorY;
+	characterAnchor(anchorX, anchorY);
+	queueOutcome(_talkall, code, anchorX, anchorY);
 }
 
 void AlienEngine::sweepClicks() {
@@ -2262,6 +2302,12 @@ byte AlienEngine::rotateOutcome(const Hotspot &spot) {
 }
 
 void AlienEngine::clickAt(int x, int y, bool rightButton) {
+	// The opening monologue owns the screen: the original takes the cursor away
+	// for it ([0xa948] = 0, ovr_03_0e57:0xb04) and gives it back on the step
+	// that ends the machine, so nothing the player does lands until then.
+	if (_openingStep)
+		return;
+
 	// A click while someone is talking cuts the line short, the same as the
 	// countdown running out.
 	if (_speech) {
@@ -2504,39 +2550,125 @@ void AlienEngine::setTextColor(byte r, byte g, byte b) {
 	_palette[Font::kInkColor * 3 + 2] = b * 255 / 63;
 }
 
-void AlienEngine::drawLabel() {
+Common::String AlienEngine::labelText(int x, int y) const {
 	// docs/action_system.md 1: the status line is the hovered hotspot's verb and
 	// the object's name out of the room's label file, built as "<verb> <label>".
-	// With nothing under the cursor it reads "Walk to" on its own.
-	Common::String text = _tables.walkVerb();
-
-	// With an item in hand the line is built the other way round: HOTSPOT:0x2a5
-	// writes "USE <item> WITH <object>" instead of "<verb> <object>".
+	//
+	// HOTSPOT:sub_135e0 empties the buffer at the top of every frame and only a
+	// registered rectangle or a walkable point fills it again (1021:0x9eb reads
+	// the walk verb out of the same table), so over anything else -- the bar,
+	// the walls, the sky -- the line really is empty. That is what the fade
+	// below is for.
 	if (_heldItem) {
-		text = _tables.useVerb() + " " + _inventory.name(_heldItem);
+		// With an item in hand the line is built the other way round:
+		// HOTSPOT:0x2a5 writes "USE <item> WITH <object>".
+		Common::String text = _tables.useVerb() + " " + _inventory.name(_heldItem);
 		if (_hover >= 0) {
 			const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
 			if (!entry.lines.empty())
 				text += " " + _tables.withVerb() + " " + entry.lines[0];
 		}
-	} else if (_hover >= 0) {
+		return text;
+	}
+
+	if (_hover >= 0) {
 		const Hotspot &spot = _spots[_hover];
 		const TalFile::Entry &entry = _labels.entry(spot.label);
-		text = _tables.verb(spot.verb);
+		Common::String text = _tables.verb(spot.verb);
 		if (!entry.lines.empty()) {
 			text += " ";
 			text += entry.lines[0];
 		}
+		return text;
 	}
 
-	if (text.empty())
+	// Floor: the walk verb on its own, and only where the room's own mask says
+	// he could actually go.
+	if (y <= kPlayfieldBottom && !_walk.mask().blocked(x + _scrollX, y))
+		return _tables.walkVerb();
+
+	return Common::String();
+}
+
+void AlienEngine::refreshLabel(int x, int y) {
+	const Common::String text = labelText(x, y);
+	if (text == _labelText)
 		return;
 
-	int x = kLabelCenterX - _labelFont.measure(text) / 2;
+	_labelText = text;
+	_dirty = true;
+
+	// OBJ:sub_086f4 compares this frame's line against the last one: a new
+	// non-empty line is redrawn at full brightness, and a line that has just
+	// gone empty starts the fade instead of vanishing.
+	if (_labelText.empty()) {
+		// The glyphs stay where they are; only their colours go.
+		_labelFading = !_labelShown.empty();
+	} else {
+		_labelShown = _labelText;
+		_labelFading = false;
+		resetLabelColors();
+	}
+}
+
+void AlienEngine::resetLabelColors() {
+	// OBJ:sub_082fd. Three shades the label font is drawn in, each stored as a
+	// grey plus a blue: palette entries 66, 67 and 68.
+	static const byte kBright[6] = { 0x0e, 0x13, 0x20, 0x27, 0x27, 0x2d };
+	memcpy(_labelColors, kBright, sizeof(_labelColors));
+	applyLabelColors();
+}
+
+void AlienEngine::stepLabelFade() {
+	if (!_labelFading)
+		return;
+
+	// OBJ:sub_06d66, one step per frame: the darkest shade loses one level a
+	// tick and the other two lose two, and the line is done once they are all
+	// black.
+	static const byte kStep[6] = { 1, 1, 2, 2, 2, 2 };
+	bool lit = false;
+	for (uint i = 0; i < ARRAYSIZE(_labelColors); i++) {
+		_labelColors[i] = _labelColors[i] > kStep[i] ? _labelColors[i] - kStep[i] : 0;
+		if (_labelColors[i])
+			lit = true;
+	}
+
+	if (!lit) {
+		// Faded out for good: now the line can go.
+		_labelFading = false;
+		_labelShown.clear();
+	}
+
+	applyLabelColors();
+	_dirty = true;
+}
+
+void AlienEngine::applyLabelColors() {
+	// The pairs are (grey, blue): entry 66 is the shadow, 68 the highlight.
+	for (uint i = 0; i < 3; i++) {
+		const byte grey = _labelColors[i * 2];
+		const byte blue = _labelColors[i * 2 + 1];
+		_palette[(kLabelInkFirst + i) * 3 + 0] = grey * 255 / 63;
+		_palette[(kLabelInkFirst + i) * 3 + 1] = grey * 255 / 63;
+		_palette[(kLabelInkFirst + i) * 3 + 2] = blue * 255 / 63;
+	}
+	g_system->getPaletteManager()->setPalette(_palette + kLabelInkFirst * 3,
+											  kLabelInkFirst, 3);
+}
+
+void AlienEngine::drawLabel() {
+	// The line stays on screen while it fades: what goes dark is the palette,
+	// not the text, so the last line drawn is still there until the fade has
+	// run out.
+	if (_labelShown.empty())
+		return;
+
+	int x = kLabelCenterX - _labelFont.measure(_labelShown) / 2;
 	if (x < kLabelLeft)
 		x = kLabelLeft;
 
-	_labelFont.drawString(_screen, text, x, kLabelY);
+	_labelFont.drawString(_screen, _labelShown, x, kLabelY);
 }
 
 void AlienEngine::drawSpeech(const TalFile::Entry &entry, int anchorX, int anchorY) {
@@ -2552,13 +2684,44 @@ void AlienEngine::drawSpeech(const TalFile::Entry &entry, int anchorX, int ancho
 	if (top + lines * 11 > 155)
 		top = 155 - lines * 11;
 
+	// The anchor is room space, the way the original keeps it: it clamps the
+	// block against [0xa0c4] + 2 and [0xa0c4] + 0x13b, the panned window's own
+	// edges. Working in screen space here comes to the same thing.
+	int anchor = anchorX - _scrollX;
+
+	// One clamp for the whole block, driven by its widest line ([0x9904]), so
+	// the lines stay centred on each other rather than each hitting the margin
+	// on its own.
+	int widest = 0;
+	for (int i = 0; i < lines; i++)
+		widest = MAX(widest, _font.measure(entry.lines[i]));
+
+	if (anchor - widest / 2 < 2)
+		anchor = widest / 2 + 2;
+	if (anchor + widest / 2 > 0x13b)
+		anchor = 0x13b - widest / 2;
+
 	for (int i = 0; i < lines; i++) {
 		const Common::String &line = entry.lines[i];
-		int x = anchorX - _font.measure(line) / 2;
-		if (x < 0)
-			x = 0;
+		const int x = anchor - _font.measure(line) / 2;
 		_font.drawString(_screen, line, x, top + i * 11);
 	}
+}
+
+void AlienEngine::characterAnchor(int &x, int &y) const {
+	// docs/dialog_system.md 1: a line the room queues rather than a click
+	// raises is anchored on [0xa97a]..[0xa980], the box the character blitter
+	// last left behind -- the midpoint of his sprite, at its top edge. The feet
+	// are the wrong end: anchoring there puts the text over him.
+	Common::Rect box;
+	if (_ben.bounds(box)) {
+		x = box.left + (box.right - box.left) / 2;
+		y = box.top;
+		return;
+	}
+
+	x = _ben.walkX();
+	y = _ben.walkY() - Walker::kWalkPointY;
 }
 
 void AlienEngine::drawBand(const TalFile::Entry &entry) {
