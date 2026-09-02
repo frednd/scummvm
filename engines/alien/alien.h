@@ -118,6 +118,7 @@ private:
 	void dumpHotspots();
 	void stepClock();
 	void drawWalkOverlay();
+	void drawSpotOverlay();
 
 	void updateHover(int x, int y);
 	bool clickBar(int x, int y, bool rightButton);
@@ -241,6 +242,7 @@ private:
 	Walk _walk;
 	WalkRoute _route;
 	bool _showWalk;					///< draw the mask, the node ring and the route
+	bool _showSpots;				///< outline the hotspots entry 1 registered
 
 	Walker _ben;					///< the player character walking that route
 	uint32 _lastTick;				///< when the master clock last advanced

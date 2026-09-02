@@ -196,7 +196,7 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _lastTick(0), _tick(0),
+		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
@@ -2563,6 +2563,46 @@ void AlienEngine::drawWalkOverlay() {
 	}
 }
 
+void AlienEngine::drawSpotOverlay() {
+	// The companion to drawWalkOverlay: every rectangle entry 1 registered for
+	// the room in the state the game is in, which is exactly what the cursor can
+	// find. Same ink colour, for the same reason -- it is the one entry the text
+	// layer reprograms, so it reads against any plate.
+	//
+	// The boxes are room-space, like the ones updateHover tests, so the scroll
+	// offset comes off again here. Every box is dashed and the hovered one is
+	// solid: where two overlap it is the one registered last that answers, so
+	// which of them the cursor actually found is half of what the view is for.
+	byte *pixels = (byte *)_screen.getPixels();
+	const int bottom = MIN<int>(kPlayfieldBottom, _screen.h - 1);
+
+	for (uint i = 0; i < _spots.size(); i++) {
+		const Hotspot &spot = _spots[i];
+		const int x1 = spot.x1 - _scrollX, x2 = spot.x2 - _scrollX;
+		const int y1 = spot.y1, y2 = spot.y2;
+		const bool hovered = (int)i == _hover;
+
+		// Dashed, so overlapping boxes stay legible; the hovered one is solid.
+		for (int x = MAX(x1, 0); x <= MIN(x2, _screen.w - 1); x++) {
+			if (!hovered && (x & 1))
+				continue;
+			if (y1 >= 0 && y1 <= bottom)
+				pixels[y1 * _screen.pitch + x] = Font::kInkColor;
+			if (y2 >= 0 && y2 <= bottom)
+				pixels[y2 * _screen.pitch + x] = Font::kInkColor;
+		}
+
+		for (int y = MAX(y1, 0); y <= MIN(y2, bottom); y++) {
+			if (!hovered && (y & 1))
+				continue;
+			if (x1 >= 0 && x1 < _screen.w)
+				pixels[y * _screen.pitch + x1] = Font::kInkColor;
+			if (x2 >= 0 && x2 < _screen.w)
+				pixels[y * _screen.pitch + x2] = Font::kInkColor;
+		}
+	}
+}
+
 void AlienEngine::setTextColor(byte r, byte g, byte b) {
 	// The original reprograms a single DAC entry per speaker; the values in
 	// the disassembly are the VGA 6-bit ones, so they are widened here.
@@ -2808,6 +2848,9 @@ void AlienEngine::redraw() {
 		if (_showWalk)
 			drawWalkOverlay();
 
+		if (_showSpots)
+			drawSpotOverlay();
+
 		// The bar sits below the playfield, so it goes on after the room but
 		// before the text layer, which is what the original's redraw order
 		// comes to.
@@ -2891,6 +2934,11 @@ void AlienEngine::handleEvents() {
 				sweepWalkGeometry();
 			} else if (event.kbd.keycode == Common::KEYCODE_h) {
 				dumpHotspots();
+			} else if (event.kbd.keycode == Common::KEYCODE_s) {
+				// What `w` is to the walk mask: everything in the room the
+				// cursor can find, outlined where it stands.
+				_showSpots = !_showSpots;
+				_dirty = true;
 			} else if (event.kbd.keycode == Common::KEYCODE_x) {
 				dumpExits();
 				takeFirstExit();

@@ -26,7 +26,7 @@
 // both as immediates to MIDAS:load_anim_bank as the overlay opens, so this is
 // those arguments; the manifest order overlay.cpp reads is not the slot order.
 //
-//   282 bank loads over 42 rooms.
+//   251 bank loads over 42 rooms.
 
 #include "alien/anims.h"
 
@@ -203,22 +203,6 @@ static const AnimBank kAnimBanks[] = {
 	{  4, "ENT_NOTE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  5, "ENT_BENB.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  6, "ENT_DROP.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "CRY_DMOR.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "MA2_AXE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "CRY_ENT1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  4, "ENT_NOTE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  5, "ENT_BENB.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, "ENT_DROP.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "CRY_DMOR.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "MA2_AXE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "CRY_ENT1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  4, "ENT_NOTE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  5, "ENT_BENB.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, "ENT_DROP.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  0, "DIV_SADE.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
 	{  0, "DIV_PROP.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
 	{  1, "DIV_CHES.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
@@ -249,17 +233,6 @@ static const AnimBank kAnimBanks[] = {
 	{  4, "SEC_ROMO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
 	{  5, "SEC_NORO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
 	{  6, "SEC_ROBO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  0, "HALW_DOO.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  1, "HALW_LED.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  2, "HALW_WIN.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  3, "HAL_SPEA.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  4, "HAL1_AL1.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  5, "HAL1_AL2.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  6, "HAL1_AL3.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  7, "HAL1_AL4.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  8, "HAL1_AL5.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  9, "HAL1_AL6.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{ 10, "HAL_PUMP.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  0, "HAL2_WIN.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  2, "HAL2_MSP.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  3, "HAL2_LID.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
@@ -298,10 +271,6 @@ static const AnimBank kAnimBanks[] = {
 	{  8, "HAL1_AL5.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  9, "HAL1_AL6.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{ 10, "HAL_PUMP.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  0, "HAL2_WIN.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  2, "HAL2_MSP.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  3, "HAL2_LID.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  4, "HAL2_DOO.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  0, "JAIL_YOD.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
 	{  1, "JAIL_UNC.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
 	{  2, "JAIL_WAL.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
@@ -353,22 +322,22 @@ static const AnimBankRoom kAnimBankRooms[] = {
 	{ 34, 141,  2 },
 	{ 35, 143,  7 },
 	{ 41, 150, 12 },
-	{ 43, 162,  8 },
-	{ 44, 170,  8 },
-	{ 45, 178,  8 },
-	{ 46, 186,  3 },
-	{ 48, 189,  5 },
-	{ 49, 194,  6 },
-	{ 50, 200,  3 },
-	{ 51, 203,  6 },
-	{ 52, 209,  7 },
-	{ 53, 216, 15 },
-	{ 54, 231, 10 },
-	{ 55, 241,  6 },
-	{ 56, 247,  7 },
-	{ 57, 254, 15 },
-	{ 58, 269,  7 },
-	{ 59, 276,  6 },
+	{ 43, 162,  2 },
+	{ 44, 164,  2 },
+	{ 45, 166,  4 },
+	{ 46, 170,  3 },
+	{ 48, 173,  5 },
+	{ 49, 178,  6 },
+	{ 50, 184,  3 },
+	{ 51, 187,  6 },
+	{ 52, 193,  7 },
+	{ 53, 200,  4 },
+	{ 54, 204, 10 },
+	{ 55, 214,  6 },
+	{ 56, 220,  7 },
+	{ 57, 227, 11 },
+	{ 58, 238,  7 },
+	{ 59, 245,  6 },
 };
 
 const AnimBank *animBanksForRoom(int room, uint &count) {
@@ -386,7 +355,7 @@ const AnimBank *animBanksForRoom(int room, uint &count) {
 // `flag` is the [0xa53a] byte the call sits behind, or 0 where it is made every
 // frame unconditionally.
 //
-//   87 looping slots over 35 rooms.
+//   81 looping slots over 35 rooms.
 
 static const AnimLoop kAnimLoops[] = {
 	{  2, 0x0000 },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
@@ -428,13 +397,9 @@ static const AnimLoop kAnimLoops[] = {
 	{  3, 0x0000 },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
 	{  4, 0x0000 },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
 	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  1, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  1, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  1, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  6, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  0, 0x0000 },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
 	{  0, 0x0000 },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
@@ -447,9 +412,8 @@ static const AnimLoop kAnimLoops[] = {
 	{  0, 0x0000 },	// ovr_34_0f96_room_52_-_security_scanner.asm
 	{  3, 0x0000 },	// ovr_34_0f96_room_52_-_security_scanner.asm
 	{  4, 0x0000 },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  2, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  3, 0xa53d },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  0, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  2, 0xa53c },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  0, 0x0000 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
 	{  1, 0x0000 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
 	{  2, 0xa53c },	// ovr_36_0fa6_room_54_-_waiting_room.asm
@@ -468,7 +432,6 @@ static const AnimLoop kAnimLoops[] = {
 	{  5, 0x0000 },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
 	{  2, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  3, 0xa53d },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  0, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
 	{  1, 0xa53b },	// ovr_3a_101d_room_58_-_jail.asm
 	{  0, 0x0000 },	// ovr_3a_101d_room_58_-_jail.asm
 	{  5, 0x0000 },	// ovr_3a_101d_room_58_-_jail.asm
@@ -498,22 +461,22 @@ static const AnimBankRoom kAnimLoopRooms[] = {
 	{ 35,  31,  1 },
 	{ 40,  32,  1 },
 	{ 41,  33,  5 },
-	{ 43,  38,  3 },
-	{ 44,  41,  3 },
-	{ 45,  44,  3 },
-	{ 46,  47,  1 },
-	{ 48,  48,  2 },
-	{ 49,  50,  3 },
-	{ 50,  53,  1 },
-	{ 51,  54,  1 },
-	{ 52,  55,  3 },
-	{ 53,  58,  3 },
-	{ 54,  61,  8 },
-	{ 55,  69,  4 },
-	{ 56,  73,  4 },
-	{ 57,  77,  3 },
-	{ 58,  80,  3 },
-	{ 59,  83,  4 },
+	{ 43,  38,  1 },
+	{ 44,  39,  2 },
+	{ 45,  41,  2 },
+	{ 46,  43,  1 },
+	{ 48,  44,  2 },
+	{ 49,  46,  3 },
+	{ 50,  49,  1 },
+	{ 51,  50,  1 },
+	{ 52,  51,  3 },
+	{ 53,  54,  2 },
+	{ 54,  56,  8 },
+	{ 55,  64,  4 },
+	{ 56,  68,  4 },
+	{ 57,  72,  2 },
+	{ 58,  74,  3 },
+	{ 59,  77,  4 },
 };
 
 const AnimLoop *animLoopsForRoom(int room, uint &count) {
