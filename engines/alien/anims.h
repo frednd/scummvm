@@ -44,6 +44,29 @@ struct AnimBank {
 /** A room's bank loads in overlay order, or null with a count of zero. */
 const AnimBank *animBanksForRoom(int room, uint &count);
 
+/**
+ * One slot a room's tick keeps looping.
+ *
+ * Nothing in a slot says "repeat": MIDAS's eight play routines all count a
+ * range down and stop. What makes the computer cursor blink and the light
+ * around the hall door pulse is the room's own tick calling
+ * MIDAS:snd_func_112d(slot) every frame, which re-issues that slot's last play
+ * -- same mode, same first frame, same count, same rate -- as soon as the slot
+ * has one frame left. So the loop lives in the room, and this is the lift of
+ * those calls (tools/gen_anims.py).
+ *
+ * `flag` is the byte of the original's [0xa53a] array the call sits behind,
+ * where a room turns one of its loops on and off, or 0 where the call is made
+ * every frame regardless.
+ */
+struct AnimLoop {
+	byte slot;
+	uint16 flag;
+};
+
+/** A room's looping slots, or null with a count of zero. */
+const AnimLoop *animLoopsForRoom(int room, uint &count);
+
 } // End of namespace Alien
 
 #endif

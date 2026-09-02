@@ -74,13 +74,25 @@ enum ScriptOpcode {
 						///< in the order the original pushes them: the two
 						///< coordinates are longs, and their high words are always
 						///< zero. Where a room stands the character as it opens.
-	kOpMusic			///< args: music slot -- INPUT:0x53c, which resolves the slot
+	kOpMusic,			///< args: music slot -- INPUT:0x53c, which resolves the slot
 						///< into a module and a starting order of its own
 						///<
 						///< A room's `cutscene_trigger` calls are deliberately not
 						///< an opcode: they are lifted into a table of their own
 						///< (see cutscenes.h) because a scene plays over the room
 						///< rather than as one of its opening effects.
+
+	// MIDAS has five more play routines, and they take the same first four
+	// arguments as the three above. Modes 4 and 5 are 1 and 3 without the flag
+	// that bakes the finished animation into the background page, so what they
+	// play is taken away again when the range runs out. Modes 6, 7 and 8 push
+	// two words more, a far pointer to a table of one sample id per frame; the
+	// pointer is dropped here, because the port has no per-frame sound yet.
+	kOpAnimPlay4,		///< as mode 1, but not left behind when it ends
+	kOpAnimPlay5,		///< as mode 3, but not left behind when it ends
+	kOpAnimPlay6,		///< as mode 1, with a per-frame sample table
+	kOpAnimPlay7,		///< as mode 4, with a per-frame sample table
+	kOpAnimPlay8		///< as mode 2, with a per-frame sample table
 };
 
 /**

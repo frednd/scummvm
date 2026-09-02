@@ -24,7 +24,7 @@
 //
 // The cutscenes: 14 dispatch arms, 15 records out of GAME.EXE's data
 // segment, 44 scene procedures lifted out of disasm/seg_cutscene.asm into
-// 61 effects, and the 15 call sites 11 rooms raise their ids from.
+// 90 effects, and the 15 call sites 11 rooms raise their ids from.
 
 #include "alien/cutscenes.h"
 
@@ -33,8 +33,12 @@ namespace Alien {
 // Every effect any scene procedure runs, in procedure order.
 static const ScriptEffect kCutsceneEffects[] = {
 	{ kOpAnimPlay2,      4, {     0,     1,     6,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 6, 4)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(1, 0, 12, 3)
+	{ kOpSetFlag,        2, { 42298,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53a, 1)
+	{ kOpAnimPlay8,      4, {     1,     0,    12,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(1, 0, 12, 3)
+	{ kOpSetFlag,        2, { 42299,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53b, 1)
+	{ kOpSetFlag,        2, { 42298,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53a, 0)
 	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
+	{ kOpSetFlag,        2, { 42299,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53b, 0)
 	{ kOpAnimPlay2,      4, {     1,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(1, 1, 1, 0)
 	{ kOpAnimPlay2,      4, {     0,     6,    14,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 6, 14, 3)
 	{ kOpMusic,          1, {     5,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// music_play_slot(5)
@@ -44,16 +48,20 @@ static const ScriptEffect kCutsceneEffects[] = {
 	{ kOpAnimPlay2,      4, {     1,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(1, 1, 1, 0)
 	{ kOpAnimPlay1,      4, {     0,     1,    63,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 63, 2)
 	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(0, 0, 5, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa498, 8, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(0, 0, 24, 3)
+	{ kOpAnimPlay8,      4, {     0,     0,     5,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(0, 0, 5, 3)
+	{ kOpAnimPlay8,      4, {     0,     0,    24,     3,     0,     0 }, 0x00,   0, 1, { { 0xa498, 8, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(0, 0, 24, 3)
 	{ kOpAnimPlay2,      4, {     0,     7,    26,     3,     0,     0 }, 0x00,   0, 1, { { 0xa498, 9, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 7, 26, 3)
 	{ kOpAnimPlay1,      4, {     2,    12,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 12, 1, 0)
 	{ kOpAnimPlay2,      4, {     5,    21,    19,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 21, 19, 2)
 	{ kOpAnimPlay2,      4, {     7,     1,    27,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 1, 27, 3)
 	{ kOpAnimPlay2,      4, {     7,    20,     8,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 20, 8, 3)
+	{ kOpSetFlag,        2, { 42305,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa541, 1)
 	{ kOpAnimPlay1,      4, {     0,     1,    33,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 33, 2)
+	{ kOpSetFlag,        2, { 42298,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53a, 1)
 	{ kOpAnimPlay1,      4, {     1,     1,     3,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 3, 0)
+	{ kOpSetFlag,        2, { 42299,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53b, 1)
 	{ kOpAnimPlay1,      4, {     6,     1,    15,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 15, 2)
+	{ kOpSetFlag,        2, { 42304,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa540, 1)
 	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
 	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 1, 1, 0)
 	{ kOpAnimPlay2,      4, {     3,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(3, 1, 1, 0)
@@ -61,34 +69,55 @@ static const ScriptEffect kCutsceneEffects[] = {
 	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
 	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 1, 1, 0)
 	{ kOpAnimPlay2,      4, {     2,     1,    12,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 12, 3)
+	{ kOpSetFlag,        2, { 42300,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53c, 1)
 	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(5, 0, 17, 4)
+	{ kOpSetFlag,        2, { 42300,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53c, 0)
+	{ kOpAnimPlay8,      4, {     5,     0,    17,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(5, 0, 17, 4)
+	{ kOpSetFlag,        2, { 42303,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53f, 1)
 	{ kOpAnimPlay2,      4, {     5,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(5, 1, 1, 0)
+	{ kOpSetFlag,        2, { 42303,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53f, 0)
 	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa4ee, 2, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
 	{ kOpAnimPlay1,      4, {     3,     1,    41,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 41, 2)
 	{ kOpAnimPlay1,      4, {     4,     1,    25,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 25, 2)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(2, 0, 41, 4)
+	{ kOpSetFlag,        2, { 42300,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53c, 0)
+	{ kOpAnimPlay8,      4, {     2,     0,    41,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(2, 0, 41, 4)
 	{ kOpAnimPlay2,      4, {     2,     1,     1,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(2, 0, 14, 3)
+	{ kOpSetFlag,        2, { 42300,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53c, 0)
+	{ kOpAnimPlay8,      4, {     2,     0,    14,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(2, 0, 14, 3)
+	{ kOpSetFlag,        2, { 42300,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53c, 1)
 	{ kOpAnimPlay1,      4, {     2,     6,    40,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 6, 40, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(3, 0, 25, 4)
+	{ kOpAnimPlay8,      4, {     3,     0,    25,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(3, 0, 25, 4)
+	{ kOpSetFlag,        2, { 42301,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53d, 1)
 	{ kOpAnimPlay1,      4, {     0,     1,    21,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 21, 2)
+	{ kOpSetFlag,        2, { 42298,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53a, 1)
 	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
 	{ kOpAnimPlay2,      4, {     2,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(2, 1, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(2, 0, 13, 3)
+	{ kOpSetFlag,        2, { 42300,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53c, 0)
+	{ kOpAnimPlay8,      4, {     2,     0,    13,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(2, 0, 13, 3)
+	{ kOpSetFlag,        2, { 42300,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53c, 1)
 	{ kOpAnimPlay2,      4, {     3,    17,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(3, 17, 1, 0)
+	{ kOpSetFlag,        2, { 42301,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53d, 0)
 	{ kOpAnimPlay2,      4, {     3,     7,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(3, 7, 11, 3)
+	{ kOpSetFlag,        2, { 42301,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53d, 1)
 	{ kOpAnimPlay1,      4, {     2,     4,    58,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 4, 58, 2)
 	{ kOpAnimPlay2,      4, {     6,    10,     5,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 10, 5, 3)
+	{ kOpSetFlag,        2, { 42304,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa540, 1)
 	{ kOpAnimPlay2,      4, {     7,     9,     9,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 9, 9, 3)
+	{ kOpSetFlag,        2, { 42305,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa541, 1)
 	{ kOpAnimPlay2,      4, {     6,    10,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 10, 1, 0)
+	{ kOpSetFlag,        2, { 42304,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa540, 0)
 	{ kOpAnimPlay2,      4, {     7,     9,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 9, 1, 0)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(6, 0, 5, 7)
+	{ kOpSetFlag,        2, { 42305,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa541, 0)
+	{ kOpAnimPlay8,      4, {     6,     0,     5,     7,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(6, 0, 5, 7)
+	{ kOpSetFlag,        2, { 42304,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa540, 1)
 	{ kOpAnimPlay2,      4, {     6,     1,     5,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 1, 5, 3)
+	{ kOpSetFlag,        2, { 42304,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa540, 0)
 	{ kOpAnimPlay2,      4, {     6,     5,     9,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(6, 5, 9, 3)
 	{ kOpAnimPlay2,      4, {     7,     1,     9,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(7, 1, 9, 3)
-	{ kOpUnsupported,    0, {     0,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_list(1, 0, 37, 3)
+	{ kOpAnimPlay8,      4, {     1,     0,    37,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(1, 0, 37, 3)
+	{ kOpSetFlag,        2, { 42299,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53b, 1)
 	{ kOpAnimPlay1,      4, {     0,     1,    17,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 17, 2)
+	{ kOpSetFlag,        2, { 42298,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53a, 1)
 	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
 	{ kOpAnimPlay1,      4, {     0,     1,    53,     1,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 53, 1)
 	{ kOpAnimPlay2,      4, {     0,     1,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(0, 1, 1, 0)
@@ -100,49 +129,49 @@ static const ScriptEffect kCutsceneEffects[] = {
 // original has one `push bp; leave; retf` shared by every such slot.
 static const CutsceneProc kCutsceneProcs[] = {
 	{ 0x0e92,    0,  0 },
-	{ 0x0e97,    0,  1 },
-	{ 0x0eae,    1,  1 },
-	{ 0x0eca,    2,  1 },
-	{ 0x0ee1,    3,  1 },
-	{ 0x0ef8,    4,  3 },
-	{ 0x0f2d,    7,  3 },
-	{ 0x0f54,   10,  1 },
-	{ 0x0f66,   11,  1 },
-	{ 0x0f78,   12,  3 },
-	{ 0x0fc3,   15,  4 },
-	{ 0x1017,   19,  3 },
-	{ 0x1052,   22,  2 },
-	{ 0x1075,   24,  2 },
-	{ 0x1098,   26,  2 },
-	{ 0x10bb,   28,  1 },
-	{ 0x10d2,   29,  1 },
-	{ 0x10e9,   30,  1 },
-	{ 0x1105,   31,  1 },
-	{ 0x111c,   32,  1 },
-	{ 0x1142,   33,  2 },
-	{ 0x1176,   35,  0 },
-	{ 0x118e,   35,  1 },
-	{ 0x11bf,   36,  1 },
-	{ 0x11d6,   37,  1 },
-	{ 0x11f2,   38,  1 },
-	{ 0x120c,   39,  1 },
-	{ 0x1228,   40,  2 },
-	{ 0x1250,   42,  1 },
-	{ 0x1267,   43,  1 },
-	{ 0x1283,   44,  1 },
-	{ 0x129a,   45,  1 },
-	{ 0x12be,   46,  1 },
-	{ 0x12d8,   47,  1 },
-	{ 0x12ef,   48,  1 },
-	{ 0x1306,   49,  1 },
-	{ 0x131d,   50,  1 },
-	{ 0x1334,   51,  1 },
-	{ 0x1355,   52,  3 },
-	{ 0x139c,   55,  2 },
-	{ 0x13ca,   57,  1 },
-	{ 0x13dc,   58,  1 },
-	{ 0x13ee,   59,  1 },
-	{ 0x1400,   60,  1 },
+	{ 0x0e97,    0,  2 },
+	{ 0x0eae,    2,  2 },
+	{ 0x0eca,    4,  2 },
+	{ 0x0ee1,    6,  2 },
+	{ 0x0ef8,    8,  3 },
+	{ 0x0f2d,   11,  3 },
+	{ 0x0f54,   14,  1 },
+	{ 0x0f66,   15,  1 },
+	{ 0x0f78,   16,  3 },
+	{ 0x0fc3,   19,  5 },
+	{ 0x1017,   24,  6 },
+	{ 0x1052,   30,  2 },
+	{ 0x1075,   32,  2 },
+	{ 0x1098,   34,  2 },
+	{ 0x10bb,   36,  2 },
+	{ 0x10d2,   38,  2 },
+	{ 0x10e9,   40,  2 },
+	{ 0x1105,   42,  2 },
+	{ 0x111c,   44,  1 },
+	{ 0x1142,   45,  2 },
+	{ 0x1176,   47,  0 },
+	{ 0x118e,   47,  2 },
+	{ 0x11bf,   49,  2 },
+	{ 0x11d6,   51,  2 },
+	{ 0x11f2,   53,  1 },
+	{ 0x120c,   54,  2 },
+	{ 0x1228,   56,  3 },
+	{ 0x1250,   59,  2 },
+	{ 0x1267,   61,  2 },
+	{ 0x1283,   63,  2 },
+	{ 0x129a,   65,  2 },
+	{ 0x12be,   67,  1 },
+	{ 0x12d8,   68,  2 },
+	{ 0x12ef,   70,  2 },
+	{ 0x1306,   72,  2 },
+	{ 0x131d,   74,  2 },
+	{ 0x1334,   76,  2 },
+	{ 0x1355,   78,  4 },
+	{ 0x139c,   82,  4 },
+	{ 0x13ca,   86,  1 },
+	{ 0x13dc,   87,  1 },
+	{ 0x13ee,   88,  1 },
+	{ 0x1400,   89,  1 },
 };
 
 // Every record's step stream, in record order. A speaker step carries the dialog

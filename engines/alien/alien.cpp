@@ -58,6 +58,26 @@ static const uint kTourHops = 20;
 // Ticks per frame for the debug run-everything animation, slow enough to watch.
 static const int kDebugAnimRate = 4;
 
+// docs/timing.md: the master tick is the ~70 Hz retrace, and two dividers sit
+// under it. Animation runs on every fourth tick, roughly 17.5 Hz, while the
+// dialog countdown is decremented under the first divider only (OBJ:0x617c,
+// gated on the tick pair), so it runs on every second tick.
+//
+// The rate the original asked the timer for is not the rate it played at: the
+// tick is raised from a vertical retrace, so on the hardware it ran on the whole
+// loop went faster than the nominal 70 Hz, and every subsystem went with it
+// because they are all dividers of this one counter. Half again is what it
+// takes to match how the game moves under dosbox, so the nominal rate is scaled
+// here, once, rather than in each divider.
+static const uint kTickScaleNum = 3;
+static const uint kTickScaleDen = 2;
+static const uint32 kTickMillis = 1000 * kTickScaleDen / (70 * kTickScaleNum);
+
+// What the game loop sleeps between passes. It has to stay under the tick or it
+// becomes the clock: at ten milliseconds a nine millisecond tick can only ever
+// fire once per pass, which caps the game below the rate above.
+static const uint kLoopSleepMillis = kTickMillis / 2;
+
 // One install ships all four text languages side by side. Picking the set is a
 // launcher option the engine does not have yet, so the English tree is wired up
 // for now. Both trees end in a directory of the same name, and SearchMan keys
@@ -383,7 +403,7 @@ Common::Error AlienEngine::run() {
 		if (_dirty)
 			redraw();
 		g_system->updateScreen();
-		g_system->delayMillis(10);
+		g_system->delayMillis(kLoopSleepMillis);
 	}
 
 	// AI.COM plays the ending clip when GAME.EXE leaves with 0x7b, so the port
@@ -1000,12 +1020,6 @@ void AlienEngine::sweepWalkGeometry() {
 }
 
 void AlienEngine::stepClock() {
-	// docs/timing.md: the master tick is the ~70 Hz retrace, and two dividers
-	// sit under it. Animation runs on every fourth tick, roughly 17.5 Hz, while
-	// the dialog countdown is decremented under the first divider only
-	// (OBJ:0x617c, gated on the tick pair), so it runs on every second tick.
-	static const uint32 kTickMillis = 1000 / 70;
-
 	const uint32 now = g_system->getMillis();
 	if (now - _lastTick < kTickMillis)
 		return;
@@ -1028,6 +1042,11 @@ void AlienEngine::stepClock() {
 			_anims.tick();
 			_dirty = true;
 		}
+
+		// And then the room's own loop calls, which is where an animation that
+		// repeats gets restarted. The original makes them from the tail of the
+		// room's tick, after the stepper it calls a few instructions earlier.
+		_anims.stepLoops();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
 			nextSpeech();
@@ -1370,7 +1389,9 @@ static const char *opName(byte op) {
 		"unsupported", "set_flag", "set_action_handled", "set_game_submode",
 		"queue_event", "anim_play_mode1", "anim_play_mode2", "anim_play_mode3",
 		"sound", "play_sample", "inv_add", "inv_remove", "inv_has",
-		"add_flag", "char_place", "music_play_slot"
+		"add_flag", "char_place", "music_play_slot",
+		"anim_play_mode4", "anim_play_mode5", "anim_play_mode6",
+		"anim_play_mode7", "anim_play_mode8"
 	};
 	return op < ARRAYSIZE(kNames) ? kNames[op] : "?";
 }
@@ -2769,7 +2790,15 @@ void AlienEngine::redraw() {
 	// A cutscene is the record's plate and its own slots and nothing else: the
 	// character is not in it, and the original hides the bar for its duration.
 	if (!_cutscene) {
-		_sprite.drawFrame(_spriteFrame, _screen, _scrollX);
+		// The room's DL2 sprite sheets are a viewer, not part of the room: which
+		// of them is on screen is the room's own business ([0xa884] and the
+		// sprite_add calls), and none of that is ported. Drawing one anyway put
+		// a door in the entrance hall that the game only shows much later, in
+		// colours the hall's plate does not use. It stays behind the anim
+		// channel, where the arrow keys page through the banks.
+		if (debugChannelSet(-1, kDebugAnim))
+			_sprite.drawFrame(_spriteFrame, _screen, _scrollX);
+
 		_ben.draw(_screen, _scrollX);
 
 		// And the foreground the room authored over him, which is the whole of

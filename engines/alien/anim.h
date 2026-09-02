@@ -51,23 +51,43 @@ struct RoomAssets;
  * | `0xa4fa` | ticks per frame                                     |
  * | `0xa50a` | ticks since the last advance                        |
  * | `0xa51a` | 1 = forward, 0 = backward                           |
+ * | `0xa53a` | 1 = the room's tick keeps this slot looping         |
  * | `0xa55a` | 1 = return to the starting frame when it runs out   |
  * | `0xa5ba` | the frame it started on                             |
  * | `0xa5ca` | the frame count it started with                     |
+ * | `0xa5da` | 1 = leave the finished animation behind             |
  *
- * The three play routines the room scripts reach are MIDAS:0xb85 (mode 1,
- * forward), 0xc2e (mode 2, forward and then back to the frame it started on)
- * and 0xcd7 (mode 3, backward). All three take the same arguments, and the
- * third of them is a frame *count*, not a last frame: the door in room 6 opens
- * with `(slot 2, first 1, count 6, rate 2)` over a six-frame bank. Frames
- * themselves are numbered from one.
+ * There are **eight** play routines, not three: MIDAS holds the same routine
+ * copied out eight times with different constants, and the number each writes
+ * into `0xa4aa` is what names them here. All eight take the same first four
+ * arguments, and the third of them is a frame *count*, not a last frame: the
+ * door in room 6 opens with `(slot 2, first 1, count 6, rate 2)` over a
+ * six-frame bank. Frames themselves are numbered from one.
  *
- * Advancing runs under the tick-pair gate (docs/timing.md), and a slot whose
- * count has run out keeps its last frame on screen -- the original gets that by
- * blitting the final frame into the background page rather than the front
- * buffer, which is why an opened door stays open with no slot still running.
- * The port keeps the frame in the slot and redraws it, which composites the same
- * pixels without a second page.
+ * | mode | address | direction | on the last frame                    |
+ * |------|---------|-----------|--------------------------------------|
+ * | 1    | `0xb85` | forward   | left behind                          |
+ * | 2    | `0xc2e` | forward   | back to the frame it started on      |
+ * | 3    | `0xcd7` | backward  | left behind                          |
+ * | 4    | `0xd80` | forward   | taken away                           |
+ * | 5    | `0xe29` | backward  | taken away                           |
+ * | 6    | `0xed2` | forward   | left behind                          |
+ * | 7    | `0xf9b` | forward   | taken away                           |
+ * | 8    | `0x1064`| forward   | back to the frame it started on      |
+ *
+ * Modes 6, 7 and 8 push two words more, a far pointer to a table of one sample
+ * id per frame that MIDAS:sub_19431 reads as the slot advances. The port drops
+ * the pointer: it has no per-frame sound.
+ *
+ * Advancing runs under the tick-pair gate (docs/timing.md). "Left behind" is
+ * the original's `0xa5da`: on the tick a mode 1, 3 or 6 range ends, the final
+ * frame goes into the *background* page rather than the front buffer, which is
+ * why an opened door stays open with no slot still running. The port keeps the
+ * frame in the slot and redraws it, which composites the same pixels without a
+ * second page. The modes without that flag are simply not drawn once they have
+ * run out (MIDAS:snd_func_1482 skips them), unless they are also the kind that
+ * returns to their first frame -- which is how a glow that is only sometimes
+ * lit goes out again.
  *
  * A range may end one frame past the last frame its bank ships. That frame is the
  * terminator entry the DL1 header counts but stores no strips for, and playing
@@ -100,12 +120,36 @@ public:
 	 * @param first  the frame to start on, numbered from one
 	 * @param count  how many frames to advance through
 	 * @param rate   ticks per frame; zero advances on every tick
-	 * @param mode   1 forward, 2 forward and back, 3 backward
+	 * @param mode   1..8, as the table above has them
 	 */
 	void play(uint slot, int first, int count, int rate, int mode);
 
 	/** One animation tick: advances every slot with frames left. */
 	void tick();
+
+	/**
+	 * MIDAS:snd_func_112d: re-issues a slot's own last play once it has one
+	 * frame left, which is what makes an animation repeat.
+	 *
+	 * Nothing about it is automatic -- see AnimLoop in anims.h. It restarts one
+	 * tick early on purpose, so the cycle runs on without the range's last
+	 * frame ever reaching the screen.
+	 */
+	void relaunch(uint slot);
+
+	/**
+	 * One frame's worth of loop restarts, for the room this holds the banks of.
+	 *
+	 * The original spells this out in each room's tick, one call per looping
+	 * slot; the calls are lifted into a table so the loop is data here rather
+	 * than a switch on the room number.
+	 */
+	void stepLoops();
+
+	/// The original's [0xa53a] byte for one slot: whether the room has its
+	/// guarded loop turned on. Room code writes it as a plain flag.
+	void setLoopFlag(uint slot, byte value);
+	byte loopFlag(uint slot) const;
 
 	/**
 	 * Plays every loaded slot forward through its whole bank.
@@ -145,7 +189,9 @@ private:
 		int rate;
 		int tick;
 		bool forward;
-		bool restore;			///< mode 2: go back to the starting frame
+		bool restore;			///< modes 2 and 8: go back to the starting frame
+		bool persist;			///< [0xa5da]: modes 1, 3 and 6 leave the last frame behind
+		byte loop;				///< [0xa53a]: the room's guard on this slot's loop
 		byte mode;
 
 		Slot() { clear(); }
@@ -157,6 +203,10 @@ private:
 
 	Slot _slots[kSlotCount];
 	int _room;
+
+	/// The room's own loop calls, from animLoopsForRoom.
+	const AnimLoop *_loops;
+	uint _loopCount;
 };
 
 } // End of namespace Alien

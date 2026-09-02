@@ -382,4 +382,149 @@ const AnimBank *animBanksForRoom(int room, uint &count) {
 	return nullptr;
 }
 
+// The slots each room's tick keeps looping, from its MIDAS:snd_func_112d calls.
+// `flag` is the [0xa53a] byte the call sits behind, or 0 where it is made every
+// frame unconditionally.
+//
+//   87 looping slots over 35 rooms.
+
+static const AnimLoop kAnimLoops[] = {
+	{  2, 0x0000 },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  4, 0x0000 },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  8, 0x0000 },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  2, 0x0000 },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  5, 0x0000 },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  7, 0x0000 },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  3, 0xa53d },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
+	{  4, 0x0000 },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  6, 0xa540 },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  7, 0xa541 },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  3, 0x0000 },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  0, 0x0000 },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  0, 0x0000 },	// ovr_17_0e9f_room_23_-_crossroads.asm
+	{  0, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  3, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  4, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  5, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  7, 0xa541 },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  1, 0x0000 },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  2, 0x0000 },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  4, 0xa53e },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  7, 0xa541 },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  0, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  2, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  4, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  5, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  6, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  7, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  1, 0x0000 },	// ovr_21_0e97_room_33_-_town.asm
+	{  0, 0x0000 },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
+	{  1, 0x0000 },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
+	{  3, 0x0000 },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  0, 0xa53a },	// ovr_28_0ebb_room_40_-_cave_entrance.asm
+	{  0, 0x0000 },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  1, 0x0000 },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  2, 0x0000 },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  3, 0x0000 },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  4, 0x0000 },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  1, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  6, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  1, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  6, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  1, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  6, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, 0x0000 },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
+	{  0, 0x0000 },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
+	{  2, 0x0000 },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
+	{  1, 0x0000 },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  2, 0x0000 },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  3, 0x0000 },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  0, 0x0000 },	// ovr_32_0f81_room_50_-_steam_room.asm
+	{  5, 0x0000 },	// ovr_33_0faa_room_51_-_alien_lobby.asm
+	{  0, 0x0000 },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  3, 0x0000 },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  4, 0x0000 },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  2, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  3, 0xa53d },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  0, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  0, 0x0000 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  1, 0x0000 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  2, 0xa53c },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  3, 0x0000 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  4, 0xa53e },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  5, 0x0000 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  8, 0xa542 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  7, 0x0000 },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  2, 0x0000 },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  3, 0x0000 },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  4, 0x0000 },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  5, 0x0000 },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  0, 0x0000 },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  3, 0x0000 },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  4, 0x0000 },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  5, 0x0000 },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  2, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  3, 0xa53d },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  0, 0x0000 },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  1, 0xa53b },	// ovr_3a_101d_room_58_-_jail.asm
+	{  0, 0x0000 },	// ovr_3a_101d_room_58_-_jail.asm
+	{  5, 0x0000 },	// ovr_3a_101d_room_58_-_jail.asm
+	{  1, 0x0000 },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  2, 0x0000 },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  3, 0x0000 },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  4, 0xa53e },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+};
+
+static const AnimBankRoom kAnimLoopRooms[] = {
+	{  3,   0,  1 },
+	{  7,   1,  1 },
+	{ 10,   2,  1 },
+	{ 11,   3,  1 },
+	{ 13,   4,  2 },
+	{ 15,   6,  1 },
+	{ 18,   7,  3 },
+	{ 21,  10,  1 },
+	{ 22,  11,  1 },
+	{ 23,  12,  1 },
+	{ 26,  13,  4 },
+	{ 28,  17,  1 },
+	{ 30,  18,  4 },
+	{ 32,  22,  6 },
+	{ 33,  28,  1 },
+	{ 34,  29,  2 },
+	{ 35,  31,  1 },
+	{ 40,  32,  1 },
+	{ 41,  33,  5 },
+	{ 43,  38,  3 },
+	{ 44,  41,  3 },
+	{ 45,  44,  3 },
+	{ 46,  47,  1 },
+	{ 48,  48,  2 },
+	{ 49,  50,  3 },
+	{ 50,  53,  1 },
+	{ 51,  54,  1 },
+	{ 52,  55,  3 },
+	{ 53,  58,  3 },
+	{ 54,  61,  8 },
+	{ 55,  69,  4 },
+	{ 56,  73,  4 },
+	{ 57,  77,  3 },
+	{ 58,  80,  3 },
+	{ 59,  83,  4 },
+};
+
+const AnimLoop *animLoopsForRoom(int room, uint &count) {
+	count = 0;
+	for (uint i = 0; i < ARRAYSIZE(kAnimLoopRooms); i++) {
+		if (kAnimLoopRooms[i].room != room)
+			continue;
+		count = kAnimLoopRooms[i].count;
+		return &kAnimLoops[kAnimLoopRooms[i].first];
+	}
+	return nullptr;
+}
+
 } // End of namespace Alien

@@ -267,6 +267,11 @@ bool RoomScript::animSlotByte(uint16 addr, byte &out) const {
 		return true;
 	}
 
+	if (addr >= kAnimLoopBase && addr < kAnimLoopBase + AnimSlots::kSlotCount) {
+		out = _anims->loopFlag(addr - kAnimLoopBase);
+		return true;
+	}
+
 	return false;
 }
 
@@ -280,6 +285,14 @@ byte RoomScript::flag(uint16 addr) const {
 }
 
 void RoomScript::setFlag(uint16 addr, byte value) {
+	// The one animation-slot array a room does write: [0xa53a] is where it
+	// turns a loop of its own on and off, and it does so with a plain store
+	// beside the play that starts the animation.
+	if (_anims && addr >= kAnimLoopBase && addr < kAnimLoopBase + AnimSlots::kSlotCount) {
+		_anims->setLoopFlag(addr - kAnimLoopBase, value);
+		return;
+	}
+
 	byte animValue;
 	if (animSlotByte(addr, animValue)) {
 		// The play routines own these; nothing lifted out of the game writes
@@ -413,6 +426,11 @@ void RoomScript::runEffect(const ScriptEffect &original) {
 	case kOpAnimPlay1:
 	case kOpAnimPlay2:
 	case kOpAnimPlay3:
+	case kOpAnimPlay4:
+	case kOpAnimPlay5:
+	case kOpAnimPlay6:
+	case kOpAnimPlay7:
+	case kOpAnimPlay8:
 		playAnim(effect);
 		break;
 
@@ -498,7 +516,18 @@ void RoomScript::playAnim(const ScriptEffect &effect) {
 		return;
 	}
 
-	const int mode = effect.op == kOpAnimPlay1 ? 1 : (effect.op == kOpAnimPlay2 ? 2 : 3);
+	int mode = 1;
+	switch (effect.op) {
+	case kOpAnimPlay2: mode = 2; break;
+	case kOpAnimPlay3: mode = 3; break;
+	case kOpAnimPlay4: mode = 4; break;
+	case kOpAnimPlay5: mode = 5; break;
+	case kOpAnimPlay6: mode = 6; break;
+	case kOpAnimPlay7: mode = 7; break;
+	case kOpAnimPlay8: mode = 8; break;
+	default: break;
+	}
+
 	_anims->play(effect.args[0], (int)effect.args[1], (int)effect.args[2],
 				 (int)effect.args[3], mode);
 }

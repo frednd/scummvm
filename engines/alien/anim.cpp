@@ -37,10 +37,12 @@ void AnimSlots::Slot::clear() {
 	tick = 0;
 	forward = true;
 	restore = false;
+	persist = true;
+	loop = 0;
 	mode = 0;
 }
 
-AnimSlots::AnimSlots() : _room(0) {
+AnimSlots::AnimSlots() : _room(0), _loops(nullptr), _loopCount(0) {
 }
 
 void AnimSlots::loadBanks(const char *const *names, uint count) {
@@ -51,6 +53,8 @@ void AnimSlots::loadBanks(const char *const *names, uint count) {
 	}
 
 	_room = -1;
+	_loops = nullptr;
+	_loopCount = 0;
 
 	for (uint i = 0; i < count && i < kSlotCount; i++) {
 		if (!names[i] || !*names[i])
@@ -87,6 +91,9 @@ void AnimSlots::loadRoom(int room) {
 	}
 
 	_room = room;
+	_loops = animLoopsForRoom(room, _loopCount);
+	if (_loopCount)
+		debugC(2, kDebugGraphics, "room %d loops %u slots", room, _loopCount);
 
 	uint count = 0;
 	const AnimBank *banks = animBanksForRoom(room, count);
@@ -139,12 +146,57 @@ void AnimSlots::play(uint slot, int first, int count, int rate, int mode) {
 	s.remaining = count;
 	s.rate = rate;
 	s.tick = 0;
-	s.forward = mode != 3;
-	s.restore = mode == 2;
+
+	// The three flags the eight routines differ in, exactly as they write them
+	// (see the table in anim.h): only 3 and 5 run backward, only 2 and 8 come
+	// back to where they started, and only 1, 3 and 6 leave the last frame
+	// behind when the range runs out.
+	s.forward = mode != 3 && mode != 5;
+	s.restore = mode == 2 || mode == 8;
+	s.persist = mode == 1 || mode == 3 || mode == 6;
 
 	debugC(2, kDebugGraphics, "anim: slot %u plays %s frames %d..%d rate %d "
 		   "(mode %d)", slot, s.name.empty() ? "<no bank>" : s.name.c_str(),
 		   first, s.forward ? first + count - 1 : first - count + 1, rate, mode);
+}
+
+void AnimSlots::relaunch(uint slot) {
+	if (slot >= kSlotCount)
+		return;
+
+	// MIDAS:snd_func_112d. The test is on one frame left, not none: the room's
+	// tick makes the call after the stepper has run, so the range is restarted
+	// before the frame it would have ended on is ever drawn, and the cycle runs
+	// without a stutter at the seam.
+	Slot &s = _slots[slot];
+	if (!s.started || s.remaining != 1)
+		return;
+
+	play(slot, s.first, s.count, s.rate, s.mode);
+}
+
+void AnimSlots::stepLoops() {
+	for (uint i = 0; i < _loopCount; i++) {
+		const AnimLoop &row = _loops[i];
+		if (row.slot >= kSlotCount)
+			continue;
+
+		// A row with no flag is a call the room makes every frame; one with a
+		// flag is made only while the room has that byte set.
+		if (row.flag && !_slots[row.slot].loop)
+			continue;
+
+		relaunch(row.slot);
+	}
+}
+
+void AnimSlots::setLoopFlag(uint slot, byte value) {
+	if (slot < kSlotCount)
+		_slots[slot].loop = value;
+}
+
+byte AnimSlots::loopFlag(uint slot) const {
+	return slot < kSlotCount ? _slots[slot].loop : 0;
 }
 
 void AnimSlots::tick() {
@@ -202,9 +254,15 @@ int AnimSlots::visibleFrame(const Slot &slot) const {
 	// its terminator make up, and the fire in room 11 and the candle in room 26
 	// are the same shape. The frame wraps in that cycle rather than walking past
 	// the bank into whatever was loaded after it.
+	//
+	// A range may also open on frame 0 rather than 1, which the per-frame-sound
+	// modes do routinely -- room 53's hatch plays (0, 34) over a bank of
+	// sixteen, exactly two cycles. Frame 0 is a blank at the low end, the mirror
+	// of the terminator at the high one, so the wrap is a plain modulo over
+	// 0..frameCount() with the sign forced positive.
 	const int cycle = (int)slot.bank.frameCount() + 1;
-	if (cycle > 1 && frame > cycle)
-		frame = (frame - 1) % cycle + 1;
+	if (cycle > 1 && (frame > cycle || frame < 1))
+		frame = ((frame % cycle) + cycle) % cycle;
 
 	return frame;
 }
@@ -213,6 +271,14 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX) const {
 	for (uint i = 0; i < kSlotCount; i++) {
 		const Slot &slot = _slots[i];
 		if (!slot.started || !slot.bank.frameCount())
+			continue;
+
+		// MIDAS:snd_func_1482 draws a slot while it still has frames to run,
+		// and after that only if it is one of the modes that come back to their
+		// first frame. Everything else is either already in the background page
+		// (the modes that leave their last frame behind, which the port stands
+		// in for by carrying on drawing it) or gone.
+		if (slot.remaining <= 0 && !slot.restore && !slot.persist)
 			continue;
 
 		// Frames are numbered from one: room 10 shows the emptied matchbox with
@@ -225,7 +291,10 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX) const {
 		// something: the original restores the background under the frame it drew
 		// last and then draws nothing. Seven ranges end there, and room 3 takes
 		// the rope off the wall by showing nothing but the terminator.
-		if (frame == count)
+		// The same holds one frame below the first: a range that opens on frame
+		// 0 opens on a blank, which is how several of the per-frame-sound plays
+		// start.
+		if (frame == count || frame == -1)
 			continue;
 
 		if (frame < 0 || frame > count) {
