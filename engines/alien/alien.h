@@ -65,6 +65,11 @@ public:
 	/// And the mouth stops with this many of those half ticks left, OBJ:0x86df.
 	static const int kTalkStopTicks = 0x19;
 
+	/// One master tick in milliseconds: the ~70 Hz retrace, scaled the way
+	/// alien.cpp explains. Here because the palette fades wait on it directly
+	/// rather than through the game loop (fade.cpp).
+	static const uint32 kMasterTickMillis = 1000 * 2 / (70 * 3);
+
 	/// [0xac1e], how long a click's own line stands before the hover answers
 	/// again: 0x8c frames for a verb (1021:0x897) and, for a walk, 0xbb8 --
 	/// long enough that in practice the arrival is what ends it (1021:0xa16).
@@ -113,6 +118,9 @@ private:
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);
 	void redraw();
+	void uploadPalette(const byte *source, int level);
+	void fadeOut();
+	void fadeIn();
 	bool loadCursor();
 	void handleEvents();
 	void dumpScreen(const Common::String &name = Common::String());
@@ -362,6 +370,11 @@ private:
 	/// room that has one zeroes it as its overlay opens, so one counter serves
 	/// them all and loadRoom resets it.
 	uint16 _roomClock;
+
+	/// Whether the room now composed still owes its fade in (fade.cpp). Room
+	/// init leaves the palette black and the loop's tail raises it, which is
+	/// the order the original works in too.
+	bool _fadePending;
 	uint _endingPos;
 	bool _endingLoop;
 	bool _won;

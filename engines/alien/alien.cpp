@@ -69,9 +69,7 @@ static const int kDebugAnimRate = 4;
 // because they are all dividers of this one counter. Half again is what it
 // takes to match how the game moves under dosbox, so the nominal rate is scaled
 // here, once, rather than in each divider.
-static const uint kTickScaleNum = 3;
-static const uint kTickScaleDen = 2;
-static const uint32 kTickMillis = 1000 * kTickScaleDen / (70 * kTickScaleNum);
+static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 
 // What the game loop sleeps between passes. It has to stay under the tick or it
 // becomes the clock: at ten milliseconds a nine millisecond tick can only ever
@@ -207,7 +205,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true), _roomClock(0), _won(false),
+		_openingStep(0), _openingPending(true), _roomClock(0), _fadePending(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -403,6 +401,12 @@ Common::Error AlienEngine::run() {
 		if (_dirty)
 			redraw();
 		g_system->updateScreen();
+
+		// The room's first composed frame is on the screen now, which is where
+		// the original raises the palette from black (fade.cpp).
+		if (_fadePending)
+			fadeIn();
+
 		g_system->delayMillis(kLoopSleepMillis);
 	}
 
@@ -737,6 +741,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_background = loaded;
 	_roomWidth = wide ? width : kScreenWidth;
 	_scrollX = 0;
+	// The screen still shows the room being left, and _palette is still its
+	// palette, so this is the moment the original fades it away: OBJ:sub_0879a
+	// takes a copy as the old room's loop ends and OBJ:sub_07db3 fades that copy
+	// out before it uploads the new room's pixels (fade.cpp).
+	fadeOut();
+
 	memcpy(_palette, palette, sizeof(_palette));
 	applyCharPalette(room);
 	loadOccluder(room);
@@ -836,7 +846,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// line; the per-speaker colours are set by the room code that triggers
 	// the line, and none of that exists yet.
 	setTextColor(0x3F, 0x3F, 0x3F);
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 
 	// The status line's own three entries are the game's, not the plate's, so
 	// they go back over whatever the room's palette put there. The line itself
@@ -847,6 +856,14 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_labelHold = 0;
 	_walkReported = false;
 	resetLabelColors();
+
+	// And then black, rather than the palette all of that just settled: the new
+	// room's first frame is composed under a dead palette and the fade in
+	// raises it once the frame is up, which is the order the tail of the
+	// original's room loop works in (fade.cpp). Last, so that the entries
+	// resetLabelColors uploads for itself go down with everything else.
+	uploadPalette(_palette, 0);
+	_fadePending = true;
 
 	debugC(1, kDebugResource,
 		   "room %d %c: %s, %dx%d plate, %u sprite frames, %u dialog entries, "

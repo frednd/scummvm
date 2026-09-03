@@ -10,6 +10,7 @@ MODULE_OBJS = \
 	bedroom.o \
 	dl1.o \
 	ending.o \
+	fade.o \
 	font.o \
 	hotspots.o \
 	inventory.o \
