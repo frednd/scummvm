@@ -34,7 +34,18 @@ namespace Alien {
 // first into EMS page 8 as the game starts and keeps the second resident.
 static const char *const kIconPage = "KAMAT.PCX";
 static const char *const kChromePage = "OBJFILE.PCX";
+static const char *const kPanelPage = "INVENTOR.PCX";
 static const char *const kItemNames = "INVENTOR.TAL";
+
+// The panel itself. OBJ:obj_func_1973 loads INVENTOR.PCX and then copies
+// 0x3200 bytes of it -- 40 rows of 320 -- to offset 0xc800 of both the main and
+// the second framebuffer, which is row 160. So the plate's own top 40 rows are
+// the bar, and they land at the bottom of the screen; the rest of the file is
+// spare pieces the game never copies wholesale. The room plate underneath is a
+// full 320x200 picture with no bar area reserved, so the panel is what covers
+// its bottom quarter.
+static const int kPanelY = 160;
+static const int kPanelHeight = 40;
 
 // The bar: six slots of 35 by 22, all on one row -- OBJ:sub_03c77.
 static const int kSlotWidth = 35;
@@ -103,6 +114,7 @@ Inventory::Inventory() : _page(1) {
 Inventory::~Inventory() {
 	_icons.free();
 	_chrome.free();
+	_panel.free();
 }
 
 bool Inventory::load() {
@@ -115,6 +127,9 @@ bool Inventory::load() {
 		warning("Alien::Inventory: could not load %s, the bar has no arrows", kChromePage);
 		return false;
 	}
+
+	if (!loadGamePCX(Common::Path(kPanelPage), _panel, palette))
+		warning("Alien::Inventory: could not load %s, the bar has no panel", kPanelPage);
 
 	// The names are a NAMEROOM file like a room's labels, one entry per item id.
 	if (!_names.load(Common::Path(kItemNames)))
@@ -348,6 +363,10 @@ void Inventory::drawIcon(const StaticTables &tables, Graphics::Surface &dest,
 	}
 }
 
+void Inventory::drawPanel(Graphics::Surface &dest) const {
+	blit(dest, _panel, 0, 0, dest.w, kPanelHeight, 0, kPanelY);
+}
+
 void Inventory::drawThumb(Graphics::Surface &dest) const {
 	const uint pages = MIN<uint>(pageCount(), kSlotCount);
 	const uint page = MIN<uint>(_page, pages);
@@ -366,6 +385,10 @@ void Inventory::drawThumb(Graphics::Surface &dest) const {
 
 void Inventory::draw(const StaticTables &tables, Graphics::Surface &dest,
 					 int hoverSlot, Arrow hoverArrow) const {
+	// The plate first: everything below is cut into the recesses it draws, and
+	// it is also what erases the previous frame's icons.
+	drawPanel(dest);
+
 	for (uint slot = 0; slot < kSlotCount; slot++) {
 		const byte item = slotItem(slot);
 		if (item)

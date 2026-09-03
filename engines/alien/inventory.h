@@ -145,6 +145,7 @@ private:
 	void drawIcon(const StaticTables &tables, Graphics::Surface &dest,
 				  byte item, uint slot, bool hover) const;
 	void drawThumb(Graphics::Surface &dest) const;
+	void drawPanel(Graphics::Surface &dest) const;
 
 	byte _list[kListSize];
 	byte _counter[kListSize];	///< per item, the click counter at DS:0x99D7
@@ -152,6 +153,7 @@ private:
 
 	Graphics::Surface _icons;	///< KAMAT.PCX, the icon grid
 	Graphics::Surface _chrome;	///< OBJFILE.PCX, the arrows and the thumb
+	Graphics::Surface _panel;	///< INVENTOR.PCX, the plate the bar is cut into
 	TalFile _names;
 };
 
