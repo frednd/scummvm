@@ -154,6 +154,14 @@ bool RoomScript::walkTarget(int clickX, int clickY, byte obj, WalkTarget &out) c
 			if (clickY < row.a)
 				out.y = row.y;
 			break;
+		case kWalkMaxX:
+			if (clickX > row.a)
+				out.x = row.x;
+			break;
+		case kWalkMinX:
+			if (clickX < row.a)
+				out.x = row.x;
+			break;
 		case kWalkSubmode:
 			// The click state the original also tests here -- left button down,
 			// right button up, no action already pending -- is what a click in

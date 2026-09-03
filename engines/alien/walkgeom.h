@@ -62,6 +62,8 @@ enum WalkGeomKind {
 	kWalkObject,		///< up to four object ids sharing one approach point
 	kWalkMaxY,			///< a click below `a` walks to y instead
 	kWalkMinY,			///< a click above `a` walks to y instead
+	kWalkMaxX,			///< a click right of `a` walks to x instead
+	kWalkMinX,			///< a click left of `a` walks to x instead
 	kWalkSubmode		///< clicking object `a` arms submode `x` on arrival
 };
 
@@ -72,8 +74,9 @@ enum { kWalkFacingKeep = 10 };
  * One row of a room's walk geometry.
  *
  * `a` to `d` are the rectangle x1, y1, x2, y2 -- except for kWalkObject, where
- * they are up to four object ids with zero for the unused ones, kWalkMaxY and
- * kWalkMinY, where `a` is the y the click is compared against, and
+ * they are up to four object ids with zero for the unused ones, kWalkMaxY,
+ * kWalkMinY, kWalkMaxX and kWalkMinX, where `a` is the coordinate the click is
+ * compared against, and
  * kWalkSubmode, where `a` is the object id and `x` the submode.
  */
 struct WalkGeom {
