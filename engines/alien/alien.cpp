@@ -207,7 +207,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true), _won(false),
+		_openingStep(0), _openingPending(true), _roomClock(0), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -771,6 +771,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// The banks the room's animation slots play, from the overlay's own load
 	// calls. Loaded before the script is entered, because entering it runs the
 	// room's opening plays against these slots.
+	// Every room that runs a clock zeroes its counter as its overlay opens, so
+	// a room re-entered starts counting again (roomtick.cpp).
+	_roomClock = 0;
+
 	_anims.loadRoom(room, _script);
 
 	// What the room does with a click on its own account, lifted out of its
@@ -1061,6 +1065,12 @@ void AlienEngine::stepClock() {
 		// repeats gets restarted. The original makes them from the tail of the
 		// room's tick, after the stepper it calls a few instructions earlier.
 		_anims.stepLoops();
+
+		// And the clock a few rooms run beside those calls, in the same part of
+		// the same tick: the library owl, the chimney, the sitting room's UFO
+		// (roomtick.cpp). It reads both gates itself, so it is called under the
+		// finer of the two.
+		stepRoomClock();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
 			nextSpeech();

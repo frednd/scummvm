@@ -21,6 +21,7 @@ MODULE_OBJS = \
 	resources.o \
 	roominit.o \
 	roomscripts.o \
+	roomtick.o \
 	script.o \
 	s3m.o \
 	saveload.o \

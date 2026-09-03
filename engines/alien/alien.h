@@ -174,6 +174,7 @@ private:
 	void armEnding();
 	void startOpening();
 	void stepOpening();
+	void stepRoomClock();
 	void cancelOpening();
 	void stepEnding();
 	void speakEnding(byte code);
@@ -355,6 +356,12 @@ private:
 	/// way MAIN's load branch does.
 	byte _openingStep;
 	bool _openingPending;
+
+	/// The room clock (roomtick.cpp): how long the player has been standing in
+	/// the room this visit, in the units that room's own tick counts. Every
+	/// room that has one zeroes it as its overlay opens, so one counter serves
+	/// them all and loadRoom resets it.
+	uint16 _roomClock;
 	uint _endingPos;
 	bool _endingLoop;
 	bool _won;
