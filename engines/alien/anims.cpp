@@ -26,6 +26,10 @@
 // both as immediates to MIDAS:load_anim_bank as the overlay opens, so this is
 // those arguments; the manifest order overlay.cpp reads is not the slot order.
 //
+// A row whose flag is not zero is one the overlay assembles at run time: it
+// loads the last name instead of the second while that flag holds the value
+// given. Room 7's closet is the only one.
+//
 //   251 bank loads over 42 rooms.
 
 #include "alien/anims.h"
@@ -33,257 +37,257 @@
 namespace Alien {
 
 static const AnimBank kAnimBanks[] = {
-	{  0, "LAB_LANK.DL1" },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  1, "LAB_ROPE.DL1" },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  2, "KURSORI.DL1" },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  3, "FUSEBOX.DL1" },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  4, "TOASTER.DL1" },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  5, "LAB_PLAN.DL1" },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  6, "LAB_TKEY.DL1" },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  0, "KURPITSA.DL1" },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
-	{  1, "UP_DOOR1.DL1" },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
-	{  2, "UP_DOOR2.DL1" },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
-	{  3, "UP_DOOR3.DL1" },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
-	{  4, "KURP_TYH.DL1" },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
-	{  0, "WALKINC1.DL1" },	// ovr_07_0e63_room_7_-_bedroom.asm
-	{  0, "PILLOW.DL1" },	// ovr_07_0e63_room_7_-_bedroom.asm
-	{  1, "KAUKO.DL1" },	// ovr_07_0e63_room_7_-_bedroom.asm
-	{  2, "MAKDRAW.DL1" },	// ovr_07_0e63_room_7_-_bedroom.asm
-	{  3, ".DL1" },	// ovr_07_0e63_room_7_-_bedroom.asm
-	{  4, "SOCK.DL1" },	// ovr_07_0e63_room_7_-_bedroom.asm
-	{  0, "SHELF_A.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  1, "SHELF_B.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  2, "SAFEOPEN.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  3, "IKKUNA1.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  5, "SAFEOPE1.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  6, "SAFEOPE2.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  7, "SAFEOPE3.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  8, "LIBSHELF.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  9, "SHELFLOC.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{ 10, "LIB_LODR.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{ 11, "LIB_SHPU.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{ 12, "LIB_OWL.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{ 13, "LIB_STET.DL1" },	// ovr_08_0e67_room_8_-_library.asm
-	{  0, "FRIDGE_1.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  1, "FRIDGE_2.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  2, "FRIDGE_3.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  3, "FRIDGE_4.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  4, "PICKMATC.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  6, "PICKBRED.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  7, "PICKFUSE.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  8, "KIT_FAUC.DL1" },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  0, "LIV_TVBR.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  1, "LIV_ARFR.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  2, "SNOWTV.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  3, "BLANKTV.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  4, "SCISSORS.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  5, "LIV_RADI.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  6, "LIV_TV.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  7, "LIV_CAGO.DL1" },	// ovr_0b_0e77_room_11_-_living_room.asm
-	{  0, "BAS_ELDO.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  1, "ROPE  .DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  2, "ECHO_ECH.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  3, "ECHO_DEE.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  4, "BAS_WATE.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  5, "ALA_SMOK.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  6, "BATTERY.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  7, "BASEPIPE.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  8, "FLUECLEA.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  9, "BENPIPE.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{ 10, "BAS_ELUP.DL1" },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  0, "MAF_CHIM.DL1" },	// ovr_0e_0e83_room_14_-_closet_shaft___chimney.asm
-	{  0, "HALLDOO1.DL1" },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
-	{  1, "HALLDOO2.DL1" },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
-	{  2, "HAL_FRON.DL1" },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
-	{  3, "HAL_VALO.DL1" },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
-	{  0, "OBSODOOR.DL1" },	// ovr_11_0eab_room_17_-_observatory_entrance.asm
-	{  1, "OBO_WATE.DL1" },	// ovr_11_0eab_room_17_-_observatory_entrance.asm
-	{  0, "SPEAKER1.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  1, "CABINET.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  2, "HAMMER.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  3, "UFOFLYBY.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  4, "AQUARIUM.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  5, "BEN_WALK.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  6, "BEN_LSPE.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  7, "BEN_RSPE.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  8, "BEN_AMPL.DL1" },	// ovr_12_0e6b_room_18_-_sitting_room.asm
-	{  0, "OBSFUSE0.DL1" },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
-	{  3, "BENSLIP.DL1" },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
-	{  4, "OBSGOUP.DL1" },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
-	{  5, "OBS_SWIT.DL1" },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
-	{  6, "OBS_LIGH.DL1" },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
-	{  0, "VESI.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  1, "YODLEPIP.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  2, "YODLEDOO.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  3, "YODLE1.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  4, "YOD_GOIN.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  5, "YOD_CLER.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  6, "YOD_THRO.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  7, "YOD_PIP2.DL1" },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  0, "PAR_TELE.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  1, "PAR_BOCL.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  2, "PAR_BENP.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  3, "PAR_TOSH.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  4, "PAR_RAD1.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  5, "PAR_KIPI.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  6, "PAR_FROM.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  7, "PAR_PUMP.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  8, "PAR_PUM2.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  9, "PAR_WIRE.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{ 10, "PAR_RAD2.DL1" },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
-	{  0, "CROS_HIP.DL1" },	// ovr_17_0e9f_room_23_-_crossroads.asm
-	{  1, "CROS_HCL.DL1" },	// ovr_17_0e9f_room_23_-_crossroads.asm
-	{  0, "PAL_MAIL.DL1" },	// ovr_19_0e8f_room_25_-_park___mailbox.asm
-	{  1, "PAL_BLOW.DL1" },	// ovr_19_0e8f_room_25_-_park___mailbox.asm
-	{  0, "PARROT.DL1" },	// ovr_1a_0eaf_room_26_-_forest.asm
-	{  1, "YODLESAF.DL1" },	// ovr_1a_0eaf_room_26_-_forest.asm
-	{  2, "YODLELED.DL1" },	// ovr_1a_0eaf_room_26_-_forest.asm
-	{  3, "SQUIRREL.DL1" },	// ovr_1a_0eaf_room_26_-_forest.asm
-	{  4, "YOD_CAND.DL1" },	// ovr_1a_0eaf_room_26_-_forest.asm
-	{  5, "YOD_STAR.DL1" },	// ovr_1a_0eaf_room_26_-_forest.asm
-	{  0, "MANSDOOR.DL1" },	// ovr_1b_0e7f_room_27_-_mansion_exterior.asm
-	{  1, "MAC_BEUP.DL1" },	// ovr_1b_0e7f_room_27_-_mansion_exterior.asm
-	{  0, "TELESCOP.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  1, "OBU_VIPY.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  2, "OBU_VIPA.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  3, "OBU_VIPF.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  4, "OBU_GAME.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  5, "OBU_DISK.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  6, "OBU_SWIT.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  7, "OBU_SCRE.DL1" },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
-	{  0, "ANT_SAC1.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  1, "ANT_POTI.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  2, "ANT_MONK.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  3, "ANT_SAC2.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  4, "ANT_SAC3.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  5, "ANT_SAC4.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  6, "ANT_SAC5.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  7, "ANT_SAC6.DL1" },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
-	{  0, "BEN_UP.DL1" },	// ovr_1f_0e87_room_31_-_cliff.asm
-	{  1, "BEN_DOWN.DL1" },	// ovr_1f_0e87_room_31_-_cliff.asm
-	{  2, "CEF_BAT1.DL1" },	// ovr_1f_0e87_room_31_-_cliff.asm
-	{  3, "CEF_BAT2.DL1" },	// ovr_1f_0e87_room_31_-_cliff.asm
-	{  0, "CEM_LADO.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  1, "CEM_LAOP.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  2, "CEM_OPLO.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  3, "CEM_BEIN.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  4, "CEM_DOBU.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  5, "CEM_RCAN.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  6, "CEM_LCA1.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  7, "CEM_LCA2.DL1" },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  0, "TOW_DOOR.DL1" },	// ovr_21_0e97_room_33_-_town.asm
-	{  1, "TOWNSIGN.DL1" },	// ovr_21_0e97_room_33_-_town.asm
-	{  2, "TOW_GETU.DL1" },	// ovr_21_0e97_room_33_-_town.asm
-	{  0, "PAL_SMOK.DL1" },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
-	{  1, "PAL_ANIM.DL1" },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
-	{  0, "SEW_PLAN.DL1" },	// ovr_23_0e7b_room_35_-_sewer.asm
-	{  1, "SEW_CLIM.DL1" },	// ovr_23_0e7b_room_35_-_sewer.asm
-	{  2, "SEW_FULL.DL1" },	// ovr_23_0e7b_room_35_-_sewer.asm
-	{  3, "SEW_WATE.DL1" },	// ovr_23_0e7b_room_35_-_sewer.asm
-	{  4, "SEW_FLUS.DL1" },	// ovr_23_0e7b_room_35_-_sewer.asm
-	{  5, "SEW_HAND.DL1" },	// ovr_23_0e7b_room_35_-_sewer.asm
-	{  6, "SEW_WALL.DL1" },	// ovr_23_0e7b_room_35_-_sewer.asm
-	{  0, "MAE_WATF.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  1, "MAE_TOR1.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  2, "MAE_TOR2.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  3, "MAE_TOR3.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  4, "MAE_WATE.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  5, "MAE_THRO.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  6, "MAE_RIGH.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  7, "MAE_LEFT.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  8, "MAE_DOO1.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  9, "MAE_SLIP.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{ 10, "MAE_DIVE.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{ 11, "MAE_SHOR.DL1" },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "CRY_DMOR.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "MAZ_TOR1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  2, "MA2_AXE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "CRY_ENT1.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  4, "ENT_NOTE.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  5, "ENT_BENB.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  6, "ENT_DROP.DL1" },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, "DIV_SADE.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
-	{  0, "DIV_PROP.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
-	{  1, "DIV_CHES.DL1" },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
-	{  0, "PUD_TORC.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
-	{  1, "PUD_DOOR.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
-	{  2, "PUD_DROP.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
-	{  3, "PUD_PUTO.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
-	{  4, "PUD_GOSU.DL1" },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
-	{  0, "ENG_GOUP.DL1" },	// ovr_31_0f85_room_49_-_engine_room.asm
-	{  1, "ENG_MACH.DL1" },	// ovr_31_0f85_room_49_-_engine_room.asm
-	{  2, "ENG_SMAL.DL1" },	// ovr_31_0f85_room_49_-_engine_room.asm
-	{  3, "ENG_PATA.DL1" },	// ovr_31_0f85_room_49_-_engine_room.asm
-	{  4, "ENG_SWIT.DL1" },	// ovr_31_0f85_room_49_-_engine_room.asm
-	{  5, "ENG_BLOW.DL1" },	// ovr_31_0f85_room_49_-_engine_room.asm
-	{  0, "STE_STEA.DL1" },	// ovr_32_0f81_room_50_-_steam_room.asm
-	{  1, "STE_BEVI.DL1" },	// ovr_32_0f81_room_50_-_steam_room.asm
-	{  2, "STE_LADD.DL1" },	// ovr_32_0f81_room_50_-_steam_room.asm
-	{  0, "LOB_CAM1.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
-	{  1, "LOB_CAM2.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
-	{  2, "LOB_CAM3.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
-	{  3, "LOB_DOOR.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
-	{  4, "LOB_DOO2.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
-	{  5, "LOB_LIGH.DL1" },	// ovr_33_0faa_room_51_-_alien_lobby.asm
-	{  0, "SEC_MONI.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  1, "SEC_DOO1.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  2, "SEC_DOO2.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  3, "SEC_ROEY.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  4, "SEC_ROMO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  5, "SEC_NORO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  6, "SEC_ROBO.DL1" },	// ovr_34_0f96_room_52_-_security_scanner.asm
-	{  0, "HAL2_WIN.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  2, "HAL2_MSP.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  3, "HAL2_LID.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  4, "HAL2_DOO.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  0, "WAIT_AL1.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  1, "WAIT_AL2.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  2, "WAI_MACH.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  4, "WAI_BUTT.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  5, "WAI_FAN.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  6, "WAI_RIDO.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  7, "WAI_BROK.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  8, "WAI_RING.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  9, "WAI_NUMB.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{ 10, "WAI_MONS.DL1" },	// ovr_36_0fa6_room_54_-_waiting_room.asm
-	{  0, "COR_DOOR.DL1" },	// ovr_37_0f9a_room_55_-_corridor.asm
-	{  1, "COR_LIDO.DL1" },	// ovr_37_0f9a_room_55_-_corridor.asm
-	{  2, "COR_REDL.DL1" },	// ovr_37_0f9a_room_55_-_corridor.asm
-	{  3, "COR_LED1.DL1" },	// ovr_37_0f9a_room_55_-_corridor.asm
-	{  4, "COR_LED2.DL1" },	// ovr_37_0f9a_room_55_-_corridor.asm
-	{  5, "COR_LED3.DL1" },	// ovr_37_0f9a_room_55_-_corridor.asm
-	{  0, "TRA_GUAR.DL1" },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
-	{  1, "TRA_DOOR.DL1" },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
-	{  2, "TRA_CARD.DL1" },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
-	{  3, "TRA_CHAM.DL1" },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
-	{  4, "TRA_CHA2.DL1" },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
-	{  5, "TRA_PIPE.DL1" },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
-	{  6, "TRA_SHAF.DL1" },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
-	{  0, "HALW_DOO.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  1, "HALW_LED.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  2, "HALW_WIN.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  3, "HAL_SPEA.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  4, "HAL1_AL1.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  5, "HAL1_AL2.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  6, "HAL1_AL3.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  7, "HAL1_AL4.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  8, "HAL1_AL5.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  9, "HAL1_AL6.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{ 10, "HAL_PUMP.DL1" },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
-	{  0, "JAIL_YOD.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
-	{  1, "JAIL_UNC.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
-	{  2, "JAIL_WAL.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
-	{  3, "JAI_DOOR.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
-	{  4, "JAI_BESH.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
-	{  5, "JAIL_LCD.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
-	{  6, "JAI_CARD.DL1" },	// ovr_3a_101d_room_58_-_jail.asm
-	{  0, "ESC_DOOR.DL1" },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
-	{  1, "ESC_SECU.DL1" },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
-	{  2, "ESC_LELI.DL1" },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
-	{  3, "ESC_RILI.DL1" },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
-	{  4, "ESC_UNCL.DL1" },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
-	{  6, "ESC_CHAM.DL1" },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  0, "LAB_LANK.DL1", 0, 0, nullptr },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  1, "LAB_ROPE.DL1", 0, 0, nullptr },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  2, "KURSORI.DL1", 0, 0, nullptr },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  3, "FUSEBOX.DL1", 0, 0, nullptr },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  4, "TOASTER.DL1", 0, 0, nullptr },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  5, "LAB_PLAN.DL1", 0, 0, nullptr },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  6, "LAB_TKEY.DL1", 0, 0, nullptr },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
+	{  0, "KURPITSA.DL1", 0, 0, nullptr },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
+	{  1, "UP_DOOR1.DL1", 0, 0, nullptr },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
+	{  2, "UP_DOOR2.DL1", 0, 0, nullptr },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
+	{  3, "UP_DOOR3.DL1", 0, 0, nullptr },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
+	{  4, "KURP_TYH.DL1", 0, 0, nullptr },	// ovr_06_0e5f_room_6_-_upstairs_landing.asm
+	{  0, "WALKINC1.DL1", 0, 0, nullptr },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  0, "PILLOW.DL1", 0, 0, nullptr },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  1, "KAUKO.DL1", 0, 0, nullptr },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  2, "MAKDRAW.DL1", 0, 0, nullptr },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  3, "MAK_CLOS.DL1", 0xa700, 0, "MAK_CLO2.DL1" },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  4, "SOCK.DL1", 0, 0, nullptr },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  0, "SHELF_A.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  1, "SHELF_B.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  2, "SAFEOPEN.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  3, "IKKUNA1.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  5, "SAFEOPE1.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  6, "SAFEOPE2.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  7, "SAFEOPE3.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  8, "LIBSHELF.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  9, "SHELFLOC.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{ 10, "LIB_LODR.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{ 11, "LIB_SHPU.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{ 12, "LIB_OWL.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{ 13, "LIB_STET.DL1", 0, 0, nullptr },	// ovr_08_0e67_room_8_-_library.asm
+	{  0, "FRIDGE_1.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  1, "FRIDGE_2.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  2, "FRIDGE_3.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  3, "FRIDGE_4.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  4, "PICKMATC.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  6, "PICKBRED.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  7, "PICKFUSE.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  8, "KIT_FAUC.DL1", 0, 0, nullptr },	// ovr_0a_0e73_room_10_-_kitchen.asm
+	{  0, "LIV_TVBR.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  1, "LIV_ARFR.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  2, "SNOWTV.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  3, "BLANKTV.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  4, "SCISSORS.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  5, "LIV_RADI.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  6, "LIV_TV.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  7, "LIV_CAGO.DL1", 0, 0, nullptr },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  0, "BAS_ELDO.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  1, "ROPE.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  2, "ECHO_ECH.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  3, "ECHO_DEE.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  4, "BAS_WATE.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  5, "ALA_SMOK.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  6, "BATTERY.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  7, "BASEPIPE.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  8, "FLUECLEA.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  9, "BENPIPE.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{ 10, "BAS_ELUP.DL1", 0, 0, nullptr },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  0, "MAF_CHIM.DL1", 0, 0, nullptr },	// ovr_0e_0e83_room_14_-_closet_shaft___chimney.asm
+	{  0, "HALLDOO1.DL1", 0, 0, nullptr },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
+	{  1, "HALLDOO2.DL1", 0, 0, nullptr },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
+	{  2, "HAL_FRON.DL1", 0, 0, nullptr },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
+	{  3, "HAL_VALO.DL1", 0, 0, nullptr },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
+	{  0, "OBSODOOR.DL1", 0, 0, nullptr },	// ovr_11_0eab_room_17_-_observatory_entrance.asm
+	{  1, "OBO_WATE.DL1", 0, 0, nullptr },	// ovr_11_0eab_room_17_-_observatory_entrance.asm
+	{  0, "SPEAKER1.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  1, "CABINET.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  2, "HAMMER.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  3, "UFOFLYBY.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  4, "AQUARIUM.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  5, "BEN_WALK.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  6, "BEN_LSPE.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  7, "BEN_RSPE.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  8, "BEN_AMPL.DL1", 0, 0, nullptr },	// ovr_12_0e6b_room_18_-_sitting_room.asm
+	{  0, "OBSFUSE0.DL1", 0, 0, nullptr },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
+	{  3, "BENSLIP.DL1", 0, 0, nullptr },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
+	{  4, "OBSGOUP.DL1", 0, 0, nullptr },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
+	{  5, "OBS_SWIT.DL1", 0, 0, nullptr },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
+	{  6, "OBS_LIGH.DL1", 0, 0, nullptr },	// ovr_13_0eb3_room_19_-_observatory_interior.asm
+	{  0, "VESI.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  1, "YODLEPIP.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  2, "YODLEDOO.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  3, "YODLE1.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  4, "YOD_GOIN.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  5, "YOD_CLER.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  6, "YOD_THRO.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  7, "YOD_PIP2.DL1", 0, 0, nullptr },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
+	{  0, "PAR_TELE.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  1, "PAR_BOCL.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  2, "PAR_BENP.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  3, "PAR_TOSH.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  4, "PAR_RAD1.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  5, "PAR_KIPI.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  6, "PAR_FROM.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  7, "PAR_PUMP.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  8, "PAR_PUM2.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  9, "PAR_WIRE.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{ 10, "PAR_RAD2.DL1", 0, 0, nullptr },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  0, "CROS_HIP.DL1", 0, 0, nullptr },	// ovr_17_0e9f_room_23_-_crossroads.asm
+	{  1, "CROS_HCL.DL1", 0, 0, nullptr },	// ovr_17_0e9f_room_23_-_crossroads.asm
+	{  0, "PAL_MAIL.DL1", 0, 0, nullptr },	// ovr_19_0e8f_room_25_-_park___mailbox.asm
+	{  1, "PAL_BLOW.DL1", 0, 0, nullptr },	// ovr_19_0e8f_room_25_-_park___mailbox.asm
+	{  0, "PARROT.DL1", 0, 0, nullptr },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  1, "YODLESAF.DL1", 0, 0, nullptr },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  2, "YODLELED.DL1", 0, 0, nullptr },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  3, "SQUIRREL.DL1", 0, 0, nullptr },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  4, "YOD_CAND.DL1", 0, 0, nullptr },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  5, "YOD_STAR.DL1", 0, 0, nullptr },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  0, "MANSDOOR.DL1", 0, 0, nullptr },	// ovr_1b_0e7f_room_27_-_mansion_exterior.asm
+	{  1, "MAC_BEUP.DL1", 0, 0, nullptr },	// ovr_1b_0e7f_room_27_-_mansion_exterior.asm
+	{  0, "TELESCOP.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  1, "OBU_VIPY.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  2, "OBU_VIPA.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  3, "OBU_VIPF.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  4, "OBU_GAME.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  5, "OBU_DISK.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  6, "OBU_SWIT.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  7, "OBU_SCRE.DL1", 0, 0, nullptr },	// ovr_1c_0eb7_room_28_-_telescope_room.asm
+	{  0, "ANT_SAC1.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  1, "ANT_POTI.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  2, "ANT_MONK.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  3, "ANT_SAC2.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  4, "ANT_SAC3.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  5, "ANT_SAC4.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  6, "ANT_SAC5.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  7, "ANT_SAC6.DL1", 0, 0, nullptr },	// ovr_1e_0e9b_room_30_-_24h_antique_store.asm
+	{  0, "BEN_UP.DL1", 0, 0, nullptr },	// ovr_1f_0e87_room_31_-_cliff.asm
+	{  1, "BEN_DOWN.DL1", 0, 0, nullptr },	// ovr_1f_0e87_room_31_-_cliff.asm
+	{  2, "CEF_BAT1.DL1", 0, 0, nullptr },	// ovr_1f_0e87_room_31_-_cliff.asm
+	{  3, "CEF_BAT2.DL1", 0, 0, nullptr },	// ovr_1f_0e87_room_31_-_cliff.asm
+	{  0, "CEM_LADO.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  1, "CEM_LAOP.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  2, "CEM_OPLO.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  3, "CEM_BEIN.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  4, "CEM_DOBU.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  5, "CEM_RCAN.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  6, "CEM_LCA1.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  7, "CEM_LCA2.DL1", 0, 0, nullptr },	// ovr_20_0e8b_room_32_-_cemetery.asm
+	{  0, "TOW_DOOR.DL1", 0, 0, nullptr },	// ovr_21_0e97_room_33_-_town.asm
+	{  1, "TOWNSIGN.DL1", 0, 0, nullptr },	// ovr_21_0e97_room_33_-_town.asm
+	{  2, "TOW_GETU.DL1", 0, 0, nullptr },	// ovr_21_0e97_room_33_-_town.asm
+	{  0, "PAL_SMOK.DL1", 0, 0, nullptr },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
+	{  1, "PAL_ANIM.DL1", 0, 0, nullptr },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
+	{  0, "SEW_PLAN.DL1", 0, 0, nullptr },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  1, "SEW_CLIM.DL1", 0, 0, nullptr },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  2, "SEW_FULL.DL1", 0, 0, nullptr },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  3, "SEW_WATE.DL1", 0, 0, nullptr },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  4, "SEW_FLUS.DL1", 0, 0, nullptr },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  5, "SEW_HAND.DL1", 0, 0, nullptr },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  6, "SEW_WALL.DL1", 0, 0, nullptr },	// ovr_23_0e7b_room_35_-_sewer.asm
+	{  0, "MAE_WATF.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  1, "MAE_TOR1.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  2, "MAE_TOR2.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  3, "MAE_TOR3.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  4, "MAE_WATE.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  5, "MAE_THRO.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  6, "MAE_RIGH.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  7, "MAE_LEFT.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  8, "MAE_DOO1.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  9, "MAE_SLIP.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{ 10, "MAE_DIVE.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{ 11, "MAE_SHOR.DL1", 0, 0, nullptr },	// ovr_29_0f89_room_41_-_shore___underwater_entry.asm
+	{  0, "MAZ_TOR1.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "CRY_DMOR.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "MAZ_TOR1.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  2, "MA2_AXE.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "CRY_ENT1.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  4, "ENT_NOTE.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  5, "ENT_BENB.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  6, "ENT_DROP.DL1", 0, 0, nullptr },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, "DIV_SADE.DL1", 0, 0, nullptr },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
+	{  0, "DIV_PROP.DL1", 0, 0, nullptr },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
+	{  1, "DIV_CHES.DL1", 0, 0, nullptr },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
+	{  0, "PUD_TORC.DL1", 0, 0, nullptr },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
+	{  1, "PUD_DOOR.DL1", 0, 0, nullptr },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
+	{  2, "PUD_DROP.DL1", 0, 0, nullptr },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
+	{  3, "PUD_PUTO.DL1", 0, 0, nullptr },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
+	{  4, "PUD_GOSU.DL1", 0, 0, nullptr },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
+	{  0, "ENG_GOUP.DL1", 0, 0, nullptr },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  1, "ENG_MACH.DL1", 0, 0, nullptr },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  2, "ENG_SMAL.DL1", 0, 0, nullptr },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  3, "ENG_PATA.DL1", 0, 0, nullptr },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  4, "ENG_SWIT.DL1", 0, 0, nullptr },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  5, "ENG_BLOW.DL1", 0, 0, nullptr },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  0, "STE_STEA.DL1", 0, 0, nullptr },	// ovr_32_0f81_room_50_-_steam_room.asm
+	{  1, "STE_BEVI.DL1", 0, 0, nullptr },	// ovr_32_0f81_room_50_-_steam_room.asm
+	{  2, "STE_LADD.DL1", 0, 0, nullptr },	// ovr_32_0f81_room_50_-_steam_room.asm
+	{  0, "LOB_CAM1.DL1", 0, 0, nullptr },	// ovr_33_0faa_room_51_-_alien_lobby.asm
+	{  1, "LOB_CAM2.DL1", 0, 0, nullptr },	// ovr_33_0faa_room_51_-_alien_lobby.asm
+	{  2, "LOB_CAM3.DL1", 0, 0, nullptr },	// ovr_33_0faa_room_51_-_alien_lobby.asm
+	{  3, "LOB_DOOR.DL1", 0, 0, nullptr },	// ovr_33_0faa_room_51_-_alien_lobby.asm
+	{  4, "LOB_DOO2.DL1", 0, 0, nullptr },	// ovr_33_0faa_room_51_-_alien_lobby.asm
+	{  5, "LOB_LIGH.DL1", 0, 0, nullptr },	// ovr_33_0faa_room_51_-_alien_lobby.asm
+	{  0, "SEC_MONI.DL1", 0, 0, nullptr },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  1, "SEC_DOO1.DL1", 0, 0, nullptr },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  2, "SEC_DOO2.DL1", 0, 0, nullptr },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  3, "SEC_ROEY.DL1", 0, 0, nullptr },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  4, "SEC_ROMO.DL1", 0, 0, nullptr },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  5, "SEC_NORO.DL1", 0, 0, nullptr },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  6, "SEC_ROBO.DL1", 0, 0, nullptr },	// ovr_34_0f96_room_52_-_security_scanner.asm
+	{  0, "HAL2_WIN.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  2, "HAL2_MSP.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  3, "HAL2_LID.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  4, "HAL2_DOO.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  0, "WAIT_AL1.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  1, "WAIT_AL2.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  2, "WAI_MACH.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  4, "WAI_BUTT.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  5, "WAI_FAN.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  6, "WAI_RIDO.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  7, "WAI_BROK.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  8, "WAI_RING.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  9, "WAI_NUMB.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{ 10, "WAI_MONS.DL1", 0, 0, nullptr },	// ovr_36_0fa6_room_54_-_waiting_room.asm
+	{  0, "COR_DOOR.DL1", 0, 0, nullptr },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  1, "COR_LIDO.DL1", 0, 0, nullptr },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  2, "COR_REDL.DL1", 0, 0, nullptr },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  3, "COR_LED1.DL1", 0, 0, nullptr },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  4, "COR_LED2.DL1", 0, 0, nullptr },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  5, "COR_LED3.DL1", 0, 0, nullptr },	// ovr_37_0f9a_room_55_-_corridor.asm
+	{  0, "TRA_GUAR.DL1", 0, 0, nullptr },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  1, "TRA_DOOR.DL1", 0, 0, nullptr },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  2, "TRA_CARD.DL1", 0, 0, nullptr },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  3, "TRA_CHAM.DL1", 0, 0, nullptr },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  4, "TRA_CHA2.DL1", 0, 0, nullptr },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  5, "TRA_PIPE.DL1", 0, 0, nullptr },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  6, "TRA_SHAF.DL1", 0, 0, nullptr },	// ovr_38_0f92_room_56_-_transporter_chamber.asm
+	{  0, "HALW_DOO.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  1, "HALW_LED.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  2, "HALW_WIN.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  3, "HAL_SPEA.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  4, "HAL1_AL1.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  5, "HAL1_AL2.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  6, "HAL1_AL3.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  7, "HAL1_AL4.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  8, "HAL1_AL5.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  9, "HAL1_AL6.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{ 10, "HAL_PUMP.DL1", 0, 0, nullptr },	// ovr_35_0f9e_rooms_53_57_-_hallways.asm
+	{  0, "JAIL_YOD.DL1", 0, 0, nullptr },	// ovr_3a_101d_room_58_-_jail.asm
+	{  1, "JAIL_UNC.DL1", 0, 0, nullptr },	// ovr_3a_101d_room_58_-_jail.asm
+	{  2, "JAIL_WAL.DL1", 0, 0, nullptr },	// ovr_3a_101d_room_58_-_jail.asm
+	{  3, "JAI_DOOR.DL1", 0, 0, nullptr },	// ovr_3a_101d_room_58_-_jail.asm
+	{  4, "JAI_BESH.DL1", 0, 0, nullptr },	// ovr_3a_101d_room_58_-_jail.asm
+	{  5, "JAIL_LCD.DL1", 0, 0, nullptr },	// ovr_3a_101d_room_58_-_jail.asm
+	{  6, "JAI_CARD.DL1", 0, 0, nullptr },	// ovr_3a_101d_room_58_-_jail.asm
+	{  0, "ESC_DOOR.DL1", 0, 0, nullptr },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  1, "ESC_SECU.DL1", 0, 0, nullptr },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  2, "ESC_LELI.DL1", 0, 0, nullptr },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  3, "ESC_RILI.DL1", 0, 0, nullptr },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  4, "ESC_UNCL.DL1", 0, 0, nullptr },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
+	{  6, "ESC_CHAM.DL1", 0, 0, nullptr },	// ovr_3b_0fa2_room_59_-_escape_pod.asm
 };
 
 // Room number, first bank, count. A room absent from this table loads no bank

@@ -771,7 +771,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// The banks the room's animation slots play, from the overlay's own load
 	// calls. Loaded before the script is entered, because entering it runs the
 	// room's opening plays against these slots.
-	_anims.loadRoom(room);
+	_anims.loadRoom(room, _script);
 
 	// What the room does with a click on its own account, lifted out of its
 	// overlay by tools/gen_roomscripts.py, plus the opening frame of every slot

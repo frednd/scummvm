@@ -34,6 +34,7 @@ struct Surface;
 namespace Alien {
 
 struct RoomAssets;
+class RoomScript;
 
 /**
  * The animation slots: what makes a room react on screen.
@@ -102,8 +103,16 @@ public:
 
 	AnimSlots();
 
-	/// Drops every slot and loads the banks the room's overlay names.
-	void loadRoom(int room);
+	/**
+	 * Drops every slot and loads the banks the room's overlay names.
+	 *
+	 * The state is wanted because one bank name is not a constant: room 7's
+	 * closet is assembled out of two literals and a character the room picks
+	 * from a puzzle flag (see AnimBank). The original picks it inline, on the
+	 * instruction before the load, so this reads the same flag at the same
+	 * point -- before the room's opening script runs, not after.
+	 */
+	void loadRoom(int room, const RoomScript &state);
 
 	/**
 	 * Drops every slot and loads banks named one per slot, as a cutscene record

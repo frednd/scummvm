@@ -24,6 +24,7 @@
 
 #include "alien/anim.h"
 #include "alien/detection.h"
+#include "alien/script.h"
 
 namespace Alien {
 
@@ -83,7 +84,7 @@ void AnimSlots::reset() {
 	}
 }
 
-void AnimSlots::loadRoom(int room) {
+void AnimSlots::loadRoom(int room, const RoomScript &state) {
 	for (uint i = 0; i < kSlotCount; i++) {
 		_slots[i].clear();
 		_slots[i].bank.unload();
@@ -109,15 +110,12 @@ void AnimSlots::loadRoom(int room) {
 
 		Slot &slot = _slots[banks[i].slot];
 
-		// Room 7 stores a stem plus a bare ".DL1" because it appends a digit at
-		// runtime, and two rooms load a second bank over the first from inside a
-		// branch the table does not carry. Neither can be resolved here.
+		// The one name the table does not carry whole: room 7 writes the
+		// character between its two literals from a flag, so which of the two
+		// closet banks it means is only known now. ovr_07_0e63:0xb26.
 		Common::String name(banks[i].name);
-		if (name.size() < 5 || name[0] == '.') {
-			debugC(1, kDebugResource, "room %d slot %u: bank name %s is built at "
-				   "runtime", room, banks[i].slot, name.c_str());
-			continue;
-		}
+		if (banks[i].flag && state.flag(banks[i].flag) == banks[i].value)
+			name = banks[i].alt;
 
 		if (!slot.bank.load(Common::Path(name))) {
 			debugC(1, kDebugResource, "room %d slot %u: could not load %s", room,

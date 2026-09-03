@@ -39,6 +39,18 @@ namespace Alien {
 struct AnimBank {
 	byte slot;
 	const char *name;
+
+	/**
+	 * The one name the original does not store whole. Room 7's overlay keeps
+	 * its closet as two Pascal literals, `MAK_CLO` and `.DL1`, writes the
+	 * character between them into [0xa6c9] -- 'S', or '2' when [0xa700] is
+	 * zero -- and concatenates the three just before the load. Both files
+	 * ship. So `flag` is that guard's address, zero on every ordinary row,
+	 * and `alt` is the name loaded instead while the flag holds `value`.
+	 */
+	uint16 flag;
+	byte value;
+	const char *alt;
 };
 
 /** A room's bank loads in overlay order, or null with a count of zero. */
