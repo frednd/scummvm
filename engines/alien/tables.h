@@ -86,8 +86,10 @@ public:
 	/// The status-line word for a verb code: "Look at", "Pick up", ...
 	const Common::String &verb(int code) const;
 
-	/// What the status line reads when nothing interactive is under the cursor.
+	/// What a left click reports having done. The underwater room says "Swim
+	/// to" instead: 1021:0x9be picks the second string on handler code 0x2e.
 	const Common::String &walkVerb() const { return _walkVerb; }
+	const Common::String &swimVerb() const { return _swimVerb; }
 
 	/// The two words the item-use line is built from: "USE <item> WITH <object>".
 	const Common::String &useVerb() const { return _useVerb; }
@@ -143,6 +145,7 @@ private:
 	Common::String _secondPlate[kRoomCount];
 	Common::String _verb[kVerbCount];
 	Common::String _walkVerb;
+	Common::String _swimVerb;
 	Common::String _useVerb;
 	Common::String _withVerb;
 	Common::String _empty;

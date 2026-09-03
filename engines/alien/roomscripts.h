@@ -67,6 +67,9 @@ enum ScriptOpcode {
 						///< (signed), delay in ticks -- INPUT:0x55E, the queue
 	kOpInvAdd,			///< args: item id -- OBJ:0x69d5, append to the inventory
 	kOpInvRemove,		///< args: item id -- OBJ:0x6a71, close the gap behind it
+	kOpInvReplace,		///< args: old item, new item -- OBJ:0x6a28, which scans the
+						///< same list for the first and writes the second over it where
+						///< it stands, so the item keeps its slot in the bar
 	kOpInvHas,			///< args: item id -- OBJ:0x6add; a test, and its answer went
 						///< into a register the decoder could not follow
 	kOpAddFlag,			///< args: state address, how much to add -- an `inc` in place

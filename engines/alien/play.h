@@ -33,8 +33,14 @@ namespace Alien {
  * is driven from a text command file instead of an event queue: one command
  * per line, blank lines and '#' comments skipped.
  *
- *   click X Y            left click at a playfield point
- *   rclick X Y           right click at a playfield point
+ *   click X Y            left click at a playfield point -- walks, and arms
+ *                        an exit; it performs no verb
+ *   rclick X Y           right click: performs the hovered object's verb, and
+ *                        does nothing at all over bare floor
+ *
+ * Both take **room** coordinates, the ones check_hotspots.py prints, not screen
+ * ones: a wide room's camera moves with the character, and the engine puts the
+ * scroll back before it dispatches the click.
  *   use N                take inventory item N into the hand
  *   unuse                put down whatever is in the hand
  *   wait N                advance N master ticks with nothing happening

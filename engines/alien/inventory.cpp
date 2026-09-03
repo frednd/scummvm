@@ -173,6 +173,25 @@ void Inventory::remove(byte item) {
 	debugC(1, kDebugItems, "item: %u given up but not carried", item);
 }
 
+void Inventory::replace(byte oldItem, byte newItem) {
+	if (!oldItem)
+		return;
+
+	for (uint i = 1; i < kListSize; i++) {
+		if (_list[i] != oldItem)
+			continue;
+
+		// In place: the original overwrites the slot rather than closing the gap
+		// and appending, so the new item is drawn where the old one was.
+		_list[i] = newItem;
+		debugC(1, kDebugItems, "item: %u (%s) became %u (%s), list slot %u",
+			   oldItem, name(oldItem).c_str(), newItem, name(newItem).c_str(), i);
+		return;
+	}
+
+	debugC(1, kDebugItems, "item: %u swapped for %u but not carried", oldItem, newItem);
+}
+
 bool Inventory::has(byte item) const {
 	if (!item)
 		return false;

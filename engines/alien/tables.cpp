@@ -42,6 +42,7 @@ static const uint kMaxNameLength = kRoomStride - 1;
 // "WITH" between them on an 11-byte stride of their own.
 static const uint32 kTableVerbs = 0x3221;
 static const uint32 kWalkVerb = 0x3202;
+static const uint32 kSwimVerb = 0x320d;
 static const uint32 kUseVerb = 0x3218;
 static const uint32 kWithVerb = 0x3223;
 
@@ -124,6 +125,8 @@ bool StaticTables::load() {
 
 	exe.seek(kDataSegment + kWalkVerb);
 	_walkVerb = readName(exe);
+	exe.seek(kDataSegment + kSwimVerb);
+	_swimVerb = readName(exe);
 	exe.seek(kDataSegment + kUseVerb);
 	_useVerb = readName(exe);
 	exe.seek(kDataSegment + kWithVerb);

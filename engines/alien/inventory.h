@@ -80,6 +80,7 @@ public:
 
 	void add(byte item);
 	void remove(byte item);
+	void replace(byte oldItem, byte newItem);
 	bool has(byte item) const;
 
 	/** How many pages the list fills, 1..6 -- OBJ:sub_03617. */

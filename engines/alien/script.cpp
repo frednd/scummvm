@@ -442,6 +442,7 @@ void RoomScript::runEffect(const ScriptEffect &original) {
 
 	case kOpInvAdd:
 	case kOpInvRemove:
+	case kOpInvReplace:
 	case kOpInvHas:
 		inventoryEffect(effect);
 		break;
@@ -474,6 +475,10 @@ void RoomScript::inventoryEffect(const ScriptEffect &effect) {
 		_inventory->add(item);
 	else if (effect.op == kOpInvRemove)
 		_inventory->remove(item);
+	else if (effect.op == kOpInvReplace)
+		// The original pushes the item to look for first, so it arrives as
+		// (old, new); the slot it is found in is the slot the new item takes.
+		_inventory->replace(item, (byte)effect.args[1]);
 	else
 		// A test, and its answer goes into a register the decoder could not
 		// follow, so the arm it guards is already flattened into the body. The

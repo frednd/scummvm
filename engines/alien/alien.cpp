@@ -202,7 +202,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_pending(-1), _pendingOutcome(0),
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
-		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false),
+		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
 		_dialogId(1), _dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
@@ -439,8 +439,11 @@ bool AlienEngine::playIdle() const {
 	// landing in that gap is eaten as "cut the line short" rather than acted
 	// on -- which is what made a scripted second click on the same box look
 	// like it had hit nothing.
+	// Only the one-shot animations count. Since the room tick started relaunching
+	// looping slots (the candles, the blinking cursor) isBusy() never goes false
+	// again, so waiting on it made every settle time out.
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
-		   _queueNext >= _queueCount && !_anims.isBusy() && _pending < 0 && !_armed;
+		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 && !_armed;
 }
 
 void AlienEngine::stepPlayScript() {
@@ -479,14 +482,23 @@ void AlienEngine::stepPlayScript() {
 
 void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 	switch (cmd.type) {
+	// Both click commands are written in *room* coordinates, which is what
+	// check_hotspots.py prints and what the boxes in the script's own comments
+	// are. A wide room's camera moves with the character, so a screen-space
+	// script has to redo the arithmetic after every walk -- and gets it wrong
+	// the moment a click walks somewhere it did not last time. The scroll goes
+	// back in here instead. (The bar is never panned, but the bar is reached
+	// through `use`/`unuse`, not through a click.)
 	case PlayCommand::kClick:
-		debugC(1, kDebugPlay, "play: %u: click %d,%d", cmd.sourceLine, cmd.a, cmd.b);
-		clickAt(cmd.a, cmd.b, false);
+		debugC(1, kDebugPlay, "play: %u: click %d,%d (scroll %d)", cmd.sourceLine,
+			   cmd.a, cmd.b, _scrollX);
+		clickAt(cmd.a - _scrollX, cmd.b, false);
 		break;
 
 	case PlayCommand::kRightClick:
-		debugC(1, kDebugPlay, "play: %u: rclick %d,%d", cmd.sourceLine, cmd.a, cmd.b);
-		clickAt(cmd.a, cmd.b, true);
+		debugC(1, kDebugPlay, "play: %u: rclick %d,%d (scroll %d)", cmd.sourceLine,
+			   cmd.a, cmd.b, _scrollX);
+		clickAt(cmd.a - _scrollX, cmd.b, true);
 		break;
 
 	case PlayCommand::kUse:
@@ -828,6 +840,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_labelText.clear();
 	_labelShown.clear();
 	_labelFading = false;
+	_labelHold = 0;
+	_walkReported = false;
 	resetLabelColors();
 
 	debugC(1, kDebugResource,
@@ -1078,6 +1092,14 @@ void AlienEngine::stepClock() {
 	} else {
 		if (_ben.frame() != wasFrame)
 			_dirty = true;
+
+		// OBJ:sub_07a0a zeroes [0xac1e] the moment the feet reach walk_pos, so
+		// the line that reported the walk gives the status line back at the end
+		// of it rather than sitting out its whole count.
+		if (_walkReported) {
+			_walkReported = false;
+			_labelHold = 0;
+		}
 
 		if (_pending >= 0) {
 			// He has arrived at what he was sent to; the outcome speaks now.
@@ -1388,7 +1410,7 @@ static const char *opName(byte op) {
 	static const char *const kNames[] = {
 		"unsupported", "set_flag", "set_action_handled", "set_game_submode",
 		"queue_event", "anim_play_mode1", "anim_play_mode2", "anim_play_mode3",
-		"sound", "play_sample", "inv_add", "inv_remove", "inv_has",
+		"sound", "play_sample", "inv_add", "inv_remove", "inv_replace", "inv_has",
 		"add_flag", "char_place", "music_play_slot",
 		"anim_play_mode4", "anim_play_mode5", "anim_play_mode6",
 		"anim_play_mode7", "anim_play_mode8"
@@ -2336,6 +2358,11 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		return;
 	}
 
+	// 1021:0x6c1, the first thing the dispatch does: the line the last click
+	// left standing goes, and the hover is free to answer again.
+	_labelHold = 0;
+	_walkReported = false;
+
 	updateHover(x, y);
 
 	// LOGIC's dispatch zeroes the idle count on the way past, so any click at
@@ -2347,11 +2374,34 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (clickBar(x, y, rightButton))
 		return;
 
-	// A right click in the playfield with an item in hand is turned into a left
-	// click at the same point (1021:0x6f7), so the item is used; with an empty
-	// hand it does nothing at all.
-	if (rightButton && !_heldItem)
+	// The two buttons do different jobs, which is the whole of playtest report
+	// 19. The **left** button only ever walks: the room's own loop calls the
+	// overlay's entry 0 with the click point when [0x8d0e] is set
+	// (ovr_03_0e57:0xd7a is the plain shape of it) and the route starts from
+	// walk_pos on the next tick, with no object, no verb and no outcome
+	// involved. The **right** button is the one that acts: 1021:0x71b runs the
+	// registration pass and then LOGIC:sub_12198, which is what walks *and*
+	// arms the action. A right click over nothing has no object to act on and
+	// does nothing at all.
+	//
+	// 1021:0x6f7 is the exception: a right click while an item is in hand is
+	// rewritten into a left click at the same point, so with a full hand both
+	// buttons perform the item use.
+	const bool act = rightButton || _heldItem;
+	if (rightButton && !_heldItem && _hover < 0)
 		return;
+
+	// ... and the click counts as a left one -- which is what arms an exit --
+	// unless it is the plain right-button action (1021:sub_10210 tests both
+	// buttons before it writes walk_submode).
+	const bool asLeft = !rightButton || _heldItem;
+
+	// A left click also cancels an action already waiting on an arrival
+	// (1021:0x6dc clears [0xa956]), so walking away abandons it.
+	if (!act) {
+		_pending = -1;
+		_pendingItem = Inventory::kNoItem;
+	}
 
 	// The room's own walk geometry decides where the click sends him: an object
 	// has an approach point and a facing, a floor rectangle snaps the point onto
@@ -2367,7 +2417,7 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// [0xa87d] each time entry 0 runs.
 	_armed = 0;
 	if (_script.walkTarget(roomX, y, obj, target)) {
-		if (target.submode) {
+		if (target.submode && asLeft) {
 			_armed = target.submode;
 			_armedX = target.x;
 			_armedY = target.y;
@@ -2378,6 +2428,16 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		walkTo(target.x, target.y, target.facing);
 	} else {
 		walkTo(roomX, y);
+	}
+
+	if (!act) {
+		// 1021:0x998: the line now reports the walk, not the object. The
+		// underwater room swims instead, and either way the line stands until
+		// he gets there ([0xac1e] = 0xbb8, cleared on arrival by OBJ:sub_07a0a).
+		setClickLabel(_room == kSwimRoom ? _tables.swimVerb() : _tables.walkVerb(),
+					  kLabelHoldWalk);
+		_walkReported = true;
+		return;
 	}
 
 	_pending = _hover;
@@ -2394,6 +2454,18 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// refusal. LOGIC:sub_12336 sets the pair and walks; the body runs on arrival.
 	_pendingItem = _heldItem;
 	_pendingOutcome = _pendingItem ? 0 : rotateOutcome(spot);
+
+	if (_pendingItem) {
+		// LOGIC:sub_12336 builds no line of its own: the "USE <item> WITH
+		// <object>" the hover pass already put up is what stands, held for the
+		// walk the same way a plain walk's line is.
+		_labelHold = kLabelHoldWalk;
+		_walkReported = true;
+	} else {
+		// 1021:0x85e, once sub_12198 has copied the verb into [0xa825]: the
+		// verb word appears now, on the click, and times out on its own.
+		setClickLabel(_tables.verb(spot.verb), kLabelHoldVerb);
+	}
 
 	if (_pendingItem)
 		debugC(1, kDebugItems, "click: item %u (%s) on object %u", _pendingItem,
@@ -2612,17 +2684,22 @@ void AlienEngine::setTextColor(byte r, byte g, byte b) {
 }
 
 Common::String AlienEngine::labelText(int x, int y) const {
-	// docs/action_system.md 1: the status line is the hovered hotspot's verb and
-	// the object's name out of the room's label file, built as "<verb> <label>".
-	//
-	// HOTSPOT:sub_135e0 empties the buffer at the top of every frame and only a
-	// registered rectangle or a walkable point fills it again (1021:0x9eb reads
-	// the walk verb out of the same table), so over anything else -- the bar,
-	// the walls, the sky -- the line really is empty. That is what the fade
-	// below is for.
+	// The line names the thing under the cursor and nothing else. HOTSPOT's
+	// registration pass writes the hovered object's name into [0xabb8] and
+	// sub_13605, at the tail of entry 1, copies that buffer straight into the
+	// line [0xaaec] -- no verb is prepended, because the verb word is what a
+	// *click* reports afterwards (see clickLabel). sub_135e0 empties both
+	// buffers at the top of every frame, so over anything unregistered -- the
+	// bar, the walls, the sky -- the line really is empty, which is what the
+	// fade below is for.
+	(void)x;
+	(void)y;
+
 	if (_heldItem) {
-		// With an item in hand the line is built the other way round:
-		// HOTSPOT:0x2a5 writes "USE <item> WITH <object>".
+		// The one case that does build a phrase: with an item in hand
+		// 1336:0x2a5 detects the "Use to" mode and writes
+		// "USE <item> WITH <object>", the object half only once the cursor is
+		// over something whose name differs from the item's.
 		Common::String text = _tables.useVerb() + " " + _inventory.name(_heldItem);
 		if (_hover >= 0) {
 			const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
@@ -2633,25 +2710,47 @@ Common::String AlienEngine::labelText(int x, int y) const {
 	}
 
 	if (_hover >= 0) {
-		const Hotspot &spot = _spots[_hover];
-		const TalFile::Entry &entry = _labels.entry(spot.label);
-		Common::String text = _tables.verb(spot.verb);
-		if (!entry.lines.empty()) {
-			text += " ";
-			text += entry.lines[0];
-		}
-		return text;
+		const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
+		if (!entry.lines.empty())
+			return entry.lines[0];
 	}
-
-	// Floor: the walk verb on its own, and only where the room's own mask says
-	// he could actually go.
-	if (y <= kPlayfieldBottom && !_walk.mask().blocked(x + _scrollX, y))
-		return _tables.walkVerb();
 
 	return Common::String();
 }
 
+Common::String AlienEngine::hoverName() const {
+	// [0xabb8] on its own: what the click lines append their verb word to. It is
+	// empty over bare floor, and the original appends it regardless, so a walk
+	// onto nothing really does read as the bare verb.
+	if (_hover >= 0) {
+		const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
+		if (!entry.lines.empty())
+			return entry.lines[0];
+	}
+	return Common::String();
+}
+
+void AlienEngine::setClickLabel(const Common::String &verb, uint hold) {
+	// 1021:0x85e and 1021:0x998 both overwrite the line the hover pass just
+	// built and then set the suppression counter [0xac1e]. While that counter is
+	// non-zero the room's entry 1 returns before registering anything, so
+	// sub_13605 never runs and the line stands: the status line reports what was
+	// just done rather than previewing what a click would do.
+	const Common::String name = hoverName();
+	_labelText = name.empty() ? verb : verb + " " + name;
+	_labelShown = _labelText;
+	_labelFading = false;
+	_labelHold = hold;
+	resetLabelColors();
+	_dirty = true;
+}
+
 void AlienEngine::refreshLabel(int x, int y) {
+	// [0xac1e]: while a click's line is still up the room's entry 1 does not
+	// register, so nothing rebuilds the line from the hover.
+	if (_labelHold)
+		return;
+
 	const Common::String text = labelText(x, y);
 	if (text == _labelText)
 		return;
@@ -2681,6 +2780,14 @@ void AlienEngine::resetLabelColors() {
 }
 
 void AlienEngine::stepLabelFade() {
+	// Entry 1 decrements [0xac1e] once per frame and returns; the line only
+	// starts answering the cursor again when it runs out (or when the walk it
+	// was reporting ends -- see clearClickLabel).
+	if (_labelHold) {
+		_labelHold--;
+		return;
+	}
+
 	if (!_labelFading)
 		return;
 
@@ -2831,8 +2938,8 @@ void AlienEngine::redraw() {
 	// character is not in it, and the original hides the bar for its duration.
 	if (!_cutscene) {
 		// The room's DL2 sprite sheets are a viewer, not part of the room: which
-		// of them is on screen is the room's own business ([0xa884] and the
-		// sprite_add calls), and none of that is ported. Drawing one anyway put
+		// of them is on screen is the room's own business (the sprite_add
+		// calls), and none of that is ported. Drawing one anyway put
 		// a door in the entrance hall that the game only shows much later, in
 		// colours the hall's plate does not use. It stays behind the anim
 		// channel, where the arrow keys page through the banks.

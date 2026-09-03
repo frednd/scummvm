@@ -165,6 +165,15 @@ public:
 	/** True while this one slot still has frames to advance. */
 	bool isBusy(uint slot) const { return _slots[slot].remaining > 0; }
 
+	/// True while a slot the room does *not* keep relaunching still has frames
+	/// to advance. A looping slot never runs out -- the room's tick re-issues it
+	/// on its last frame -- so anything waiting for the room to go quiet has to
+	/// leave those out or it waits for ever.
+	bool isBusyOnce() const;
+
+	/// Whether stepLoops() would relaunch this slot as things stand.
+	bool isLooping(uint slot) const;
+
 	/** Composites the current frame of every slot that has one, scroll-adjusted like Walker::draw. */
 	void draw(Graphics::Surface &dest, int scrollX = 0) const;
 

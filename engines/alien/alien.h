@@ -65,6 +65,15 @@ public:
 	/// And the mouth stops with this many of those half ticks left, OBJ:0x86df.
 	static const int kTalkStopTicks = 0x19;
 
+	/// [0xac1e], how long a click's own line stands before the hover answers
+	/// again: 0x8c frames for a verb (1021:0x897) and, for a walk, 0xbb8 --
+	/// long enough that in practice the arrival is what ends it (1021:0xa16).
+	static const uint kLabelHoldVerb = 0x8c;
+	static const uint kLabelHoldWalk = 0xbb8;
+
+	/// The one room whose left click reads "Swim to", 1021:0x9be.
+	static const int kSwimRoom = 46;
+
 	AlienEngine(OSystem *syst, const ADGameDescription *gameDesc);
 	~AlienEngine() override;
 
@@ -197,6 +206,8 @@ private:
 	void setTextColor(byte r, byte g, byte b);
 	void characterAnchor(int &x, int &y) const;
 	Common::String labelText(int x, int y) const;
+	Common::String hoverName() const;
+	void setClickLabel(const Common::String &verb, uint hold);
 	void refreshLabel(int x, int y);
 	void resetLabelColors();
 	void stepLabelFade();
@@ -316,6 +327,13 @@ private:
 	bool _labelFading;
 	Common::String _labelText;		///< [0xaaec], what the line reads this frame
 	Common::String _labelShown;		///< and what is still drawn, fade included
+
+	/// [0xac1e]: frames left before the hover may rebuild the line. A click sets
+	/// it and the room's entry 1 spends it, one a frame, registering nothing
+	/// while it lasts. _walkReported marks the kind that a walk's end cuts short
+	/// rather than letting it time out.
+	uint _labelHold;
+	bool _walkReported;
 
 	uint _dialogId;
 	bool _dialogBand;				///< bottom band layout instead of over the speaker

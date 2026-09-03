@@ -232,6 +232,26 @@ void AnimSlots::playAll(int rate) {
 	}
 }
 
+bool AnimSlots::isLooping(uint slot) const {
+	for (uint i = 0; i < _loopCount; i++) {
+		if (_loops[i].slot != slot)
+			continue;
+		// The guarded rows only count while the room has their byte set, the
+		// same test stepLoops() makes before it relaunches.
+		if (!_loops[i].flag || _slots[slot].loop)
+			return true;
+	}
+	return false;
+}
+
+bool AnimSlots::isBusyOnce() const {
+	for (uint i = 0; i < kSlotCount; i++) {
+		if (_slots[i].remaining > 0 && !isLooping(i))
+			return true;
+	}
+	return false;
+}
+
 bool AnimSlots::isBusy() const {
 	for (uint i = 0; i < kSlotCount; i++) {
 		if (_slots[i].remaining > 0)
