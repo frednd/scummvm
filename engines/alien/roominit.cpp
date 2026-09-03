@@ -25,7 +25,7 @@
 // The frame every animation slot opens on, as the room's own enter routine sets
 // it: the effects it runs, with the puzzle-state guards they sit under.
 //
-//   222 plays over 40 rooms.
+//   226 plays over 40 rooms.
 
 #include "alien/roominit.h"
 
@@ -117,12 +117,16 @@ static const ScriptEffect kRoomInit[] = {
 	{ kOpSetFlag,        2, { 42809,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa739, 0)
 	{ kOpCharPlace,      5, {     0,    93,     0,    47,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 93, 0, 47, 4)
 	{ kOpCharPlace,      5, {     0,    23,     0,    90,     1,     0 }, 0x00,   0, 1, { { 0xa880, 14, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 23, 0, 90, 1)
+	{ kOpAnimPlay4,      4, {     1,     1,    49,     4,     0,     0 }, 0x00,   0, 2, { { 0xa880, 35, false, 0 }, { 0xa77a, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(1, 1, 49, 4)
+	{ kOpAnimPlay4,      4, {     1,    26,    24,     4,     0,     0 }, 0x00,   0, 2, { { 0xa880, 35, false, 0 }, { 0xa77a, 0, true, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(1, 26, 24, 4)
 	{ kOpSetFlag,        2, { 42874,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 35, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa77a, 1)
 	{ kOpCharPlace,      5, {     0,   200,     0,    72,     3,     0 }, 0x00,   0, 1, { { 0xa880, 35, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 200, 0, 72, 3)
 	{ kOpAnimPlay1,      4, {     1,     1,    17,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 17, 3)
 	{ kOpAnimPlay6,      4, {     2,     0,    96,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(2, 0, 96, 4)
 	{ kOpSetFlag,        2, { 13240,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa769, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0x33b8, 0)
 	{ kOpSetFlag,        2, { 42808,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa738, 0)
+	{ kOpAnimPlay1,      4, {     2,     1,    51,     3,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, true, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 51, 3)
+	{ kOpAnimPlay1,      4, {     3,     1,    51,     3,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 51, 3)
 	{ kOpAddFlag,        2, { 42800,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// add_flag(42800, 1)
 	{ kOpSetFlag,        2, { 42800,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa730, 0)
 	{ kOpCharPlace,      5, {     0,   179,     0,    87,     1,     0 }, 0x00,   0, 1, { { 0xa880, 23, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 179, 0, 87, 1)
@@ -281,30 +285,30 @@ static const RoomInitRoom kRoomInitRooms[] = {
 	{ 23,  68,  1 },
 	{ 25,  69,  3 },
 	{ 26,  72, 10 },
-	{ 27,  82,  5 },
-	{ 30,  87,  2 },
-	{ 31,  89, 12 },
-	{ 32, 101, 11 },
-	{ 33, 112,  3 },
-	{ 34, 115,  6 },
-	{ 35, 121,  5 },
-	{ 41, 126,  8 },
-	{ 43, 134,  1 },
-	{ 44, 135,  1 },
-	{ 45, 136,  6 },
-	{ 46, 142,  3 },
-	{ 48, 145,  6 },
-	{ 49, 151,  6 },
-	{ 50, 157,  2 },
-	{ 51, 159,  3 },
-	{ 52, 162, 16 },
-	{ 53, 178,  3 },
-	{ 54, 181, 10 },
-	{ 55, 191, 10 },
-	{ 56, 201,  6 },
-	{ 57, 207,  5 },
-	{ 58, 212,  4 },
-	{ 59, 216,  6 },
+	{ 27,  82,  7 },
+	{ 30,  89,  2 },
+	{ 31,  91, 14 },
+	{ 32, 105, 11 },
+	{ 33, 116,  3 },
+	{ 34, 119,  6 },
+	{ 35, 125,  5 },
+	{ 41, 130,  8 },
+	{ 43, 138,  1 },
+	{ 44, 139,  1 },
+	{ 45, 140,  6 },
+	{ 46, 146,  3 },
+	{ 48, 149,  6 },
+	{ 49, 155,  6 },
+	{ 50, 161,  2 },
+	{ 51, 163,  3 },
+	{ 52, 166, 16 },
+	{ 53, 182,  3 },
+	{ 54, 185, 10 },
+	{ 55, 195, 10 },
+	{ 56, 205,  6 },
+	{ 57, 211,  5 },
+	{ 58, 216,  4 },
+	{ 59, 220,  6 },
 };
 
 const ScriptEffect *roomInitEffects(int room, uint &count) {

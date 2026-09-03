@@ -278,12 +278,19 @@ void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest, int scrollX) cons
 
 		const byte *src = _data + strip.pixelOffset;
 		byte *dst = (byte *)dest.getBasePtr(0, y);
+
+		// A strip is copied verbatim, zeros included: the original's blit
+		// (MIDAS:sub_180d4, and sub_18006 for the background page) moves the
+		// run with `rep movsw` and never tests a pixel. Transparency in this
+		// format is the *gap* between strips, not a colour, and the zeros
+		// inside a run are real black pixels -- the dark opening a door leaves
+		// behind when it swings away. Skipping them left room 6's doors
+		// looking shut however far the animation had run (finding #54).
 		for (uint j = 0; j < strip.length; j++) {
 			int col = x + (int)j;
 			if (col < 0 || col >= dest.w)
 				continue;
-			if (src[j] != 0)
-				dst[col] = src[j];
+			dst[col] = src[j];
 		}
 	}
 }
