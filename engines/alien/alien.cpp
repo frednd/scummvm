@@ -2697,14 +2697,20 @@ Common::String AlienEngine::labelText(int x, int y) const {
 
 	if (_heldItem) {
 		// The one case that does build a phrase: with an item in hand
-		// 1336:0x2a5 detects the "Use to" mode and writes
-		// "USE <item> WITH <object>", the object half only once the cursor is
-		// over something whose name differs from the item's.
-		Common::String text = _tables.useVerb() + " " + _inventory.name(_heldItem);
+		// HOTSPOT:sub_13605 detects the "use" mode -- [0xa825] == 2, which
+		// 10c9:sub_11001 sets when a click lands in a filled slot of the bar --
+		// and concatenates six pieces into [0xaaec]: the USE word at DS:0x3218,
+		// a space, the item's name, a space, the WITH word at DS:0x3223, a
+		// space, and the hovered object's name [0xabb8]. Both of its branches
+		// append the first five: the strcmp at 1336:0x2f2 only decides whether
+		// the object half is added, and over bare floor [0xabb8] is empty, so
+		// the line really does read "USE KEY WITH " with nothing after it.
+		Common::String text = _tables.useVerb() + " " + _inventory.name(_heldItem) +
+							  " " + _tables.withVerb() + " ";
 		if (_hover >= 0) {
 			const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
 			if (!entry.lines.empty())
-				text += " " + _tables.withVerb() + " " + entry.lines[0];
+				text += entry.lines[0];
 		}
 		return text;
 	}
