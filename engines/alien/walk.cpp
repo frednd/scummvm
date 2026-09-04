@@ -105,8 +105,20 @@ bool WalkMask::blocked(int x, int y) const {
 		x -= kPageSplit;
 	}
 
-	if (!_page[page] || x >= kWidth)
+	if (x >= kWidth)
 		return true;
+
+	// Nine of the fifteen rooms wider than the screen ship no B mask at all --
+	// room 8 is one, and its safe stands at x 355 -- so the original's page 7
+	// still holds whatever the last room that did load one left in it. That is
+	// not something a port can reproduce, and refusing the strip outright is
+	// the one reading the original certainly does not have: it makes every
+	// destination past x 319 unreachable, and the router laps the ring looking
+	// for a node that can see one. An absent page is open floor instead, which
+	// is what the rooms are authored as -- their masks all end in a full-width
+	// walkable band at the floor line.
+	if (!_page[page])
+		return page == 0;
 
 	const uint32 index = (uint32)y * kWidth + x;
 	if (index >= _size[page])
