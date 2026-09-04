@@ -194,7 +194,8 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
+		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0),
+		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
@@ -209,6 +210,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
+	memset(_charPalette, 0, sizeof(_charPalette));
+	memset(_charPaletteAlt, 0, sizeof(_charPaletteAlt));
+	_lightMap[0] = _lightMap[1] = nullptr;
 	memset(_labelColors, 0, sizeof(_labelColors));
 	memset(_outcomeCounter, 0, sizeof(_outcomeCounter));
 	memset(_queue, 0, sizeof(_queue));
@@ -222,6 +226,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 }
 
 AlienEngine::~AlienEngine() {
+	freeLightMap();
 	_screen.free();
 	_background.free();
 	_occluder.free();
@@ -355,6 +360,15 @@ Common::Error AlienEngine::run() {
 	// foreground rectangle a room stamps back over the character.
 	if (debugChannelSet(-1, kDebugOcclusion))
 		dumpOcclusion();
+
+	// The light channel prints what tools/check_lighting.py mirrors: which plate
+	// each room reads its brightness from, and at level 2 those plates sampled
+	// on a grid.
+	if (debugChannelSet(-1, kDebugLight)) {
+		dumpLighting();
+		if (debugChannelSet(2, kDebugLight))
+			sweepLighting();
+	}
 
 	// The music channel prints what tools/check_music.py mirrors: the module and
 	// slot tables, then the sequencer walked row by row, then the loudness of the
@@ -682,6 +696,10 @@ void AlienEngine::applyCharPalette(int room) {
 
 	// Indices 1..24 only -- everything else in this file is unused filler.
 	memcpy(_palette + 1 * 3, charPalette + 1 * 3, 24 * 3);
+
+	// And the same block unscaled, which is what the room's light map scales
+	// from once Ben moves (lighting.cpp).
+	keepCharPalette(room, charPalette);
 }
 
 bool AlienEngine::loadRoom(int room, bool secondPlate) {
@@ -750,6 +768,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	memcpy(_palette, palette, sizeof(_palette));
 	applyCharPalette(room);
 	loadOccluder(room);
+	loadLightMap(room);
 
 	// The sprite banks and the dialog file are named by the room's own scene
 	// overlay. Rooms driven from a resident segment have no overlay, and those
@@ -1096,6 +1115,10 @@ void AlienEngine::stepClock() {
 		// left, so the mouth closes a moment before the text goes.
 		_ben.setTalking(_speech && (_speechTicks == 0 || _speechTicks >= kTalkStopTicks));
 	}
+
+	// The room's light map, sampled where Ben is standing: the same once-a-tick
+	// OBJ:sub_069fd call every scene overlay's entry 2 makes (lighting.cpp).
+	stepLighting();
 
 	// The status line's fade runs off the frame, not off the animation gate.
 	stepLabelFade();

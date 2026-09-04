@@ -98,6 +98,7 @@ void AlienEngine::reloadPlates() {
 	memcpy(_palette, palette, sizeof(_palette));
 	applyCharPalette(_room);
 	loadOccluder(_room);
+	loadLightMap(_room);
 	_dirty = true;
 
 	debugC(1, kDebugBedroom, "bedroom: plates are now %s", name.c_str());

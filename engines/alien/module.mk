@@ -14,6 +14,7 @@ MODULE_OBJS = \
 	font.o \
 	hotspots.o \
 	inventory.o \
+	lighting.o \
 	metaengine.o \
 	occlusion.o \
 	opening.o \

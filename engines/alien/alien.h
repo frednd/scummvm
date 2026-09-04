@@ -114,6 +114,17 @@ private:
 	static int roomWidth(int room);
 	const char *charPaletteFile(int room) const;
 	void applyCharPalette(int room);
+
+	// lighting.cpp: the room's FADE plate, and the character's own palette
+	// entries it scales.
+	const char *lightMapFile(int room, bool second) const;
+	void loadLightMap(int room);
+	void freeLightMap();
+	void keepCharPalette(int room, const byte *palette);
+	void uploadCharPalette(bool alt);
+	void stepLighting();
+	void dumpLighting();
+	void sweepLighting();
 	void updateScroll();
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);
@@ -230,6 +241,20 @@ private:
 	Graphics::Surface _background;	///< the room plate as decoded
 	Graphics::Surface _occluder;	///< the room's MSCR sheet, its foreground pieces
 	byte _palette[256 * 3];
+
+	/// The room's light map, its left half and -- when it has one -- its right,
+	/// 320x150 of brightness bytes each (lighting.cpp).
+	byte *_lightMap[2];
+
+	/// The character's own palette entries 1..24 as the room loaded them, before
+	/// the light level scales them, plus room 49's second set.
+	byte _charPalette[24 * 3];
+	byte _charPaletteAlt[24 * 3];
+	bool _charPaletteAltLoaded;
+
+	/// [0x7d9c] and [0x7d9d]: the level the map yielded this frame and last.
+	byte _lightLevel;
+	byte _lightPrev;
 
 	DL1Sprite _sprite;
 	uint _spriteFrame;
