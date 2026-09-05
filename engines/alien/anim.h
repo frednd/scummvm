@@ -184,7 +184,8 @@ public:
 	bool isLooping(uint slot) const;
 
 	/** Composites the current frame of every slot that has one, scroll-adjusted like Walker::draw. */
-	void draw(Graphics::Surface &dest, int scrollX = 0) const;
+	void draw(Graphics::Surface &dest, int scrollX = 0,
+			  int clipBottom = DL1Sprite::kNoClipBottom) const;
 
 	/** The bank a slot holds, for the debug console. */
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }
@@ -193,6 +194,14 @@ public:
 	/// Frames a slot still has to advance: the original's `0xa4ea` array, which
 	/// room scripts guard on directly (see RoomScript::animSlotByte).
 	int remaining(uint slot) const { return _slots[slot].remaining; }
+
+	/// Cut a range short by zeroing that same array entry, which is how a room
+	/// takes an animation off the screen without playing it out -- the sewer
+	/// stops its rippling water the moment the drain starts.
+	void stop(uint slot) {
+		if (slot < kSlotCount)
+			_slots[slot].remaining = 0;
+	}
 
 private:
 	struct Slot {

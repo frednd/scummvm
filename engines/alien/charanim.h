@@ -27,6 +27,7 @@
 #include "common/rect.h"
 #include "common/str.h"
 
+#include "alien/dl1.h"
 #include "alien/walk.h"
 
 namespace Graphics {
@@ -87,7 +88,11 @@ public:
 	 * the hotspot is where the frame sits inside the character's box, not a
 	 * pivot to centre on.
 	 */
-	void drawFrame(uint index, Graphics::Surface &dest, int x, int y) const;
+	/// `clipBottom` is the first row that must not be drawn, the original's
+	/// [0xa8e4]: the character goes through the same OBJ:dl1_load_and_blit the
+	/// room's slots do, so the same global shortens him (see DL1Sprite).
+	void drawFrame(uint index, Graphics::Surface &dest, int x, int y,
+				   int clipBottom = DL1Sprite::kNoClipBottom) const;
 
 private:
 	Common::Array<Frame> _frames;
@@ -149,6 +154,11 @@ public:
 	/** Drop the route and fall back to standing. */
 	void stop();
 
+	/// Queue the turn to a facing, the original's [0xa803] plus [0xa804]. Room
+	/// code writes that pair directly to turn him where its own machine wants
+	/// him (sewer.cpp); 1 = back, 2 = right, 3 = front, 4 = left.
+	void faceTo(int facing) { turnTo(facing); }
+
 	bool isWalking() const { return _waypoint < _route.count; }
 	bool isTurning() const { return _turnLeft != 0; }
 
@@ -183,7 +193,8 @@ public:
 	 */
 	void tick(bool inventoryOpen = false);
 
-	void draw(Graphics::Surface &dest, int scrollX = 0) const;
+	void draw(Graphics::Surface &dest, int scrollX = 0,
+			  int clipBottom = DL1Sprite::kNoClipBottom) const;
 
 	/**
 	 * The box the current frame occupies in room space, which is what the

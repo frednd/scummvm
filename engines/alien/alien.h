@@ -52,6 +52,15 @@ public:
 	static const int kScreenWidth = 320;
 	static const int kScreenHeight = 200;
 
+	/// The row the playfield ends on, and so the value OBJ:sub_08567 puts in
+	/// [0xa8e4] as every room opens: the DL1 blitter draws nothing at or below
+	/// it (see DL1Sprite::drawFrame and _clipBottom).
+	static const int kPlayfieldBottom = 0x9b;
+
+	/// How far down the character the sewer's water stands before it is
+	/// drained, the value GAME.EXE ships in [0x4382] (sewer.cpp).
+	static const uint16 kSewerDepthStart = 0x32;
+
 	/// Object ids are bytes, and the outcome rotation is kept per object.
 	static const uint kObjectCount = 256;
 
@@ -194,8 +203,10 @@ private:
 	void startOpening();
 	void stepOpening();
 	void stepRoomClock();
-	void armSewerHatch(int obj, byte verb);
+	void armSewer(int obj, byte verb);
+	void enterSewer();
 	void stepSewer();
+	void sewerValve();
 	void cancelOpening();
 	void stepEnding();
 	void speakEnding(byte code);
@@ -318,6 +329,12 @@ private:
 	int _armedY;
 	byte _armedFacing;
 
+	/// The first screen row a DL1 blit must not touch, the original's [0xa8e4]
+	/// (see DL1Sprite::drawFrame). Room init puts back 0x9b, the row the
+	/// playfield ends on; the only room that moves it is the sewer, whose water
+	/// line cuts the character and its own slots off at the surface.
+	int _clipBottom;
+
 	/// game_mode [0xa880]: the room the character came *from*. The original sets
 	/// it as a room's tick loop ends, so the pair the transition chain matches
 	/// on is (the room being left, the submode its exit armed).
@@ -399,9 +416,20 @@ private:
 	/// them all and loadRoom resets it.
 	uint16 _roomClock;
 
-	/// Room 35's [0xa49f] machine, of which the port runs the one state that
-	/// takes the hatch's exit (sewer.cpp). Zero when nothing is running.
+	/// Room 35's [0xa49f] machine (sewer.cpp). Zero when nothing is running.
 	byte _sewerStep;
+
+	/// The sewer's water, which the original keeps as four words of its own in
+	/// the data segment rather than in the state block: [0x4380] is the phase
+	/// into the thirty-entry ripple table at [0x4362], [0x4382] the depth the
+	/// drain has taken off, [0x4384] the divider that lets the depth move once
+	/// every third animation frame, and [0x4385] whether the drain is running.
+	/// GAME.EXE ships them as 0, 0x32, 0, 0 and nothing else in the game reads
+	/// or writes them, so they are here rather than in RoomScript.
+	uint16 _sewerPhase;
+	uint16 _sewerDepth;
+	byte _sewerDivider;
+	byte _sewerDraining;
 
 	/// Whether the room now composed still owes its fade in (fade.cpp). Room
 	/// init leaves the palette black and the loop's tail raises it, which is

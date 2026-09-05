@@ -65,6 +65,12 @@ public:
 	static const uint16 kNoRoomX = 0xFFFF;
 	static const int kScreenWidth = 320;
 
+	/**
+	 * A clip line far enough down that nothing is ever cut: the value to pass
+	 * when a caller has no bottom clip of its own to apply.
+	 */
+	static const int kNoClipBottom = 0x7FFF;
+
 	DL1Sprite();
 	~DL1Sprite();
 
@@ -95,8 +101,18 @@ public:
 	 *   which still needs scrollX subtracted like the long-form case. A short-form strip
 	 *   whose true room-space column is >= 320 cannot be expressed by this format at all
 	 *   (unconfirmed whether any such sprite exists -- not yet found in a sweep).
+	 *
+	 * @param clipBottom the first row that must not be drawn, the original's
+	 *   [0xa8e4]. Every DL1 blit goes through OBJ:dl1_load_and_blit, which reads
+	 *   that word into a local before it starts (0251:0c6f) and shortens the
+	 *   run's height to `clipBottom - dstY` whenever the two would overlap
+	 *   (0251:0e1b) -- the same shape as the right-edge clamp against
+	 *   [0xa0c4] + 0x140 a few instructions earlier. It is a global, not an
+	 *   argument, so it applies to the character and the room's slots alike; see
+	 *   AlienEngine::_clipBottom.
 	 */
-	void drawFrame(uint index, Graphics::Surface &dest, int scrollX = 0) const;
+	void drawFrame(uint index, Graphics::Surface &dest, int scrollX = 0,
+				   int clipBottom = kNoClipBottom) const;
 
 private:
 	struct ParseResult {

@@ -206,7 +206,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true), _roomClock(0), _sewerStep(0), _fadePending(false), _won(false),
+		_openingStep(0), _openingPending(true), _roomClock(0), _sewerStep(0),
+		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
+		_clipBottom(kPlayfieldBottom), _fadePending(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -805,6 +807,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_roomClock = 0;
 	_sewerStep = 0;
 
+	// OBJ:sub_08567, the shared room open every overlay's entry 1 calls, puts
+	// the DL1 clip line back at the bottom of the playfield (0251:605f). Only
+	// the sewer ever moves it, and it moves it every frame it is flooded.
+	_clipBottom = kPlayfieldBottom;
+
 	_anims.loadRoom(room, _script);
 
 	// What the room does with a click on its own account, lifted out of its
@@ -812,6 +819,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// from tools/gen_roominit.py. The state block is not touched here: puzzle
 	// flags outlive the room they were set in.
 	_script.enterRoom(room);
+
+	// And the one room whose open carries more than the lift can express: the
+	// sewer's ladder, and the water it may still be full of (sewer.cpp).
+	enterSewer();
 
 	// The rectangles the room registers, by running entry 1 of its overlay as
 	// tools/gen_hotspots.py lifted it. Which ones exist depends on the puzzle
@@ -1109,9 +1120,8 @@ void AlienEngine::stepClock() {
 		// finer of the two.
 		stepRoomClock();
 
-		// And the one state of room 35's own machine the port runs: the hatch
-		// that ends the room and lets the front door of the house open
-		// (sewer.cpp).
+		// And room 35's own machine, which is the water it starts full of and
+		// the hatch that ends it (sewer.cpp).
 		stepSewer();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
@@ -2571,10 +2581,10 @@ void AlienEngine::finishAction() {
 	if (!item && isBedroomSwitch(spot.obj))
 		bedroomSwitch(anchorX, anchorY);
 
-	// And one body carries a state the lift does not: the sewer hatch starts
-	// its room's [0xa49f] machine (sewer.cpp).
+	// And three bodies carry state the lift does not: the sewer's ladder, its
+	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).
 	if (!item)
-		armSewerHatch(spot.obj, verb);
+		armSewer(spot.obj, verb);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
 
@@ -3015,7 +3025,7 @@ void AlienEngine::redraw() {
 
 	// The animation slots come first: they are the room's own furniture, and the
 	// character walks in front of them.
-	_anims.draw(_screen, _scrollX);
+	_anims.draw(_screen, _scrollX, _clipBottom);
 
 	// A cutscene is the record's plate and its own slots and nothing else: the
 	// character is not in it, and the original hides the bar for its duration.
@@ -3027,9 +3037,9 @@ void AlienEngine::redraw() {
 		// colours the hall's plate does not use. It stays behind the anim
 		// channel, where the arrow keys page through the banks.
 		if (debugChannelSet(-1, kDebugAnim))
-			_sprite.drawFrame(_spriteFrame, _screen, _scrollX);
+			_sprite.drawFrame(_spriteFrame, _screen, _scrollX, _clipBottom);
 
-		_ben.draw(_screen, _scrollX);
+		_ben.draw(_screen, _scrollX, _clipBottom);
 
 		// And the foreground the room authored over him, which is the whole of
 		// the original's depth model (occlusion.h).

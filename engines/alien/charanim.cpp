@@ -113,7 +113,7 @@ bool CharAnim::load(const Common::String &base) {
 	return true;
 }
 
-void CharAnim::drawFrame(uint index, Graphics::Surface &dest, int x, int y) const {
+void CharAnim::drawFrame(uint index, Graphics::Surface &dest, int x, int y, int clipBottom) const {
 	if (index >= _frames.size())
 		return;
 
@@ -131,7 +131,7 @@ void CharAnim::drawFrame(uint index, Graphics::Surface &dest, int x, int y) cons
 
 	for (int row = 0; row < (int)f.height; row++) {
 		const int destY = top + row;
-		if (destY < 0 || destY >= dest.h)
+		if (destY < 0 || destY >= dest.h || destY >= clipBottom)
 			continue;
 
 		byte *out = (byte *)dest.getBasePtr(0, destY);
@@ -578,9 +578,9 @@ void Walker::tick(bool inventoryOpen) {
 	updateFrame();
 }
 
-void Walker::draw(Graphics::Surface &dest, int scrollX) const {
+void Walker::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const {
 	if (_anim.isLoaded())
-		_anim.drawFrame(_frame, dest, _x - scrollX, _y);
+		_anim.drawFrame(_frame, dest, _x - scrollX, _y, clipBottom);
 }
 
 bool Walker::bounds(Common::Rect &box) const {
