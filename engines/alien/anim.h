@@ -187,6 +187,16 @@ public:
 	void draw(Graphics::Surface &dest, int scrollX = 0,
 			  int clipBottom = DL1Sprite::kNoClipBottom) const;
 
+	/** Stamps the last frame of every finished persisting slot into the room
+	 *  plate, which is what the original does with its second page: the slot
+	 *  drawer writes that frame to the background buffer as well as to the
+	 *  screen and then never draws the slot again (MIDAS:snd_func_1482 at
+	 *  0x1566, guarded on `[0xa5da]` -- set by modes 1, 3 and 6 alone).
+	 *  Without it a finished slot keeps drawing in slot order, so an older
+	 *  play in a higher slot covers a newer one below it. */
+	void bake(Graphics::Surface &background,
+			  int clipBottom = DL1Sprite::kNoClipBottom);
+
 	/** The bank a slot holds, for the debug console. */
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }
 	int frame(uint slot) const { return _slots[slot].frame; }
@@ -218,6 +228,7 @@ private:
 		bool forward;
 		bool restore;			///< modes 2 and 8: go back to the starting frame
 		bool persist;			///< [0xa5da]: modes 1, 3 and 6 leave the last frame behind
+		bool baked;				///< that last frame is in the room plate now
 		byte loop;				///< [0xa53a]: the room's guard on this slot's loop
 		byte mode;
 

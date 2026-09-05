@@ -39,6 +39,7 @@ void AnimSlots::Slot::clear() {
 	forward = true;
 	restore = false;
 	persist = true;
+	baked = false;
 	loop = 0;
 	mode = 0;
 }
@@ -152,6 +153,7 @@ void AnimSlots::play(uint slot, int first, int count, int rate, int mode) {
 	s.forward = mode != 3 && mode != 5;
 	s.restore = mode == 2 || mode == 8;
 	s.persist = mode == 1 || mode == 3 || mode == 6;
+	s.baked = false;
 
 	debugC(2, kDebugGraphics, "anim: slot %u plays %s frames %d..%d rate %d "
 		   "(mode %d)", slot, s.name.empty() ? "<no bank>" : s.name.c_str(),
@@ -299,6 +301,10 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 		if (slot.remaining <= 0 && !slot.restore && !slot.persist)
 			continue;
 
+		// A frame already stamped into the plate is drawn by the plate.
+		if (slot.baked)
+			continue;
+
 		// Frames are numbered from one: room 10 shows the emptied matchbox with
 		// frame 2 of a two-frame bank.
 		const int frame = visibleFrame(slot) - 1;
@@ -322,6 +328,29 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 		}
 
 		slot.bank.drawFrame((uint)frame, dest, scrollX, clipBottom);
+	}
+}
+
+void AnimSlots::bake(Graphics::Surface &background, int clipBottom) {
+	for (uint i = 0; i < kSlotCount; i++) {
+		Slot &slot = _slots[i];
+		if (!slot.started || slot.baked || !slot.persist || slot.remaining > 0)
+			continue;
+		if (!slot.bank.frameCount())
+			continue;
+
+		const int frame = visibleFrame(slot) - 1;
+		const int count = (int)slot.bank.frameCount();
+
+		// The terminator and the blank below the first frame are the two ends a
+		// range can stop on with nothing to stamp; the erase they stand for has
+		// already been done by the play that ran into them.
+		if (frame >= 0 && frame < count)
+			slot.bank.drawFrame((uint)frame, background, 0, clipBottom);
+
+		slot.baked = true;
+		debugC(2, kDebugGraphics, "anim: slot %u baked frame %d of %s into the "
+			   "plate", i, frame + 1, slot.name.c_str());
 	}
 }
 

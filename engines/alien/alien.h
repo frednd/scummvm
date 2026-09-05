@@ -203,6 +203,9 @@ private:
 	void startOpening();
 	void stepOpening();
 	void stepRoomClock();
+	void armLab(int obj, bool item);
+	void stepLab();
+
 	void armSewer(int obj, byte verb);
 	void enterSewer();
 	void stepSewer();
@@ -415,6 +418,20 @@ private:
 	/// room that has one zeroes it as its overlay opens, so one counter serves
 	/// them all and loadRoom resets it.
 	uint16 _roomClock;
+
+	/// Room 3's [0xa49f] machine, less the opening the two steps in opening.cpp
+	/// carry (lab.cpp). Zero when nothing is running.
+	byte _labStep;
+
+	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
+	/// every tick pair, which two of that room's steps time themselves off.
+	uint16 _labPos;
+
+	/// [0xa94d]: whether the character is drawn at all. Every room's tick tests
+	/// it before calling OBJ:sub_06466, and a room clears it while it plays the
+	/// character's own action on an animation slot -- otherwise the slot's Ben
+	/// and the walker are both on screen (playtest report 3).
+	bool _drawCharacter;
 
 	/// Room 35's [0xa49f] machine (sewer.cpp). Zero when nothing is running.
 	byte _sewerStep;

@@ -206,7 +206,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true), _roomClock(0), _sewerStep(0),
+		_openingStep(0), _openingPending(true), _roomClock(0),
+		_labStep(0), _labPos(0), _drawCharacter(true), _sewerStep(0),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
@@ -805,7 +806,13 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// Every room that runs a clock zeroes its counter as its overlay opens, so
 	// a room re-entered starts counting again (roomtick.cpp).
 	_roomClock = 0;
+	_labStep = 0;
+	_labPos = 0;
 	_sewerStep = 0;
+
+	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
+	// does not carry the character's absence into the next one.
+	_drawCharacter = true;
 
 	// OBJ:sub_08567, the shared room open every overlay's entry 1 calls, puts
 	// the DL1 clip line back at the bottom of the playfield (0251:605f). Only
@@ -944,6 +951,14 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_dialogId = 1;
 	_labelSlot = 0;
 	_dirty = true;
+
+	// And the room's light map, sampled once before anything is composed. The
+	// original's sampler (OBJ:sub_069fd) is the first thing every overlay's
+	// entry 2 does, so its answer is already in the palette when the room's
+	// first frame reaches the screen; sampling only from the port's tick left
+	// one frame of the character in whatever brightness the room before him had
+	// (playtest report 6).
+	stepLighting();
 
 	// The elevator clip, on the way into one of the rooms the lift serves. The
 	// original plays it from the top of those rooms' overlay entry 2, which is
@@ -1114,6 +1129,14 @@ void AlienEngine::stepClock() {
 		// room's tick, after the stepper it calls a few instructions earlier.
 		_anims.stepLoops();
 
+		// A slot that has run out and leaves its frame behind goes into the
+		// plate, exactly as the original's drawer puts it on the background
+		// page. Room 10 is the case that needs it: opening the full fridge
+		// plays slot 3 and taking the bread plays slot 2, and while both were
+		// still drawing from their slots the older, higher one put the bread
+		// back on top of the shelf it had just been taken from.
+		_anims.bake(_background, _clipBottom);
+
 		// And the clock a few rooms run beside those calls, in the same part of
 		// the same tick: the library owl, the chimney, the sitting room's UFO
 		// (roomtick.cpp). It reads both gates itself, so it is called under the
@@ -1122,6 +1145,7 @@ void AlienEngine::stepClock() {
 
 		// And room 35's own machine, which is the water it starts full of and
 		// the hatch that ends it (sewer.cpp).
+		stepLab();
 		stepSewer();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
@@ -2563,10 +2587,19 @@ void AlienEngine::finishAction() {
 	// Every overlay calls the generic dispatch (10c9:sub_11c10) before running
 	// its own bodies, so the outcome speaks first. A code of zero means the room
 	// answers for itself -- except under "Look at", where the shared script
-	// supplies the canned line. An item use has no outcome of its own at all.
+	// supplies the canned line.
+	//
+	// **An item use takes neither.** The generic dispatch is called only from
+	// the plain-verb half of an overlay's click body -- the half behind
+	// `cmp [0xa956], 0x4e25` -- while an item use goes down the 0x4e22 half,
+	// which calls 10c9:sub_11aae instead (ovr_03_0e57:0x00b0 against 0x0223 is
+	// the plain shape of it). The port already zeroed the outcome for an item
+	// use, but the "Look at" fallback below it did not ask, so using an item on
+	// something whose rectangle carries the "Look at" verb spoke the canned
+	// "nothing special" line over the room's own animation (playtest report 7).
 	if (_pendingOutcome != 0 && _pendingOutcome != 0xff)
 		queueOutcome(_tal, _pendingOutcome, anchorX, anchorY);
-	else if (_pendingOutcome == 0 && spot.verb == kVerbLookAt)
+	else if (!item && _pendingOutcome == 0 && spot.verb == kVerbLookAt)
 		queueOutcome(_talkall, kOutcomeNothingSpecial, anchorX, anchorY);
 
 	// Then the room's own reaction. A body that queues an event of its own
@@ -2574,6 +2607,11 @@ void AlienEngine::finishAction() {
 	// both write the one queue, and the later call is the one that stands. An
 	// item use runs under verb 2 with the item as the third part of the key.
 	const byte verb = item ? kVerbUseTo : spot.verb;
+
+	// One room's arms have to be read *before* its body, because one of them is
+	// guarded on a flag the body sets (lab.cpp).
+	armLab(spot.obj, item != Inventory::kNoItem);
+
 	const bool handled = _script.run(spot.obj, verb, item);
 
 	// One object in the game is answered by a hook of its room's own rather
@@ -3030,16 +3068,21 @@ void AlienEngine::redraw() {
 	// A cutscene is the record's plate and its own slots and nothing else: the
 	// character is not in it, and the original hides the bar for its duration.
 	if (!_cutscene) {
-		// The room's DL2 sprite sheets are a viewer, not part of the room: which
-		// of them is on screen is the room's own business (the sprite_add
-		// calls), and none of that is ported. Drawing one anyway put
-		// a door in the entrance hall that the game only shows much later, in
-		// colours the hall's plate does not use. It stays behind the anim
-		// channel, where the arrow keys page through the banks.
+		// The room's DL2 sprite sheets are a viewer, not part of the room, and
+		// nothing here draws one: a loose object in the world is painted into
+		// the room's own plate, and taking it plays the patch frame that covers
+		// it over (finding #66) -- `OBJ:sprite_add` is the *inventory* add, not
+		// a world sprite. Drawing a sheet anyway put a door in the entrance hall
+		// that the game only shows much later, in colours the hall's plate does
+		// not use. It stays behind the anim channel, where the arrow keys page
+		// through the banks.
 		if (debugChannelSet(-1, kDebugAnim))
 			_sprite.drawFrame(_spriteFrame, _screen, _scrollX, _clipBottom);
 
-		_ben.draw(_screen, _scrollX, _clipBottom);
+		// [0xa94d]: while a room plays the character's own action on one of its
+		// slots, the walker is not drawn at all (lab.cpp).
+		if (_drawCharacter)
+			_ben.draw(_screen, _scrollX, _clipBottom);
 
 		// And the foreground the room authored over him, which is the whole of
 		// the original's depth model (occlusion.h).
