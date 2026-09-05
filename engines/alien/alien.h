@@ -194,6 +194,8 @@ private:
 	void startOpening();
 	void stepOpening();
 	void stepRoomClock();
+	void armSewerHatch(int obj, byte verb);
+	void stepSewer();
 	void cancelOpening();
 	void stepEnding();
 	void speakEnding(byte code);
@@ -395,6 +397,10 @@ private:
 	/// room that has one zeroes it as its overlay opens, so one counter serves
 	/// them all and loadRoom resets it.
 	uint16 _roomClock;
+
+	/// Room 35's [0xa49f] machine, of which the port runs the one state that
+	/// takes the hatch's exit (sewer.cpp). Zero when nothing is running.
+	byte _sewerStep;
 
 	/// Whether the room now composed still owes its fade in (fade.cpp). Room
 	/// init leaves the palette black and the loop's tail raises it, which is

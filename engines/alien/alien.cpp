@@ -206,7 +206,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true), _roomClock(0), _fadePending(false), _won(false),
+		_openingStep(0), _openingPending(true), _roomClock(0), _sewerStep(0), _fadePending(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -803,6 +803,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// Every room that runs a clock zeroes its counter as its overlay opens, so
 	// a room re-entered starts counting again (roomtick.cpp).
 	_roomClock = 0;
+	_sewerStep = 0;
 
 	_anims.loadRoom(room, _script);
 
@@ -1107,6 +1108,11 @@ void AlienEngine::stepClock() {
 		// (roomtick.cpp). It reads both gates itself, so it is called under the
 		// finer of the two.
 		stepRoomClock();
+
+		// And the one state of room 35's own machine the port runs: the hatch
+		// that ends the room and lets the front door of the house open
+		// (sewer.cpp).
+		stepSewer();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
 			nextSpeech();
@@ -2564,6 +2570,11 @@ void AlienEngine::finishAction() {
 	// than by a script body: room 7's light switch (bedroom.cpp).
 	if (!item && isBedroomSwitch(spot.obj))
 		bedroomSwitch(anchorX, anchorY);
+
+	// And one body carries a state the lift does not: the sewer hatch starts
+	// its room's [0xa49f] machine (sewer.cpp).
+	if (!item)
+		armSewerHatch(spot.obj, verb);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
 

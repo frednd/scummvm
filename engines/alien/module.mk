@@ -27,6 +27,7 @@ MODULE_OBJS = \
 	script.o \
 	s3m.o \
 	saveload.o \
+	sewer.o \
 	sfx.o \
 	tables.o \
 	tal.o \
