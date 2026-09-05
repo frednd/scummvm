@@ -344,8 +344,13 @@ void AlienEngine::playCutsceneRecord(uint number) {
 			case kStepSpeakB:
 				speaker = step.op == kStepSpeakA ? 0 : 1;
 				runCutsceneProc(rec->subProcs[speaker]);
+				// The record's own colour for this speaker, and then the entry
+				// itself: a scene never re-uploads its palette, so writing the
+				// port's copy alone left every line in whatever colour the
+				// plate happened to put at index 65.
 				setTextColor(rec->colors[speaker * 3 + 0], rec->colors[speaker * 3 + 1],
 							 rec->colors[speaker * 3 + 2]);
+				uploadTextColor();
 				speakCutsceneLine(step.arg, rec->points[speaker * 2 + 0],
 								  rec->points[speaker * 2 + 1]);
 				speaking = true;

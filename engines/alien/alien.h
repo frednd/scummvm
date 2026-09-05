@@ -226,6 +226,7 @@ private:
 	void stopSpeech();
 
 	void setTextColor(byte r, byte g, byte b);
+	void uploadTextColor();
 	void characterAnchor(int &x, int &y) const;
 	Common::String labelText(int x, int y) const;
 	Common::String hoverName() const;

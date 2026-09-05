@@ -2736,6 +2736,22 @@ void AlienEngine::drawSpotOverlay() {
 	}
 }
 
+/**
+ * Push the speaker colour at the DAC, which is what makes it visible.
+ *
+ * `setTextColor` only writes the port's own copy of the palette; the room path
+ * uploads that copy anyway a moment later, but a scene sets its speaker colours
+ * from inside its own loop, long after it uploaded the record's plate. The
+ * original programs the entry there and then -- `OBJ:sub_06417` (0251:0x3f07,
+ * `set_text_color`, docs/dialog_system.md 3C), which the scene loop calls every
+ * frame a line is up -- so the one entry goes down here the same way.
+ */
+void AlienEngine::uploadTextColor() {
+	g_system->getPaletteManager()->setPalette(_palette + Font::kInkColor * 3,
+											  Font::kInkColor, 1);
+	_dirty = true;
+}
+
 void AlienEngine::setTextColor(byte r, byte g, byte b) {
 	// The original reprograms a single DAC entry per speaker; the values in
 	// the disassembly are the VGA 6-bit ones, so they are widened here.
