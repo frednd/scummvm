@@ -190,6 +190,13 @@ void AnimSlots::stepLoops() {
 	}
 }
 
+void AnimSlots::stepLoopFlags() {
+	for (uint i = 0; i < kSlotCount; i++) {
+		if (_slots[i].loop == 1)
+			relaunch(i);
+	}
+}
+
 void AnimSlots::setLoopFlag(uint slot, byte value) {
 	if (slot < kSlotCount)
 		_slots[slot].loop = value;

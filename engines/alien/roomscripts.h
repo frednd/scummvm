@@ -109,7 +109,13 @@ enum ScriptOpcode {
  */
 enum ScriptCondKind {
 	kCondFlag = 0,		///< [addr] == value, in the state or the latch block
-	kCondItem			///< inv_has(addr) == value, a call rather than a load
+	kCondItem,			///< inv_has(addr) == value, a call rather than a load
+	kCondAbove			///< [addr] > value, reading [addr] as a word: the one
+						///< ordering guard in the vocabulary (`cmp` / `jbe`),
+						///< and the only shape that is not an equality. A
+						///< cutscene procedure uses it to wait on the scene
+						///< clock, which counts past 255, so the byte the
+						///< equality guards read would not do
 };
 
 /** One byte of the state block as a new game leaves it. */

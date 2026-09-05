@@ -94,6 +94,19 @@ public:
 	static const uint16 kAnimRemainingBase = 0xa4ea;
 	static const uint16 kAnimLoopBase = 0xa53a;
 
+	/// The state a cutscene procedure keeps, which is words rather than bytes
+	/// and sits outside both blocks above (see cutscenes.h): [0x343a] counts
+	/// the beats the step stream has run and [0x343c] is the state one of the
+	/// boss scenes switches on. Both are cleared as a scene opens, and neither
+	/// belongs in a save -- nothing outside a scene reads them.
+	static const uint16 kSceneBase = 0x343a;
+	static const uint kSceneCount = 4;
+
+	/// cutscene_pos [0xa49c]: the animation-tick clock a scene is measured
+	/// against, and the one word a guard compares with something other than
+	/// equality. It is a word because it counts a whole scene, well past 255.
+	static const uint16 kCutscenePos = 0xa49c;
+
 	/// No outcome code queued. The original uses zero for "nothing to say".
 	static const byte kNoEvent = 0;
 
@@ -208,11 +221,22 @@ public:
 	/// The whole state block and the latches, which is all a save carries.
 	void syncGame(Common::Serializer &s);
 
+	/// The scene clock, which the cutscene player steps once per animation tick
+	/// and a scene procedure may reset. Kept whole rather than as two flag
+	/// bytes because the ordering guard reads it as a word.
+	uint16 cutscenePos() const { return _cutscenePos; }
+	void setCutscenePos(uint16 pos) { _cutscenePos = pos; }
+
+	/// Clears the scene state and the clock, as CUTSCENE:sub_0d962 does before
+	/// it loads a record.
+	void resetScene();
+
 private:
 	bool holds(const ScriptCond &cond) const;
 	bool matches(const ScriptBlock &block, byte obj, byte verb, byte item) const;
 	void execute(const ScriptBlock &block);
-	void runEffect(const ScriptEffect &effect);
+	void runEffect(const ScriptEffect &effect, bool guarded = true);
+	static bool sameGuards(const ScriptEffect &a, const ScriptEffect &b);
 	void playAnim(const ScriptEffect &effect);
 	void inventoryEffect(const ScriptEffect &effect);
 	void soundEffect(const ScriptEffect &effect);
@@ -227,6 +251,8 @@ private:
 	SoundFX *_sound;
 	byte _flags[kFlagCount];
 	byte _latches[kLatchCount];
+	byte _scene[kSceneCount];
+	uint16 _cutscenePos;
 	const ScriptBlock *_blocks;
 	uint _blockCount;
 	int _room;

@@ -38,9 +38,15 @@ RoomScript::RoomScript() : _vm(nullptr), _anims(nullptr), _inventory(nullptr), _
 	reset();
 }
 
+void RoomScript::resetScene() {
+	memset(_scene, 0, sizeof(_scene));
+	_cutscenePos = 0;
+}
+
 void RoomScript::reset() {
 	memset(_flags, 0, sizeof(_flags));
 	memset(_latches, 0, sizeof(_latches));
+	resetScene();
 	_queued = kNoEvent;
 	_submode = kNoSubmode;
 
@@ -240,6 +246,11 @@ byte *RoomScript::flagSlot(uint16 addr) {
 		return &_flags[addr - kFlagBase];
 	if (addr >= kLatchBase && addr < kLatchBase + kLatchCount)
 		return &_latches[addr - kLatchBase];
+	// The scene words, which live beside the latches in the original's data
+	// segment and are read and written a byte at a time here: neither ever
+	// holds more than a handful, so the high byte of each is dead.
+	if (addr >= kSceneBase && addr < kSceneBase + kSceneCount)
+		return &_scene[addr - kSceneBase];
 	return nullptr;
 }
 
@@ -288,11 +299,25 @@ byte RoomScript::flag(uint16 addr) const {
 	if (animSlotByte(addr, value))
 		return value;
 
+	// The scene clock is a word the engine steps, so its two bytes are answered
+	// out of it rather than out of a block.
+	if (addr == kCutscenePos)
+		return (byte)_cutscenePos;
+	if (addr == kCutscenePos + 1)
+		return (byte)(_cutscenePos >> 8);
+
 	const byte *slot = flagSlot(addr);
 	return slot ? *slot : 0;
 }
 
 void RoomScript::setFlag(uint16 addr, byte value) {
+	// Every write to the clock in the game is a word store of zero -- a scene
+	// resetting it -- so writing the low byte writes the whole word.
+	if (addr == kCutscenePos) {
+		_cutscenePos = value;
+		return;
+	}
+
 	// The one animation-slot array a room does write: [0xa53a] is where it
 	// turns a loop of its own on and off, and it does so with a plain store
 	// beside the play that starts the animation.
@@ -319,6 +344,14 @@ void RoomScript::setFlag(uint16 addr, byte value) {
 
 bool RoomScript::holds(const ScriptCond &cond) const {
 	bool equal = false;
+
+	if (cond.kind == kCondAbove) {
+		// The ordering guard reads its address as a word, which is what the
+		// scene clock needs: it runs past 255 inside a single scene.
+		const uint16 word = flag(cond.addr) | ((uint16)flag(cond.addr + 1) << 8);
+		const bool above = word > cond.value;
+		return cond.negate ? !above : above;
+	}
 
 	if (cond.kind == kCondItem) {
 		// OBJ:0x6add returns 1 when the item is carried, and every guard lifted
@@ -377,16 +410,53 @@ void RoomScript::execute(const ScriptBlock &block) {
 		runEffect(*scriptEffect(block.first + i));
 }
 
+/**
+ * A run of effects lifted out of one procedure.
+ *
+ * Effects carry the guards of the arm they were lifted from, one copy each, and
+ * consecutive effects with the same guards *are* one arm. The original tests
+ * such an arm once and then runs its body, so the test has to be made once here
+ * too: one of the boss scenes opens its arm by storing into the very word the
+ * arm is guarded on, and answering the guard again for the next effect would
+ * drop the rest of the body on the floor.
+ */
 void RoomScript::runEffects(const ScriptEffect *effects, uint count) {
-	for (uint i = 0; i < count; i++)
-		runEffect(effects[i]);
+	uint i = 0;
+	while (i < count) {
+		uint end = i + 1;
+		while (end < count && sameGuards(effects[i], effects[end]))
+			end++;
+
+		bool taken = true;
+		for (uint g = 0; g < effects[i].guardCount && taken; g++)
+			taken = holds(effects[i].guards[g]);
+
+		if (taken) {
+			for (uint e = i; e < end; e++)
+				runEffect(effects[e], false);
+		}
+		i = end;
+	}
 }
 
-void RoomScript::runEffect(const ScriptEffect &original) {
+/** Whether two effects were lifted under the same arm. */
+bool RoomScript::sameGuards(const ScriptEffect &a, const ScriptEffect &b) {
+	if (a.guardCount != b.guardCount)
+		return false;
+	for (uint g = 0; g < a.guardCount; g++) {
+		if (a.guards[g].addr != b.guards[g].addr || a.guards[g].value != b.guards[g].value ||
+			a.guards[g].negate != b.guards[g].negate || a.guards[g].kind != b.guards[g].kind)
+			return false;
+	}
+	return true;
+}
+
+void RoomScript::runEffect(const ScriptEffect &original, bool guarded) {
 	// The arms inside a body: the refusal and the success path of the same click
 	// sit side by side, each under its own guard. A guard the port cannot answer
 	// -- an address outside the state block -- fails, so its arm is not taken.
-	for (uint g = 0; g < original.guardCount; g++) {
+	// A caller that has already answered them for the whole arm says so.
+	for (uint g = 0; guarded && g < original.guardCount; g++) {
 		if (!holds(original.guards[g]))
 			return;
 	}

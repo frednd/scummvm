@@ -155,6 +155,18 @@ public:
 	 */
 	void stepLoops();
 
+	/**
+	 * MIDAS:sub_18ee5: one pass over all sixteen slots, relaunching every slot
+	 * whose [0xa53a] byte is set.
+	 *
+	 * This is the *generic* loop stepper, and it is what a cutscene runs -- its
+	 * player calls it every pass of the scene loop, and the scene's procedures
+	 * turn the flag on beside the play they want repeated. A room does not use
+	 * it: each room's tick spells its relaunches out one call at a time, which
+	 * is what stepLoops() carries.
+	 */
+	void stepLoopFlags();
+
 	/// The original's [0xa53a] byte for one slot: whether the room has its
 	/// guarded loop turned on. Room code writes it as a plain flag.
 	void setLoopFlag(uint slot, byte value);

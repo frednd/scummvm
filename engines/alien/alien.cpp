@@ -1488,6 +1488,10 @@ static Common::String condText(const ScriptCond *conds, uint count) {
 		if (conds[i].kind == kCondItem)
 			out += Common::String::format("item %d %s %d", conds[i].addr,
 										  conds[i].negate ? "!=" : "==", conds[i].value);
+		// The ordering guard, which reads its address as a word.
+		else if (conds[i].kind == kCondAbove)
+			out += Common::String::format("[0x%04x] %s %d", conds[i].addr,
+										  conds[i].negate ? "<=" : ">", conds[i].value);
 		else
 			out += Common::String::format("[0x%04x] %s %d", conds[i].addr,
 										  conds[i].negate ? "!=" : "==", conds[i].value);

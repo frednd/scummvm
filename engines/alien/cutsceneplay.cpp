@@ -209,6 +209,11 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	uint stepCount = 0;
 	const CutsceneStep *steps = cutsceneSteps(*rec, stepCount);
 
+	// The scene's own state, cleared before anything is loaded exactly as the
+	// original clears it: the beat counter, the state word one of the boss
+	// scenes switches on, and the clock the procedures wait against.
+	_script.resetScene();
+
 	Graphics::Surface plate;
 	byte palette[256 * 3];
 	if (!loadGamePCX(Common::Path(rec->pcx), plate, palette)) {
@@ -300,6 +305,20 @@ void AlienEngine::playCutsceneRecord(uint number) {
 					_dirty = true;
 				}
 
+				// MIDAS:sub_18ee5, which the scene loop calls right behind the
+				// stepper: a scene marks the slot it wants repeated with the
+				// loop flag rather than spelling the relaunch out the way a
+				// room's tick does, and without this every talk cycle played
+				// once and then left its speaker on the frame the range came
+				// back to -- which for the mode 8 cycles is frame zero, so the
+				// character was not merely still, it was gone.
+				_anims.stepLoopFlags();
+
+				// The clock the procedures are measured against, stepped on the
+				// same tick the original steps it on (0c55:16d7, under
+				// anim_frame_due).
+				_script.setCutscenePos(_script.cutscenePos() + 1);
+
 				if (_speech && _speechTicks > 0) {
 					// The line's own procedure runs as it is about to come down,
 					// which is how a speaker stops moving on the last word
@@ -319,6 +338,11 @@ void AlienEngine::playCutsceneRecord(uint number) {
 
 			if ((tick & kAnimTickMask) == 0 && hold > 0 && --hold == 0)
 				advance = true;
+
+			// A finished slot that leaves its frame behind goes into the plate
+			// here too: the scene loop calls the same drawer a room's does, and
+			// the drawer is where the stamp happens (see AnimSlots::bake).
+			_anims.bake(_background, _clipBottom);
 		}
 
 		bool entered = false;	// a step was entered this pass, so the screen moved
@@ -358,24 +382,33 @@ void AlienEngine::playCutsceneRecord(uint number) {
 				hold = 0;
 				break;
 
-			case kStepBeat:
+			case kStepBeat: {
 				// A wordless beat: it runs its procedure and the stream moves on
-				// with nothing to wait for.
+				// with nothing to wait for. The beat counter is what tells that
+				// one procedure which beat this is -- the original steps it
+				// after the call, so the first beat sees zero -- and dropping it
+				// made every beat of a scene run every arm of its procedure at
+				// once.
 				runCutsceneProc(rec->subProcs[4]);
-				debugC(2, kDebugCutscene, "cutscene %u: beat", number);
+				const byte beats = _script.flag(RoomScript::kSceneBase);
+				_script.setFlag(RoomScript::kSceneBase, (byte)(beats + 1));
+				debugC(2, kDebugCutscene, "cutscene %u: beat %d", number, beats);
 				advance = true;
 				break;
+			}
 
 			default:
 				warning("cutscene %u: step %u has opcode %d", number, cursor - 1, step.op);
 				advance = true;
 				break;
 			}
-
-			// And the per-step procedure, which the original calls whatever the
-			// step was.
-			runCutsceneProc(rec->subProcs[6]);
 		}
+
+		// The seventh procedure is not a per-step one: the original calls it on
+		// every pass of the scene loop, past the step block and whether or not a
+		// step was entered (0c55:18b3). Only two records carry one, and both are
+		// timelines that wait on the clock rather than on the stream.
+		runCutsceneProc(rec->subProcs[6], true);
 
 		if (_dirty)
 			redraw();
@@ -423,15 +456,23 @@ void AlienEngine::sweepCutscenes() {
 	_cutsceneFast = false;
 }
 
-/** One of a record's eight procedures, or nothing for the empty slot 0. */
-void AlienEngine::runCutsceneProc(uint proc) {
+/**
+ * One of a record's eight procedures, or nothing for the empty slot 0.
+ *
+ * `quiet` is for the one the loop runs on every pass rather than on a step:
+ * how many times that is depends on the clock, so printing it would say
+ * something tools/check_cutscenes.py cannot mirror. What the procedure does is
+ * still visible -- its effects run through the same interpreter as any other.
+ */
+void AlienEngine::runCutsceneProc(uint proc, bool quiet) {
 	uint count = 0;
 	const ScriptEffect *effects = cutsceneProcEffects(proc, count);
 	if (!count)
 		return;
 
-	debugC(2, kDebugCutscene, "cutscene: proc %u (0c55:%04x), %u effects", proc,
-		   cutsceneProcAddr(proc), count);
+	if (!quiet)
+		debugC(2, kDebugCutscene, "cutscene: proc %u (0c55:%04x), %u effects", proc,
+			   cutsceneProcAddr(proc), count);
 	_script.runEffects(effects, count);
 }
 
