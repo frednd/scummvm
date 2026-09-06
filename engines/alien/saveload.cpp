@@ -151,6 +151,14 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 			loadRoom(room);
 		_ben.place(x, y, facing);
 		_ben.stop();
+
+		// And the camera the character's own placement carries in the original
+		// (CHARANIM:sub_13bce writes [0xa0c4] itself): loadRoom above put the
+		// room back at scroll zero, so a wide room restored with the character
+		// off to one side opened unscrolled and panned across on his first step
+		// (playtest report 7 of 2026-09-06).
+		updateScroll();
+
 		stopSpeech();
 		_pending = -1;
 		_pendingItem = Inventory::kNoItem;
@@ -471,6 +479,7 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 		if (loadRoom(room)) {
 			_ben.place(x, y);
 			_ben.stop();
+			updateScroll();
 		}
 	}
 
@@ -578,6 +587,10 @@ void AlienEngine::checkSaveRoundTrip() {
 	const int x = _ben.walkX();
 	const int y = _ben.walkY();
 
+	// The scroll is not a field of its own -- it is recomputed from where the
+	// character lands -- so it belongs in the comparison rather than in the file.
+	const int scroll = _scrollX;
+
 	// Move everything the save carries, so a field that is not written shows up
 	// as a field that does not come back.
 	_script.setFlag(RoomScript::kFlagBase + 0x40, 0x5A);
@@ -594,7 +607,7 @@ void AlienEngine::checkSaveRoundTrip() {
 
 	const bool same = _room == room && _mode == mode && _ben.walkX() == x &&
 					  _ben.walkY() == y && _script.flag(RoomScript::kFlagBase + 0x40) == 0 &&
-					  !_inventory.has(7) && _outcomeCounter[42] == 0;
+					  !_inventory.has(7) && _outcomeCounter[42] == 0 && _scrollX == scroll;
 
 	debugC(3, kDebugSave, "roundtrip %s: room %d mode %d at %d,%d, %u bytes",
 		   same ? "identical" : "DIFFERS", _room, _mode, _ben.walkX(), _ben.walkY(),

@@ -638,6 +638,19 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		break;
 	}
 
+	case PlayCommand::kSave:
+		debugC(1, kDebugPlay, "play: %u: save %d (room %d, scroll %d)", cmd.sourceLine,
+			   cmd.a, _room, _scrollX);
+		saveGameState(cmd.a, Common::String::format("play %u", cmd.sourceLine), false);
+		break;
+
+	case PlayCommand::kLoad:
+		debugC(1, kDebugPlay, "play: %u: load %d", cmd.sourceLine, cmd.a);
+		loadGameState(cmd.a);
+		debugC(1, kDebugPlay, "play: %u: loaded room %d, scroll %d", cmd.sourceLine, _room,
+			   _scrollX);
+		break;
+
 	case PlayCommand::kSpots:
 		debugC(1, kDebugPlay, "play: %u: spots: room %d, %u registered", cmd.sourceLine, _room,
 			   _spots.size());
@@ -1024,14 +1037,20 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 }
 
 /**
- * Recompute the live scroll offset the way `sub_13bce` does every frame:
- * `clamp(ben.x - 160, 0, roomWidth - 320)`, camera centered on Ben. Narrow
- * rooms (`_roomWidth == kScreenWidth`) always resolve to zero.
+ * Recompute the live scroll offset the way `CHARANIM:sub_13bce` does:
+ * `[0xa0c4] = clamp([0xa8ec] - 0xa0, 0, [0xa0c0] - 0x140)`. Narrow rooms
+ * (`_roomWidth == kScreenWidth`) always resolve to zero.
+ *
+ * The x it measures is the character's **sprite origin**, not the walk point --
+ * the two are ten pixels apart -- and the routine it lives in is the one that
+ * *places* him, so the original rewrites the camera on every placement rather
+ * than only while he walks. That is why this is called from the tick whether or
+ * not he is moving, and again wherever the character is put down (saveload.cpp).
  */
 void AlienEngine::updateScroll() {
 	int scroll = 0;
 	if (_roomWidth > kScreenWidth) {
-		scroll = _ben.walkX() - kScreenWidth / 2;
+		scroll = _ben.spriteX() - kScreenWidth / 2;
 		if (scroll < 0)
 			scroll = 0;
 		if (scroll > _roomWidth - kScreenWidth)
@@ -1234,8 +1253,12 @@ void AlienEngine::stepClock() {
 	const uint wasFrame = _ben.frame();
 	_ben.tick(_script.flag(0xa605) != 0);
 
+	// The camera follows him whether or not he is going anywhere: the original
+	// writes it from the placement routine, so a character put down by anything
+	// other than the mover moves it too.
+	updateScroll();
+
 	if (moving) {
-		updateScroll();
 		_dirty = true;
 	} else {
 		if (_ben.frame() != wasFrame)

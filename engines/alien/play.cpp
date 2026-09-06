@@ -107,6 +107,11 @@ bool PlayScript::load(const Common::String &path) {
 		} else if (verb == "snap") {
 			cmd.type = PlayCommand::kSnap;
 			cmd.s = tok.nextToken();
+		} else if (verb == "save" || verb == "load") {
+			// The state through the engine's own save path and back, which is
+			// the only way a script can reach what a restored game looks like.
+			cmd.type = verb == "save" ? PlayCommand::kSave : PlayCommand::kLoad;
+			cmd.a = parseInt(tok.nextToken());
 		} else if (verb == "spots") {
 			cmd.type = PlayCommand::kSpots;
 		} else if (verb == "quit") {

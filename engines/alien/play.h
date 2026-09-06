@@ -80,6 +80,8 @@ struct PlayCommand {
 		kCutscene,
 		kSnap,
 		kSpots,
+		kSave,
+		kLoad,
 		kQuit
 	};
 
