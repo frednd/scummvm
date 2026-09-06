@@ -3346,7 +3346,8 @@ void AlienEngine::redraw() {
 		if (_chat.isActive()) {
 			_chat.draw(_chatFont, _screen);
 		} else {
-			_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow, _hoverMenu);
+			_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow, _hoverMenu,
+							_heldItem);
 			drawLabel();
 		}
 	}

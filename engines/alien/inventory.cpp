@@ -348,7 +348,8 @@ Common::String Inventory::name(byte item) const {
 }
 
 void Inventory::blit(Graphics::Surface &dest, const Graphics::Surface &src,
-					 int srcX, int srcY, int w, int h, int dstX, int dstY) const {
+					 int srcX, int srcY, int w, int h, int dstX, int dstY,
+					 bool transparent) const {
 	if (!src.getPixels())
 		return;
 
@@ -360,7 +361,10 @@ void Inventory::blit(Graphics::Surface &dest, const Graphics::Surface &src,
 			const int sx = srcX + col, dx = dstX + col;
 			if (sx < 0 || sx >= src.w || dx < 0 || dx >= dest.w)
 				continue;
-			*((byte *)dest.getBasePtr(dx, dy)) = *((const byte *)src.getBasePtr(sx, sy));
+			const byte pixel = *((const byte *)src.getBasePtr(sx, sy));
+			if (transparent && !pixel)
+				continue;
+			*((byte *)dest.getBasePtr(dx, dy)) = pixel;
 		}
 	}
 }
@@ -368,13 +372,14 @@ void Inventory::blit(Graphics::Surface &dest, const Graphics::Surface &src,
 void Inventory::drawIcon(const StaticTables &tables, Graphics::Surface &dest,
 						 byte item, uint slot, bool hover) const {
 	blit(dest, _icons, tables.itemIconX(item), tables.itemIconY(item),
-		 kSlotWidth, kSlotHeight, kSlotX[slot], kSlotY);
+		 kSlotWidth, kSlotHeight, kSlotX[slot], kSlotY, true);
 
 	if (!hover)
 		return;
 
 	// The highlight is a palette swap over the drawn slot rather than a second
 	// bitmap: OBJ:0x4011 walks the block and rewrites one index.
+	uint swapped = 0;
 	for (int row = 0; row < kHighlightHeight; row++) {
 		const int y = kHighlightY + row;
 		if (y < 0 || y >= dest.h)
@@ -384,10 +389,13 @@ void Inventory::drawIcon(const StaticTables &tables, Graphics::Surface &dest,
 			if (x < 0 || x >= dest.w)
 				continue;
 			byte *pixel = (byte *)dest.getBasePtr(x, y);
-			if (*pixel == kHighlightFrom)
+			if (*pixel == kHighlightFrom) {
 				*pixel = kHighlightTo;
+				swapped++;
+			}
 		}
 	}
+	debugC(3, kDebugItems, "bar: slot %u lit, %u pixels swapped", slot, swapped);
 }
 
 void Inventory::drawPanel(Graphics::Surface &dest) const {
@@ -411,15 +419,24 @@ void Inventory::drawThumb(Graphics::Surface &dest) const {
 }
 
 void Inventory::draw(const StaticTables &tables, Graphics::Surface &dest,
-					 int hoverSlot, Arrow hoverArrow, bool hoverMenu) const {
+					 int hoverSlot, Arrow hoverArrow, bool hoverMenu,
+					 byte heldItem) const {
 	// The plate first: everything below is cut into the recesses it draws, and
 	// it is also what erases the previous frame's icons.
 	drawPanel(dest);
 
 	for (uint slot = 0; slot < kSlotCount; slot++) {
 		const byte item = slotItem(slot);
-		if (item)
-			drawIcon(tables, dest, item, slot, (int)slot == hoverSlot);
+		if (!item)
+			continue;
+
+		// Lit because the cursor is in it, or because it is the item in hand.
+		// The original compares the slot's place in the list against [0xa859]
+		// rather than the item itself; the list never carries the same item
+		// twice, so matching on the item comes to the same thing and survives
+		// the hand being filled by something other than a click on the bar.
+		drawIcon(tables, dest, item, slot,
+				 (int)slot == hoverSlot || (heldItem && item == heldItem));
 	}
 
 	const bool up = arrowEnabled(kArrowUp), down = arrowEnabled(kArrowDown);

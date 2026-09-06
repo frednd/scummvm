@@ -131,9 +131,15 @@ public:
 	 * the page leaves them, the save button and the thumb. `hoverSlot`,
 	 * `hoverArrow` and `hoverMenu` are what the cursor is over, or -1,
 	 * kArrowNone and false.
+	 *
+	 * `heldItem` is what is in the hand, whose own slot stays lit for as long as
+	 * it is held: OBJ:sub_06ac6 lights a slot at 0x1d either because the cursor
+	 * is inside it or because its place in the list matches [0xa859], which the
+	 * click that took the item into the hand wrote (1021:0x955).
 	 */
 	void draw(const StaticTables &tables, Graphics::Surface &dest,
-			  int hoverSlot, Arrow hoverArrow, bool hoverMenu) const;
+			  int hoverSlot, Arrow hoverArrow, bool hoverMenu,
+			  byte heldItem = kNoItem) const;
 
 	/** For the debug dump: the raw list, index 1..100. */
 	byte at(uint index) const { return index < kListSize ? _list[index] : kNoItem; }
@@ -148,8 +154,12 @@ public:
 	void syncGame(Common::Serializer &s);
 
 private:
+	/// `transparent` skips colour 0, which is what OBJ:blit_ems_to_far does at
+	/// 0251:0760 -- the icons are cut out of their tile that way, and the recess
+	/// they sit in shows around them.
 	void blit(Graphics::Surface &dest, const Graphics::Surface &src,
-			  int srcX, int srcY, int w, int h, int dstX, int dstY) const;
+			  int srcX, int srcY, int w, int h, int dstX, int dstY,
+			  bool transparent = false) const;
 	void drawIcon(const StaticTables &tables, Graphics::Surface &dest,
 				  byte item, uint slot, bool hover) const;
 	void drawThumb(Graphics::Surface &dest) const;
