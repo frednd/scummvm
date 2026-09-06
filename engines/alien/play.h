@@ -57,6 +57,9 @@ namespace Alien {
  *   expect noitem N         assert the item is not held
  *   expect flag ADDR VAL    assert a state-block byte (hex address, e.g.
  *                           0xa650) equals VAL
+ *   flag ADDR VAL           write a state-block byte, to put the game in a
+ *                           state a script would otherwise have to play its
+ *                           way to (the bedroom needs the lab's fuse in)
  *   cutscene N              raise scene id N, the way a room's own code does
  *   snap NAME               write the composed screen to NAME.png
  *   spots                   log the room's current hotspot list on the play
@@ -82,6 +85,7 @@ struct PlayCommand {
 		kSpots,
 		kSave,
 		kLoad,
+		kFlag,
 		kQuit
 	};
 

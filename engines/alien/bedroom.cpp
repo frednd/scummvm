@@ -19,6 +19,8 @@
  *
  */
 
+#include "common/system.h"
+
 #include "alien/alien.h"
 #include "alien/detection.h"
 #include "alien/resources.h"
@@ -77,11 +79,20 @@ static const int8 kClickPanning = -20;
 /**
  * Reload the room's plates, as room 7 does when its light changes.
  *
- * The original fades the screen out (UTIL:sub_0213e), calls the overlay's own
- * loader for whichever set [0xa6fa] now names and redraws. Only the plate and
- * the foreground sheet change: the walk mask, the banks and the animation slots
- * belong to the room and stay as they are, which is why this is not a room
- * load.
+ * The original blacks the screen out (UTIL:sub_0213e, which zeroes the DAC
+ * staging block and waits one tick -- a blackout, not a fade), calls the
+ * overlay's own loader for whichever set [0xa6fa] now names, and lets the tick
+ * put the whole framebuffer up again ([0xa820] = 1, read at ovr_07_0e63:0xd78).
+ * Only the plate and the foreground sheet change: the walk mask, the banks and
+ * the animation slots belong to the room and stay as they are, which is why
+ * this is not a room load.
+ *
+ * The loader it calls is `OBJ:sub_07b70`, the room loader's own, and it runs
+ * with `[0xd12c] = 1` -- the PCX loader's "take this file's palette" gate -- so
+ * the new plate's colours reach the DAC as part of the swap. That is the half
+ * the port had missing: it copied the palette into `_palette` and never
+ * uploaded it, so the lit bedroom's pixels went up under the dark room's
+ * colours (playtest report 6).
  */
 void AlienEngine::reloadPlates() {
 	Graphics::Surface loaded;
@@ -93,12 +104,26 @@ void AlienEngine::reloadPlates() {
 		return;
 	}
 
+	// Black first, for the one tick the original spends there. Nothing is
+	// redrawn under it: the pixels on screen are the old room's and the palette
+	// they are shown through is dead, which is what the blackout looks like.
+	uploadPalette(_palette, 0);
+	g_system->updateScreen();
+
 	_background.free();
 	_background = loaded;
 	memcpy(_palette, palette, sizeof(_palette));
 	applyCharPalette(_room);
 	loadOccluder(_room);
 	loadLightMap(_room);
+
+	// And then the new plate's palette, whole, the way the loader installs it.
+	// The status line's own three entries are the game's and not the plate's,
+	// so they go back over it -- the same order loadRoom settles them in. The
+	// speech ink looks after itself: the per-room pass re-applies it before the
+	// next line is drawn.
+	uploadPalette(_palette, 0x100);
+	resetLabelColors();
 	_dirty = true;
 
 	debugC(1, kDebugBedroom, "bedroom: plates are now %s", name.c_str());
@@ -149,6 +174,13 @@ void AlienEngine::bedroomSwitch(int anchorX, int anchorY) {
 		_script.setFlag(kSpokenFlag, 1);
 
 		_anims.play(4, 1, 7, 4, 1);
+
+		// 10c9:sub_113f0 at 0x1b4, the room's own plate routine: every frame
+		// the bedroom's puzzle flags say belongs in the background is stamped
+		// into the plate that was just loaded. All seven of room 7's steps are
+		// guarded on the light being on, so this is the one path that runs
+		// them -- and without it the lit room came up with a bare plate.
+		openRoomPlate(_room);
 		break;
 
 	case 6:

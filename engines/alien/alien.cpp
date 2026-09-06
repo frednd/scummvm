@@ -610,6 +610,11 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		}
 		break;
 
+	case PlayCommand::kFlag:
+		debugC(1, kDebugPlay, "play: %u: flag 0x%04x = %d", cmd.sourceLine, cmd.a, cmd.b);
+		_script.setFlag((uint16)cmd.a, (byte)cmd.b);
+		break;
+
 	case PlayCommand::kExpectFlag: {
 		const byte got = _script.flag((uint16)cmd.a);
 		if (got == (byte)cmd.b) {

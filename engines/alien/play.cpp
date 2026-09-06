@@ -112,6 +112,12 @@ bool PlayScript::load(const Common::String &path) {
 			// the only way a script can reach what a restored game looks like.
 			cmd.type = verb == "save" ? PlayCommand::kSave : PlayCommand::kLoad;
 			cmd.a = parseInt(tok.nextToken());
+		} else if (verb == "flag") {
+			// Not something the player can do: a way to reach a state the
+			// script would otherwise have to play the whole chain up to.
+			cmd.type = PlayCommand::kFlag;
+			cmd.a = parseInt(tok.nextToken());
+			cmd.b = parseInt(tok.nextToken());
 		} else if (verb == "spots") {
 			cmd.type = PlayCommand::kSpots;
 		} else if (verb == "quit") {
