@@ -50,6 +50,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugBedroom, "bedroom", "Room 7's light switch, and the plates it swaps"},
 	{Alien::kDebugLight, "light", "The room light maps, and the character palette they scale"},
 	{Alien::kDebugChat, "chat", "The conversation menu and the tree behind it"},
+	{Alien::kDebugPlate, "plate", "What a room stamps into its plate as it opens"},
 	DEBUG_CHANNEL_END
 };
 

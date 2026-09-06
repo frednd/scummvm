@@ -20,9 +20,11 @@ MODULE_OBJS = \
 	occlusion.o \
 	opening.o \
 	overlay.o \
+	plates.o \
 	play.o \
 	resources.o \
 	roominit.o \
+	roomplate.o \
 	roomscripts.o \
 	roomtick.o \
 	script.o \

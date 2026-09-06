@@ -375,6 +375,11 @@ Common::Error AlienEngine::run() {
 	if (debugChannelSet(-1, kDebugOcclusion))
 		dumpOcclusion();
 
+	// The plate channel prints what tools/check_plates.py mirrors: every step of
+	// every room's plate routine in the resident 10c9 unit.
+	if (debugChannelSet(-1, kDebugPlate))
+		dumpPlates();
+
 	// The light channel prints what tools/check_lighting.py mirrors: which plate
 	// each room reads its brightness from, and at level 2 those plates sampled
 	// on a grid.
@@ -861,6 +866,13 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// from tools/gen_roominit.py. The state block is not touched here: puzzle
 	// flags outlive the room they were set in.
 	_script.enterRoom(room);
+
+	// And then the plate patch-up: the room's own routine in the resident 10c9
+	// unit, which stamps into the background page every frame the puzzle state
+	// says belongs there -- the door left open, the shelf pushed aside, the item
+	// already taken -- and starts the slots the room opens with running
+	// (roomplate.cpp). The original calls it last, so it runs last here too.
+	openRoomPlate(room);
 
 	// And the one room whose open carries more than the lift can express: the
 	// sewer's ladder, and the water it may still be full of (sewer.cpp).

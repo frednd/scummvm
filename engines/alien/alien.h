@@ -212,7 +212,9 @@ private:
 
 	void armSewer(int obj, byte verb);
 	void enterSewer();
-	void openSewerPlate();
+	void openRoomPlate(int room);
+	void dumpPlates();
+	static Common::String argText(uint16 arg);
 	void stepSewer();
 	void sewerValve();
 	void cancelOpening();

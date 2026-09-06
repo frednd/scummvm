@@ -159,48 +159,10 @@ void AlienEngine::sewerValve() {
 	_script.setFlag(kValveOpen, _script.flag(kValveOpen) == 0 ? 1 : 0);
 }
 
-/**
- * 10c9:sub_117f5, the last thing room 35's enter routine calls.
- *
- * This is the room's *plate patch-up*: it brings the background page up to date
- * with the puzzle state by stamping one frame of a slot at a time
- * (10c9:sub_1132a, a write straight to the background buffer with no slot left
- * running), and then it starts the one animation the room opens with -- slot 3,
- * SEW_WATE, the surface of the water, thirty-one frames at rate 3, while
- * [0x33be] says the room is still flooded.
- *
- * **That play is the starter the valve waits for** (see the header comment):
- * state 0x32 holds until slot 3 comes round to frame 2, nothing in the
- * overlay's own nine play calls touches slot 3, and the port had nothing here,
- * so the drain -- and with it the hatch, scene 6 and the front door of the
- * house -- could never be reached. It was never in the overlay to find: the
- * room reaches it through a resident routine, one of a family of per-room
- * stampers in segment 10c9 that a room's enter routine calls by address.
- */
-void AlienEngine::openSewerPlate() {
-	// The hatch, if a previous visit left it open, and the manhole cover it
-	// pushes aside.
-	if (_script.flag(kHatchOpen) == 1)
-		_anims.stamp(kHatchSlot, 0x1D, _background);
-	if (_script.flag(0xa776) == 0)
-		_anims.stamp(0, 2, _background);
-
-	if (_script.flag(kFlooded) == 1) {
-		_anims.stamp(2, 1, _background);
-		_anims.play(kRippleSlot, 1, 31, 3, 1);
-		debugC(1, kDebugRooms, "sewer: the water is up, slot %u runs", kRippleSlot);
-	}
-
-	// And the valve, which is drawn on whichever side its own flag has it.
-	_anims.stamp(kValveSlot, _script.flag(kValveOpen) == 1 ? 6 : 1, _background);
-}
-
 /// The room has just opened: the ladder down, when he came in over it.
 void AlienEngine::enterSewer() {
 	if (_room != kSewerRoom)
 		return;
-
-	openSewerPlate();
 
 	// Room init's own effects are lifted already, the placement and the
 	// backwards ladder play among them (roominit.cpp); what is left is the pair
