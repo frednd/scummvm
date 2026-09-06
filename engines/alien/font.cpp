@@ -141,7 +141,8 @@ int Font::measure(const Common::String &text) const {
 	return measure((const byte *)text.c_str(), text.size());
 }
 
-void Font::drawString(Graphics::Surface &dest, const byte *text, uint length, int x, int y) const {
+void Font::drawString(Graphics::Surface &dest, const byte *text, uint length, int x, int y,
+					  int clipLeft, int clipRight) const {
 	if (!isLoaded())
 		return;
 
@@ -150,6 +151,12 @@ void Font::drawString(Graphics::Surface &dest, const byte *text, uint length, in
 		const Glyph &g = _glyphs[text[i]];
 		if (!g.valid)
 			continue;
+
+		// A glyph outside the margins is stepped over, not moved inside them.
+		if (pen <= clipLeft || pen >= clipRight) {
+			pen += advance(g);
+			continue;
+		}
 
 		for (int row = 0; row < glyphHeight(); row++) {
 			int dy = y + row;
@@ -175,8 +182,9 @@ void Font::drawString(Graphics::Surface &dest, const byte *text, uint length, in
 	}
 }
 
-void Font::drawString(Graphics::Surface &dest, const Common::String &text, int x, int y) const {
-	drawString(dest, (const byte *)text.c_str(), text.size(), x, y);
+void Font::drawString(Graphics::Surface &dest, const Common::String &text, int x, int y,
+					  int clipLeft, int clipRight) const {
+	drawString(dest, (const byte *)text.c_str(), text.size(), x, y, clipLeft, clipRight);
 }
 
 void Font::drawStringOffset(Graphics::Surface &dest, const Common::String &text, int x, int y,

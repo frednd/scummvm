@@ -128,7 +128,10 @@ static const int kLiftRooms[] = { 51, 53, 57 };
 // centred on x = 150 and its glyphs are blitted with their top row at y = 163.
 static const int kLabelCenterX = 150;
 static const int kLabelY = 163;
+// The margins the status line is cropped at, OBJ:sub_08177's 0x2e and 0x109: a
+// glyph starting at or outside either is not drawn, and the pen steps over it.
 static const int kLabelLeft = 46;
+static const int kLabelRight = 265;
 
 // The label font draws in three palette entries of its own, 66..68, which the
 // original programs directly rather than taking from the room's plate: OBJ's
@@ -3207,11 +3210,16 @@ void AlienEngine::drawLabel() {
 	if (_labelShown.empty())
 		return;
 
-	int x = kLabelCenterX - _labelFont.measure(_labelShown) / 2;
-	if (x < kLabelLeft)
-		x = kLabelLeft;
+	// Centred on the line and never moved off centre: OBJ:sub_080c5 measures the
+	// string and leaves 0x88 minus half of it in [0xa896], with no clamp of any
+	// kind. A line wider than the space it has is cropped at both margins by the
+	// draw instead -- OBJ:sub_08177 steps the pen over any glyph that starts at
+	// or outside 0x2e and 0x109 -- so it stays centred and loses its ends.
+	const int x = kLabelCenterX - _labelFont.measure(_labelShown) / 2;
+	debugC(3, kDebugItems, "line: \"%s\" %d wide at x %d", _labelShown.c_str(),
+		   _labelFont.measure(_labelShown), x);
 
-	_labelFont.drawString(_screen, _labelShown, x, kLabelY);
+	_labelFont.drawString(_screen, _labelShown, x, kLabelY, kLabelLeft, kLabelRight);
 }
 
 void AlienEngine::drawSpeech(const TalFile::Entry &entry, int anchorX, int anchorY) {

@@ -85,9 +85,20 @@ public:
 	 * Draw a CP850 string with its top left corner at (x, y). Glyphs are
 	 * copied as palette indices, so the speaker color follows from whatever
 	 * the palette holds at kInkColor.
+	 *
+	 * `clipLeft` and `clipRight` are the margins a glyph must start between to
+	 * be drawn at all, the status line's own: OBJ:sub_08177 skips a glyph whose
+	 * pen is at or left of 0x2e and at or right of 0x109, and steps the pen
+	 * either way, so a line too long for the line loses its ends and what is
+	 * left stays where it would have been. kNoClip is what everything else
+	 * passes.
 	 */
-	void drawString(Graphics::Surface &dest, const byte *text, uint length, int x, int y) const;
-	void drawString(Graphics::Surface &dest, const Common::String &text, int x, int y) const;
+	enum { kNoClip = -0x4000, kNoClipRight = 0x4000 };
+
+	void drawString(Graphics::Surface &dest, const byte *text, uint length, int x, int y,
+					int clipLeft = kNoClip, int clipRight = kNoClipRight) const;
+	void drawString(Graphics::Surface &dest, const Common::String &text, int x, int y,
+					int clipLeft = kNoClip, int clipRight = kNoClipRight) const;
 
 	/**
 	 * The same, with every pixel of the glyph forced to one index.
