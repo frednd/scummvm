@@ -1424,6 +1424,13 @@ void AlienEngine::lookAtItem(byte item) {
 	if (!item)
 		return;
 
+	// The click reports itself the way a click on a room object does: 10c9's
+	// look routine sets [0xa825] to 5 at 0x4ae before it speaks, and the mode
+	// byte is what 1021:0x85e turns into a status line, indexing the verb table
+	// at DS:0x3221 by it -- entry 5 is "Look at". The name it appends is
+	// [0xabb8], which the hover pass has already filled with the item's own.
+	setClickLabel(_tables.verb(kVerbLookAt), kLabelHoldVerb);
+
 	// The answers to a look at a carried item are in the shared file, not the
 	// room's own, and Ben is the one saying them.
 	const byte code = _inventory.lookOutcome(_tables, item);
@@ -3069,19 +3076,25 @@ Common::String AlienEngine::labelText(int x, int y) const {
 		return text;
 	}
 
-	if (_hover >= 0) {
-		const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
-		if (!entry.lines.empty())
-			return entry.lines[0];
-	}
-
-	return Common::String();
+	// Which is [0xabb8] as the hover pass left it, the bar included.
+	return hoverName();
 }
 
 Common::String AlienEngine::hoverName() const {
 	// [0xabb8] on its own: what the click lines append their verb word to. It is
 	// empty over bare floor, and the original appends it regardless, so a walk
 	// onto nothing really does read as the bare verb.
+
+	// The bar fills the same buffer: HOTSPOT:sub_1353e walks the six slots of
+	// the page on show and, over a filled one, calls DIALOG:sub_0b930 for the
+	// item's name and copies it into [0xabb8] (1336:0x1b2). So a carried item
+	// names itself under the cursor exactly as a room object does.
+	if (_hoverSlot >= 0) {
+		const byte item = _inventory.slotItem((uint)_hoverSlot);
+		if (item)
+			return _inventory.name(item);
+	}
+
 	if (_hover >= 0) {
 		const TalFile::Entry &entry = _labels.entry(_spots[_hover].label);
 		if (!entry.lines.empty())
@@ -3098,6 +3111,7 @@ void AlienEngine::setClickLabel(const Common::String &verb, uint hold) {
 	// just done rather than previewing what a click would do.
 	const Common::String name = hoverName();
 	_labelText = name.empty() ? verb : verb + " " + name;
+	debugC(2, kDebugItems, "line: \"%s\" (click)", _labelText.c_str());
 	_labelShown = _labelText;
 	_labelFading = false;
 	_labelHold = hold;
@@ -3117,6 +3131,7 @@ void AlienEngine::refreshLabel(int x, int y) {
 
 	_labelText = text;
 	_dirty = true;
+	debugC(2, kDebugItems, "line: \"%s\"", _labelText.c_str());
 
 	// OBJ:sub_086f4 compares this frame's line against the last one: a new
 	// non-empty line is redrawn at full brightness, and a line that has just
