@@ -126,7 +126,7 @@ bool TalFile::loadStream(Common::SeekableReadStream &stream) {
 				_chat[t][o].entry = rec[0];
 				_chat[t][o].line = rec[1];
 				_chat[t][o].lines = rec[2];
-				_chat[t][o].spare = rec[3];
+				_chat[t][o].reply = rec[3];
 				_chat[t][o].next = rec[4];
 			}
 		}

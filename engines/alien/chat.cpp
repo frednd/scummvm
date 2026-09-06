@@ -20,6 +20,7 @@
  */
 
 #include "common/events.h"
+#include "common/file.h"
 #include "common/system.h"
 #include "common/util.h"
 #include "graphics/cursorman.h"
@@ -375,6 +376,45 @@ static const int kChatLineTicks = 0x3c;
 static const uint kChatFirstEntry = 66;
 static const uint kChatEntryCount = 14;
 
+void AlienEngine::sweepChatTrees() {
+	// Every room's tree, printed the way tools/check_chat.py prints it from the
+	// files. Most rooms carry an all-zero table: only the ones with somebody to
+	// talk to fill one in, so a room with nothing is named and skipped.
+	TalFile tal;
+
+	for (int room = 0; room < StaticTables::kRoomCount; room++) {
+		RoomAssets assets;
+		Common::Path script;
+		if (_overlays.readRoom(room, assets) && !assets.script.empty())
+			script = Common::Path(assets.script);
+		else
+			script = Common::Path(Common::String::format("ROOM%d.TAL", room));
+
+		if (!Common::File::exists(script) || !tal.load(script))
+			continue;
+
+		uint topics = 0;
+		for (uint topic = 0; topic < TalFile::kChatTopics; topic++)
+			if (tal.chatOptionCount(topic))
+				topics++;
+
+		if (!topics)
+			continue;
+
+		debug("tree room %2d %s: %u topic%s", room, script.toString().c_str(), topics,
+			  topics == 1 ? "" : "s");
+
+		for (uint topic = 0; topic < TalFile::kChatTopics; topic++) {
+			const uint count = tal.chatOptionCount(topic);
+			for (uint i = 0; i < count; i++) {
+				const TalFile::ChatOption &o = tal.chatOption(topic, i);
+				debug("option room %2d topic %2u %u: entry %3u line %u lines %u next %3u",
+					  room, topic, i + 1, o.entry, o.line, o.lines, o.next);
+			}
+		}
+	}
+}
+
 void AlienEngine::openChat(uint topic) {
 	if (!_chatColorsHeld) {
 		memcpy(_chatPalette, _palette + kChatFirstEntry * 3, sizeof(_chatPalette));
@@ -404,8 +444,7 @@ void AlienEngine::stepChat() {
 		return;
 	}
 
-	const Common::Point mouse = g_system->getEventManager()->getMousePos();
-	_chat.tick(mouse.y, speechDone());
+	_chat.tick(_cursorY, speechDone());
 
 	// What the player just said, spoken over him: the option is a slice of one
 	// of the file's entries rather than an entry of its own.
@@ -420,8 +459,11 @@ void AlienEngine::stepChat() {
 
 		int x = 0, y = 0;
 		characterAnchor(x, y);
-		if (line.present)
+		if (line.present) {
 			speakEntry(line, x, y, kChatLineTicks);
+			debugC(1, kDebugChat, "chat: \"%s\"%s", line.lines[0].c_str(),
+				   line.lines.size() > 1 ? " ..." : "");
+		}
 	}
 
 	_chat.applyPalette(_palette);

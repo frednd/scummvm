@@ -90,16 +90,22 @@ public:
 	 * dialog entry and `line` and `lines` cut a window out of it, so one entry
 	 * holds every option of a topic and each option is a slice. `next` is the
 	 * topic the conversation moves to once the line has been spoken.
+	 *
+	 * `reply` is the outcome code the other party answers with, and it is read
+	 * by the room rather than by the menu: room 21's entry 4 body picks it out
+	 * at offset +3 and hands it to DIALOG:sub_0bcba in Yodle's own colour
+	 * (ovr_15_0ea7:0x05e9). A zero means the room answers for itself, which is
+	 * what room 8's owl does.
 	 */
 	struct ChatOption {
 		byte entry;
 		byte line;
 		byte lines;
-		byte spare;			///< always zero in the shipped files
+		byte reply;			///< the outcome the other party answers with, 0 for none
 		byte next;
 
-		ChatOption() : entry(0), line(0), lines(0), spare(0), next(0) {}
-		bool present() const { return entry || line || lines || spare || next; }
+		ChatOption() : entry(0), line(0), lines(0), reply(0), next(0) {}
+		bool present() const { return entry || line || lines || reply || next; }
 	};
 
 	struct Outcome {

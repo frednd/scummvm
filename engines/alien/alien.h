@@ -244,6 +244,7 @@ private:
 	void speakEntry(const TalFile::Entry &entry, int anchorX, int anchorY, int ticks);
 	bool speechDone() const { return !_speech && _queueNext >= _queueCount; }
 
+	void sweepChatTrees();
 	void openChat(uint topic);
 	void stepChat();
 
@@ -428,6 +429,13 @@ private:
 
 	/// Room 8's [0xa49f] machine: talking to the owl.
 	byte _libraryStep;
+
+	/// [0x8d02] and [0x8d04]: where the cursor was when the hover last ran. The
+	/// conversation menu tests the cursor against its own bands from the room's
+	/// tick rather than from an event, so it reads this rather than the host's
+	/// pointer -- which is also what lets a play script's `hover` reach it.
+	int _cursorX;
+	int _cursorY;
 
 	/// The eight palette entries the conversation menu owns while it is up
 	/// (66, 67 and 74..79), as the room left them, and whether they are still

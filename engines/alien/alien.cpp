@@ -202,7 +202,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
-		_dialogId(1), _speechCustom(false), _libraryStep(0), _chatColorsHeld(false),
+		_dialogId(1), _speechCustom(false), _libraryStep(0),
+		_cursorX(0), _cursorY(0), _chatColorsHeld(false),
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
@@ -305,6 +306,11 @@ Common::Error AlienEngine::run() {
 
 	if (debugChannelSet(2, kDebugRooms))
 		tourRooms();
+
+	// The conversation trees, which tools/check_chat.py mirrors out of the same
+	// files (chat.cpp).
+	if (debugChannelSet(2, kDebugChat))
+		sweepChatTrees();
 
 	// Nothing in a scripted run reaches the pod with [0xa7d2] set yet, so the
 	// channel starts the sequence itself: --debugflags=ending -b 59.
@@ -1251,6 +1257,9 @@ void AlienEngine::updateHover(int x, int y) {
 	// as empty as it keeps the arrow invisible.
 	if (_openingStep)
 		return;
+
+	_cursorX = x;
+	_cursorY = y;
 
 	const int roomX = x + _scrollX;
 
@@ -2509,11 +2518,13 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 
 	// While the conversation menu is listed it owns the bottom of the screen:
 	// a click there picks an option and never reaches the room (chat.cpp).
+	// While the conversation menu is listed nothing else answers a click:
+	// OBJ:sub_0967e sets [0xa604], which is the flag 1021's click dispatch tests
+	// before it walks anybody anywhere.
 	if (_chat.isActive()) {
-		if (!rightButton && _chat.click(y))
-			return;
-		if (y >= ChatMenu::kBandTop)
-			return;
+		if (!rightButton)
+			_chat.click(y);
+		return;
 	}
 
 	// 1021:0x6c1, the first thing the dispatch does: the line the last click
