@@ -209,6 +209,7 @@ private:
 	void stepRoomClock();
 	void armLab(int obj, bool item);
 	void stepLab();
+	void stepLabHole();
 
 	void armSewer(int obj, byte verb);
 	void enterSewer();
@@ -478,6 +479,10 @@ private:
 	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
 	/// every tick pair, which two of that room's steps time themselves off.
 	uint16 _labPos;
+
+	/// [0xa7a4]/[0xa7a5]: whether the character stood inside room 3's creak
+	/// rectangle on the last tick, which is the edge the two samples fire on.
+	bool _labNearHole;
 
 	/// [0xa94d]: whether the character is drawn at all. Every room's tick tests
 	/// it before calling OBJ:sub_06466, and a room clears it while it plays the

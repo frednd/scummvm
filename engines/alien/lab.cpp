@@ -83,6 +83,24 @@ static const byte kStepTerminal = 0x3c;
 static const uint16 kPlankWait = 10;
 static const uint16 kTerminalWait = 0x46;
 
+// The room's other hook, ovr_03_0e57:0x0b3e, which its tick runs while the hole
+// is still boarded up ([0xa6dc] == 1, tested at 0x0e7a). It is a proximity
+// trigger and not a hotspot: a rectangle in *sprite* space that the character's
+// own position is tested against every tick, creaking once as he steps into it
+// (0x0b10) and once as he leaves (0x0b27). The bounds are exclusive, as the
+// original's four `jle`/`jge` are, and the pair [0xa7a4]/[0xa7a5] it keeps the
+// answer in is the edge -- zeroed where the room opens rather than inside the
+// loop, so it survives from frame to frame.
+//
+// The rectangle is the floor **below** the approach point a click on the plank
+// walks to, which is what playtest report 3 of 2026-09-06 was reading as the
+// character being in the wrong place: see docs/playthrough_findings.md #72.
+static const uint16 kHoleBoarded = 0xa6dc;
+static const int kHoleX1 = 103, kHoleY1 = 65, kHoleX2 = 125, kHoleY2 = 110;
+static const uint kHoleSample = 14;
+static const uint32 kHoleEnterRate = 0xfa0, kHoleLeaveRate = 0x125c;
+static const byte kHoleVolume = 0x32;
+
 /**
  * A click body is about to run: start the machine if it is one of these four.
  *
@@ -174,6 +192,26 @@ void AlienEngine::stepLab() {
 	default:
 		break;
 	}
+
+	stepLabHole();
+}
+
+/**
+ * The creak by the boarded-up hole: ovr_03_0e57:0x0b3e, run at the end of the
+ * room's tick while the plank is still on.
+ */
+void AlienEngine::stepLabHole() {
+	if (_script.flag(kHoleBoarded) != 1)
+		return;
+
+	const int x = _ben.spriteX(), y = _ben.spriteY();
+	const bool inside = x > kHoleX1 && y > kHoleY1 && x < kHoleX2 && y < kHoleY2;
+	if (inside == _labNearHole)
+		return;
+
+	_labNearHole = inside;
+	_sound.queue(kHoleSample, inside ? kHoleEnterRate : kHoleLeaveRate, kHoleVolume, 0, 0);
+	debugC(1, kDebugRooms, "lab: the hole %s at %d,%d", inside ? "creaks" : "settles", x, y);
 }
 
 } // End of namespace Alien

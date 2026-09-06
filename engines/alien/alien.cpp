@@ -209,7 +209,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
 		_openingStep(0), _openingPending(true), _roomClock(0),
-		_labStep(0), _labPos(0), _drawCharacter(true), _sewerStep(0),
+		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _sewerStep(0),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
@@ -846,6 +846,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_roomClock = 0;
 	_labStep = 0;
 	_labPos = 0;
+	_labNearHole = false;
 	_sewerStep = 0;
 	_libraryStep = 0;
 	_chat.close();
