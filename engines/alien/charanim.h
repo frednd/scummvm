@@ -116,6 +116,13 @@ public:
 	enum {
 		kWalkPointX = 10,
 		kWalkPointY = 64,
+		/// The character is not blitted at his own position: OBJ:sub_06466
+		/// passes [0xa8ec] - 10 and [0xa8ee] + 5 to the blitter, so the frame
+		/// sits ten pixels left of the origin and five below it. Two rooms
+		/// shift it further (climbing, [0xa73a]; the teleport costume,
+		/// [0xa79b]), which is not modelled.
+		kDrawOffsetX = -10,
+		kDrawOffsetY = 5,
 		kWalkFrames = 16,		///< per facing, phases 0..15
 		kMaxTurnFrames = 7,
 		kFacingKeep = 10		///< arrive without turning, the original's default

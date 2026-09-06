@@ -580,7 +580,8 @@ void Walker::tick(bool inventoryOpen) {
 
 void Walker::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const {
 	if (_anim.isLoaded())
-		_anim.drawFrame(_frame, dest, _x - scrollX, _y, clipBottom);
+		_anim.drawFrame(_frame, dest, _x + kDrawOffsetX - scrollX, _y + kDrawOffsetY,
+						clipBottom);
 }
 
 bool Walker::bounds(Common::Rect &box) const {
@@ -591,8 +592,9 @@ bool Walker::bounds(Common::Rect &box) const {
 	// the frame's own hotspot, which is an offset into his box rather than a
 	// pivot.
 	const CharAnim::Frame &f = _anim.frame(_frame);
-	box = Common::Rect(_x + f.hotspotX, _y + f.hotspotY,
-					   _x + f.hotspotX + f.width, _y + f.hotspotY + f.height);
+	const int left = _x + kDrawOffsetX + f.hotspotX;
+	const int top = _y + kDrawOffsetY + f.hotspotY;
+	box = Common::Rect(left, top, left + f.width, top + f.height);
 	return true;
 }
 
