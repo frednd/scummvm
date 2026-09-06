@@ -210,6 +210,8 @@ private:
 	void armLab(int obj, bool item);
 	void stepLab();
 	void stepLabHole();
+	void stepHallway();
+	void playPeephole();
 
 	void armSewer(int obj, byte verb);
 	void enterSewer();
@@ -419,6 +421,10 @@ private:
 	bool _walkReported;
 
 	uint _dialogId;
+
+	/// [0xacf6]: the outcome id the last queue_event was raised with, which one
+	/// room reads back once its lines have been spoken (hallway.cpp).
+	byte _lastEvent;
 
 	/// A line that is not one of the file's entries whole: the slice of an
 	/// entry a conversation option is (chat.cpp). While this is set the drawn

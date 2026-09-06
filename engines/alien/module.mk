@@ -12,6 +12,7 @@ MODULE_OBJS = \
 	dl1.o \
 	ending.o \
 	fade.o \
+	hallway.o \
 	font.o \
 	hotspots.o \
 	inventory.o \

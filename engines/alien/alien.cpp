@@ -202,7 +202,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
-		_dialogId(1), _speechCustom(false), _libraryStep(0),
+		_dialogId(1), _lastEvent(0), _speechCustom(false), _libraryStep(0),
 		_cursorX(0), _cursorY(0), _chatColorsHeld(false),
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
@@ -1220,8 +1220,14 @@ void AlienEngine::stepClock() {
 		stepLab();
 		stepSewer();
 
-		if (_speech && _speechTicks > 0 && --_speechTicks == 0)
+		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
 			nextSpeech();
+
+			// A line coming down is what room 15 answers the front door with:
+			// the original's dialog unit writes [0xa956] = 0x4e2a here and the
+			// room's entry 3 tests it at its top (hallway.cpp).
+			stepHallway();
+		}
 
 		// OBJ:0x86df drops the talk flag once the line has under 25 half ticks
 		// left, so the mouth closes a moment before the text goes.
@@ -2791,6 +2797,11 @@ void AlienEngine::queueOutcome(const TalFile &tal, byte code, int anchorX, int a
 	// dialog ids in zone 1 of the room's TAL, played one after another.
 	const TalFile::Outcome &chain = tal.outcome(code);
 	_speechTal = &tal;
+
+	// [0xacf6], which queue_event writes before it does anything else: the id,
+	// not any of the dialog ids it stands for. Room 15 is the one room that
+	// reads it back, once the chain has finished speaking (hallway.cpp).
+	_lastEvent = code;
 
 	_queueCount = MIN<uint>(chain.count, TalFile::kMaxOutcomeIds);
 	_queueNext = 0;
