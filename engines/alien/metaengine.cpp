@@ -55,7 +55,12 @@ bool AlienMetaEngine::hasFeature(MetaEngineFeature f) const {
 	return f == kSupportsListSaves ||
 		   f == kSupportsLoadingDuringStartup ||
 		   f == kSupportsDeleteSave ||
-		   f == kSimpleSavesNames;
+		   f == kSimpleSavesNames ||
+		   f == kSavesSupportMetaInfo ||
+		   f == kSavesSupportThumbnail ||
+		   f == kSavesSupportCreationDate ||
+		   f == kSavesSupportPlayTime ||
+		   f == kSavesUseExtendedFormat;
 }
 
 #if PLUGIN_ENABLED_DYNAMIC(ALIEN)

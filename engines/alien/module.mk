@@ -5,6 +5,7 @@ MODULE_OBJS = \
 	anim.o \
 	anims.o \
 	charanim.o \
+	chat.o \
 	cutscenes.o \
 	cutsceneplay.o \
 	bedroom.o \
@@ -28,6 +29,7 @@ MODULE_OBJS = \
 	s3m.o \
 	saveload.o \
 	lab.o \
+	library.o \
 	sewer.o \
 	sfx.o \
 	tables.o \

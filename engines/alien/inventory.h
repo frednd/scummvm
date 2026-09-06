@@ -109,6 +109,9 @@ public:
 	/** Whether that arrow can be taken from the page on show. */
 	bool arrowEnabled(Arrow arrow) const;
 
+	/** Whether a point is on the save button at the right end of the bar. */
+	bool menuButtonAt(int x, int y) const;
+
 	/**
 	 * The outcome code a look at this item speaks, rotating the item's own
 	 * counter the way 10c9:0x4A0 does: the code is read first, then the counter
@@ -121,11 +124,12 @@ public:
 
 	/**
 	 * Draw the bar: the icons of the page on show, the two arrows in the state
-	 * the page leaves them, and the thumb. `hoverSlot` and `hoverArrow` are what
-	 * the cursor is over, or -1 and kArrowNone.
+	 * the page leaves them, the save button and the thumb. `hoverSlot`,
+	 * `hoverArrow` and `hoverMenu` are what the cursor is over, or -1,
+	 * kArrowNone and false.
 	 */
 	void draw(const StaticTables &tables, Graphics::Surface &dest,
-			  int hoverSlot, Arrow hoverArrow) const;
+			  int hoverSlot, Arrow hoverArrow, bool hoverMenu) const;
 
 	/** For the debug dump: the raw list, index 1..100. */
 	byte at(uint index) const { return index < kListSize ? _list[index] : kNoItem; }

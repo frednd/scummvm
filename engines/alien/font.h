@@ -47,14 +47,18 @@ public:
 	static const byte kInkColor = 65;		///< the one palette entry speaker color recolors
 
 	/**
-	 * Which of the two metric sets in the executable to read. The tables are
+	 * Which of the three metric sets in the executable to read. The tables are
 	 * laid out identically and sit 0x330 bytes apart: the speech font is ten
 	 * rows tall and overlaps its glyphs by a pixel, the label font used for the
-	 * status line is eight rows tall and does not.
+	 * status line is eight rows tall and does not, and the third set -- another
+	 * 0x330 on -- is the one the conversation menu is set in (OBJ:sub_09094),
+	 * ten rows tall like the speech face but stepping by the full glyph like
+	 * the label one.
 	 */
 	enum Variant {
 		kSpeech,
-		kLabel
+		kLabel,
+		kChat
 	};
 
 	Font();
@@ -64,6 +68,12 @@ public:
 	bool load(Variant variant = kSpeech);
 
 	int glyphHeight() const { return _variant == kLabel ? 8 : 10; }
+
+	/**
+	 * The two indices the chat face is drawn in, before an option's own offset
+	 * is added to them (OBJ:blit_palette_offset, called with [0x9926]).
+	 */
+	static const byte kChatInk = 66;
 
 	bool isLoaded() const { return _atlas.getPixels() != nullptr; }
 
@@ -89,6 +99,17 @@ public:
 	void drawStringInk(Graphics::Surface &dest, const Common::String &text, int x, int y,
 					   byte ink) const;
 
+	/**
+	 * The same as drawString, with a constant added to every glyph index.
+	 *
+	 * This is the conversation menu's blitter: the atlas carries the chat face
+	 * in indices 66 and 67 and each option is drawn a fixed distance further up
+	 * the palette, which is how four options can fade in and highlight
+	 * independently of one another with one bitmap between them.
+	 */
+	void drawStringOffset(Graphics::Surface &dest, const Common::String &text, int x, int y,
+						  byte offset) const;
+
 private:
 	struct Glyph {
 		uint16 x;		///< source column in the atlas
@@ -100,7 +121,7 @@ private:
 	static const uint kGlyphCount = 256;
 
 	bool readMetrics();
-	int advance(const Glyph &g) const { return _variant == kLabel ? g.width : g.width - 2; }
+	int advance(const Glyph &g) const { return _variant == kSpeech ? g.width - 2 : g.width; }
 
 	Variant _variant;
 	Glyph _glyphs[kGlyphCount];

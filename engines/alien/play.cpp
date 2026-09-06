@@ -66,6 +66,10 @@ bool PlayScript::load(const Common::String &path) {
 			cmd.type = verb == "click" ? PlayCommand::kClick : PlayCommand::kRightClick;
 			cmd.a = parseInt(tok.nextToken());
 			cmd.b = parseInt(tok.nextToken());
+		} else if (verb == "hover") {
+			cmd.type = PlayCommand::kHover;
+			cmd.a = parseInt(tok.nextToken());
+			cmd.b = parseInt(tok.nextToken());
 		} else if (verb == "use") {
 			cmd.type = PlayCommand::kUse;
 			cmd.a = parseInt(tok.nextToken());

@@ -39,8 +39,11 @@ static const uint32 kTableY = 0x2022;		///< u8 per character
 static const uint32 kTableW = 0x20EE;		///< u8 per character
 
 // The label font's three tables follow the speech font's at a fixed distance,
-// glyph for glyph. OBJ:sub_08177, the status line blitter, reads them.
+// glyph for glyph. OBJ:sub_08177, the status line blitter, reads them. The
+// conversation menu's face is a third set the same distance again on, which
+// OBJ:sub_09094 reads at 0x24CA / 0x2682 / 0x274E.
 static const uint32 kLabelTables = 0x330;
+static const uint32 kChatTables = 0x660;
 
 // Below space nothing is ever printed, and past 0xEB the tables hold junk that
 // would address outside the atlas.
@@ -66,7 +69,11 @@ bool Font::readMetrics() {
 		return false;
 	}
 
-	const uint32 base = kDataSegment + (_variant == kLabel ? kLabelTables : 0);
+	uint32 base = kDataSegment;
+	if (_variant == kLabel)
+		base += kLabelTables;
+	else if (_variant == kChat)
+		base += kChatTables;
 
 	uint valid = 0;
 	for (uint c = kFirstCode; c <= kLastCode; c++) {
@@ -97,7 +104,7 @@ bool Font::readMetrics() {
 	}
 
 	debugC(1, kDebugResource, "%s font: %u glyphs",
-		   _variant == kLabel ? "label" : "speech", valid);
+		   _variant == kLabel ? "label" : (_variant == kChat ? "chat" : "speech"), valid);
 	return valid > 0;
 }
 
@@ -170,6 +177,39 @@ void Font::drawString(Graphics::Surface &dest, const byte *text, uint length, in
 
 void Font::drawString(Graphics::Surface &dest, const Common::String &text, int x, int y) const {
 	drawString(dest, (const byte *)text.c_str(), text.size(), x, y);
+}
+
+void Font::drawStringOffset(Graphics::Surface &dest, const Common::String &text, int x, int y,
+							byte offset) const {
+	if (!isLoaded())
+		return;
+
+	int pen = x;
+	for (uint i = 0; i < text.size(); i++) {
+		const Glyph &g = _glyphs[(byte)text[i]];
+		if (!g.valid)
+			continue;
+
+		for (int row = 0; row < glyphHeight(); row++) {
+			const int dy = y + row;
+			if (dy < 0 || dy >= dest.h)
+				continue;
+
+			const byte *src = (const byte *)_atlas.getBasePtr(g.x, g.y + row);
+			byte *dst = (byte *)dest.getBasePtr(0, dy);
+			for (int col = 0; col < g.width; col++) {
+				const int dx = pen + col;
+				if (dx < 0 || dx >= dest.w)
+					continue;
+				// Both of the face's two indices move together, so the ink and
+				// its shadow keep their relation whatever row the option is on.
+				if (src[col])
+					dst[dx] = src[col] + offset;
+			}
+		}
+
+		pen += advance(g);
+	}
 }
 
 void Font::drawStringInk(Graphics::Surface &dest, const Common::String &text, int x, int y,

@@ -61,12 +61,45 @@ public:
 	static const uint kMaxLines = 5;
 	static const uint32 kZone2Base = 0x898;
 
+	/// The conversation tree is the last 0x3fc bytes of the file, 51 topics of
+	/// four options each. OBJ:sub_04225 reads exactly that much from the end of
+	/// the file into [0x9a56], and the text zone the loader reads before it is
+	/// sized `filesize - 0x898 - 0x3fc`, so the two never overlap.
+	static const uint32 kChatTable = 0x3fc;
+	static const uint kChatTopics = 51;
+	static const uint kChatOptions = 4;
+	static const uint kChatRecord = 5;
+
+	/// The next-topic byte of an option that ends the conversation, and the one
+	/// that hands it to the room instead ([0xa606], the entry 4 path).
+	static const byte kChatEnd = 0xff;
+	static const byte kChatRoom = 0xfe;
+
 	struct Entry {
 		byte lineCount;					///< 1..5, doubles as the layout selector
 		Common::Array<Common::String> lines;
 		bool present;
 
 		Entry() : lineCount(0), present(false) {}
+	};
+
+	/**
+	 * One line of the four a topic can offer.
+	 *
+	 * The player's own lines are not entries of their own: `entry` names a
+	 * dialog entry and `line` and `lines` cut a window out of it, so one entry
+	 * holds every option of a topic and each option is a slice. `next` is the
+	 * topic the conversation moves to once the line has been spoken.
+	 */
+	struct ChatOption {
+		byte entry;
+		byte line;
+		byte lines;
+		byte spare;			///< always zero in the shipped files
+		byte next;
+
+		ChatOption() : entry(0), line(0), lines(0), spare(0), next(0) {}
+		bool present() const { return entry || line || lines || spare || next; }
 	};
 
 	struct Outcome {
@@ -94,11 +127,19 @@ public:
 
 	uint usedEntries() const;
 
+	/** One option of a topic; an absent one reads back all zero. */
+	const ChatOption &chatOption(uint topic, uint option) const;
+
+	/** How many of the four options a topic offers (OBJ:sub_0456e). */
+	uint chatOptionCount(uint topic) const;
+
 private:
 	void clear();
 	bool parseEntry(const byte *data, uint32 size, uint32 start, uint32 end, Entry &out) const;
 
 	Entry _entries[kEntryCount];
+	ChatOption _chat[kChatTopics][kChatOptions];
+	ChatOption _emptyOption;
 	Outcome _outcomes[kOutcomeCount];
 	Entry _empty;
 	Outcome _emptyOutcome;

@@ -202,7 +202,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
-		_dialogId(1), _dialogBand(false),
+		_dialogId(1), _speechCustom(false), _libraryStep(0), _chatColorsHeld(false),
+		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
@@ -219,6 +220,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 	memset(_labelColors, 0, sizeof(_labelColors));
 	memset(_outcomeCounter, 0, sizeof(_outcomeCounter));
 	memset(_queue, 0, sizeof(_queue));
+	memset(_chatPalette, 0, sizeof(_chatPalette));
 
 	// An anim_play effect in a room script drives the slots directly, the way the
 	// overlay's own body calls MIDAS, and inv_add / inv_remove work the list.
@@ -255,6 +257,9 @@ Common::Error AlienEngine::run() {
 
 	if (!_font.load())
 		return Common::Error(Common::kReadingFailed, "Could not load the font");
+
+	if (!_chatFont.load(Font::kChat))
+		return Common::Error(Common::kReadingFailed, "Could not load the conversation font");
 
 	if (!_labelFont.load(Font::kLabel))
 		return Common::Error(Common::kReadingFailed, "Could not load the label font");
@@ -831,6 +836,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_labStep = 0;
 	_labPos = 0;
 	_sewerStep = 0;
+	_libraryStep = 0;
+	_chat.close();
 
 	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
 	// does not carry the character's absence into the next one.
@@ -1184,6 +1191,13 @@ void AlienEngine::stepClock() {
 
 	// And the speaker colour a couple of rooms set beside it, in the same tick.
 	stepTextColor();
+
+	// The conversation menu's colour machine, and room 8's owl -- the port's
+	// one caller of it (chat.cpp, library.cpp). Both are per frame rather than
+	// per tick pair: room 8's tick calls OBJ:sub_0a89c, sub_0a865 and
+	// sub_0acb9 unguarded, and its [0xa49f] machine sits in the same body.
+	stepChat();
+	stepLibrary();
 
 	// The status line's fade runs off the frame, not off the animation gate.
 	stepLabelFade();
@@ -2493,6 +2507,15 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		return;
 	}
 
+	// While the conversation menu is listed it owns the bottom of the screen:
+	// a click there picks an option and never reaches the room (chat.cpp).
+	if (_chat.isActive()) {
+		if (!rightButton && _chat.click(y))
+			return;
+		if (y >= ChatMenu::kBandTop)
+			return;
+	}
+
 	// 1021:0x6c1, the first thing the dispatch does: the line the last click
 	// left standing goes, and the hover is free to answer again.
 	_labelHold = 0;
@@ -2657,6 +2680,18 @@ void AlienEngine::finishAction() {
 	// guarded on a flag the body sets (lab.cpp).
 	armLab(spot.obj, item != Inventory::kNoItem);
 
+	// Room 8's owl is answered by a machine of the room's own rather than by a
+	// script body, and its click must not reach the body: the lifted table has
+	// the owl's other arm without the guards that keep it off a talk
+	// (library.cpp).
+	if (armLibrary(spot.obj, verb, item != Inventory::kNoItem, anchorX, anchorY)) {
+		_script.buildHotspots(_room, _spots);
+		_hover = -1;
+		const Common::Point owl = g_system->getEventManager()->getMousePos();
+		updateHover(owl.x, owl.y);
+		return;
+	}
+
 	const bool handled = _script.run(spot.obj, verb, item);
 
 	// One object in the game is answered by a hook of its room's own rather
@@ -2731,6 +2766,7 @@ void AlienEngine::nextSpeech() {
 			length += entry.lines[i].size();
 
 		_dialogId = id;
+		_speechCustom = false;
 		_speech = true;
 		_speechTicks = MAX<int>((int)length * kTicksPerCharacter, kMinSpeechTicks);
 		_dirty = true;
@@ -2743,8 +2779,26 @@ void AlienEngine::nextSpeech() {
 	stopSpeech();
 }
 
+void AlienEngine::speakEntry(const TalFile::Entry &entry, int anchorX, int anchorY, int ticks) {
+	// A line that is not an entry of its own: the slice of one a conversation
+	// option is. The original hands it to the same renderer through the five
+	// line buffers, and gives it a fixed countdown rather than the
+	// length-derived one ([0xad1e] = 0x3c on the pick).
+	_speechEntry = entry;
+	_speechCustom = true;
+	_speechTal = &_tal;
+	_speech = true;
+	_speechTicks = ticks;
+	_speechX = anchorX;
+	_speechY = anchorY;
+	_queueCount = 0;
+	_queueNext = 0;
+	_dirty = true;
+}
+
 void AlienEngine::stopSpeech() {
 	_speech = false;
+	_speechCustom = false;
 	_speechTicks = 0;
 	_queueCount = 0;
 	_queueNext = 0;
@@ -3193,14 +3247,21 @@ void AlienEngine::redraw() {
 
 		// The bar sits below the playfield, so it goes on after the room but
 		// before the text layer, which is what the original's redraw order
-		// comes to.
-		_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow, _hoverMenu);
-
-		drawLabel();
+		// comes to. While a conversation is up the bar is not there at all:
+		// OBJ:sub_09389 clears those forty rows and the options are listed in
+		// them instead.
+		if (_chat.isActive()) {
+			_chat.draw(_chatFont, _screen);
+		} else {
+			_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow, _hoverMenu);
+			drawLabel();
+		}
 	}
 
 	if (_speech) {
-		const TalFile::Entry &dialog = (_speechTal ? _speechTal : &_tal)->entry(_dialogId);
+		const TalFile::Entry &dialog = _speechCustom
+			? _speechEntry
+			: (_speechTal ? _speechTal : &_tal)->entry(_dialogId);
 		if (_dialogBand)
 			drawBand(dialog);
 		else

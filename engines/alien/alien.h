@@ -29,6 +29,7 @@
 
 #include "alien/anim.h"
 #include "alien/charanim.h"
+#include "alien/chat.h"
 #include "alien/dl1.h"
 #include "alien/font.h"
 #include "alien/hotspots.h"
@@ -240,6 +241,14 @@ private:
 	byte rotateOutcome(const Hotspot &spot);
 	void finishAction();
 	void queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY);
+	void speakEntry(const TalFile::Entry &entry, int anchorX, int anchorY, int ticks);
+	bool speechDone() const { return !_speech && _queueNext >= _queueCount; }
+
+	void openChat(uint topic);
+	void stepChat();
+
+	bool armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY);
+	void stepLibrary();
 	void nextSpeech();
 	void stopSpeech();
 
@@ -382,6 +391,7 @@ private:
 
 	Font _font;
 	Font _labelFont;				///< the shorter face the status line is set in
+	Font _chatFont;				///< and the third face, the one the options are set in
 	TalFile _tal;
 	TalFile _labels;				///< NAMEROOM/<lang>/R<n>.TAL, the hover names
 	TalFile _talkall;				///< TALKALL.TAL, the answers no room owns
@@ -405,6 +415,26 @@ private:
 	bool _walkReported;
 
 	uint _dialogId;
+
+	/// A line that is not one of the file's entries whole: the slice of an
+	/// entry a conversation option is (chat.cpp). While this is set the drawn
+	/// text comes from _speechEntry rather than from _dialogId.
+	TalFile::Entry _speechEntry;
+	bool _speechCustom;
+
+	/// The conversation menu, and the room machine that is the port's first
+	/// caller of it (chat.cpp, library.cpp).
+	ChatMenu _chat;
+
+	/// Room 8's [0xa49f] machine: talking to the owl.
+	byte _libraryStep;
+
+	/// The eight palette entries the conversation menu owns while it is up
+	/// (66, 67 and 74..79), as the room left them, and whether they are still
+	/// the menu's to give back.
+	byte _chatPalette[14 * 3];
+	bool _chatColorsHeld;
+
 	bool _dialogBand;				///< bottom band layout instead of over the speaker
 	bool _speech;					///< a line is on screen
 	int _speechTicks;				///< half ticks left before it clears, 0 = no limit

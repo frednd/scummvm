@@ -87,6 +87,17 @@ static const int kArrowDownIdleY = 50, kArrowDownBlankY = 82;
 static const int kArrowUpHoverY = 81, kArrowDownHoverY = 96;
 static const int kArrowHoverWidth = 26;
 
+// The save button at the right end of the bar: the one HUD control that is not
+// the inventory. Its click bounds are OBJ:sub_0883d's and its hover bounds
+// OBJ:0x482f's, and unlike the arrows the two are the same box. The two disk
+// plates sit side by side on the chrome page, and OBJ:sub_07f2f / sub_07f57 pick
+// between them.
+static const int kMenuLeft = 286, kMenuRight = 309;
+static const int kMenuTop = 169, kMenuBottom = 189;
+static const int kMenuX = 284, kMenuY = 169;
+static const int kMenuWidth = 30, kMenuHeight = 23;
+static const int kMenuSrcX = 196, kMenuHoverSrcX = 228, kMenuSrcY = 82;
+
 // The scroll thumb: one strip, cut to the height of a page's share of the track
 // and placed down it. OBJ:update_sala_state spells out every combination of page
 // count and page; the heights it uses are 32 / pages, rounded about the track,
@@ -285,6 +296,11 @@ Inventory::Arrow Inventory::arrowHover(int x, int y) const {
 	return kArrowNone;
 }
 
+bool Inventory::menuButtonAt(int x, int y) const {
+	return x >= kMenuLeft && x <= kMenuRight &&
+		   y >= kMenuTop && y <= kMenuBottom;
+}
+
 bool Inventory::arrowEnabled(Arrow arrow) const {
 	// [0xa81a] and [0xa81b]: with one page neither arrow is there, and at either
 	// end of the list only the one that leads somewhere is.
@@ -384,7 +400,7 @@ void Inventory::drawThumb(Graphics::Surface &dest) const {
 }
 
 void Inventory::draw(const StaticTables &tables, Graphics::Surface &dest,
-					 int hoverSlot, Arrow hoverArrow) const {
+					 int hoverSlot, Arrow hoverArrow, bool hoverMenu) const {
 	// The plate first: everything below is cut into the recesses it draws, and
 	// it is also what erases the previous frame's icons.
 	drawPanel(dest);
@@ -416,6 +432,9 @@ void Inventory::draw(const StaticTables &tables, Graphics::Surface &dest,
 	else
 		blit(dest, _chrome, kArrowSrcX, kArrowDownIdleY, kArrowWidth, kArrowHeight,
 			 kArrowX, kArrowDownY);
+
+	blit(dest, _chrome, hoverMenu ? kMenuHoverSrcX : kMenuSrcX, kMenuSrcY,
+		 kMenuWidth, kMenuHeight, kMenuX, kMenuY);
 
 	drawThumb(dest);
 }

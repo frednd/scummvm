@@ -42,6 +42,9 @@ void TalFile::clear() {
 		_entries[i] = Entry();
 	for (uint i = 0; i < kOutcomeCount; i++)
 		_outcomes[i] = Outcome();
+	for (uint t = 0; t < kChatTopics; t++)
+		for (uint o = 0; o < kChatOptions; o++)
+			_chat[t][o] = ChatOption();
 	_loaded = false;
 }
 
@@ -87,7 +90,11 @@ bool TalFile::loadStream(Common::SeekableReadStream &stream) {
 	for (uint i = 0; i < kEntryCount; i++)
 		offsets[i] = READ_LE_UINT16(data + kZone2Base + i * 2);
 
-	const uint32 blobEnd = size - kZone2Base;
+	// The text stops where the conversation tree starts: the original's text
+	// read is `filesize - 0x898 - 0x3fc` bytes long, so an entry that ran to the
+	// end of the file would take the tree's bytes for lines.
+	const uint32 blobEnd = size > kZone2Base + kChatTable ? size - kZone2Base - kChatTable
+														  : size - kZone2Base;
 
 	for (uint i = 0; i < kEntryCount; i++) {
 		if (!offsets[i])
@@ -106,6 +113,23 @@ bool TalFile::loadStream(Common::SeekableReadStream &stream) {
 
 		if (parseEntry(data, size, offsets[i], end, _entries[i]))
 			_entries[i].present = true;
+	}
+
+	// The conversation tree, read from the end of the file the way OBJ:sub_04225
+	// reads it: 51 topics of four five-byte options. Most rooms carry an
+	// all-zero table -- only the ones with somebody to talk to fill it in.
+	if (size >= kChatTable) {
+		const byte *tree = data + size - kChatTable;
+		for (uint t = 0; t < kChatTopics; t++) {
+			for (uint o = 0; o < kChatOptions; o++) {
+				const byte *rec = tree + t * kChatOptions * kChatRecord + o * kChatRecord;
+				_chat[t][o].entry = rec[0];
+				_chat[t][o].line = rec[1];
+				_chat[t][o].lines = rec[2];
+				_chat[t][o].spare = rec[3];
+				_chat[t][o].next = rec[4];
+			}
+		}
 	}
 
 	delete[] data;
@@ -147,6 +171,22 @@ const TalFile::Outcome &TalFile::outcome(uint code) const {
 	if (code >= kOutcomeCount)
 		return _emptyOutcome;
 	return _outcomes[code];
+}
+
+const TalFile::ChatOption &TalFile::chatOption(uint topic, uint option) const {
+	if (topic >= kChatTopics || option >= kChatOptions)
+		return _emptyOption;
+	return _chat[topic][option];
+}
+
+uint TalFile::chatOptionCount(uint topic) const {
+	// OBJ:sub_0456e counts an option in when any of its five bytes is non-zero,
+	// and stops at the first gap the same way -- the options of a topic are
+	// always filled from the top.
+	uint n = 0;
+	while (n < kChatOptions && chatOption(topic, n).present())
+		n++;
+	return n;
 }
 
 uint TalFile::usedEntries() const {

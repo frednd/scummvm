@@ -41,6 +41,10 @@ namespace Alien {
  * Both take **room** coordinates, the ones check_hotspots.py prints, not screen
  * ones: a wide room's camera moves with the character, and the engine puts the
  * scroll back before it dispatches the click.
+ *   hover X Y            move the cursor without clicking, which is what lights
+ *                        a bar control and rebuilds the status line. Screen
+ *                        coordinates, not room ones, because the bar does not
+ *                        scroll.
  *   use N                take inventory item N into the hand
  *   unuse                put down whatever is in the hand
  *   wait N                advance N master ticks with nothing happening
@@ -64,6 +68,7 @@ struct PlayCommand {
 	enum Type {
 		kClick,
 		kRightClick,
+		kHover,
 		kUse,
 		kUnuse,
 		kWait,

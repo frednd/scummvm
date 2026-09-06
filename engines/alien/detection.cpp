@@ -49,6 +49,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugEnding, "ending", "Room 59's escape-pod sequence, and the ending clip after it"},
 	{Alien::kDebugBedroom, "bedroom", "Room 7's light switch, and the plates it swaps"},
 	{Alien::kDebugLight, "light", "The room light maps, and the character palette they scale"},
+	{Alien::kDebugChat, "chat", "The conversation menu and the tree behind it"},
 	DEBUG_CHANNEL_END
 };
 
