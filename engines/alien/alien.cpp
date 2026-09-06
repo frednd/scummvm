@@ -1262,6 +1262,15 @@ void AlienEngine::stepClock() {
 	// back to face the player.
 	const bool moving = _ben.isWalking() || _ben.isTurning();
 	const uint wasFrame = _ben.frame();
+
+	// He is only his own while nothing else is driving him: every room that
+	// runs an [0xa49f] machine clears [0xa94d] as it hides the cursor and sets
+	// it back at the step that ends the machine, and the dialog unit holds
+	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
+	// to face the player in the middle of one.
+	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !_libraryStep && !_labStep &&
+						!_sewerStep && !_endingStep && !_openingStep);
+
 	_ben.tick(_script.flag(0xa605) != 0);
 
 	// The camera follows him whether or not he is going anywhere: the original

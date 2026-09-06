@@ -181,6 +181,16 @@ public:
 	bool isIdlePlaying() const { return _idleLeft > 0; }
 
 	/**
+	 * Whether the character is his own again, the original's [0xa94d] and
+	 * [0xa4a1] together: a room that drives him from an [0xa49f] machine
+	 * clears the first as it hides the cursor and sets it back at the step
+	 * that ends the machine, and the dialog unit raises the second for as long
+	 * as a scene it requested is running. While either says no, the counter
+	 * still runs but nothing fidgets and he does not turn to face the player.
+	 */
+	void setIdleAllowed(bool allowed) { _idleAllowed = allowed; }
+
+	/**
 	 * Whether a line is being spoken, the original's [0x2938].
 	 *
 	 * BENANI's top twelve frames are a mouth cycle, four lists of them, one per
@@ -264,6 +274,8 @@ private:
 	/// The talk cycle: whether a line is up [0x2938], whether he has stood still
 	/// long enough for the mouth to open [0x293a], how far into the facing's
 	/// frame list it is [0x2939], and the toggle that halves its rate [0x2937].
+	bool _idleAllowed;			///< [0xa94d] == 1 and [0xa4a1] == 0
+
 	bool _talking;
 	bool _talkReady;
 	uint _talkPhase;

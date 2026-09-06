@@ -267,6 +267,7 @@ Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY
 		_steps(0), _facing(3), _arrivalFacing(kFacingKeep), _phase(0),
 		_frame(kIdleFrame[3]), _turnLeft(0), _idleCount(0), _idleCycle(0),
 		_idleStream(nullptr), _idleIndex(0), _idleLeft(0), _idleFrame(0),
+		_idleAllowed(true),
 		_talking(false), _talkReady(false), _talkPhase(0), _talkHalf(false) {
 	memset(_turn, 0, sizeof(_turn));
 }
@@ -484,36 +485,48 @@ void Walker::stepIdle(bool inventoryOpen) {
 		_idleCycle++;
 	}
 
-	// A canned animation starts only from a standing frame, and only while the
-	// inventory bar is down. Nothing stops the count while one plays, so the
-	// two that share a starting point never collide: they want different
-	// facings.
-	if (!inventoryOpen) {
-		for (uint i = 0; i < ARRAYSIZE(kIdlePlays); i++) {
-			const IdlePlay &play = kIdlePlays[i];
-			if (_idleCount != play.at || _facing != play.facing)
-				continue;
-			_idleStream = play.frames;
-			_idleLeft = play.count;
-			_idleIndex = 0;
-			debugC(1, kDebugAnim, "idle: play %d frames facing %d at count %d",
-				   play.count, _facing, _idleCount);
-		}
-	}
-
-	// Left alone long enough, the character turns to face the player. The
-	// original keeps the moment in [0x98fc] and [0x98fe], which it fills from
-	// the facing: a quarter turn from the back or from screen left is a shorter
-	// wait than the one from screen right.
-	const bool quick = _facing == 1 || _facing == 4;
-	if (_facing != 3 && _idleCount == (quick ? 5 : 0x28) &&
-			_idleCycle == (quick ? 1 : 2)) {
-		_idleIndex = 0;
+	// A line being spoken drops whatever was playing: the mouth cycle takes the
+	// frame over, and the original zeroes [0xa0ba] as it does.
+	if (_talking && _talkReady)
 		_idleLeft = 0;
-		debugC(1, kDebugAnim, "idle: turn to face front after %d cycles",
-			   _idleCycle);
-		turnTo(3);
-		return;
+
+	// Nothing new starts past OBJ:sub_098d1's three gates at 0x9a4d --
+	// [0xa94d] == 1, [0xa4a1] == 0 and the talk flag [0x2938] == 0. The counter
+	// above them runs either way, so a scene that ends leaves him as far into
+	// the count as he really has been standing, and so does the stream below:
+	// a list already playing is stepped to its end rather than frozen.
+	if (_idleAllowed && !_talking) {
+		// A canned animation starts only from a standing frame, and only while
+		// the inventory bar is down. Nothing stops the count while one plays,
+		// so the two that share a starting point never collide: they want
+		// different facings.
+		if (!inventoryOpen) {
+			for (uint i = 0; i < ARRAYSIZE(kIdlePlays); i++) {
+				const IdlePlay &play = kIdlePlays[i];
+				if (_idleCount != play.at || _facing != play.facing)
+					continue;
+				_idleStream = play.frames;
+				_idleLeft = play.count;
+				_idleIndex = 0;
+				debugC(1, kDebugAnim, "idle: play %d frames facing %d at count %d",
+					   play.count, _facing, _idleCount);
+			}
+		}
+
+		// Left alone long enough, the character turns to face the player. The
+		// original keeps the moment in [0x98fc] and [0x98fe], which it fills
+		// from the facing: a quarter turn from the back or from screen left is
+		// a shorter wait than the one from screen right.
+		const bool quick = _facing == 1 || _facing == 4;
+		if (_facing != 3 && _idleCount == (quick ? 5 : 0x28) &&
+				_idleCycle == (quick ? 1 : 2)) {
+			_idleIndex = 0;
+			_idleLeft = 0;
+			debugC(1, kDebugAnim, "idle: turn to face front after %d cycles",
+				   _idleCycle);
+			turnTo(3);
+			return;
+		}
 	}
 
 	// The frame comes off the list between the countdown and the step, which is
