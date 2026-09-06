@@ -118,6 +118,9 @@ bool PlayScript::load(const Common::String &path) {
 			cmd.type = PlayCommand::kFlag;
 			cmd.a = parseInt(tok.nextToken());
 			cmd.b = parseInt(tok.nextToken());
+		} else if (verb == "give") {
+			cmd.type = PlayCommand::kGive;
+			cmd.a = parseInt(tok.nextToken());
 		} else if (verb == "spots") {
 			cmd.type = PlayCommand::kSpots;
 		} else if (verb == "quit") {

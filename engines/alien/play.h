@@ -60,6 +60,8 @@ namespace Alien {
  *   flag ADDR VAL           write a state-block byte, to put the game in a
  *                           state a script would otherwise have to play its
  *                           way to (the bedroom needs the lab's fuse in)
+ *   give N                  put item N in the list, for reaching a bar state
+ *                           that would take a whole playthrough to carry to
  *   cutscene N              raise scene id N, the way a room's own code does
  *   snap NAME               write the composed screen to NAME.png
  *   spots                   log the room's current hotspot list on the play
@@ -83,6 +85,7 @@ struct PlayCommand {
 		kCutscene,
 		kSnap,
 		kSpots,
+		kGive,
 		kSave,
 		kLoad,
 		kFlag,

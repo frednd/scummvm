@@ -87,6 +87,10 @@ public:
 	uint pageCount() const;
 	uint page() const { return _page; }
 
+	/// Show the page the newest item is on, which every change to the list does
+	/// -- the original's [0xa7ec], read by the bar rebuild OBJ:sub_03c77.
+	void showNewest();
+
 	/// True when the page changed, so the caller knows to redraw.
 	bool pageUp();
 	bool pageDown();

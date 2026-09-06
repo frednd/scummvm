@@ -169,8 +169,9 @@ void Inventory::add(byte item) {
 		if (_list[i])
 			continue;
 		_list[i] = item;
-		debugC(1, kDebugItems, "item: %u (%s) picked up, list slot %u",
-			   item, name(item).c_str(), i);
+		showNewest();
+		debugC(1, kDebugItems, "item: %u (%s) picked up, list slot %u, page %u",
+			   item, name(item).c_str(), i, _page);
 		return;
 	}
 
@@ -191,8 +192,7 @@ void Inventory::remove(byte item) {
 		_list[kListSize - 1] = kNoItem;
 		debugC(1, kDebugItems, "item: %u (%s) given up", item, name(item).c_str());
 
-		if (_page > pageCount())
-			_page = pageCount();
+		showNewest();
 		return;
 	}
 
@@ -210,6 +210,7 @@ void Inventory::replace(byte oldItem, byte newItem) {
 		// In place: the original overwrites the slot rather than closing the gap
 		// and appending, so the new item is drawn where the old one was.
 		_list[i] = newItem;
+		showNewest();
 		debugC(1, kDebugItems, "item: %u (%s) became %u (%s), list slot %u",
 			   oldItem, name(oldItem).c_str(), newItem, name(newItem).c_str(), i);
 		return;
@@ -238,6 +239,16 @@ uint Inventory::pageCount() const {
 		pages = p;
 	}
 	return pages;
+}
+
+void Inventory::showNewest() {
+	// The original's [0xa7ec]. All three routines that change the list -- the
+	// add and the swap at OBJ:sprite_add and OBJ:sub_08f38, and the removal that
+	// closes the gap behind it -- raise the flag and then rebuild the bar, and
+	// the rebuild OBJ:sub_03c77 opens by reading it: [0xa813] is first clamped
+	// down to the page count, then, if the flag is up, raised to it. Both ways
+	// round that lands on the last page, which is the page a new item is on.
+	_page = pageCount();
 }
 
 bool Inventory::pageUp() {

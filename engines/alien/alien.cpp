@@ -610,6 +610,12 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		}
 		break;
 
+	case PlayCommand::kGive:
+		_inventory.add((byte)cmd.a);
+		debugC(1, kDebugPlay, "play: %u: give item %d, page %u of %u", cmd.sourceLine, cmd.a,
+			   _inventory.page(), _inventory.pageCount());
+		break;
+
 	case PlayCommand::kFlag:
 		debugC(1, kDebugPlay, "play: %u: flag 0x%04x = %d", cmd.sourceLine, cmd.a, cmd.b);
 		_script.setFlag((uint16)cmd.a, (byte)cmd.b);
