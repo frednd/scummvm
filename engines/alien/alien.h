@@ -159,6 +159,9 @@ private:
 
 	void updateHover(int x, int y);
 	bool clickBar(int x, int y, bool rightButton);
+
+	/// Whether the bar's save button does anything in the room on show.
+	bool menuAllowed() const;
 	void holdItem(byte item);
 	void lookAtItem(byte item);
 	void dumpItems();
@@ -208,6 +211,7 @@ private:
 
 	void armSewer(int obj, byte verb);
 	void enterSewer();
+	void openSewerPlate();
 	void stepSewer();
 	void sewerValve();
 	void cancelOpening();
@@ -241,6 +245,8 @@ private:
 
 	void setTextColor(byte r, byte g, byte b);
 	void uploadTextColor();
+	/// The ambient speaker colour of the rooms that set one (alien.cpp).
+	void stepTextColor();
 	void characterAnchor(int &x, int &y) const;
 	Common::String labelText(int x, int y) const;
 	Common::String hoverName() const;
@@ -353,6 +359,12 @@ private:
 	Inventory _inventory;
 	int _hoverSlot;
 	Inventory::Arrow _hoverArrow;
+	bool _hoverMenu;
+
+	/// [0xa821]: a click on the bar's save button, waiting for the top of the
+	/// next frame. The original polls the flag from the room's tick rather than
+	/// opening anything on the click itself.
+	bool _menuRequest;
 
 	/// [0xa6bb]: the item picked out of the bar and not yet used on anything.
 	/// While it is set the status line reads "USE <item> WITH <object>" and a

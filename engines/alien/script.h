@@ -235,7 +235,7 @@ private:
 	bool holds(const ScriptCond &cond) const;
 	bool matches(const ScriptBlock &block, byte obj, byte verb, byte item) const;
 	void execute(const ScriptBlock &block);
-	void runEffect(const ScriptEffect &effect, bool guarded = true);
+	void runEffect(const ScriptEffect &effect);
 	static bool sameGuards(const ScriptEffect &a, const ScriptEffect &b);
 	void playAnim(const ScriptEffect &effect);
 	void inventoryEffect(const ScriptEffect &effect);

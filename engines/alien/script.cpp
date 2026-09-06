@@ -77,8 +77,7 @@ void RoomScript::enterRoom(int room) {
 		return;
 
 	debugC(1, kDebugGraphics, "script: room %d opens with %u slot plays", room, count);
-	for (uint i = 0; i < count; i++)
-		runEffect(init[i]);
+	runEffects(init, count);
 }
 
 bool RoomScript::placeRequest(int &x, int &y, int &facing) const {
@@ -406,19 +405,24 @@ bool RoomScript::matches(const ScriptBlock &block, byte obj, byte verb, byte ite
 }
 
 void RoomScript::execute(const ScriptBlock &block) {
-	for (uint i = 0; i < block.count; i++)
-		runEffect(*scriptEffect(block.first + i));
+	// Through runEffects, so a body's arms are tested once each rather than once
+	// per effect: room 35's hatch opens by setting the very flag its arm is
+	// guarded on ([0xa777]), and re-answering that guard for the next effect
+	// dropped the rest of the arm -- including the action_handled that ends the
+	// chain -- and then let the "swing it shut again" arm undo it.
+	runEffects(scriptEffect(block.first), block.count);
 }
 
 /**
- * A run of effects lifted out of one procedure.
+ * A run of effects lifted out of one body or one cutscene procedure.
  *
  * Effects carry the guards of the arm they were lifted from, one copy each, and
  * consecutive effects with the same guards *are* one arm. The original tests
  * such an arm once and then runs its body, so the test has to be made once here
- * too: one of the boss scenes opens its arm by storing into the very word the
- * arm is guarded on, and answering the guard again for the next effect would
- * drop the rest of the body on the floor.
+ * too -- an arm that writes the flag it is guarded on is otherwise cut off
+ * after its first effect. Both places that happens are exactly that shape: room
+ * 35's hatch sets [0xa777] as it swings open, and one of the boss scenes stores
+ * into the word its timeline waits on.
  */
 void RoomScript::runEffects(const ScriptEffect *effects, uint count) {
 	uint i = 0;
@@ -433,7 +437,7 @@ void RoomScript::runEffects(const ScriptEffect *effects, uint count) {
 
 		if (taken) {
 			for (uint e = i; e < end; e++)
-				runEffect(effects[e], false);
+				runEffect(effects[e]);
 		}
 		i = end;
 	}
@@ -451,16 +455,14 @@ bool RoomScript::sameGuards(const ScriptEffect &a, const ScriptEffect &b) {
 	return true;
 }
 
-void RoomScript::runEffect(const ScriptEffect &original, bool guarded) {
-	// The arms inside a body: the refusal and the success path of the same click
-	// sit side by side, each under its own guard. A guard the port cannot answer
-	// -- an address outside the state block -- fails, so its arm is not taken.
-	// A caller that has already answered them for the whole arm says so.
-	for (uint g = 0; guarded && g < original.guardCount; g++) {
-		if (!holds(original.guards[g]))
-			return;
-	}
-
+/**
+ * One effect, with its arm already answered by runEffects.
+ *
+ * The arms inside a body -- the refusal and the success path of the same click,
+ * side by side -- are what the guards on an effect are, and they are tested a
+ * whole arm at a time above rather than here, so this runs unconditionally.
+ */
+void RoomScript::runEffect(const ScriptEffect &original) {
 	// A handful of arguments the original loaded into a register instead of
 	// pushing as an immediate; roomlogic.py could still resolve them exactly
 	// where the register held a byte this port already tracks as state (see

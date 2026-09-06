@@ -190,6 +190,21 @@ void AnimSlots::stepLoops() {
 	}
 }
 
+bool AnimSlots::stamp(uint slot, int frame, Graphics::Surface &background, int clipBottom) {
+	if (slot >= kSlotCount)
+		return false;
+
+	Slot &s = _slots[slot];
+	const int count = (int)s.bank.frameCount();
+	if (frame < 1 || frame > count)
+		return false;
+
+	s.bank.drawFrame((uint)(frame - 1), background, 0, clipBottom);
+	debugC(2, kDebugGraphics, "anim: slot %u stamped frame %d of %s into the plate",
+		   slot, frame, s.name.c_str());
+	return true;
+}
+
 void AnimSlots::stepLoopFlags() {
 	for (uint i = 0; i < kSlotCount; i++) {
 		if (_slots[i].loop == 1)

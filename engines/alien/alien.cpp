@@ -196,7 +196,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0),
 		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
-		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone),
+		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
@@ -412,6 +412,22 @@ Common::Error AlienEngine::run() {
 
 	while (!shouldQuit() && !_quit) {
 		handleEvents();
+
+		// The save button, a frame after the click that asked for it. The menu
+		// draws over the screen and takes its own events, so the room is left
+		// dirty for the frame that follows it.
+		if (_menuRequest) {
+			_menuRequest = false;
+			debugC(1, kDebugSave, "save: menu requested from room %d", _room);
+
+			// A scripted run drives the game, not the GUI, and the dialog would
+			// sit waiting for a click that the script has no way to send.
+			if (!_playActive) {
+				openMainMenuDialog();
+				_dirty = true;
+			}
+		}
+
 		stepClock();
 		if (_playActive)
 			stepPlayScript();
@@ -520,6 +536,11 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		debugC(1, kDebugPlay, "play: %u: rclick %d,%d (scroll %d)", cmd.sourceLine,
 			   cmd.a, cmd.b, _scrollX);
 		clickAt(cmd.a - _scrollX, cmd.b, true);
+		break;
+
+	case PlayCommand::kHover:
+		debugC(1, kDebugPlay, "play: %u: hover %d,%d", cmd.sourceLine, cmd.a, cmd.b);
+		updateHover(cmd.a, cmd.b);
 		break;
 
 	case PlayCommand::kUse:
@@ -788,6 +809,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_hover = -1;
 	_hoverSlot = -1;
 	_hoverArrow = Inventory::kArrowNone;
+	_hoverMenu = false;
 	_pending = -1;
 	_pendingItem = Inventory::kNoItem;
 	_armed = 0;
@@ -1160,6 +1182,9 @@ void AlienEngine::stepClock() {
 	// OBJ:sub_069fd call every scene overlay's entry 2 makes (lighting.cpp).
 	stepLighting();
 
+	// And the speaker colour a couple of rooms set beside it, in the same tick.
+	stepTextColor();
+
 	// The status line's fade runs off the frame, not off the animation gate.
 	stepLabelFade();
 
@@ -1227,11 +1252,13 @@ void AlienEngine::updateHover(int x, int y) {
 
 	const int slot = _inventory.slotAt(x, y);
 	const Inventory::Arrow arrow = _inventory.arrowHover(x, y);
+	const bool menu = _inventory.menuButtonAt(x, y) && menuAllowed();
 
-	if (hit != _hover || slot != _hoverSlot || arrow != _hoverArrow) {
+	if (hit != _hover || slot != _hoverSlot || arrow != _hoverArrow || menu != _hoverMenu) {
 		_hover = hit;
 		_hoverSlot = slot;
 		_hoverArrow = arrow;
+		_hoverMenu = menu;
 		_labelSlot = hit >= 0 ? _spots[hit].label : 0;
 		_dirty = true;
 	}
@@ -1242,11 +1269,25 @@ void AlienEngine::updateHover(int x, int y) {
 	refreshLabel(x, y);
 }
 
+bool AlienEngine::menuAllowed() const {
+	// OBJ:sub_0883d skips the whole test when handler_code is 0x1e, so the
+	// button is dead in room 30 and nowhere else.
+	return _room > 0 && _room != 30;
+}
+
 bool AlienEngine::clickBar(int x, int y, bool rightButton) {
 	// Everything below the playfield is the bar and the status line: the two
 	// scroll arrows, the six item slots, and dead space. None of it walks.
 	if (y <= kPlayfieldBottom)
 		return false;
+
+	// The save button answers to either button, and the click only raises the
+	// request: OBJ:sub_0883d sets [0xa821] and the room's tick is what acts on
+	// it a frame later, with the tick already finished.
+	if (_inventory.menuButtonAt(x, y) && menuAllowed()) {
+		_menuRequest = true;
+		return true;
+	}
 
 	const Inventory::Arrow arrow = _inventory.arrowAt(x, y);
 	if (arrow != Inventory::kArrowNone) {
@@ -2798,6 +2839,58 @@ void AlienEngine::drawSpotOverlay() {
  * `set_text_color`, docs/dialog_system.md 3C), which the scene loop calls every
  * frame a line is up -- so the one entry goes down here the same way.
  */
+/**
+ * The rooms that colour their own dialogue, as their entry 2 does.
+ *
+ * DIALOG:sub_0b6a1 (0ae2:0x881) resets [0xac21..0xac23] to white before every
+ * line, which is what loadRoom does here, and a room that wants another colour
+ * writes the triple back in its tick -- every frame, so it holds for whatever
+ * the room says next. Two rooms do it as an ambient colour of their own: the
+ * bedroom, where it follows the lamp, and the underwater half of room 46.
+ *
+ * The other three writes in the game are not ambient. Room 30's is white, the
+ * colour a line has anyway, and rooms 21 and 53/57 set theirs inside an
+ * *entry 4* body that also speaks the line it colours (`DIALOG:sub_0b63a`), and
+ * neither those bodies nor entry 4 itself is lifted -- so there is nothing yet
+ * for the colour to colour. They are listed in docs/port_plan.md with the rest
+ * of the dialogue-request work rather than carried here as dead rows.
+ */
+static const struct {
+	int room;
+	uint16 flag;		///< the state byte the room switches on, or 0 for always
+	byte value;
+	byte r, g, b;		///< the VGA 6-bit triple the room stores
+} kRoomTextColors[] = {
+	// ovr_07_0e63:0x0c51 -- the bedroom in the dark speaks in blue, and lights
+	// its lines white again with the lamp ([0xa6fa], see bedroom.cpp).
+	{  7, 0xa6fa, 0, 0x14, 0x14, 0x3F },
+	{  7, 0xa6fa, 1, 0x3F, 0x3F, 0x3F },
+	// ovr_2e_0ec3:0x0456 -- under the water, unguarded.
+	{ 46,      0, 0, 0x1E, 0x23, 0x3F }
+};
+
+void AlienEngine::stepTextColor() {
+	for (uint i = 0; i < ARRAYSIZE(kRoomTextColors); i++) {
+		if (kRoomTextColors[i].room != _room)
+			continue;
+		if (kRoomTextColors[i].flag &&
+			_script.flag(kRoomTextColors[i].flag) != kRoomTextColors[i].value)
+			continue;
+
+		const byte *entry = _palette + Font::kInkColor * 3;
+		const byte r = kRoomTextColors[i].r * 255 / 63;
+		if (entry[0] == r && entry[1] == kRoomTextColors[i].g * 255 / 63 &&
+			entry[2] == kRoomTextColors[i].b * 255 / 63)
+			return;
+
+		setTextColor(kRoomTextColors[i].r, kRoomTextColors[i].g, kRoomTextColors[i].b);
+		uploadTextColor();
+		debugC(1, kDebugGraphics, "text: room %d speaks in %d,%d,%d", _room,
+			   kRoomTextColors[i].r, kRoomTextColors[i].g, kRoomTextColors[i].b);
+		return;
+	}
+}
+
 void AlienEngine::uploadTextColor() {
 	g_system->getPaletteManager()->setPalette(_palette + Font::kInkColor * 3,
 											  Font::kInkColor, 1);
@@ -3101,7 +3194,7 @@ void AlienEngine::redraw() {
 		// The bar sits below the playfield, so it goes on after the room but
 		// before the text layer, which is what the original's redraw order
 		// comes to.
-		_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow);
+		_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow, _hoverMenu);
 
 		drawLabel();
 	}

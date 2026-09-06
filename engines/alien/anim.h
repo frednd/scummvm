@@ -209,6 +209,18 @@ public:
 	void bake(Graphics::Surface &background,
 			  int clipBottom = DL1Sprite::kNoClipBottom);
 
+	/**
+	 * Stamps one frame of a slot's bank into the background page.
+	 *
+	 * 10c9:sub_1132a, which several rooms' enter routines call a few times to
+	 * bring the plate up to date with the puzzle state: it writes the frame
+	 * straight to the background buffer (MIDAS:sub_18006) and leaves the slot
+	 * itself alone, so nothing is animating afterwards. Returns false when the
+	 * slot holds no bank or the frame is outside it.
+	 */
+	bool stamp(uint slot, int frame, Graphics::Surface &background,
+			   int clipBottom = DL1Sprite::kNoClipBottom);
+
 	/** The bank a slot holds, for the debug console. */
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }
 	int frame(uint slot) const { return _slots[slot].frame; }
