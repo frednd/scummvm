@@ -233,16 +233,26 @@ void AlienEngine::playPeephole() {
 					// Both mouths close a moment before the line goes, which is
 					// the scene's own reset play rather than anything the
 					// dialog unit does.
-					if (talking && _speechTicks <= kMouthCloseTicks) {
+					// dialog unit does. Both tests the original makes are here:
+					// the countdown, and [0xacf8] (0c55:0bd1 and 0c55:0bd8),
+					// which is only up on the last entry of the step's chain.
+					if (talking && _speechTicks <= kMouthCloseTicks &&
+						_queueNext >= _queueCount) {
 						_anims.play(0, 1, 1, 0, 1);
 						_anims.play(1, 1, 1, 0, 1);
 						talking = false;
 					}
 
 					if (--_speechTicks == 0) {
-						stopSpeech();
-						lineJustEnded = true;
-						idle = 0;
+						// A line here is an outcome code too, and this scene
+						// leans on it: code 6 of aliecon1.tal is two entries.
+						// The idle counter is only cleared where the chain runs
+						// out, since that is where OBJ:sub_08486 clears it
+						// (0251:5fd6, past the [0xad14] countdown).
+						if (!nextCutsceneLine()) {
+							lineJustEnded = true;
+							idle = 0;
+						}
 					}
 				} else {
 					idle++;

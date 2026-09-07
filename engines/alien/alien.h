@@ -194,7 +194,8 @@ private:
 	uint32 cutsceneTimer(uint16 addr) const;
 	void playCutsceneRecord(uint number);
 	void runCutsceneProc(uint proc, bool quiet = false);
-	void speakCutsceneLine(uint id, int anchorX, int anchorY);
+	void speakCutsceneLine(uint code, int anchorX, int anchorY);
+	bool nextCutsceneLine();
 	void dumpMusic();
 	void sweepMusicCues();
 	void sweepMusicRows();

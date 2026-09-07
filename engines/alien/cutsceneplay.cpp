@@ -326,16 +326,27 @@ void AlienEngine::playCutsceneRecord(uint number) {
 				if (_speech && _speechTicks > 0) {
 					// The line's own procedure runs as it is about to come down,
 					// which is how a speaker stops moving on the last word
-					// rather than when the next one starts.
-					if (speaking && !tailRun && _speechTicks <= kLineTailTicks) {
+					// rather than when the next one starts. The original guards
+					// it on [0xacf8] as well as on the countdown (0c55:1738),
+					// and [0xacf8] is raised where a line is popped only when
+					// it is the last of its chain (0251:3c46) -- so a speaker
+					// whose step carries several entries keeps his mouth going
+					// between them.
+					if (speaking && !tailRun && _speechTicks <= kLineTailTicks &&
+						_queueNext >= _queueCount) {
 						runCutsceneProc(rec->subProcs[speaker == 0 ? 2 : 3]);
 						tailRun = true;
 					}
 
 					if (--_speechTicks == 0) {
-						stopSpeech();
-						speaking = false;
-						advance = true;
+						// The rest of the step's chain first; the stream only
+						// moves on once the chain is spent.
+						if (nextCutsceneLine()) {
+							tailRun = false;
+						} else {
+							speaking = false;
+							advance = true;
+						}
 					}
 				}
 			}
@@ -486,28 +497,69 @@ void AlienEngine::runCutsceneProc(uint proc, bool quiet) {
 	_script.runEffects(effects, count);
 }
 
-/** Puts one dialog id up at a speaker's own anchor, for as long as it reads. */
-void AlienEngine::speakCutsceneLine(uint id, int anchorX, int anchorY) {
-	const TalFile::Entry &entry = _tal.entry(id);
+/**
+ * Puts one speaker step's dialog up at that speaker's own anchor.
+ *
+ * The number a speaker step carries is an outcome code, not a dialog id. The
+ * call the step makes, DIALOG:sub_0b63a (0c55:1847 for the first speaker and
+ * 0c55:1893 for the second), is the loader queue_event is: it reads the 11-byte
+ * zone 1 record at code*11 and memmoves that record's ids into the click queue
+ * at 0x3370, so one step can carry up to ten entries. Taking the code for an
+ * entry index was wrong twice over -- MW11's b:20 is entry 30, not entry 20 --
+ * and it cut every chain to its first sentence, which is why MW1's "Sorry
+ * Boss." lost the two lines that finish it and the entries past the last code
+ * were never said at all.
+ */
+void AlienEngine::speakCutsceneLine(uint code, int anchorX, int anchorY) {
+	const TalFile::Outcome &chain = _tal.outcome(code);
+
+	_speechTal = &_tal;
+	// [0xacf6], which the loader writes before it does anything else.
+	_lastEvent = (byte)code;
+	_queueCount = MIN<uint>(chain.count, TalFile::kMaxOutcomeIds);
+	_queueNext = 0;
+	for (uint i = 0; i < _queueCount; i++)
+		_queue[i] = chain.ids[i];
+
+	_speechX = anchorX;
+	_speechY = anchorY;
+	nextCutsceneLine();
+}
+
+/**
+ * The next id of the chain a speaker step raised, false once it is spent.
+ *
+ * OBJ:sub_06140 pops one id per line and OBJ:sub_08486 counts the chain down in
+ * [0xad14], raising the pulse a scene advances on only when the last of them
+ * has come down (0251:5f9a and 0251:5fbb) -- so a step is not over until its
+ * whole chain is, and the loop stays on it meanwhile.
+ */
+bool AlienEngine::nextCutsceneLine() {
+	if (_queueNext >= _queueCount) {
+		stopSpeech();
+		return false;
+	}
+
+	const uint id = _queue[_queueNext++];
+	const TalFile::Entry &entry = _speechTal->entry(id);
 
 	uint length = 0;
 	for (uint i = 0; i < entry.lines.size(); i++)
 		length += entry.lines[i].size();
 
 	_dialogId = id;
-	_speechTal = &_tal;
-	// An id whose slot holds no text still takes a step: it is held for a tick
+	_speechCustom = false;
+	// An id whose slot holds no text still takes its turn: it is held for a tick
 	// and stepped over, rather than stopping the scene on an empty line.
 	_speech = true;
 	_speechTicks = entry.lines.empty() ? kEmptyLineTicks
 									   : MAX<int>((int)length * kTicksPerCharacter,
 												  kMinSpeechTicks);
-	_speechX = anchorX;
-	_speechY = anchorY;
 	_dirty = true;
 
 	debugC(2, kDebugCutscene, "cutscene: line %u at %d,%d, %u lines, %d ticks", id,
-		   anchorX, anchorY, entry.lines.size(), _speechTicks);
+		   _speechX, _speechY, entry.lines.size(), _speechTicks);
+	return true;
 }
 
 } // End of namespace Alien
