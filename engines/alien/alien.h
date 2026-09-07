@@ -515,6 +515,12 @@ private:
 	/// init leaves the palette black and the loop's tail raises it, which is
 	/// the order the original works in too.
 	bool _fadePending;
+
+	/// Whether the room now composed still owes the scenes it raises as it
+	/// opens. Set by loadRoom and spent by the loop once the room's own frame
+	/// is on the screen, so a scene never plays over the room being left.
+	bool _pendingCutscenes;
+
 	uint _endingPos;
 	bool _endingLoop;
 	bool _won;

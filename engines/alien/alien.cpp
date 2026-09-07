@@ -214,7 +214,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_openingStep(0), _openingPending(true), _roomClock(0),
 		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _sewerStep(0),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
-		_clipBottom(kPlayfieldBottom), _fadePending(false), _won(false),
+		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
@@ -458,6 +458,16 @@ Common::Error AlienEngine::run() {
 		// the original raises the palette from black (fade.cpp).
 		if (_fadePending)
 			fadeIn();
+
+		// And with the room up, the scenes it raises as it opens. The original
+		// reaches them from inside entry 2 -- the room's tick, whose first run
+		// is the room's init -- and entry 2 is not called until the transition
+		// has put the room on the screen, so the scene plays over the room the
+		// player has just walked into rather than over the one they left.
+		if (_pendingCutscenes) {
+			_pendingCutscenes = false;
+			roomCutscenes(_room);
+		}
 
 		g_system->delayMillis(kLoopSleepMillis);
 	}
@@ -1007,9 +1017,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// with the character talking to himself before the player gets the cursor.
 	startOpening();
 
-	// And the scenes the room raises on entry, which is the last thing the
-	// original's enter routine does that the port had not got to.
-	roomCutscenes(room);
+	// And the scenes the room raises on entry, which the loop plays once the
+	// room's first frame is up: the original reaches them from entry 2, which
+	// the transition does not call until the room is on the screen. Raising
+	// them here would play them over the room being left, and the reload a
+	// scene ends with would raise them a second time.
+	_pendingCutscenes = true;
 
 	// And with the walk channel on, every hotspot of the room is clicked on
 	// paper and the resolved walk target printed, which is what
