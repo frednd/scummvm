@@ -113,7 +113,62 @@ bool CharAnim::load(const Common::String &base) {
 	return true;
 }
 
-void CharAnim::drawFrame(uint index, Graphics::Surface &dest, int x, int y, int clipBottom) const {
+// The depth scale, and the shape the blit puts a frame through to honour it.
+//
+// [0xa888] is one 8.8 fixed-point *divisor* and OBJ:dl1_load_and_blit -- which,
+// despite the name the disassembly gives it, is the character's blit and
+// nothing else's; every other sprite in the game goes down the DL1 strip path
+// -- reads it into a local before it does anything else (0251:0c82). Four
+// things come out of it:
+//
+//   * the top edge moves down by `0x40 - 0x4000/scale` (0251:0cdf), 0x40 being
+//     the walk point's offset down the frame. That is what keeps the *feet*
+//     where the walk system put them while the rest of him shrinks upward.
+//   * the record's own hotspot is divided by it too (0251:0d03), so the frame
+//     stays in the same place inside a box that is itself smaller.
+//   * the drawn width and height are counted rather than divided (0251:0d59,
+//     0251:0d79): one output pixel per step of the source that is still inside
+//     the frame.
+//   * and the source is walked with the divisor as its step -- integer part in
+//     AX, fraction accumulated in DH, `adc si, ax` carrying it (0251:0e5e).
+//
+// The column accumulator starts one step in and the row accumulator starts at
+// zero, so the two axes are half a step out of phase with each other. That is
+// the original's, not a slip here: the row offset is recomputed from a running
+// total after each row (0251:0e81) while the column fraction is primed once
+// before the run (0251:0e65).
+//
+// Which rooms ask for which scale is scale.cpp.
+
+/// The extent one axis occupies at `scale`, counted the original's way.
+static int scaledExtent(int size, uint16 scale) {
+	int n = 0;
+	while ((((n + 1) * (int)scale) >> 8) <= size)
+		n++;
+	return n;
+}
+
+bool CharAnim::geometry(uint index, int x, int y, uint16 scale, Geometry &out) const {
+	if (index >= _frames.size())
+		return false;
+	if (!scale)
+		scale = kUnitScale;
+
+	const Frame &f = _frames[index];
+
+	// The feet stay put: whatever the shrink takes off the height is given
+	// back to the top edge.
+	y += kFootOffset - 0x4000 / (int)scale;
+
+	out.left = x + (((int)f.hotspotX << 8) / (int)scale);
+	out.top = y + (((int)f.hotspotY << 8) / (int)scale);
+	out.width = scaledExtent((int)f.width, scale);
+	out.height = scaledExtent((int)f.height, scale);
+	return true;
+}
+
+void CharAnim::drawFrame(uint index, Graphics::Surface &dest, int x, int y, int clipBottom,
+						 uint16 scale) const {
 	if (index >= _frames.size())
 		return;
 
@@ -125,23 +180,85 @@ void CharAnim::drawFrame(uint index, Graphics::Surface &dest, int x, int y, int 
 	if ((uint32)f.offset + length > _stripSize[f.strip])
 		return;
 
-	const byte *src = _strip[f.strip] + f.offset;
-	const int left = x + f.hotspotX;
-	const int top = y + f.hotspotY;
+	if (!scale)
+		scale = kUnitScale;
 
-	for (int row = 0; row < (int)f.height; row++) {
-		const int destY = top + row;
+	Geometry g;
+	if (!geometry(index, x, y, scale, g))
+		return;
+
+	// The two clips that also move the source along, and then the two that only
+	// shorten the run. The second pair is measured from the *unclipped* corner:
+	// the original still has that in its argument slots, having moved only its
+	// own copy of it (0251:0dfb and 0251:0e1b against 0251:0db9).
+	const int leftUnclipped = g.left;
+	const int topUnclipped = g.top;
+	int srcRow = 0, srcCol = 0;
+
+	if (g.top < kFieldTop) {
+		const int cut = kFieldTop - g.top;
+		g.height -= cut;
+		if (g.height < 1)
+			return;
+		srcRow = (cut * (int)scale) >> 8;
+		g.top += cut;
+	}
+
+	if (g.left < 0) {
+		const int cut = -g.left;
+		g.width -= cut;
+		if (g.width < 1)
+			return;
+		srcCol = (cut * (int)scale) >> 8;
+		g.left += cut;
+	}
+
+	if (leftUnclipped + g.width >= (int)dest.w) {
+		g.width = (int)dest.w - leftUnclipped;
+		if (g.width < 1)
+			return;
+	}
+
+	if (topUnclipped + g.height >= clipBottom) {
+		g.height = clipBottom - topUnclipped;
+		if (g.height < 1)
+			return;
+	}
+
+	const byte *base = _strip[f.strip] + f.offset;
+	const int step = scale >> 8;
+	const int frac = scale & 0xff;
+
+	int acc = 0;
+	for (int row = 0; row < g.height; row++) {
+		const int source = srcRow + (acc >> 8);
+		acc += (int)scale;
+		if (source >= (int)f.height)
+			break;
+
+		const int destY = g.top + row;
 		if (destY < 0 || destY >= dest.h || destY >= clipBottom)
 			continue;
 
+		const byte *in = base + (uint32)source * f.width;
 		byte *out = (byte *)dest.getBasePtr(0, destY);
-		const byte *in = src + (uint32)row * f.width;
-		for (int col = 0; col < (int)f.width; col++) {
-			const int destX = left + col;
-			if (destX < 0 || destX >= dest.w)
-				continue;
-			if (in[col])
+
+		int col = srcCol;
+		int carry = frac;			///< primed one step in, as DH is
+		for (int i = 0; i < g.width; i++) {
+			if (col >= (int)f.width)
+				break;
+
+			const int destX = g.left + i;
+			if (destX >= 0 && destX < dest.w && in[col])
 				out[destX] = in[col];
+
+			col += step;
+			carry += frac;
+			if (carry >= 0x100) {
+				carry -= 0x100;
+				col++;
+			}
 		}
 	}
 }
@@ -264,7 +381,8 @@ static const int kIdleWrap = 200;
 
 
 Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY(0),
-		_steps(0), _facing(3), _arrivalFacing(kFacingKeep), _phase(0),
+		_steps(0), _scale(CharAnim::kUnitScale), _facing(3),
+		_arrivalFacing(kFacingKeep), _phase(0),
 		_frame(kIdleFrame[3]), _turnLeft(0), _idleCount(0), _idleCycle(0),
 		_idleStream(nullptr), _idleIndex(0), _idleLeft(0), _idleFrame(0),
 		_idleAllowed(true),
@@ -594,20 +712,22 @@ void Walker::tick(bool inventoryOpen) {
 void Walker::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const {
 	if (_anim.isLoaded())
 		_anim.drawFrame(_frame, dest, _x + kDrawOffsetX - scrollX, _y + kDrawOffsetY,
-						clipBottom);
+						clipBottom, _scale);
 }
 
 bool Walker::bounds(Common::Rect &box) const {
 	if (!_anim.isLoaded() || _frame >= _anim.frameCount())
 		return false;
 
-	// The same corner drawFrame() starts from: the character's position plus
-	// the frame's own hotspot, which is an offset into his box rather than a
-	// pivot.
-	const CharAnim::Frame &f = _anim.frame(_frame);
-	const int left = _x + kDrawOffsetX + f.hotspotX;
-	const int top = _y + kDrawOffsetY + f.hotspotY;
-	box = Common::Rect(left, top, left + f.width, top + f.height);
+	// The same corner and the same extents drawFrame() works with, which is
+	// where the original's [0xa97a]..[0xa980] come from as well: the character's
+	// position plus the frame's own hotspot -- an offset into his box rather
+	// than a pivot -- both of them through the scale.
+	CharAnim::Geometry g;
+	if (!_anim.geometry(_frame, _x + kDrawOffsetX, _y + kDrawOffsetY, _scale, g))
+		return false;
+
+	box = Common::Rect(g.left, g.top, g.left + g.width, g.top + g.height);
 	return true;
 }
 

@@ -135,6 +135,13 @@ private:
 	void stepLighting();
 	void dumpLighting();
 	void sweepLighting();
+
+	// scale.cpp: [0xa888], the depth divisor the character is drawn through.
+	uint16 charScale(int room, int y, bool ledge) const;
+	void stepCharScale();
+	void dumpScale();
+	void sweepScale();
+
 	void updateScroll();
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);

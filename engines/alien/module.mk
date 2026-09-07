@@ -30,6 +30,7 @@ MODULE_OBJS = \
 	roomtick.o \
 	script.o \
 	s3m.o \
+	scale.o \
 	saveload.o \
 	lab.o \
 	library.o \

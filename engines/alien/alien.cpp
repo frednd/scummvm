@@ -392,6 +392,14 @@ Common::Error AlienEngine::run() {
 			sweepLighting();
 	}
 
+	// The scale channel prints what tools/check_scale.py mirrors: what each
+	// room does about depth, and at level 2 that worked out row by row.
+	if (debugChannelSet(-1, kDebugScale)) {
+		dumpScale();
+		if (debugChannelSet(2, kDebugScale))
+			sweepScale();
+	}
+
 	// The music channel prints what tools/check_music.py mirrors: the module and
 	// slot tables, then the sequencer walked row by row, then the loudness of the
 	// rendered output second by second.
@@ -1264,6 +1272,10 @@ void AlienEngine::stepClock() {
 	// The room's light map, sampled where Ben is standing: the same once-a-tick
 	// OBJ:sub_069fd call every scene overlay's entry 2 makes (lighting.cpp).
 	stepLighting();
+
+	// And how far away he is, out of the same position: the ladder or the
+	// interpolator the room runs beside that sampler (scale.cpp).
+	stepCharScale();
 
 	// And the speaker colour a couple of rooms set beside it, in the same tick.
 	stepTextColor();

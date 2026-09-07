@@ -44,6 +44,7 @@ enum AlienDebugChannels {
 	kDebugLight,
 	kDebugChat,
 	kDebugPlate,
+	kDebugScale,
 };
 
 } // End of namespace Alien

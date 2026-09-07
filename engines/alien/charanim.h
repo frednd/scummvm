@@ -59,7 +59,29 @@ class CharAnim {
 public:
 	enum {
 		kRecordSize = 9,
-		kMaxStrips = 8			///< JAIL_GUA, the only set that needs them all
+		kMaxStrips = 8,			///< JAIL_GUA, the only set that needs them all
+
+		/// [0xa888] at one to one: the divisor is 8.8, so 0x200 is half size
+		/// and 0x80 -- the value MAIN boots with -- is double.
+		kUnitScale = 0x100,
+
+		/// The walk point's offset down the frame, the 0x40 the blit takes the
+		/// shrink out of so that the feet do not move (0251:0cdf).
+		kFootOffset = 0x40,
+
+		/// The first row of the playfield, which is where the blit's own top
+		/// clip is measured from (0251:0d99).
+		kFieldTop = 13
+	};
+
+	/// Where a frame lands, and how big it lands, once the scale has been
+	/// applied: the original's ([bp-0x20], [bp-0x22]) corner and the row and
+	/// column counts it works out at 0251:0d59 and 0251:0d79.
+	struct Geometry {
+		int left;
+		int top;
+		int width;
+		int height;
 	};
 
 	struct Frame {
@@ -91,8 +113,14 @@ public:
 	/// `clipBottom` is the first row that must not be drawn, the original's
 	/// [0xa8e4]: the character goes through the same OBJ:dl1_load_and_blit the
 	/// room's slots do, so the same global shortens him (see DL1Sprite).
+	///
+	/// `scale` is [0xa888], the depth divisor the same blit reads (scale.cpp).
 	void drawFrame(uint index, Graphics::Surface &dest, int x, int y,
-				   int clipBottom = DL1Sprite::kNoClipBottom) const;
+				   int clipBottom = DL1Sprite::kNoClipBottom,
+				   uint16 scale = kUnitScale) const;
+
+	/// Where the frame would land at that scale, before any clipping.
+	bool geometry(uint index, int x, int y, uint16 scale, Geometry &out) const;
 
 private:
 	Common::Array<Frame> _frames;
@@ -218,8 +246,21 @@ public:
 	 * original leaves in [0xa97a]..[0xa980] as it blits the character and what
 	 * the foreground rectangles are tested against. False when nothing is
 	 * loaded, and so nothing was drawn.
+	 *
+	 * It is the *scaled* box: the original writes it from the corner and the
+	 * row and column counts the blit has just drawn with, so a Ben who is half
+	 * size is half a Ben to the foreground rectangles too.
 	 */
 	bool bounds(Common::Rect &box) const;
+
+	/**
+	 * The depth scale to draw at, [0xa888].
+	 *
+	 * A global in the original and kept as one here: the room decides it and
+	 * every draw of the character reads it (scale.cpp).
+	 */
+	void setScale(uint16 scale) { _scale = scale ? scale : CharAnim::kUnitScale; }
+	uint16 scale() const { return _scale; }
 
 	/// The sprite's own origin, the original's [0xa8ec] and [0xa8ee].
 	int spriteX() const { return _x; }
@@ -251,6 +292,8 @@ private:
 	int _stepX;						///< 1/64 pixel per tick
 	int _stepY;
 	int _steps;						///< ticks left in this segment
+
+	uint16 _scale;					///< [0xa888], the depth divisor
 
 	int _facing;
 	int _arrivalFacing;				///< the turn owed at the end of the route
