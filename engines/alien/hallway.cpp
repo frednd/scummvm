@@ -69,6 +69,8 @@ static const byte kDoorRefusalItem = 16;
 static const uint16 kSeenAliens = 0xa6d7;
 /// [0x33a4]: the scene's own one-shot latch, in the latch block a save carries.
 static const uint16 kPeepholeLatch = 0x33a4;
+/// [0xa6d3]: a scene has just played, which room 26 reads and clears.
+static const uint16 kScenePlayed = 0xa6d3;
 
 /// Submode 111, the link that names the room itself (transitions.h).
 static const byte kSelfSubmode = 111;
@@ -197,9 +199,13 @@ void AlienEngine::playPeephole() {
 	int exchanges = 0;		// [bp-3]: how many turns the two have had
 	int speaker = 1;		// [bp-2], which the first line's advance turns to 0
 	uint next = 1;			// [bp-1], the dialog id the next line takes
-	bool ended = false;		// [0xad1c]: a line has come down at least once
+	// [0xad1c] is a pulse and not a flag: OBJ:sub_08486 zeroes it at the top of
+	// every pass (0251:5f79) and raises it only on the pass a line's countdown
+	// runs out (0251:5fbb), so a test of it is true for one pass in the scene.
+	bool lineJustEnded = false;
 	bool talking = false;	// [0x9926]: the speaker's cycle is running
 	bool skipped = false;
+	uint32 exitTick = 0;	// when the closing play was issued, for the dumps
 
 	while (!shouldQuit() && !_quit && !skipped) {
 		Common::Event event;
@@ -235,7 +241,7 @@ void AlienEngine::playPeephole() {
 
 					if (--_speechTicks == 0) {
 						stopSpeech();
-						ended = true;
+						lineJustEnded = true;
 						idle = 0;
 					}
 				} else {
@@ -271,11 +277,28 @@ void AlienEngine::playPeephole() {
 				}
 			}
 
-			// Once they have finished, the right-hand alien holds the frame the
-			// closing play starts on: the original re-issues it every pass, so
-			// it never advances past its first frame.
-			if (ended && exchanges == kExchanges)
+			// And on the one pass where the last line of the last exchange has
+			// just come down, the right-hand alien plays himself out. Issued
+			// once: MIDAS:anim_play_mode1 restarts a slot unconditionally
+			// (17a9:0b9b zeroes its frame), so re-issuing it every pass would
+			// pin the play on its first frame and nothing would move.
+			if (lineJustEnded && exchanges == kExchanges) {
 				_anims.play(1, kExitFirst, kExitCount, kExitRate, 1);
+				exitTick = tick;
+			}
+
+			lineJustEnded = false;
+
+			// The closing play frame by frame, for a headless look at it: the
+			// same level the lines are dumped at.
+			if (exitTick && debugChannelSet(3, kDebugCutscene) &&
+				tick - exitTick <= (uint32)kExitCount * kExitRate * 2 &&
+				(tick - exitTick) % (kExitRate * 2) == 0) {
+				_anims.bake(_background, _clipBottom);
+				redraw();
+				dumpScreen(Common::String::format("hallway-exit-%u.png",
+												  (uint)((tick - exitTick) / (kExitRate * 2))));
+			}
 
 			if (exchanges == kExchanges && idle == kSceneEnd)
 				skipped = true;
@@ -292,10 +315,15 @@ void AlienEngine::playPeephole() {
 			g_system->delayMillis(10);
 	}
 
-	debugC(1, kDebugCutscene, "hallway: the glass scene ran %u lines", next - 1);
+	debugC(1, kDebugCutscene,
+		   "hallway: the glass scene ran %u lines, %d exchanges, ended at idle %d%s",
+		   next - 1, exchanges, idle, skipped && idle != kSceneEnd ? " (skipped)" : "");
 
 	stopSpeech();
 	_cutscene = false;
+
+	// 0c55:0c6f, the same [0xa6d3] every other teardown in CUTSCENE raises.
+	_script.setFlag(kScenePlayed, 1);
 	_script.setFlag(kPeepholeLatch, 1);
 	_dirty = true;
 

@@ -34,6 +34,10 @@ namespace Alien {
 /// The pause step's argument is in animation ticks, the same divider the slots run on.
 static const uint kAnimTickMask = 3;
 
+/// [0xa6d3]: a scene has just played, which every teardown in CUTSCENE raises
+/// and room 26 is the only reader of.
+static const uint16 kScenePlayed = 0xa6d3;
+
 /// How long before a line comes down the "line ending" procedure runs, in half ticks.
 static const int kLineTailTicks = 0xF;
 
@@ -432,6 +436,12 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	stopSpeech();
 	stopMusic();
 	_cutscene = false;
+
+	// Every teardown in CUTSCENE raises [0xa6d3] -- 0c55:0086, 0x09df, 0x0c6f,
+	// 0x0e1b and 0x18f8 all end with it -- and room 26's own code is the one
+	// that reads it, taking a branch of its own on the first tick after a scene
+	// and clearing it again (ovr_1a_0eaf:0x069f).
+	_script.setFlag(kScenePlayed, 1);
 
 	if (room > 0 && loadRoom(room))
 		_ben.place(benX, benY, benFacing);
