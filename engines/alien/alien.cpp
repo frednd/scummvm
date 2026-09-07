@@ -205,7 +205,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
-		_dialogId(1), _lastEvent(0), _speechCustom(false), _libraryStep(0),
+		_dialogId(1), _lastEvent(0), _speechCustom(false), _libraryStep(0), _libraryPos(0),
 		_cursorX(0), _cursorY(0), _chatColorsHeld(false),
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
@@ -1241,6 +1241,11 @@ void AlienEngine::stepClock() {
 		// the hatch that ends it (sewer.cpp).
 		stepLab();
 		stepSewer();
+
+		// And room 8's safe, whose steps are timed off the same counter room 3's
+		// are (library.cpp). The owl's half of that machine is per frame and is
+		// stepped with the conversation menu, further down.
+		stepLibrarySafe();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
 			nextSpeech();
@@ -2775,6 +2780,10 @@ void AlienEngine::finishAction() {
 	// One room's arms have to be read *before* its body, because one of them is
 	// guarded on a flag the body sets (lab.cpp).
 	armLab(spot.obj, item != Inventory::kNoItem);
+
+	// And room 8's safe, which is armed the same way and for the same reason:
+	// the machine is the room's, the ten frames it opens with are the body's.
+	armLibrarySafe(spot.obj, item);
 
 	// Room 8's owl is answered by a machine of the room's own rather than by a
 	// script body, and its click must not reach the body: the lifted table has

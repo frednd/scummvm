@@ -256,6 +256,8 @@ private:
 
 	bool armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY);
 	void stepLibrary();
+	void armLibrarySafe(int obj, byte item);
+	void stepLibrarySafe();
 	void nextSpeech();
 	void stopSpeech();
 
@@ -437,8 +439,12 @@ private:
 	/// caller of it (chat.cpp, library.cpp).
 	ChatMenu _chat;
 
-	/// Room 8's [0xa49f] machine: talking to the owl.
+	/// Room 8's [0xa49f] machine: talking to the owl, and cracking the safe.
 	byte _libraryStep;
+
+	/// [0xa49c] as room 8 reads it: the free-running counter its safe steps
+	/// time themselves off, cleared where each of them starts.
+	uint16 _libraryPos;
 
 	/// [0x8d02] and [0x8d04]: where the cursor was when the hover last ran. The
 	/// conversation menu tests the cursor against its own bands from the room's

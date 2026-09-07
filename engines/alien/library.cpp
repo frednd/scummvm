@@ -87,6 +87,35 @@ static const byte kStepChat = 0x14;
 static const byte kStepReply = 0x16;
 static const byte kStepColor = 0x17;		///< the port's own: hold the ink
 
+/// The safe, and the item that cracks it: room 15's shelf gives up the
+/// stethoscope, and this is the only thing in the game it is used on.
+static const byte kSafe = 25;
+static const byte kStethoscope = 11;
+
+static const uint kStetSlot = 13;			///< LIB_STET.DL1, 55 frames of Ben
+static const uint kSafeSlot = 5;			///< SAFEOPE1.DL1, the door swinging
+
+static const byte kStepListen = 0x64;
+static const byte kStepDialOnce = 0x6e;
+static const byte kStepDialTwice = 0x78;
+static const byte kStepStandUp = 0x82;
+static const byte kStepCracked = 0x8c;
+static const byte kStepSwing = 0x96;
+
+/// [0xa49c] > this before each of the timed steps ends.
+static const uint16 kListenWait = 0x28, kDialWait = 0x32, kDialAgainWait = 0x41,
+					kStandWait = 0x5a, kSwingWait = 0x23;
+
+/// What he says once it is open (queue_event(11), ovr_08_0e67:0x10a3).
+static const byte kSafeLine = 11;
+
+/// The two 10c9:sub_11e9d hands the delay queue as the door comes open.
+static const uint kSafeSample1 = 4, kSafeSample2 = 3;
+static const uint32 kSafeRate1 = 0x8ca0, kSafeRate2 = 0x2710;
+static const byte kSafeVolume = 0x40;
+static const int8 kSafePanning = 0x3e;
+static const uint16 kSafeDelay2 = 6;
+
 bool AlienEngine::armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY) {
 	if (_room != kLibraryRoom || item || obj != kOwl || verb != kVerbTalkTo)
 		return false;
@@ -164,7 +193,124 @@ void AlienEngine::stepLibrary() {
 		break;
 
 	default:
+		// The safe's states run on the tick pair, in stepLibrarySafe: they are
+		// the same [0xa49f] the owl's are, so they come through here too.
+		break;
+	}
+}
+
+/**
+ * A click body is about to run: start the safe if it is the stethoscope's.
+ *
+ * The room's other [0xa49f] machine, and the longest of the ones the port runs.
+ * The arm is ovr_08_0e67:0x0049, under the item-use half of the room's click
+ * dispatch ([0xa956] == 0x4e22) with item 11 in hand and object 25 clicked: it
+ * takes the cursor and the walker away ([0xa948] and [0xa94d]), starts the
+ * first ten frames of LIB_STET on slot 13 -- which the lifted body plays too,
+ * with the same arguments -- and sets [0xa49f] to 100 with [0xa49c] at zero.
+ *
+ * From there the room's tick (ovr_08_0e67:0x0fd8 onwards) runs five more steps,
+ * each waiting on that counter and playing the next stretch of the same bank:
+ *
+ *   0x64  40 ticks after the arm: frames 10..25, the ear against the door.
+ *   0x6e  50 later: frames 26..35, the dial.
+ *   0x78  65 later: frames 26..35 again, the dial a second time.
+ *   0x82  90 later: frames 36..55, which is him standing back up.
+ *   0x8c  waits for that play to have two frames left rather than for the
+ *         clock, and gives the walker back ([0xa94d] = 1).
+ *   0x96  35 later: the safe swings open on slot 5, the two sounds of
+ *         10c9:sub_11e9d go into the delay queue, outcome 11 is spoken and the
+ *         cursor comes back.
+ *
+ * Without the machine the port played the arm's ten frames and stopped there,
+ * which is both halves of playtest report 11: the safe never opened, and the
+ * ten-frame play -- mode 2, which holds the frame before the last one it
+ * advanced to -- left him crouched at the door for good. The whole of
+ * LIB_STET's last stretch is what takes that picture away again: frame 54 is a
+ * four-by-two speck, so the slot ends holding nothing anyone can see.
+ */
+void AlienEngine::armLibrarySafe(int obj, byte item) {
+	if (_room != kLibraryRoom || obj != kSafe || item != kStethoscope)
+		return;
+
+	_libraryStep = kStepListen;
+	_libraryPos = 0;
+	_drawCharacter = false;
+	CursorMan.showMouse(false);
+
+	debugC(1, kDebugRooms, "library: the stethoscope goes on the safe, step 0x%02x",
+		   kStepListen);
+}
+
+void AlienEngine::stepLibrarySafe() {
+	if (_room != kLibraryRoom)
+		return;
+
+	// [0xa49c], which LOGIC:sub_11f79 advances on every tick pair whether or
+	// not a machine is running (11f3:0069).
+	_libraryPos++;
+
+	switch (_libraryStep) {
+	case kStepListen:
+		if (_libraryPos <= kListenWait)
+			break;
+		_anims.play(kStetSlot, 10, 16, 3, 2);
+		_libraryStep = kStepDialOnce;
+		_libraryPos = 0;
+		break;
+
+	case kStepDialOnce:
+		if (_libraryPos <= kDialWait)
+			break;
+		_anims.play(kStetSlot, 26, 10, 5, 2);
+		_libraryStep = kStepDialTwice;
+		_libraryPos = 0;
+		break;
+
+	case kStepDialTwice:
+		if (_libraryPos <= kDialAgainWait)
+			break;
+		_anims.play(kStetSlot, 26, 10, 5, 2);
+		_libraryStep = kStepStandUp;
+		_libraryPos = 0;
+		break;
+
+	case kStepStandUp:
+		if (_libraryPos <= kStandWait)
+			break;
+		_anims.play(kStetSlot, 36, 20, 4, 2);
+		_libraryStep = kStepCracked;
+		_libraryPos = 0;
+		break;
+
+	case kStepCracked:
+		// This one waits on the play, not on the clock: he is his own again two
+		// frames before it ends, which is where the walker takes the pose back.
+		if (_anims.remaining(kStetSlot) != 2)
+			break;
+		_drawCharacter = true;
+		_libraryStep = kStepSwing;
+		_libraryPos = 0;
+		break;
+
+	case kStepSwing: {
+		if (_libraryPos <= kSwingWait)
+			break;
+		_anims.play(kSafeSlot, 1, 7, 1, 1);
+		_sound.queue(kSafeSample1, kSafeRate1, kSafeVolume, kSafePanning, 0);
+		_sound.queue(kSafeSample2, kSafeRate2, kSafeVolume, kSafePanning, kSafeDelay2);
+
+		int anchorX, anchorY;
+		characterAnchor(anchorX, anchorY);
+		queueOutcome(_tal, kSafeLine, anchorX, anchorY);
+		CursorMan.showMouse(true);
 		_libraryStep = 0;
+
+		debugC(1, kDebugRooms, "library: the safe is open, outcome %d", kSafeLine);
+		break;
+	}
+
+	default:
 		break;
 	}
 }
