@@ -228,6 +228,10 @@ private:
 	static Common::String argText(uint16 arg);
 	void stepSewer();
 	void sewerValve();
+
+	void enterBasement(int room);
+	void stepBasement();
+	bool roomHasSharedExit(int room) const;
 	void cancelOpening();
 	void stepEnding();
 	void speakEnding(byte code);
@@ -512,6 +516,13 @@ private:
 
 	/// Room 35's [0xa49f] machine (sewer.cpp). Zero when nothing is running.
 	byte _sewerStep;
+
+	/// Room 13's, which is the same byte in the original (basement.cpp).
+	byte _basementStep;
+
+	/// Whether slot 0 is running room 13's arrival climb, which is what the
+	/// original can read off the slot itself (basement.cpp).
+	bool _basementClimbing;
 
 	/// The sewer's water, which the original keeps as four words of its own in
 	/// the data segment rather than in the state block: [0x4380] is the phase

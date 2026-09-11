@@ -271,6 +271,16 @@ public:
 	int facing() const { return _facing; }
 	uint frame() const { return _frame; }
 
+	/**
+	 * How long he has been standing still, the original's [0xa808].
+	 *
+	 * The idle machine's own counter, read from outside it by the rooms that
+	 * answer an arrival themselves instead of through the shared test: room 13
+	 * waits 7 ticks at the foot of the ladder and 25 at the hole (basement.cpp),
+	 * where OBJ:sub_078dd waits 5.
+	 */
+	int idleCount() const { return _idleCount; }
+
 private:
 	void startSegment();
 	int facingToward(int targetX, int targetY) const;

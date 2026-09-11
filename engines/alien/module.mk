@@ -8,6 +8,7 @@ MODULE_OBJS = \
 	chat.o \
 	cutscenes.o \
 	cutsceneplay.o \
+	basement.o \
 	bedroom.o \
 	dl1.o \
 	ending.o \

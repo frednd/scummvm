@@ -213,6 +213,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_endingStep(0), _endingPos(0), _endingLoop(false),
 		_openingStep(0), _openingPending(true), _roomClock(0),
 		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _sewerStep(0),
+		_basementStep(0), _basementClimbing(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
 		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
@@ -640,6 +641,12 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 	case PlayCommand::kFlag:
 		debugC(1, kDebugPlay, "play: %u: flag 0x%04x = %d", cmd.sourceLine, cmd.a, cmd.b);
 		_script.setFlag((uint16)cmd.a, (byte)cmd.b);
+
+		// Which rectangles a room registers is guarded on this block, so a
+		// written flag has to build them again -- the engine does it after every
+		// click for the same reason. Without it a script can set the state a
+		// hotspot waits for and still not be able to click it.
+		_script.buildHotspots(_room, _spots);
 		break;
 
 	case PlayCommand::kExpectFlag: {
@@ -893,6 +900,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_labPos = 0;
 	_labNearHole = false;
 	_sewerStep = 0;
+	_basementStep = 0;
+	_basementClimbing = false;
 	_libraryStep = 0;
 	_chat.close();
 
@@ -923,6 +932,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// And the one room whose open carries more than the lift can express: the
 	// sewer's ladder, and the water it may still be full of (sewer.cpp).
 	enterSewer();
+
+	// And room 13's, which is the climb down when he came in over it
+	// (basement.cpp).
+	enterBasement(room);
 
 	// The rectangles the room registers, by running entry 1 of its overlay as
 	// tools/gen_hotspots.py lifted it. Which ones exist depends on the puzzle
@@ -1249,6 +1262,7 @@ void AlienEngine::stepClock() {
 		// the hatch that ends it (sewer.cpp).
 		stepLab();
 		stepSewer();
+		stepBasement();
 
 		// And room 8's safe, whose steps are timed off the same counter room 3's
 		// are (library.cpp). The owl's half of that machine is per frame and is
@@ -1308,7 +1322,7 @@ void AlienEngine::stepClock() {
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
 	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !_libraryStep && !_labStep &&
-						!_sewerStep && !_endingStep && !_openingStep);
+						!_sewerStep && !_basementStep && !_endingStep && !_openingStep);
 
 	_ben.tick(_script.flag(0xa605) != 0);
 
@@ -2545,6 +2559,13 @@ void AlienEngine::checkExit() {
 	// geometry named. Anything else -- he was interrupted, or the click sent him
 	// somewhere the router could not reach exactly -- leaves the exit armed.
 	if (!_armed || _speech)
+		return;
+
+	// Two overlays have no call to it at all -- room 13 and room 46 -- and both
+	// answer an arrival with an animation of their own and write game_submode
+	// out of how far it has got instead (basement.cpp). Firing the shared test
+	// there would take the room before its climb had played.
+	if (!roomHasSharedExit(_room))
 		return;
 
 	if (ABS(_ben.walkX() - _armedX) > 3 || ABS(_ben.walkY() - _armedY) > 3)
