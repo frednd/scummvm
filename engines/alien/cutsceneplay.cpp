@@ -454,8 +454,18 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	// and clearing it again (ovr_1a_0eaf:0x069f).
 	_script.setFlag(kScenePlayed, 1);
 
-	if (room > 0 && loadRoom(room))
+	if (room > 0 && loadRoom(room)) {
 		_ben.place(benX, benY, benFacing);
+
+		// The room is being put back, not entered: the original reaches its
+		// triggers from the enter routine the scene was raised inside, and that
+		// routine is not run again on the way back. Leaving the scan armed here
+		// loops any scene whose arm has no latch of its own -- room 35's scene 4
+		// is one, and its guards are the transition globals, which the hand-back
+		// does not change, so it would raise itself for as long as the room is
+		// open.
+		_pendingCutscenes = false;
+	}
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 	CursorMan.showMouse(true);
 	_dirty = true;

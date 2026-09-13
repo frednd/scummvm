@@ -223,7 +223,7 @@ private:
 	void playPeephole();
 
 	void armSewer(int obj, byte verb);
-	void enterSewer();
+	void enterSewer(int room);
 	void openRoomPlate(int room);
 	void dumpPlates();
 	static Common::String argText(uint16 arg);
@@ -540,6 +540,10 @@ private:
 	/// character's own action on an animation slot -- otherwise the slot's Ben
 	/// and the walker are both on screen (playtest report 3).
 	bool _drawCharacter;
+
+	/// [0xa948] as the loop last saw it: the frame it comes back on is the one
+	/// that has to rebuild the hover, since the port only hovers on motion.
+	bool _cursorWasVisible;
 
 	/// Room 35's [0xa49f] machine (sewer.cpp). Zero when nothing is running.
 	byte _sewerStep;

@@ -217,9 +217,15 @@ public:
 	 * straight to the background buffer (MIDAS:sub_18006) and leaves the slot
 	 * itself alone, so nothing is animating afterwards. Returns false when the
 	 * slot holds no bank or the frame is outside it.
+	 *
+	 * `pageX` stamps a bank authored against the room's *second* page instead:
+	 * it is where that page's column zero sits in the plate, and the frame is
+	 * placed through DL1Sprite::drawFramePage, which unwinds the flat page the
+	 * bank was written for (library.cpp). kNoPage is the ordinary draw.
 	 */
+	static const int kNoPage = -1;
 	bool stamp(uint slot, int frame, Graphics::Surface &background,
-			   int clipBottom = DL1Sprite::kNoClipBottom);
+			   int clipBottom = DL1Sprite::kNoClipBottom, int pageX = kNoPage);
 
 	/** The bank a slot holds, for the debug console. */
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }

@@ -295,4 +295,30 @@ void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest, int scrollX, int 
 	}
 }
 
+void DL1Sprite::drawFramePage(uint index, Graphics::Surface &dest, int pageX,
+							  int clipBottom) const {
+	if (index >= _frames.size())
+		return;
+
+	const Frame &frame = _frames[index];
+	for (uint i = 0; i < frame.strips.size(); i++) {
+		const Strip &strip = frame.strips[i];
+		const byte *src = _data + strip.pixelOffset;
+
+		// The page is flat, so the run carries on into the next row when it
+		// reaches the page's own right edge -- which is what a strip starting
+		// at column 319 is for.
+		for (uint j = 0; j < strip.length; j++) {
+			const uint32 pos = strip.addr + j;
+			const int row = (int)(pos / kScreenWidth);
+			const int col = pageX + (int)(pos % kScreenWidth);
+			if (row < 0 || row >= dest.h || row >= clipBottom)
+				continue;
+			if (col < 0 || col >= dest.w)
+				continue;
+			*((byte *)dest.getBasePtr(0, row) + col) = src[j];
+		}
+	}
+}
+
 } // End of namespace Alien

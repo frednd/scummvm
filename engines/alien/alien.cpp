@@ -212,7 +212,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
 		_openingStep(0), _openingPending(true), _roomClock(0),
-		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _sewerStep(0),
+		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true),
+		_cursorWasVisible(true), _sewerStep(0),
 		_basementStep(0), _basementClimbing(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
@@ -483,6 +484,19 @@ Common::Error AlienEngine::run() {
 		}
 
 		stepClock();
+
+		// The original's registration pass runs every frame, so the rectangle
+		// under the pointer answers again the moment [0xa948] comes back --
+		// with no mouse movement needed. The port hovers on motion and after a
+		// click, so the frame the cursor returns on is the one that has to ask
+		// again by itself.
+		const bool cursorVisible = CursorMan.isVisible();
+		if (cursorVisible && !_cursorWasVisible) {
+			const Common::Point mouse = g_system->getEventManager()->getMousePos();
+			updateHover(mouse.x, mouse.y);
+		}
+		_cursorWasVisible = cursorVisible;
+
 		if (_playActive)
 			stepPlayScript();
 		if (_dirty)
@@ -543,8 +557,14 @@ bool AlienEngine::playIdle() const {
 	// Only the one-shot animations count. Since the room tick started relaunching
 	// looping slots (the candles, the blinking cursor) isBusy() never goes false
 	// again, so waiting on it made every settle time out.
+	// And the cursor: a room's [0xa49f] machine is idle by every test above
+	// while it sits between two of its own plays, but the original takes no
+	// input at all until it hands the cursor back (finding #89), so a click
+	// scripted into that gap is dropped rather than acted on. Waiting for
+	// [0xa948] is what the player does.
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
-		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 && !_armed;
+		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
+		   !_armed && CursorMan.isVisible();
 }
 
 void AlienEngine::stepPlayScript() {
@@ -953,11 +973,16 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// says belongs there -- the door left open, the shelf pushed aside, the item
 	// already taken -- and starts the slots the room opens with running
 	// (roomplate.cpp). The original calls it last, so it runs last here too.
+	// And room 8's, which its own overlay writes rather than the 10c9 unit:
+	// the safe it has been cracked, the shelf pushed off it, the padlock
+	// (library.cpp). It runs before the 10c9 pass, as the enter routine does.
+	enterLibrary(room);
+
 	openRoomPlate(room);
 
 	// And the one room whose open carries more than the lift can express: the
 	// sewer's ladder, and the water it may still be full of (sewer.cpp).
-	enterSewer();
+	enterSewer(room);
 
 	// And room 13's, which is the climb down when he came in over it
 	// (basement.cpp).
@@ -1390,9 +1415,14 @@ void AlienEngine::updateHover(int x, int y) {
 	// its authored coordinates); the incoming x is screen-space, so the scroll
 	// offset goes back in before testing them. The bar below the playfield is
 	// never panned, so it keeps the raw screen x.
-	// Nothing hovers while the cursor is gone: the opening keeps the status line
-	// as empty as it keeps the arrow invisible.
-	if (_openingStep)
+	// Nothing hovers while the cursor is gone. [0xa948] is the original's one
+	// switch for that: the registration pass 1021:0x71b runs only while it is
+	// set, so a machine that has taken the cursor away -- the opening, the
+	// safe, the lab's and the sewer's, a clip -- neither lights a rectangle nor
+	// writes the status line until it hands the cursor back. The port carries
+	// the flag as the cursor's own visibility, which every one of those
+	// machines already clears.
+	if (_openingStep || !CursorMan.isVisible())
 		return;
 
 	_cursorX = x;
@@ -2657,7 +2687,14 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// The opening monologue owns the screen: the original takes the cursor away
 	// for it ([0xa948] = 0, ovr_03_0e57:0xb04) and gives it back on the step
 	// that ends the machine, so nothing the player does lands until then.
-	if (_openingStep)
+	//
+	// And every other machine that takes the cursor is the same switch: while
+	// [0xa948] is clear the click dispatch does not run at all, so a click
+	// landing mid-animation is not held for later -- it never happened. Without
+	// this the safe could be emptied while it was still being cracked, and the
+	// hand that was holding the stethoscope took the click instead (the
+	// 2026-09-12 report on the safe).
+	if (_openingStep || !CursorMan.isVisible())
 		return;
 
 	// A click while someone is talking cuts the line short, the same as the
@@ -2858,7 +2895,12 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
-	const bool handled = _script.run(spot.obj, verb, item);
+	// Four of room 8's bodies pick their animation slot from a scratch byte the
+	// lift could not follow, and two of them it dropped altogether: the safe's
+	// door and the two things on its shelf are run by the room instead
+	// (library.cpp). A body the room takes is not offered to the table.
+	const bool libraryHandled = runLibraryBody(spot.obj, item != Inventory::kNoItem);
+	const bool handled = libraryHandled || _script.run(spot.obj, verb, item);
 
 	// One object in the game is answered by a hook of its room's own rather
 	// than by a script body: room 7's light switch (bedroom.cpp).

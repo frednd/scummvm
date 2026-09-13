@@ -160,8 +160,10 @@ void AlienEngine::sewerValve() {
 }
 
 /// The room has just opened: the ladder down, when he came in over it.
-void AlienEngine::enterSewer() {
-	if (_room != kSewerRoom)
+void AlienEngine::enterSewer(int room) {
+	// The room being opened is passed in: loadRoom does not publish it as _room
+	// until after this runs, so _room here is still the room being left.
+	if (room != kSewerRoom)
 		return;
 
 	// Room init's own effects are lifted already, the placement and the

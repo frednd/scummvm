@@ -190,7 +190,8 @@ void AnimSlots::stepLoops() {
 	}
 }
 
-bool AnimSlots::stamp(uint slot, int frame, Graphics::Surface &background, int clipBottom) {
+bool AnimSlots::stamp(uint slot, int frame, Graphics::Surface &background, int clipBottom,
+					  int pageX) {
 	if (slot >= kSlotCount)
 		return false;
 
@@ -199,7 +200,10 @@ bool AnimSlots::stamp(uint slot, int frame, Graphics::Surface &background, int c
 	if (frame < 1 || frame > count)
 		return false;
 
-	s.bank.drawFrame((uint)(frame - 1), background, 0, clipBottom);
+	if (pageX != kNoPage)
+		s.bank.drawFramePage((uint)(frame - 1), background, pageX, clipBottom);
+	else
+		s.bank.drawFrame((uint)(frame - 1), background, 0, clipBottom);
 	debugC(2, kDebugGraphics, "anim: slot %u stamped frame %d of %s into the plate",
 		   slot, frame, s.name.c_str());
 	return true;

@@ -114,6 +114,21 @@ public:
 	void drawFrame(uint index, Graphics::Surface &dest, int scrollX = 0,
 				   int clipBottom = kNoClipBottom) const;
 
+	/**
+	 * Draws a frame that was authored against the room's *second* page.
+	 *
+	 * A page is a flat 320-wide buffer, and a bank written into one addresses
+	 * it linearly: SHELF_B's strips all start at column 319 and run 48 pixels,
+	 * which in a flat buffer means one pixel at the end of a row and the other
+	 * forty-seven at the start of the next. The port keeps a wide room as one
+	 * stitched plate instead of two pages, so the address has to be unwound the
+	 * way the buffer would have: `pageX` is where that page's column zero sits
+	 * in the destination, and every pixel is placed from its own linear offset
+	 * rather than from the strip's starting column.
+	 */
+	void drawFramePage(uint index, Graphics::Surface &dest, int pageX,
+					   int clipBottom = kNoClipBottom) const;
+
 private:
 	struct ParseResult {
 		Common::Array<Frame> frames;
