@@ -98,10 +98,6 @@ static const uint kMusicSeconds = 10;
 static const char *const kLiftClip = "ANIMS/SHIPLIFT.MA1";
 static const char *const kCutscenes[] = { "ALINTRO.CDA", "ALIEND.CDA" };
 
-// Where the CDA2 players put a subtitle: the records in the file carry y = 172
-// themselves, and a negative x means the line is centred.
-static const int kSubtitleY = 172;
-
 // The mouse pointer: one 11 by 14 outlined arrow in the right margin of
 // OBJFILE.PCX, the same page the font atlas and the inventory chrome come from
 // (docs/game_logic.md 3F). The original blits it into the frame buffer itself,
@@ -442,9 +438,15 @@ Common::Error AlienEngine::run() {
 
 	// The video channel prints what tools/check_video.py mirrors: what the two
 	// containers say about themselves, then a checksum of every decoded frame,
-	// then every subtitle line in every language the files carry.
+	// then every subtitle line in every language the files carry, then the face
+	// those lines are set in.
 	if (debugChannelSet(-1, kDebugVideo)) {
 		dumpVideo();
+		// Ahead of the sweeps rather than after them: the font is one table and
+		// the two sweeps between them decode a thousand frames, so a run asked
+		// for the font alone would have to sit through all of it.
+		if (debugChannelSet(4, kDebugVideo))
+			dumpVideoFont();
 		if (debugChannelSet(2, kDebugVideo))
 			sweepVideoFrames();
 		if (debugChannelSet(3, kDebugVideo))
@@ -2143,7 +2145,7 @@ void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) 
 					g_system->getPaletteManager()->setPalette(palette, 0, 256);
 
 				if (subtitles)
-					drawSubtitle(*subtitles, palette);
+					drawSubtitle(*subtitles);
 
 				g_system->copyRectToScreen(_screen.getPixels(), _screen.pitch, 0, 0,
 										   _screen.w, _screen.h);
@@ -2171,44 +2173,45 @@ void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) 
 }
 
 /**
- * Draw the line the clip is on, in the brightest index its own palette holds.
+ * Draw the line the clip is on, in the player's own face.
  *
- * The original's player has a font of its own; this uses the game's, which puts
- * the line in the same place but not in the same face.
+ * ANIMPLAY:sub_11da1 sets subtitles in a font of its own, out of tables in the
+ * player executable, and every pixel of it is palette index 255 -- the
+ * near-white each CDA2 palette reserves for it. The record carries the place
+ * as well as the text: a negative x centres each line on its own width, and a
+ * negative y centres the block of them on eight rows a line. See finding #90.
  */
-void AlienEngine::drawSubtitle(const CDA2Decoder &video, const byte *palette) {
-	const Common::String line = video.subtitle();
-	if (line.empty() || !palette)
+void AlienEngine::drawSubtitle(const CDA2Decoder &video) {
+	if (!_videoFont.isLoaded())
 		return;
 
-	byte ink = 0;
-	int best = -1;
-	for (int i = 0; i < 256; i++) {
-		const int sum = palette[i * 3] + palette[i * 3 + 1] + palette[i * 3 + 2];
-		if (sum > best) {
-			best = sum;
-			ink = (byte)i;
-		}
-	}
+	const CDA2Decoder::Subtitle record = video.subtitleAt();
+	if (record.empty())
+		return;
 
-	// y is 172 in the file's own records, and a line break is '@'.
-	int y = kSubtitleY;
+	// A line break is '@', already a newline by the time the record is read.
+	Common::Array<Common::String> lines;
 	uint start = 0;
-	while (start <= line.size()) {
+	while (start <= record.line.size()) {
 		uint end = start;
-		while (end < line.size() && line[end] != '\n')
+		while (end < record.line.size() && record.line[end] != '\n')
 			end++;
-
-		const Common::String part(line.c_str() + start, end - start);
-		if (!part.empty()) {
-			const int x = (kScreenWidth - _font.measure(part)) / 2;
-			_font.drawStringInk(_screen, part, x, y, ink);
-			y += _font.glyphHeight() + 1;
-		}
-
-		if (end >= line.size())
+		lines.push_back(Common::String(record.line.c_str() + start, end - start));
+		if (end >= record.line.size())
 			break;
 		start = end + 1;
+	}
+
+	const int step = _videoFont.lineHeight();
+	int y = record.y;
+	if (record.y < 0)
+		y = (kScreenHeight - (int)lines.size() * step) / 2;
+
+	for (uint i = 0; i < lines.size(); i++, y += step) {
+		if (lines[i].empty())
+			continue;
+		const int x = record.x < 0 ? (kScreenWidth - _videoFont.measure(lines[i])) / 2 : record.x;
+		_videoFont.drawString(_screen, lines[i], x, y);
 	}
 }
 
@@ -2284,6 +2287,11 @@ bool AlienEngine::playCutscene(const char *file) {
 		return false;
 	}
 
+	// The subtitle face lives in the player executable and nothing outside a
+	// clip is set in it, so it is read the first time one plays.
+	if (!_videoFont.isLoaded())
+		_videoFont.load();
+
 	video.setLanguage(subtitleLanguage());
 	debugC(1, kDebugVideo, "%s: %u frames, %u Hz, %u languages, showing %u", file,
 		   video.frameCount(), video.sampleRate(), video.languageCount(), video.language());
@@ -2324,6 +2332,26 @@ void AlienEngine::dumpVideo() {
 			   kCutscenes[i], video.frameCount(), video.getWidth(), video.getHeight(),
 			   video.sampleRate(), video.languageCount());
 		video.close();
+	}
+}
+
+/**
+ * Print the subtitle face glyph by glyph, mirrored by tools/check_video.py --font.
+ *
+ * The checksum is over the decoded bitmap, so a run decoded the wrong way shows
+ * up as one glyph differing rather than as a picture nobody can diff.
+ */
+void AlienEngine::dumpVideoFont() {
+	if (!_videoFont.isLoaded() && !_videoFont.load())
+		return;
+
+	for (uint i = 0; i < _videoFont.glyphCount(); i++) {
+		const AnimFont::Glyph &g = _videoFont.glyph(i);
+		uint32 sum = 2166136261u;
+		for (uint p = 0; p < g.pixels.size(); p++)
+			sum = (sum ^ g.pixels[p]) * 16777619u;
+		debugC(4, kDebugVideo, "font glyph %3u code %02x w%d h%d y%d %08x",
+			   i, g.code, g.width, g.rows, g.yAdjust, sum);
 	}
 }
 

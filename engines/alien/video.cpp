@@ -233,32 +233,36 @@ bool CDA2Decoder::loadStream(Common::SeekableReadStream *stream) {
 	return true;
 }
 
-Common::String CDA2Decoder::subtitle(uint frame) const {
+CDA2Decoder::Subtitle CDA2Decoder::subtitleAt(uint frame) const {
 	// Each record is i16 x, i16 y then the text; a negative x means the player
-	// centres the line. Offsets are relative to the start of the offset table,
-	// which sits just past the language count.
+	// centres the line, and a negative y centres the block of them. Offsets are
+	// relative to the start of the offset table, which sits just past the
+	// language count.
+	Subtitle out;
 	if (_text.size() < 4 || _language >= _languages || frame >= _frameCount)
-		return Common::String();
+		return out;
 
 	const uint32 base = 4;
 	const uint32 at = base + (_language * _frameCount + frame) * 4;
 	if (at + 4 > _text.size())
-		return Common::String();
+		return out;
 
-	uint32 start = base + READ_LE_UINT32(&_text[at]) + 4;
-	if (start >= _text.size())
-		return Common::String();
+	const uint32 rec = base + READ_LE_UINT32(&_text[at]);
+	if (rec + 4 >= _text.size())
+		return out;
 
-	Common::String line;
-	for (uint32 i = start; i < _text.size() && _text[i]; i++)
-		line += _text[i] == '@' ? '\n' : (char)_text[i];
-	return line;
+	out.x = (int16)READ_LE_UINT16(&_text[rec]);
+	out.y = (int16)READ_LE_UINT16(&_text[rec + 2]);
+
+	for (uint32 i = rec + 4; i < _text.size() && _text[i]; i++)
+		out.line += _text[i] == '@' ? '\n' : (char)_text[i];
+	return out;
 }
 
-Common::String CDA2Decoder::subtitle() const {
+CDA2Decoder::Subtitle CDA2Decoder::subtitleAt() const {
 	if (!_video || _video->getCurFrame() < 0)
-		return Common::String();
-	return subtitle((uint)_video->getCurFrame());
+		return Subtitle();
+	return subtitleAt((uint)_video->getCurFrame());
 }
 
 CDA2Decoder::CDA2AudioTrack::CDA2AudioTrack(uint rate)

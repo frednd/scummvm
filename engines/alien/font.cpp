@@ -220,37 +220,4 @@ void Font::drawStringOffset(Graphics::Surface &dest, const Common::String &text,
 	}
 }
 
-void Font::drawStringInk(Graphics::Surface &dest, const Common::String &text, int x, int y,
-						 byte ink) const {
-	if (!isLoaded())
-		return;
-
-	int pen = x;
-	for (uint i = 0; i < text.size(); i++) {
-		const Glyph &g = _glyphs[(byte)text[i]];
-		if (!g.valid)
-			continue;
-
-		for (int row = 0; row < glyphHeight(); row++) {
-			const int dy = y + row;
-			if (dy < 0 || dy >= dest.h)
-				continue;
-
-			const byte *src = (const byte *)_atlas.getBasePtr(g.x, g.y + row);
-			byte *dst = (byte *)dest.getBasePtr(0, dy);
-			for (int col = 0; col < g.width; col++) {
-				const int dx = pen + col;
-				if (dx < 0 || dx >= dest.w)
-					continue;
-				// Ink and shadow both go down as the one index: the frame's
-				// palette has no relation to the one the atlas was drawn for.
-				if (src[col])
-					dst[dx] = ink;
-			}
-		}
-
-		pen += advance(g);
-	}
-}
-
 } // End of namespace Alien

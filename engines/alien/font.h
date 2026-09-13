@@ -101,16 +101,6 @@ public:
 					int clipLeft = kNoClip, int clipRight = kNoClipRight) const;
 
 	/**
-	 * The same, with every pixel of the glyph forced to one index.
-	 *
-	 * The atlas carries the ink and shadow indices the game's own palette gives
-	 * them, which means nothing over a video frame: those have palettes of their
-	 * own. Subtitles pick an index out of the frame's palette and draw flat.
-	 */
-	void drawStringInk(Graphics::Surface &dest, const Common::String &text, int x, int y,
-					   byte ink) const;
-
-	/**
 	 * The same as drawString, with a constant added to every glyph index.
 	 *
 	 * This is the conversation menu's blitter: the atlas carries the chat face

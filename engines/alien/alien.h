@@ -28,6 +28,7 @@
 #include "graphics/surface.h"
 
 #include "alien/anim.h"
+#include "alien/animfont.h"
 #include "alien/charanim.h"
 #include "alien/chat.h"
 #include "alien/dl1.h"
@@ -209,7 +210,7 @@ private:
 	void sweepMusicRows();
 	void renderMusic();
 	void playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles = nullptr);
-	void drawSubtitle(const CDA2Decoder &video, const byte *palette);
+	void drawSubtitle(const CDA2Decoder &video);
 	uint subtitleLanguage() const;
 	void startEnding();
 	void armEnding();
@@ -241,6 +242,7 @@ private:
 	bool playLift();
 	bool playCutscene(const char *file);
 	void dumpVideo();
+	void dumpVideoFont();
 	void sweepVideoFrames();
 	void sweepSubtitles();
 	void sweepSounds();
@@ -433,6 +435,9 @@ private:
 	uint _queueNext;
 
 	Font _font;
+	/// ANIMPLAY.EXE's own face, the one the clips' subtitles are set in; loaded
+	/// the first time a clip plays, since nothing else uses it.
+	AnimFont _videoFont;
 	Font _labelFont;				///< the shorter face the status line is set in
 	Font _chatFont;				///< and the third face, the one the options are set in
 	/// ALIEN.DAT: what the port reads instead of carrying it as code. Optional,

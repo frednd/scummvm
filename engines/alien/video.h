@@ -141,12 +141,29 @@ public:
 	void setLanguage(uint language) { _language = language < _languages ? language : 0; }
 	uint language() const { return _language; }
 
+	/// One subtitle record: the line and the place the file asks for it.
+	struct Subtitle {
+		Common::String line;	///< '@' already turned into a newline
+		int16 x;				///< negative asks the player to centre the line
+		int16 y;				///< negative centres it vertically as well
+
+		Subtitle() : x(-1), y(-1) {}
+		bool empty() const { return line.empty(); }
+	};
+
+	/// The record on a frame, or an empty line for the empty record the file
+	/// uses to mean "nothing showing here".
+	Subtitle subtitleAt(uint frame) const;
+
+	/// The record for the frame on screen now.
+	Subtitle subtitleAt() const;
+
 	/// The line showing on a frame, with '@' already turned into a newline, or
 	/// empty when the frame's record is the empty one the file uses for "none".
-	Common::String subtitle(uint frame) const;
+	Common::String subtitle(uint frame) const { return subtitleAt(frame).line; }
 
 	/// The line for the frame on screen now.
-	Common::String subtitle() const;
+	Common::String subtitle() const { return subtitleAt().line; }
 
 private:
 	static const int kWidth = 320;
