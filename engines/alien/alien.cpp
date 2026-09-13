@@ -273,9 +273,30 @@ Common::Error AlienEngine::run() {
 		warning("could not cut the pointer out of OBJFILE.PCX: the game is playable "
 				"but the mouse has no arrow");
 
+	// The pack comes before anything that reads it, which the shared script
+	// below already does.
+	_pack.load();
+	setCutscenePack(&_pack);
+	setRoomScriptPack(&_pack);
+
+	// The dialog layer runs without a pack -- every override is simply absent,
+	// which is the DOS behaviour -- but the cutscenes and the room scripts are
+	// only in the pack, so a missing one would be a game quietly without its
+	// scenes and with every click falling through to the generic answer.
+	if (!cutscenesLoaded() || !roomScriptsLoaded())
+		return Common::Error(Common::kReadingFailed,
+							 "ALIEN.DAT is missing or incomplete. It is generated: "
+							 "run tools/gen_pack.py (see docs/data_pack.md)");
+
+	// RoomScript's constructor runs before any of this, so the reset it does
+	// there had no new-game state to write: the state block is the pack's now.
+	// Everything that reads a flag -- which is every hotspot a room registers --
+	// depends on this happening before the first room opens.
+	_script.reset();
+
 	// The shared script is resident in the original for the whole game, and the
 	// generic click path reads it whatever room the player is in.
-	if (!_talkall.load(Common::Path(kSharedScript)))
+	if (!_talkall.load(Common::Path(kSharedScript), &_pack))
 		warning("could not load %s: objects with no outcome will stay silent", kSharedScript);
 
 	// The icon page, the bar's chrome and the item names. A failure here leaves
@@ -315,6 +336,11 @@ Common::Error AlienEngine::run() {
 	// files (chat.cpp).
 	if (debugChannelSet(2, kDebugChat))
 		sweepChatTrees();
+
+	// And every room's lines, which tools/check_dialog.py mirrors out of the
+	// files and the pack together (tal.cpp).
+	if (debugChannelSet(1, kDebugDialog))
+		sweepDialog();
 
 	// Nothing in a scripted run reaches the pod with [0xa7d2] set yet, so the
 	// channel starts the sequence itself: --debugflags=ending -b 59.
@@ -973,7 +999,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		script = Common::Path(Common::String::format("ROOM%d.TAL", room));
 
 	if (Common::File::exists(script))
-		_tal.load(script);
+		_tal.load(script, &_pack);
 	else
 		_tal.unload();
 
@@ -982,7 +1008,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// names have no file at all.
 	const Common::Path labels(Common::String::format("R%d.TAL", room));
 	if (Common::File::exists(labels))
-		_labels.load(labels);
+		_labels.load(labels, &_pack);
 	else
 		_labels.unload();
 
@@ -1280,7 +1306,9 @@ void AlienEngine::stepClock() {
 
 		// OBJ:0x86df drops the talk flag once the line has under 25 half ticks
 		// left, so the mouth closes a moment before the text goes.
-		_ben.setTalking(_speech && (_speechTicks == 0 || _speechTicks >= kTalkStopTicks));
+		_ben.setTalking(_speech && (_speechTicks == 0 ||
+									_speechTicks >= tunable("speech.talkStopTicks",
+															kTalkStopTicks)));
 	}
 
 	// The room's light map, sampled where Ben is standing: the same once-a-tick
@@ -2904,14 +2932,11 @@ void AlienEngine::nextSpeech() {
 		if (entry.lines.empty())
 			continue;
 
-		uint length = 0;
-		for (uint i = 0; i < entry.lines.size(); i++)
-			length += entry.lines[i].size();
-
 		_dialogId = id;
 		_speechCustom = false;
 		_speech = true;
-		_speechTicks = MAX<int>((int)length * kTicksPerCharacter, kMinSpeechTicks);
+		_speechTicks = speechTicksFor(*_speechTal, id);
+		applyTextOverride(_speechTal->textOverride(id));
 		_dirty = true;
 
 		debugC(1, kDebugGraphics, "speech %u: %u lines, %d ticks",
@@ -2920,6 +2945,58 @@ void AlienEngine::nextSpeech() {
 	}
 
 	stopSpeech();
+}
+
+/**
+ * How long one line stands, the pack's say included.
+ *
+ * docs/dialog_system.md 2: the original's countdown is three per character of
+ * text, floored at 0x46. Both halves of that are tunable and either can be
+ * replaced outright by a duration written against this one entry, which is what
+ * a line that reads too fast to follow -- or sits there after it has been read
+ * -- is fixed with.
+ */
+int AlienEngine::speechTicksFor(const TalFile &tal, uint id) const {
+	const AlienPack::TextOverride *ov = tal.textOverride(id);
+	if (ov && ov->has(AlienPack::kTextDuration))
+		return ov->duration;
+
+	const TalFile::Entry &entry = tal.entry(id);
+	uint length = 0;
+	for (uint i = 0; i < entry.lines.size(); i++)
+		length += entry.lines[i].size();
+
+	const int perChar = ov && ov->has(AlienPack::kTextTicksPerChar)
+		? ov->ticksPerChar
+		: tunable("speech.ticksPerChar", kTicksPerCharacter);
+	return MAX<int>((int)length * perChar, tunable("speech.minTicks", kMinSpeechTicks));
+}
+
+/**
+ * The rest of an override: how the line is set rather than how long it stands.
+ *
+ * The colour is the one DAC entry the original reprograms per speaker, so
+ * writing it here is the same move the room code makes -- and it lasts as long,
+ * which is until the next line or the next room sets it again.
+ */
+void AlienEngine::applyTextOverride(const AlienPack::TextOverride *ov) {
+	if (!ov)
+		return;
+
+	if (ov->has(AlienPack::kTextColor)) {
+		setTextColor(ov->color[0], ov->color[1], ov->color[2]);
+		uploadTextColor();
+	}
+	if (ov->has(AlienPack::kTextAnchor)) {
+		// -1 in either half keeps the speaker's own box for that axis, so a row
+		// can nudge a line sideways without pinning its height.
+		if (ov->anchorX >= 0)
+			_speechX = ov->anchorX;
+		if (ov->anchorY >= 0)
+			_speechY = ov->anchorY;
+	}
+	if (ov->has(AlienPack::kTextBand))
+		_dialogBand = ov->band != 0;
 }
 
 void AlienEngine::speakEntry(const TalFile::Entry &entry, int anchorX, int anchorY, int ticks) {

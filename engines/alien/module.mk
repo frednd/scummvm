@@ -22,6 +22,7 @@ MODULE_OBJS = \
 	occlusion.o \
 	opening.o \
 	overlay.o \
+	pack.o \
 	plates.o \
 	play.o \
 	resources.o \

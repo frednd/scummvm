@@ -25,6 +25,7 @@
 #include "common/stream.h"
 #include "common/util.h"
 
+#include "alien/alien.h"
 #include "alien/detection.h"
 #include "alien/tal.h"
 
@@ -35,9 +36,14 @@ namespace Alien {
 static const uint16 kTextBlobStart = 200;
 
 TalFile::TalFile() : _loaded(false) {
+	for (uint i = 0; i < kEntryCount; i++)
+		_overrides[i] = nullptr;
 }
 
 void TalFile::clear() {
+	_name.clear();
+	for (uint i = 0; i < kEntryCount; i++)
+		_overrides[i] = nullptr;
 	for (uint i = 0; i < kEntryCount; i++)
 		_entries[i] = Entry();
 	for (uint i = 0; i < kOutcomeCount; i++)
@@ -48,7 +54,7 @@ void TalFile::clear() {
 	_loaded = false;
 }
 
-bool TalFile::load(const Common::Path &path) {
+bool TalFile::load(const Common::Path &path, const AlienPack *pack) {
 	clear();
 
 	Common::File f;
@@ -56,11 +62,13 @@ bool TalFile::load(const Common::Path &path) {
 		warning("Alien::TalFile: could not open %s", path.toString().c_str());
 		return false;
 	}
-	return loadStream(f);
+	return loadStream(f, pack, AlienPack::talKey(path));
 }
 
-bool TalFile::loadStream(Common::SeekableReadStream &stream) {
+bool TalFile::loadStream(Common::SeekableReadStream &stream, const AlienPack *pack,
+						 const Common::String &name) {
 	clear();
+	_name = AlienPack::talKey(name);
 
 	uint32 size = (uint32)stream.size();
 	if (size < kZone2Base + kTextBlobStart) {
@@ -135,8 +143,64 @@ bool TalFile::loadStream(Common::SeekableReadStream &stream) {
 	delete[] data;
 	_loaded = true;
 
+	if (pack && pack->isLoaded() && !_name.empty())
+		applyPack(*pack);
+
 	debugC(1, kDebugResource, "TAL: %u bytes, %u dialog entries", size, usedEntries());
 	return true;
+}
+
+/**
+ * Lay the pack's rows for this file over what was read.
+ *
+ * Replacement lines and replacement chains are folded into the file here, so
+ * everything downstream -- the renderer, the hover labels, the chat slices --
+ * sees them without knowing a pack exists. The rest of an override is timing
+ * and colour, which belong to the moment the line goes up rather than to the
+ * file, and those are left for the caller to read back through textOverride().
+ */
+void TalFile::applyPack(const AlienPack &pack) {
+	for (uint id = 0; id < kEntryCount; id++) {
+		const AlienPack::TextOverride *ov = pack.text(_name, (byte)id);
+		if (!ov)
+			continue;
+
+		// An override names the text it was written against. When the file has
+		// moved under it the row is still applied -- the edit is what somebody
+		// meant, and refusing it silently would be worse -- but the drift is
+		// said out loud, because a duration written for one line is rarely
+		// right for another.
+		if (ov->hasHash && ov->hash != AlienPack::textHash(_entries[id].lines))
+			warning("Alien::TalFile: %s entry %u has changed since its override was "
+					"written; the override is being applied to the new text",
+					_name.c_str(), id);
+
+		_overrides[id] = ov;
+
+		if (ov->has(AlienPack::kTextLines)) {
+			_entries[id].lines.clear();
+			for (uint i = 0; i < ov->lines.size(); i++)
+				_entries[id].lines.push_back(ov->lines[i]);
+			// The line count is also the layout selector, so a replacement that
+			// is a different number of lines is drawn in the box that fits it.
+			_entries[id].lineCount = (byte)ov->lines.size();
+			_entries[id].present = true;
+		}
+	}
+
+	for (uint code = 0; code < kOutcomeCount; code++) {
+		const Common::Array<byte> *chain = pack.outcome(_name, (byte)code);
+		if (!chain)
+			continue;
+		_outcomes[code].count = (byte)MIN<uint>(chain->size(), kMaxOutcomeIds);
+		memset(_outcomes[code].ids, 0, sizeof(_outcomes[code].ids));
+		for (uint i = 0; i < _outcomes[code].count; i++)
+			_outcomes[code].ids[i] = (*chain)[i];
+	}
+}
+
+const AlienPack::TextOverride *TalFile::textOverride(uint id) const {
+	return id < kEntryCount ? _overrides[id] : nullptr;
 }
 
 bool TalFile::parseEntry(const byte *data, uint32 size, uint32 start, uint32 end, Entry &out) const {
@@ -187,6 +251,72 @@ uint TalFile::chatOptionCount(uint topic) const {
 	while (n < kChatOptions && chatOption(topic, n).present())
 		n++;
 	return n;
+}
+
+/**
+ * Every room's dialog, and what the port believes about how it is spoken.
+ *
+ * tools/check_dialog.py prints the same lines out of TALFILES and the pack, so
+ * the two can be diffed: this is the mirror the text layer never had. The text
+ * itself is not printed -- it is CP850 and the harness would have to agree
+ * about the encoding on both sides -- but its length and a hash of it are,
+ * which is what catches a replacement line going astray.
+ *
+ * A file several rooms share is dumped once, under the first room that names
+ * it, because that is what the engine would read on entering any of them.
+ */
+void AlienEngine::sweepDialog() {
+	TalFile tal;
+	Common::Array<Common::String> seen;
+
+	for (int room = 0; room < StaticTables::kRoomCount; room++) {
+		RoomAssets assets;
+		Common::Path script;
+		if (_overlays.readRoom(room, assets) && !assets.script.empty())
+			script = Common::Path(assets.script);
+		else
+			script = Common::Path(Common::String::format("ROOM%d.TAL", room));
+
+		const Common::String name = AlienPack::talKey(script);
+		bool already = false;
+		for (uint i = 0; i < seen.size(); i++)
+			already |= seen[i] == name;
+		if (already)
+			continue;
+
+		if (!Common::File::exists(script) || !tal.load(script, &_pack))
+			continue;
+		seen.push_back(name);
+
+		debug("dialog room %2d %s: %u entries", room, name.c_str(), tal.usedEntries());
+
+		for (uint id = 0; id < TalFile::kEntryCount; id++) {
+			const TalFile::Entry &entry = tal.entry(id);
+			if (!entry.present)
+				continue;
+
+			uint chars = 0;
+			for (uint i = 0; i < entry.lines.size(); i++)
+				chars += entry.lines[i].size();
+
+			const AlienPack::TextOverride *ov = tal.textOverride(id);
+			debug("text %s entry %3u type %u lines %u chars %4u ticks %5d "
+				  "hash 0x%08x ov 0x%02x", name.c_str(), id, entry.lineCount,
+				  entry.lines.size(), chars, speechTicksFor(tal, id),
+				  AlienPack::textHash(entry.lines), ov ? ov->flags : 0);
+		}
+
+		for (uint code = 0; code < TalFile::kOutcomeCount; code++) {
+			const TalFile::Outcome &chain = tal.outcome(code);
+			if (!chain.count)
+				continue;
+
+			Common::String ids;
+			for (uint i = 0; i < chain.count; i++)
+				ids += Common::String::format(" %u", chain.ids[i]);
+			debug("chain %s outcome %3u:%s", name.c_str(), code, ids.c_str());
+		}
+	}
 }
 
 uint TalFile::usedEntries() const {

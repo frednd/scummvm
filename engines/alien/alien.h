@@ -35,6 +35,7 @@
 #include "alien/hotspots.h"
 #include "alien/inventory.h"
 #include "alien/overlay.h"
+#include "alien/pack.h"
 #include "alien/play.h"
 #include "alien/s3m.h"
 #include "alien/script.h"
@@ -268,9 +269,31 @@ private:
 	bool armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY);
 	void stepLibrary();
 	void armLibrarySafe(int obj, byte item);
+	void enterLibrary(int room);
+	bool runLibraryBody(int obj, bool item);
 	void stepLibrarySafe();
 	void nextSpeech();
 	void stopSpeech();
+
+	/// Every room's dialog, printed the way tools/check_dialog.py prints it
+	/// from the files: what is said, and how long each line stands (tal.cpp).
+	void sweepDialog();
+
+	/**
+	 * A constant the pack is allowed to have an opinion about.
+	 *
+	 * The caller passes the value the original works out to, so a build with no
+	 * pack -- or with a pack that does not name this one -- is the game as it
+	 * shipped. This is how the numbers buried in the hand-written room machines
+	 * are reachable without another rebuild.
+	 */
+	int tunable(const char *name, int fallback) const { return _pack.tunable(name, fallback); }
+
+	/// How long one entry's text stands, the pack's overrides included.
+	int speechTicksFor(const TalFile &tal, uint id) const;
+
+	/// The colour, anchor and layout an override asks for, as the line goes up.
+	void applyTextOverride(const AlienPack::TextOverride *ov);
 
 	void setTextColor(byte r, byte g, byte b);
 	void uploadTextColor();
@@ -412,6 +435,10 @@ private:
 	Font _font;
 	Font _labelFont;				///< the shorter face the status line is set in
 	Font _chatFont;				///< and the third face, the one the options are set in
+	/// ALIEN.DAT: what the port reads instead of carrying it as code. Optional,
+	/// and absent means the lifted defaults (pack.cpp).
+	AlienPack _pack;
+
 	TalFile _tal;
 	TalFile _labels;				///< NAMEROOM/<lang>/R<n>.TAL, the hover names
 	TalFile _talkall;				///< TALKALL.TAL, the answers no room owns

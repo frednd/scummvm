@@ -26,6 +26,8 @@
 #include "common/scummsys.h"
 #include "common/str.h"
 
+#include "alien/pack.h"
+
 namespace Common {
 class Path;
 class SeekableReadStream;
@@ -117,8 +119,17 @@ public:
 
 	TalFile();
 
-	bool load(const Common::Path &path);
-	bool loadStream(Common::SeekableReadStream &stream);
+	/**
+	 * Read one file, and lay the pack's overrides for it on top.
+	 *
+	 * The pack is keyed on the file's base name, so a caller that reads a
+	 * stream rather than a path has to say which file it is holding. Without a
+	 * pack the file is what the game shipped, which is what every caller that
+	 * does not pass one wants.
+	 */
+	bool load(const Common::Path &path, const AlienPack *pack = nullptr);
+	bool loadStream(Common::SeekableReadStream &stream, const AlienPack *pack = nullptr,
+					const Common::String &name = Common::String());
 
 	bool isLoaded() const { return _loaded; }
 
@@ -139,10 +150,25 @@ public:
 	/** How many of the four options a topic offers (OBJ:sub_0456e). */
 	uint chatOptionCount(uint topic) const;
 
+	/**
+	 * What the pack says about how an entry is spoken, or null.
+	 *
+	 * Replacement lines are already in `entry`: only the things the file cannot
+	 * carry -- the countdown, the colour, the anchor, the layout -- are read
+	 * back from here, at the point the line goes up.
+	 */
+	const AlienPack::TextOverride *textOverride(uint id) const;
+
+	/** The base name the pack's rows for this file are keyed on. */
+	const Common::String &name() const { return _name; }
+
 private:
 	void clear();
 	bool parseEntry(const byte *data, uint32 size, uint32 start, uint32 end, Entry &out) const;
+	void applyPack(const AlienPack &pack);
 
+	Common::String _name;
+	const AlienPack::TextOverride *_overrides[kEntryCount];
 	Entry _entries[kEntryCount];
 	ChatOption _chat[kChatTopics][kChatOptions];
 	ChatOption _emptyOption;

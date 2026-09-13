@@ -52,6 +52,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Alien::kDebugChat, "chat", "The conversation menu and the tree behind it"},
 	{Alien::kDebugPlate, "plate", "What a room stamps into its plate as it opens"},
 	{Alien::kDebugScale, "scale", "The depth scale the character is drawn at, and the rooms that set it"},
+	{Alien::kDebugDialog, "dialog", "Every room's lines: what is said, and how long each one stands"},
 	DEBUG_CHANNEL_END
 };
 

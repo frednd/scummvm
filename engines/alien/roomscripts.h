@@ -156,6 +156,21 @@ struct ScriptBlock {
 	uint16 count;
 };
 
+class AlienPack;
+
+/**
+ * Where these tables come from.
+ *
+ * They were generated C++ compiled into the engine; they are now read out of
+ * ALIEN.DAT, which tools/gen_pack.py writes from data/lift/roomscripts.json --
+ * the same lift, in a file that can be changed without a rebuild (see
+ * docs/data_pack.md). The engine hands the pack over once, as it starts.
+ */
+void setRoomScriptPack(const AlienPack *pack);
+
+/** Whether the pack that was handed over actually carries the scripts. */
+bool roomScriptsLoaded();
+
 /**
  * A room's script blocks in overlay order, or null with a count of zero for a
  * room whose overlay has no (object, verb) code at all -- seven rooms leave

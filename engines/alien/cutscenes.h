@@ -26,6 +26,8 @@
 
 namespace Alien {
 
+class AlienPack;
+
 /**
  * The cutscenes, as tools/gen_cutscenes.py lifts them.
  *
@@ -121,6 +123,20 @@ struct CutsceneTrigger {
 	byte guardCount;
 	ScriptCond guards[3];
 };
+
+/**
+ * Where these tables come from.
+ *
+ * They used to be generated C++ compiled into the engine. They are now read out
+ * of ALIEN.DAT, which tools/gen_pack.py writes from data/lift/cutscenes.json --
+ * the same lift, in a file that can be changed without a rebuild (see
+ * docs/data_pack.md). The engine hands the pack over once, as it starts; until
+ * it does, every table here is empty.
+ */
+void setCutscenePack(const AlienPack *pack);
+
+/** Whether the pack that was handed over actually carries the scenes. */
+bool cutscenesLoaded();
 
 /** The triggers `room` raises, in the order its enter routine reaches them. */
 const CutsceneTrigger *cutsceneTriggers(int room, uint &count);

@@ -245,7 +245,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	memcpy(_palette, palette, sizeof(_palette));
 
 	if (rec->tal)
-		_tal.load(Common::Path(rec->tal));
+		_tal.load(Common::Path(rec->tal), &_pack);
 	else
 		_tal.unload();
 	_speechTal = &_tal;
@@ -543,18 +543,17 @@ bool AlienEngine::nextCutsceneLine() {
 	const uint id = _queue[_queueNext++];
 	const TalFile::Entry &entry = _speechTal->entry(id);
 
-	uint length = 0;
-	for (uint i = 0; i < entry.lines.size(); i++)
-		length += entry.lines[i].size();
-
 	_dialogId = id;
 	_speechCustom = false;
 	// An id whose slot holds no text still takes its turn: it is held for a tick
 	// and stepped over, rather than stopping the scene on an empty line.
 	_speech = true;
-	_speechTicks = entry.lines.empty() ? kEmptyLineTicks
-									   : MAX<int>((int)length * kTicksPerCharacter,
-												  kMinSpeechTicks);
+	_speechTicks = entry.lines.empty()
+		? tunable("cutscene.emptyLineTicks", kEmptyLineTicks)
+		: speechTicksFor(*_speechTal, id);
+	// A scene's own colours are the record's, and they have already been
+	// uploaded for this speaker; a row that names one for this line wins.
+	applyTextOverride(_speechTal->textOverride(id));
 	_dirty = true;
 
 	debugC(2, kDebugCutscene, "cutscene: line %u at %d,%d, %u lines, %d ticks", id,

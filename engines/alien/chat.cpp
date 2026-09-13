@@ -460,7 +460,7 @@ void AlienEngine::stepChat() {
 		int x = 0, y = 0;
 		characterAnchor(x, y);
 		if (line.present) {
-			speakEntry(line, x, y, kChatLineTicks);
+			speakEntry(line, x, y, tunable("chat.lineTicks", kChatLineTicks));
 			debugC(1, kDebugChat, "chat: \"%s\"%s", line.lines[0].c_str(),
 				   line.lines.size() > 1 ? " ..." : "");
 		}
