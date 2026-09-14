@@ -225,6 +225,13 @@ void AlienEngine::playLiftPanel() {
 	_background = plate;
 	_roomWidth = kScreenWidth;
 	_scrollX = 0;
+
+	// A room clips its sprites at the playfield's bottom, because the status bar
+	// sits under it. The console owns the whole screen, and the shaft frames run
+	// down to y 183: clipped at 0x9f the plate's parked car is never painted over
+	// and stays under the rising one.
+	const int clip = _clipBottom;
+	_clipBottom = _screen.h - 1;
 	memcpy(_palette, palette, sizeof(_palette));
 	CursorMan.showMouse(true);
 
@@ -414,6 +421,11 @@ void AlienEngine::playLiftPanel() {
 				_anims.play(kPanelSlot, 1, 1, 0, kForward);
 				restore = false;
 			}
+			// The ride itself is worth a frame a tick when the channel is at
+			// level 3: it is the only way to see the car move headless.
+			if (_anims.isBusy(kShaftSlot))
+				shot = 1;
+
 			if (indicator && !_anims.isBusy(kShaftSlot)) {
 				_anims.play(kPanelSlot, 1, 1, 0, kForward);
 				indicator = false;
@@ -442,6 +454,7 @@ void AlienEngine::playLiftPanel() {
 	// so the lab is reloaded exactly as a scene's room is.
 	stopMusic();
 	_cutscene = false;
+	_clipBottom = clip;
 	_script.setFlag(kPanelSeen, 1);
 
 	debugC(1, kDebugLift, "lift: the console closes, the car is %s",
