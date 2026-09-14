@@ -201,7 +201,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
-		_dialogId(1), _lastEvent(0), _speechCustom(false), _libraryStep(0), _libraryPos(0),
+		_dialogId(1), _lastEvent(0), _speechCustom(false), _liftPending(false),
+		_libraryStep(0), _libraryPos(0),
 		_cursorX(0), _cursorY(0), _chatColorsHeld(false),
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
@@ -1314,6 +1315,10 @@ void AlienEngine::stepClock() {
 		// And room 35's own machine, which is the water it starts full of and
 		// the hatch that ends it (sewer.cpp).
 		stepLab();
+
+		// The panel the lab computer opens, which waits for the computer's own
+		// line to come down -- by the countdown or by a click (lift.cpp).
+		stepLiftCall();
 		stepSewer();
 		stepBasement();
 
@@ -1329,6 +1334,10 @@ void AlienEngine::stepClock() {
 			// the original's dialog unit writes [0xa956] = 0x4e2a here and the
 			// room's entry 3 tests it at its top (hallway.cpp).
 			stepHallway();
+
+			// And room 3's entry 3 tests the same word for the computer's
+			// line, which is what opens the lift panel (lift.cpp).
+			stepLiftCall();
 		}
 
 		// OBJ:0x86df drops the talk flag once the line has under 25 half ticks
@@ -2712,6 +2721,25 @@ byte AlienEngine::rotateOutcome(const Hotspot &spot) {
 }
 
 void AlienEngine::clickAt(int x, int y, bool rightButton) {
+	// A click while someone is talking cuts the line short, the same as the
+	// countdown running out -- and this is tested before the input gate below,
+	// so it works under a machine that has taken the cursor away as well. The
+	// opening monologue is the case that needs it: it holds the screen for the
+	// whole of outcome 0x50 and there was no way to hurry it along.
+	//
+	// The original has no click-to-skip at all: OBJ:0x6175 takes a line down
+	// only when [0xad1e], the countdown, has reached 0 and [0xacfd], "a line is
+	// on screen", is still set -- and obj_func_5ad9 clears both. (docs/
+	// dialog_system.md read [0xacfd] as a click flag; it is not, nothing in
+	// INPUT writes it.) So this is a port convenience, kept deliberately: it
+	// only ever pulls the dialog queue forward, and no other state moves with
+	// it, which is why it is safe to let through a gate that exists to stop
+	// clicks reaching room scripts.
+	if (_speech) {
+		nextSpeech();
+		return;
+	}
+
 	// The opening monologue owns the screen: the original takes the cursor away
 	// for it ([0xa948] = 0, ovr_03_0e57:0xb04) and gives it back on the step
 	// that ends the machine, so nothing the player does lands until then.
@@ -2724,13 +2752,6 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// 2026-09-12 report on the safe).
 	if (_openingStep || !CursorMan.isVisible())
 		return;
-
-	// A click while someone is talking cuts the line short, the same as the
-	// countdown running out.
-	if (_speech) {
-		nextSpeech();
-		return;
-	}
 
 	// While the conversation menu is listed it owns the bottom of the screen:
 	// a click there picks an option and never reaches the room (chat.cpp).
@@ -2941,6 +2962,13 @@ void AlienEngine::finishAction() {
 		armSewer(spot.obj, verb);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
+
+	// Room 3's computer is answered by a hook of its own for the same reason
+	// room 7's light switch is: the original's body for it is overlay code and
+	// not a script row, and it speaks its own line, so it runs past the table's
+	// queue rather than before it (lift.cpp).
+	if (_script.queuedEvent() == RoomScript::kNoEvent)
+		armLiftCall(spot.obj, anchorX, anchorY);
 
 	// A combination no room owns gets the shared refusal, and either way the hand
 	// is empty once the click is spent.

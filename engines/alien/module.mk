@@ -36,6 +36,7 @@ MODULE_OBJS = \
 	scale.o \
 	saveload.o \
 	lab.o \
+	lift.o \
 	library.o \
 	sewer.o \
 	sfx.o \

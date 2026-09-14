@@ -220,6 +220,11 @@ private:
 	void armLab(int obj, bool item);
 	void stepLab();
 	void stepLabHole();
+
+	/// The lab computer and the lift car it parks (lift.cpp).
+	bool armLiftCall(int obj, int anchorX, int anchorY);
+	void stepLiftCall();
+	void playLiftPanel();
 	void stepHallway();
 	void playPeephole();
 
@@ -531,6 +536,7 @@ private:
 	/// Room 3's [0xa49f] machine, less the opening the two steps in opening.cpp
 	/// carry (lab.cpp). Zero when nothing is running.
 	byte _labStep;
+	bool _liftPending;			///< the computer's line is up; the panel follows it
 
 	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
 	/// every tick pair, which two of that room's steps time themselves off.
