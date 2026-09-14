@@ -410,8 +410,12 @@ const Graphics::Surface *CDA2Decoder::CDA2VideoTrack::decodeNextFrame() {
 		at += 8;				// three step values and the mode bits
 
 	// The clock is the audio the mixer has been handed, not a frame rate: a
-	// frame stays up for exactly as long as the block it carries.
-	_nextFrameStartTime = (uint32)((uint64)_samples * 1000 / _rate);
+	// frame stays up for exactly as long as the block it carries. The lead
+	// pulls every decode forward by a fixed amount so the queue keeps that much
+	// audio in hand; at the head of the file it makes the first few frames
+	// decode at once, which primes it.
+	const uint32 played = (uint32)((uint64)_samples * 1000 / _rate);
+	_nextFrameStartTime = played > kAudioLeadMs ? played - kAudioLeadMs : 0;
 
 	uint32 payloadSize = size;
 	if (flags & kFlagPacked) {

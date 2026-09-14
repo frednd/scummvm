@@ -174,6 +174,12 @@ private:
 	static const int kBlockH = 40;
 	static const int kSampleBytes = 2;
 
+	// How far ahead of the picture the audio is handed to the mixer. A frame
+	// carries one 53ms block of its own, so timing the next frame off the audio
+	// already queued leaves the mixer with nothing in hand and it stutters on
+	// any hitch; this runs the decode a few blocks early instead.
+	static const uint32 kAudioLeadMs = 120;
+
 	// Frame flag bits, named after what the parser does with them.
 	enum {
 		kFlagPalette = 0x01,
