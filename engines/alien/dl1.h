@@ -81,6 +81,16 @@ public:
 	void unload() { clear(); }
 
 	uint frameCount() const { return _frames.size(); }
+	/// How much of one frame there is to draw, for the graphics channel: a
+	/// frame that comes out as a few lines on screen and has fifty strips in it
+	/// is a drawing fault rather than a parsing one.
+	uint stripCount(uint index) const {
+		return index < _frames.size() ? _frames[index].strips.size() : 0;
+	}
+	uint firstStripAddr(uint index) const {
+		return index < _frames.size() && !_frames[index].strips.empty()
+			? _frames[index].strips[0].addr : 0;
+	}
 	const Frame &frame(uint index) const { return _frames[index]; }
 
 	/** True when the file uses the wide-room strip form carrying column spans. */

@@ -164,6 +164,17 @@ const ScriptEffect *cutsceneProcEffects(uint proc, uint &count);
 uint cutsceneProcAddr(uint proc);
 uint cutsceneProcCount();
 
+/**
+ * A frame list, as the play routines that read one index it.
+ *
+ * Modes 6, 7 and 8 do not step a frame: they step a cursor into a far table of
+ * one byte per tick and draw the byte (MIDAS:snd_func_1482 at 0x15dc, which
+ * reads `table[cursor]` and hands *that* to the blitter). The lift pools every
+ * such table; an effect carries where its own starts, and the play's frame
+ * count is how long it is. Null when the pack has no such pool.
+ */
+const byte *cutsceneFrameList(uint first, uint count);
+
 /** The flag effects an arm runs besides its latch. */
 const ScriptEffect *cutsceneArmEffects(const CutsceneArm &arm, uint &count);
 

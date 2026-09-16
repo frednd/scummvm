@@ -271,26 +271,47 @@ void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest, int scrollX, int 
 	const Frame &frame = _frames[index];
 	for (uint i = 0; i < frame.strips.size(); i++) {
 		const Strip &strip = frame.strips[i];
-		int x = ((strip.roomX != kNoRoomX) ? (int)strip.roomX : (int)(strip.addr % kScreenWidth)) - scrollX;
-		int y = strip.addr / kScreenWidth;
-		if (y < 0 || y >= dest.h || y >= clipBottom)
-			continue;
-
 		const byte *src = _data + strip.pixelOffset;
-		byte *dst = (byte *)dest.getBasePtr(0, y);
 
-		// A strip is copied verbatim, zeros included: the original's blit
-		// (MIDAS:sub_180d4, and sub_18006 for the background page) moves the
-		// run with `rep movsw` and never tests a pixel. Transparency in this
-		// format is the *gap* between strips, not a colour, and the zeros
-		// inside a run are real black pixels -- the dark opening a door leaves
-		// behind when it swings away. Skipping them left room 6's doors
-		// looking shut however far the animation had run (finding #54).
+		// A long-form strip carries its own column, so it says where it goes
+		// and never runs off the end of its row.
+		if (strip.roomX != kNoRoomX) {
+			const int y = strip.addr / kScreenWidth;
+			if (y < 0 || y >= dest.h || y >= clipBottom)
+				continue;
+			byte *dst = (byte *)dest.getBasePtr(0, y);
+			for (uint j = 0; j < strip.length; j++) {
+				const int col = (int)strip.roomX - scrollX + (int)j;
+				if (col < 0 || col >= dest.w)
+					continue;
+				dst[col] = src[j];
+			}
+			continue;
+		}
+
+		// A strip is a linear run in the original's 320-column staging buffer,
+		// and the original moves it with `rep movsw` (MIDAS:sub_180d4, and
+		// sub_18006 for the background page): a run that reaches the right edge
+		// carries straight on into the next row, which is how the big frames
+		// are written -- 41 of the 66 strips of MW5_SHUT's frame 36 cross it.
+		// Clipping those at the edge instead of wrapping left the shuttle
+		// leaving the house as a handful of horizontal lines.
+		//
+		// A strip is copied verbatim, zeros included: the blit never tests a
+		// pixel. Transparency in this format is the *gap* between strips, not a
+		// colour, and the zeros inside a run are real black pixels -- the dark
+		// opening a door leaves behind when it swings away. Skipping them left
+		// room 6's doors looking shut however far the animation had run
+		// (finding #54).
 		for (uint j = 0; j < strip.length; j++) {
-			int col = x + (int)j;
+			const uint32 pos = (uint32)strip.addr + j;
+			const int y = (int)(pos / kScreenWidth);
+			if (y < 0 || y >= dest.h || y >= clipBottom)
+				continue;
+			const int col = (int)(pos % kScreenWidth) - scrollX;
 			if (col < 0 || col >= dest.w)
 				continue;
-			dst[col] = src[j];
+			*((byte *)dest.getBasePtr(0, y) + col) = src[j];
 		}
 	}
 }

@@ -41,6 +41,17 @@ namespace Alien {
  */
 const ScriptEffect *roomInitEffects(int room, uint &count);
 
+/**
+ * A frame list an opening plays, as the modes that read one index it.
+ *
+ * Modes 6, 7 and 8 do not step a frame: they step a cursor into a far table of
+ * one byte per tick and draw the byte (MIDAS:snd_func_1482 at 0x15dc). An
+ * opening effect carries where its own list starts and the play's frame count
+ * is how long it is. The pool is the rooms' own, separate from the cutscenes'
+ * (cutscenes.h) because the openings are a table of their own.
+ */
+const byte *roomInitFrameList(uint first, uint count);
+
 } // End of namespace Alien
 
 #endif

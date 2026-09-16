@@ -107,6 +107,15 @@ public:
 	/// equality. It is a word because it counts a whole scene, well past 255.
 	static const uint16 kCutscenePos = 0xa49c;
 
+	/// The scene's *stream cursor* [0xa498]: how far into a record's step
+	/// stream the player has walked, counted the way the original counts it --
+	/// in bytes, so a pause, which carries its length behind it, moves it on by
+	/// two. A scene procedure guards on it to tell one line of the scene from
+	/// another: the two aliens in front of the house get a different animation
+	/// for each of their last two lines, and both guards are equalities against
+	/// an offset in that stream.
+	static const uint16 kScenePos = 0xa498;
+
 	/// No outcome code queued. The original uses zero for "nothing to say".
 	static const byte kNoEvent = 0;
 
@@ -227,6 +236,9 @@ public:
 	uint16 cutscenePos() const { return _cutscenePos; }
 	void setCutscenePos(uint16 pos) { _cutscenePos = pos; }
 
+	uint16 scenePos() const { return _scenePos; }
+	void setScenePos(uint16 pos) { _scenePos = pos; }
+
 	/// Clears the scene state and the clock, as CUTSCENE:sub_0d962 does before
 	/// it loads a record.
 	void resetScene();
@@ -253,6 +265,7 @@ private:
 	byte _latches[kLatchCount];
 	byte _scene[kSceneCount];
 	uint16 _cutscenePos;
+	uint16 _scenePos;
 	const ScriptBlock *_blocks;
 	uint _blockCount;
 	int _room;
@@ -264,6 +277,17 @@ private:
 	int _placeX;
 	int _placeY;
 	int _placeFacing;
+
+	/**
+	 * Which pool a mode 6, 7 or 8 play's fifth argument indexes.
+	 *
+	 * The cutscenes' frame lists are in the pack and the rooms' openings carry
+	 * their own (roominit.h), and the same interpreter runs both -- so the
+	 * lookup is a function this switches over the run rather than a table
+	 * playAnim could name outright.
+	 */
+	typedef const byte *(*FrameListFn)(uint first, uint count);
+	FrameListFn _frameList;
 };
 
 } // End of namespace Alien

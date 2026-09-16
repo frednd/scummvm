@@ -109,6 +109,15 @@ uint cutsceneProcCount() {
 	return g_pack ? g_pack->procs().size() : 0;
 }
 
+const byte *cutsceneFrameList(uint first, uint count) {
+	if (!g_pack || !count)
+		return nullptr;
+	const Common::Array<byte> &pool = g_pack->frameLists();
+	if (first + count > pool.size())
+		return nullptr;
+	return &pool[first];
+}
+
 const ScriptEffect *cutsceneArmEffects(const CutsceneArm &arm, uint &count) {
 	count = 0;
 	if (!g_pack || arm.first + arm.count > g_pack->effects().size())

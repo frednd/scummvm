@@ -51,6 +51,7 @@ static const uint32 kTagRoomEffects = MKTAG('R', 'E', 'F', 'X');
 static const uint32 kTagBlocks = MKTAG('R', 'S', 'C', 'R');
 static const uint32 kTagRoomIndex = MKTAG('R', 'I', 'D', 'X');
 static const uint32 kTagFlags = MKTAG('F', 'L', 'A', 'G');
+static const uint32 kTagFrameLists = MKTAG('A', 'F', 'R', 'M');
 
 /// One ScriptCond as the pack stores it: address, value, negate, kind.
 static const uint kCondSize = 5;
@@ -172,6 +173,7 @@ bool AlienPack::loadStream(Common::SeekableReadStream &stream) {
 	_steps.clear();
 	_arms.clear();
 	_triggers.clear();
+	_frameLists.clear();
 	_roomEffects.clear();
 	_blocks.clear();
 	_rooms.clear();
@@ -216,7 +218,8 @@ bool AlienPack::loadStream(Common::SeekableReadStream &stream) {
 	static const uint32 wanted[] = { kTagText, kTagOutcomes, kTagManifest, kTagTune,
 									 kTagEffects, kTagProcs, kTagRecords, kTagSteps,
 									 kTagArms, kTagTriggers, kTagRoomEffects,
-									 kTagBlocks, kTagRoomIndex, kTagFlags };
+									 kTagBlocks, kTagRoomIndex, kTagFlags,
+									 kTagFrameLists };
 	const byte *body[ARRAYSIZE(wanted)];
 	uint32 bodySize[ARRAYSIZE(wanted)];
 	for (uint i = 0; i < ARRAYSIZE(wanted); i++) {
@@ -468,6 +471,15 @@ bool AlienPack::loadStream(Common::SeekableReadStream &stream) {
 			p += 3 + 3 * kCondSize;
 			_triggers.push_back(trigger);
 		}
+	}
+
+	// The frame lists the play routines with a table read (anim.h): one pool of
+	// bytes, into which an effect names its own run.
+	if (body[14] && bodySize[14] >= 2) {
+		const byte *p = body[14];
+		const uint16 count = READ_LE_UINT16(p);
+		for (uint i = 0; i < count && 2 + i < bodySize[14]; i++)
+			_frameLists.push_back(p[2 + i]);
 	}
 
 	// The room scripts: the gating layer, in the same shapes.

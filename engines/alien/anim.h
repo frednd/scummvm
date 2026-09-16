@@ -76,9 +76,16 @@ class RoomScript;
  * | 7    | `0xf9b` | forward   | taken away                           |
  * | 8    | `0x1064`| forward   | back to the frame it started on      |
  *
- * Modes 6, 7 and 8 push two words more, a far pointer to a table of one sample
- * id per frame that MIDAS:sub_19431 reads as the slot advances. The port drops
- * the pointer: it has no per-frame sound.
+ * Modes 6, 7 and 8 push two words more, a far pointer to a table of one byte per
+ * tick of the play. That table is **not** a sample list, which is what it was
+ * taken for: MIDAS:snd_func_1482 reads `table[cursor]` for such a slot and hands
+ * the byte to the blitter as the frame (0x15dc, then the draw at 0x1674), so
+ * what those three routines step is a cursor into the list and the list holds
+ * the frames. It is why every mode 8 play in the game starts at zero -- zero is
+ * an index, not a frame -- and reading the cursor as the frame put a blank
+ * frame, the entry below the bank's first, into every talk cycle a scene has.
+ * The same byte is the sample id where a slot has per-frame sound, which the
+ * port still has none of.
  *
  * Advancing runs under the tick-pair gate (docs/timing.md). "Left behind" is
  * the original's `0xa5da`: on the tick a mode 1, 3 or 6 range ends, the final
@@ -126,12 +133,16 @@ public:
 
 	/**
 	 * Starts a frame range on a slot, as MIDAS:0xb85 / 0xc2e / 0xcd7 do.
-	 * @param first  the frame to start on, numbered from one
+	 * @param first  the frame to start on, numbered from one -- or, with a frame
+	 *               list, the cursor into that list, which is numbered from zero
 	 * @param count  how many frames to advance through
 	 * @param rate   ticks per frame; zero advances on every tick
 	 * @param mode   1..8, as the table above has them
+	 * @param frames the frame list modes 6, 7 and 8 read, `count` bytes long, or
+	 *               null. Not copied: the pool it points into outlives the slot.
 	 */
-	void play(uint slot, int first, int count, int rate, int mode);
+	void play(uint slot, int first, int count, int rate, int mode,
+			  const byte *frames = nullptr);
 
 	/** One animation tick: advances every slot with frames left. */
 	void tick();
@@ -261,6 +272,7 @@ private:
 		bool baked;				///< that last frame is in the room plate now
 		byte loop;				///< [0xa53a]: the room's guard on this slot's loop
 		byte mode;
+		const byte *frames;		///< the frame list, for modes 6, 7 and 8
 
 		Slot() { clear(); }
 		void clear();

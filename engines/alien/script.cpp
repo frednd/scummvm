@@ -27,6 +27,7 @@
 #include "alien/detection.h"
 #include "alien/inventory.h"
 #include "alien/roominit.h"
+#include "alien/cutscenes.h"
 #include "alien/script.h"
 #include "alien/sfx.h"
 
@@ -34,13 +35,14 @@ namespace Alien {
 
 RoomScript::RoomScript() : _vm(nullptr), _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
 		_room(0), _queued(kNoEvent), _submode(kNoSubmode),
-		_placed(false), _placeX(0), _placeY(0), _placeFacing(0) {
+		_placed(false), _placeX(0), _placeY(0), _placeFacing(0), _frameList(cutsceneFrameList) {
 	reset();
 }
 
 void RoomScript::resetScene() {
 	memset(_scene, 0, sizeof(_scene));
 	_cutscenePos = 0;
+	_scenePos = 0;
 }
 
 void RoomScript::reset() {
@@ -77,7 +79,11 @@ void RoomScript::enterRoom(int room) {
 		return;
 
 	debugC(1, kDebugGraphics, "script: room %d opens with %u slot plays", room, count);
+
+	// The openings' frame lists are their own table, not the pack's.
+	_frameList = roomInitFrameList;
 	runEffects(init, count);
+	_frameList = cutsceneFrameList;
 }
 
 bool RoomScript::placeRequest(int &x, int &y, int &facing) const {
@@ -305,6 +311,12 @@ byte RoomScript::flag(uint16 addr) const {
 	if (addr == kCutscenePos + 1)
 		return (byte)(_cutscenePos >> 8);
 
+	// The stream cursor is the player's own, for the same reason.
+	if (addr == kScenePos)
+		return (byte)_scenePos;
+	if (addr == kScenePos + 1)
+		return (byte)(_scenePos >> 8);
+
 	const byte *slot = flagSlot(addr);
 	return slot ? *slot : 0;
 }
@@ -314,6 +326,11 @@ void RoomScript::setFlag(uint16 addr, byte value) {
 	// resetting it -- so writing the low byte writes the whole word.
 	if (addr == kCutscenePos) {
 		_cutscenePos = value;
+		return;
+	}
+
+	if (addr == kScenePos) {
+		_scenePos = value;
 		return;
 	}
 
@@ -613,8 +630,16 @@ void RoomScript::playAnim(const ScriptEffect &effect) {
 	default: break;
 	}
 
+	// Modes 6, 7 and 8 read a frame list, and the effect's fifth argument is
+	// where that list starts in whichever pool this run is reading -- the
+	// cutscenes' or the rooms' openings'. Without it the cursor those modes
+	// step would be drawn as a frame.
+	const byte *frames = nullptr;
+	if (mode >= 6 && effect.argCount >= 5 && _frameList)
+		frames = _frameList(effect.args[4], effect.args[2]);
+
 	_anims->play(effect.args[0], (int)effect.args[1], (int)effect.args[2],
-				 (int)effect.args[3], mode);
+				 (int)effect.args[3], mode, frames);
 }
 
 bool RoomScript::run(byte obj, byte verb, byte item) {

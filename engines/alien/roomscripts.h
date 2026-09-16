@@ -89,13 +89,16 @@ enum ScriptOpcode {
 	// arguments as the three above. Modes 4 and 5 are 1 and 3 without the flag
 	// that bakes the finished animation into the background page, so what they
 	// play is taken away again when the range runs out. Modes 6, 7 and 8 push
-	// two words more, a far pointer to a table of one sample id per frame; the
-	// pointer is dropped here, because the port has no per-frame sound yet.
+	// two words more, a far pointer to a *frame list*: they step a cursor into
+	// it and draw the byte they find, so the first argument is that cursor and
+	// the third is how long the list is. A fifth argument carries where the
+	// list starts in the pool the effect's table keeps (cutscenes.h for the
+	// scenes, roominit.h for a room's opening).
 	kOpAnimPlay4,		///< as mode 1, but not left behind when it ends
 	kOpAnimPlay5,		///< as mode 3, but not left behind when it ends
-	kOpAnimPlay6,		///< as mode 1, with a per-frame sample table
-	kOpAnimPlay7,		///< as mode 4, with a per-frame sample table
-	kOpAnimPlay8		///< as mode 2, with a per-frame sample table
+	kOpAnimPlay6,		///< as mode 1, over a frame list
+	kOpAnimPlay7,		///< as mode 4, over a frame list
+	kOpAnimPlay8		///< as mode 2, over a frame list
 };
 
 /**

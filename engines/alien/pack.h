@@ -129,6 +129,10 @@ public:
 	const Common::Array<CutsceneArm> &arms() const { return _arms; }
 	const Common::Array<CutsceneTrigger> &triggers() const { return _triggers; }
 
+	/// The frame lists modes 6, 7 and 8 read: one pool of frame numbers, of
+	/// which an effect names a run (see AnimSlots::play).
+	const Common::Array<byte> &frameLists() const { return _frameLists; }
+
 	/**
 	 * The room scripts: what a click on an object does, and under which flags.
 	 *
@@ -175,6 +179,7 @@ private:
 	Common::Array<CutsceneStep> _steps;
 	Common::Array<CutsceneArm> _arms;
 	Common::Array<CutsceneTrigger> _triggers;
+	Common::Array<byte> _frameLists;
 
 	/// One room's entry in the block index: which run of blocks is its own.
 	struct RoomBlocks {

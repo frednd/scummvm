@@ -271,6 +271,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	uint32 tick = 0;
 
 	uint cursor = 0;
+	uint16 streamPos = 0;	// [0xa498]: the cursor in bytes, not in steps
 	int hold = 0;			// animation ticks left on a pause
 	bool advance = true;	// the first step is entered as the scene opens
 	bool speaking = false;	// a speaker step is on screen, so its tail is still to run
@@ -317,6 +318,30 @@ void AlienEngine::playCutsceneRecord(uint number) {
 				// back to -- which for the mode 8 cycles is frame zero, so the
 				// character was not merely still, it was gone.
 				_anims.stepLoopFlags();
+
+				// Level 4: what every loaded slot is showing on this tick, which
+				// is the only way to see a cycle blink from a headless run.
+				// Level 5 writes one frame per animation tick -- thousands of
+				// files for a sweep, and the only way to watch a scene move
+				// from a headless run. Level 4 below is the cheap version: what
+				// every loaded slot holds on this tick.
+				if (debugChannelSet(5, kDebugCutscene)) {
+					redraw();
+					dumpScreen(Common::String::format("tick-%u-%04u.png", number,
+													  (uint)tick));
+				}
+
+				if (debugChannelSet(4, kDebugCutscene)) {
+					Common::String line;
+					for (uint s = 0; s < AnimSlots::kSlotCount; s++) {
+						if (_anims.bankName(s).empty())
+							continue;
+						line += Common::String::format(" %u:%d/%d", s, _anims.frame(s),
+													   _anims.remaining(s));
+					}
+					debugC(4, kDebugCutscene, "cutscene %u: tick %u%s", number,
+						   (uint)tick, line.c_str());
+				}
 
 				// The clock the procedures are measured against, stepped on the
 				// same tick the original steps it on (0c55:16d7, under
@@ -370,7 +395,13 @@ void AlienEngine::playCutsceneRecord(uint number) {
 				break;
 			}
 
+			// [0xa498], which the original walks through the stream a byte at a
+			// time: a scene procedure reads it to tell which line of the scene
+			// it is running for, so it has to hold the offset of the step being
+			// entered while that step's procedures run.
+			_script.setScenePos(streamPos);
 			const CutsceneStep &step = steps[cursor++];
+			streamPos += step.op == kStepPause ? 2 : 1;
 			switch (step.op) {
 			case kStepPause:
 				stopSpeech();

@@ -42,6 +42,7 @@ void AnimSlots::Slot::clear() {
 	baked = false;
 	loop = 0;
 	mode = 0;
+	frames = nullptr;
 }
 
 AnimSlots::AnimSlots() : _room(0), _loops(nullptr), _loopCount(0) {
@@ -130,7 +131,8 @@ void AnimSlots::loadRoom(int room, const RoomScript &state) {
 	}
 }
 
-void AnimSlots::play(uint slot, int first, int count, int rate, int mode) {
+void AnimSlots::play(uint slot, int first, int count, int rate, int mode,
+					 const byte *frames) {
 	if (slot >= kSlotCount) {
 		debugC(1, kDebugGraphics, "anim: slot %u is past the end", slot);
 		return;
@@ -139,6 +141,7 @@ void AnimSlots::play(uint slot, int first, int count, int rate, int mode) {
 	Slot &s = _slots[slot];
 	s.started = true;
 	s.mode = (byte)mode;
+	s.frames = frames;
 	s.frame = first;
 	s.first = first;
 	s.count = count;
@@ -172,7 +175,7 @@ void AnimSlots::relaunch(uint slot) {
 	if (!s.started || s.remaining != 1)
 		return;
 
-	play(slot, s.first, s.count, s.rate, s.mode);
+	play(slot, s.first, s.count, s.rate, s.mode, s.frames);
 }
 
 void AnimSlots::stepLoops() {
@@ -287,6 +290,16 @@ bool AnimSlots::isBusy() const {
 }
 
 int AnimSlots::visibleFrame(const Slot &slot) const {
+	// A slot playing a frame list steps a cursor, not a frame: what is drawn is
+	// the list's entry for the cursor, and a zero there is the blank below the
+	// bank's first frame -- the erase the list ends on where a scene takes
+	// something away. The cursor is clamped to the list the way a frame is
+	// clamped to its range.
+	if (slot.frames) {
+		const int last = slot.count > 0 ? slot.count - 1 : 0;
+		return slot.frames[CLIP(slot.frame, 0, last)];
+	}
+
 	// The last advance leaves the frame one past the range, because the original
 	// bakes the final frame into the background page on the tick before that and
 	// never draws from the slot again. Clamping to the range shows the same
@@ -297,15 +310,14 @@ int AnimSlots::visibleFrame(const Slot &slot) const {
 
 	// A range longer than the bank is a loop: the propeller in room 46 plays 33
 	// frames of a bank of 10, which is three passes of the eleven the bank plus
-	// its terminator make up, and the fire in room 11 and the candle in room 26
-	// are the same shape. The frame wraps in that cycle rather than walking past
-	// the bank into whatever was loaded after it.
+	// its terminator make up, and the corridor's shutter in room 57 plays 53 the
+	// same way. The frame wraps in that cycle rather than walking past the bank
+	// into whatever was loaded after it.
 	//
-	// A range may also open on frame 0 rather than 1, which the per-frame-sound
-	// modes do routinely -- room 53's hatch plays (0, 34) over a bank of
-	// sixteen, exactly two cycles. Frame 0 is a blank at the low end, the mirror
-	// of the terminator at the high one, so the wrap is a plain modulo over
-	// 0..frameCount() with the sign forced positive.
+	// Frame 0 is a blank at the low end, the mirror of the terminator at the
+	// high one, so the wrap is a plain modulo over 0..frameCount() with the sign
+	// forced positive. Only mode 1 to 5 reach here: the modes that open on a
+	// cursor of zero read their frame list above.
 	const int cycle = (int)slot.bank.frameCount() + 1;
 	if (cycle > 1 && (frame > cycle || frame < 1))
 		frame = ((frame % cycle) + cycle) % cycle;
@@ -353,6 +365,9 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 			continue;
 		}
 
+		debugC(4, kDebugGraphics, "anim: slot %u draws frame %d of %s: %u strips, first %u",
+			   i, frame + 1, slot.name.c_str(), slot.bank.stripCount((uint)frame),
+			   slot.bank.firstStripAddr((uint)frame));
 		slot.bank.drawFrame((uint)frame, dest, scrollX, clipBottom);
 	}
 }
