@@ -502,11 +502,13 @@ void RoomScript::runEffect(const ScriptEffect &original) {
 		break;
 
 	case kOpCharPlace:
-		// The coordinates are longs in the original and their high words are
-		// always zero, which is why only the low ones are read here.
+		// The coordinates are longs in the original, and the high word is not
+		// always zero: the shore and the diving area walk the character in from
+		// off the plate, above it or left of it, so the low word is read as
+		// signed and the high word is only there to say which.
 		_placed = true;
-		_placeX = effect.args[1];
-		_placeY = effect.args[3];
+		_placeX = (int16)effect.args[1];
+		_placeY = (int16)effect.args[3];
 		_placeFacing = effect.args[4];
 		break;
 
