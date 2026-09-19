@@ -211,6 +211,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
 		_cemeteryLookWait(false),
+		_mazeClicks(0), _mazeStep(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1174,6 +1175,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// (hippie.cpp).
 	startHippie();
 
+	// And room 43's maze, whose click count resets on every arrival
+	// (maze.cpp).
+	startMaze();
+
 	// And the scenes the room raises on entry, which the loop plays once the
 	// room's first frame is up: the original reaches them from entry 2, which
 	// the transition does not call until the room is on the screen. Raising
@@ -1451,6 +1456,10 @@ void AlienEngine::stepClock() {
 		// And room 32's statue, whose menu pick either opens the cave or
 		// counts one more wrong answer (cemetery.cpp).
 		stepCemetery();
+
+		// And room 43's, which ends the simplified maze once the click count
+		// runs out (maze.cpp).
+		stepMaze();
 
 		// And room 30's, which is the whole of the antique store: the
 		// conversation, the arrow traded for the diving suit, and the walk out
@@ -2098,6 +2107,19 @@ void AlienEngine::dumpCutscenes() {
 Common::String AlienEngine::roomPlate(int room) const {
 	if (room == 7 && !_script.flag(0xa6fa))
 		return "GAME7X.PCX";
+
+	// Rooms 43 and 44, the maze: MAIN's own dispatch sends each to a resident
+	// helper rather than to the overlay directly (roommap.py: "MAIN:sub_00000"
+	// and "MAIN:sub_0008c"), which is why the table this reads has nothing for
+	// either -- whatever built it walks each room's own overlay entry point,
+	// and the maze's actual background is picked cell by cell from inside the
+	// tick (ovr_2b_0f8d_...asm's `[0xa77c]`-indexed swap, maze.cpp). FADE43.PCX
+	// is what both entry points open on before that first swap runs (the
+	// literal pools at 0x570 and 0x84e). Left blank without this, `loadRoom`
+	// fails outright: booting straight into either room hangs the headless
+	// run in the engine's own "could not load the starting room" error path.
+	if (room == 43 || room == 44)
+		return "FADE43.PCX";
 
 	return _tables.background(room);
 }
@@ -3025,6 +3047,12 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 
 	// The bar answers for itself, and a click there is never a walk.
 	if (clickBar(x, y, rightButton))
+		return;
+
+	// Room 43's maze, simplified: any left click while it is under way counts
+	// as one correct turn, rather than resolving the real per-cell exit table
+	// (maze.cpp).
+	if (!rightButton && armMaze())
 		return;
 
 	// The two buttons do different jobs, which is the whole of playtest report

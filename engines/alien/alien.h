@@ -286,6 +286,12 @@ private:
 	void cemeteryStatuePick();
 	void stepCemetery();
 
+	/// Room 43's maze, simplified to a click count rather than the real
+	/// per-cell routing table (maze.cpp).
+	void startMaze();
+	bool armMaze();
+	void stepMaze();
+
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
 	void armMailbox(int obj, byte item);
@@ -695,6 +701,11 @@ private:
 	/// Room 32's statue: waiting for the look's own line to come down before
 	/// the topic-0 conversation reopens (cemetery.cpp).
 	bool _cemeteryLookWait;
+
+	/// Room 43's simplified maze: clicks taken so far, and the step of the
+	/// axe-in-the-wall finish once they run out (maze.cpp).
+	uint _mazeClicks;
+	byte _mazeStep;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether

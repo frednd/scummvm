@@ -9,6 +9,7 @@ MODULE_OBJS = \
 	chat.o \
 	cliff.o \
 	living.o \
+	maze.o \
 	mailbox.o \
 	cutscenes.o \
 	cutsceneplay.o \
