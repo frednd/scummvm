@@ -210,6 +210,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_libraryStep(0), _libraryPos(0),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
+		_cemeteryLookWait(false),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1446,6 +1447,10 @@ void AlienEngine::stepClock() {
 		// observatory keys -- the one source the tables have none of
 		// (sluggs.cpp).
 		stepSluggs();
+
+		// And room 32's statue, whose menu pick either opens the cave or
+		// counts one more wrong answer (cemetery.cpp).
+		stepCemetery();
 
 		// And room 30's, which is the whole of the antique store: the
 		// conversation, the arrow traded for the diving suit, and the walk out
@@ -3078,6 +3083,10 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		// geometry named (cliff.cpp).
 		armCliff(roomX, y, target);
 
+		// And room 32's statue, which guards the same zone with no submode of
+		// its own to arm (cemetery.cpp).
+		armCemeteryExit(target);
+
 		walkTo(target.x, target.y, target.facing);
 	} else {
 		walkTo(roomX, y);
@@ -3238,6 +3247,11 @@ void AlienEngine::finishAction() {
 	// The matches on the mailbox take the cursor away for the length of their
 	// line, which is the half of that branch the lift left behind (mailbox.cpp).
 	armMailbox(spot.obj, item);
+
+	// And room 32's statue, whose talk and look both end past the flags the
+	// lift already moves for them (cemetery.cpp).
+	if (!item)
+		armCemeteryStatue(spot.obj, verb);
 
 	// And three bodies carry state the lift does not: the sewer's ladder, its
 	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).

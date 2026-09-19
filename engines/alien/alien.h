@@ -279,6 +279,13 @@ private:
 	void armCliff(int clickX, int clickY, WalkTarget &target);
 	void stepCliff();
 
+	/// Room 32's statue, the phrase it wants and the cave it guards
+	/// (cemetery.cpp).
+	void armCemeteryStatue(int obj, byte verb);
+	void armCemeteryExit(const WalkTarget &target);
+	void cemeteryStatuePick();
+	void stepCemetery();
+
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
 	void armMailbox(int obj, byte item);
@@ -684,6 +691,10 @@ private:
 	byte _sluggsLeft;
 	bool _sluggsSpeaking;
 	bool _sluggsTalking;
+
+	/// Room 32's statue: waiting for the look's own line to come down before
+	/// the topic-0 conversation reopens (cemetery.cpp).
+	bool _cemeteryLookWait;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether

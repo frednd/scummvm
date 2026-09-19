@@ -13,6 +13,7 @@ MODULE_OBJS = \
 	cutscenes.o \
 	cutsceneplay.o \
 	basement.o \
+	cemetery.o \
 	bedroom.o \
 	dl1.o \
 	ending.o \
