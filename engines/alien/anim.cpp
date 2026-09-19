@@ -43,6 +43,8 @@ void AnimSlots::Slot::clear() {
 	loop = 0;
 	mode = 0;
 	frames = nullptr;
+	hold = false;
+	heldFrame = 0;
 }
 
 AnimSlots::AnimSlots() : _room(0), _loops(nullptr), _loopCount(0) {
@@ -189,6 +191,8 @@ void AnimSlots::takeDown(uint slot) {
 	s.restore = false;
 	s.baked = true;			// nothing of it goes into the plate either
 	s.loop = 0;
+	s.hold = false;
+	s.heldFrame = 0;
 	debugC(2, kDebugGraphics, "anim: slot %u taken down", slot);
 }
 
@@ -240,6 +244,18 @@ void AnimSlots::setLoopFlag(uint slot, byte value) {
 
 byte AnimSlots::loopFlag(uint slot) const {
 	return slot < kSlotCount ? _slots[slot].loop : 0;
+}
+
+void AnimSlots::setHold(uint slot, bool value) {
+	if (slot >= kSlotCount)
+		return;
+	_slots[slot].hold = value;
+	if (!value)
+		_slots[slot].heldFrame = 0;
+}
+
+bool AnimSlots::holdFlag(uint slot) const {
+	return slot < kSlotCount ? _slots[slot].hold : false;
 }
 
 void AnimSlots::tick() {
@@ -357,13 +373,24 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 		if (!slot.started || !slot.bank.frameCount())
 			continue;
 
+		// A held slot never goes blank: whenever the ordinary rule below would
+		// draw nothing for it, the last real frame it showed stands in instead
+		// (see setHold()). Calling this does not move any state -- it only
+		// decides what pixels this pass puts on screen.
+		const auto drawHeld = [&]() {
+			if (slot.hold && slot.heldFrame > 0)
+				slot.bank.drawFrame((uint)(slot.heldFrame - 1), dest, scrollX, clipBottom);
+		};
+
 		// MIDAS:snd_func_1482 draws a slot while it still has frames to run,
 		// and after that only if it is one of the modes that come back to their
 		// first frame. Everything else is either already in the background page
 		// (the modes that leave their last frame behind, which the port stands
 		// in for by carrying on drawing it) or gone.
-		if (slot.remaining <= 0 && !slot.restore && !slot.persist)
+		if (slot.remaining <= 0 && !slot.restore && !slot.persist) {
+			drawHeld();
 			continue;
+		}
 
 		// A frame already stamped into the plate is drawn by the plate.
 		if (slot.baked)
@@ -381,13 +408,17 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 		// the rope off the wall by showing nothing but the terminator.
 		// The same holds one frame below the first: a range that opens on frame
 		// 0 opens on a blank, which is how several of the per-frame-sound plays
-		// start.
-		if (frame == count || frame == -1)
+		// start -- and, unheld, how a mode 8 talk cycle that ends its frame list
+		// on 0 goes invisible between cycles (findings #67, #102).
+		if (frame == count || frame == -1) {
+			drawHeld();
 			continue;
+		}
 
 		if (frame < 0 || frame > count) {
 			debugC(1, kDebugGraphics, "anim: slot %u wants frame %d of %s, which "
 				   "has %d", i, frame + 1, slot.name.c_str(), count);
+			drawHeld();
 			continue;
 		}
 
@@ -395,6 +426,8 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 			   i, frame + 1, slot.name.c_str(), slot.bank.stripCount((uint)frame),
 			   slot.bank.firstStripAddr((uint)frame));
 		slot.bank.drawFrame((uint)frame, dest, scrollX, clipBottom);
+		if (slot.hold)
+			slot.heldFrame = frame + 1;
 	}
 }
 
@@ -404,6 +437,15 @@ void AnimSlots::bake(Graphics::Surface &background, int clipBottom) {
 		if (!slot.started || slot.baked || !slot.persist || slot.remaining > 0)
 			continue;
 		if (!slot.bank.frameCount())
+			continue;
+
+		// A held slot (setHold()) is a character kept alive by draw()'s
+		// fallback, not a piece of set dressing to freeze into the plate --
+		// baking it would make later plays on the same slot invisible, since
+		// a baked slot is never drawn from again. None of the port's current
+		// callers combine hold with a persisting mode (1/3/6), but a future
+		// one would silently lose the character here without this guard.
+		if (slot.hold)
 			continue;
 
 		const int frame = visibleFrame(slot) - 1;

@@ -241,6 +241,12 @@ void AlienEngine::startHippie() {
 	if (_script.flag(kHippieHere) != 1)
 		return;
 
+	// A port addition (setHold()): every pose here already loops with its
+	// guard set (hippiePose()), so this never has to substitute a frame in
+	// practice -- it is belt and braces against a relaunch dropping out, the
+	// same protection given to Sluggs and the salesman.
+	_anims.setHold(kHippieSlot, true);
+
 	hippiePose(kPoseIdle);
 	if (_script.flag(kGiven) == 1)
 		hippiePose(kPoseTraded);

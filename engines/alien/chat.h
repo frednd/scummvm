@@ -78,6 +78,14 @@ public:
 
 	bool isActive() const { return _active; }
 
+	/// Options are on screen and a click can pick one -- kOpening as well as
+	/// kLive, since the original (OBJ:sub_0acb9) takes a pick the moment the
+	/// topic is listed, not only once the colour ramp finishes arriving. A
+	/// click while the menu is kPicked/kSettled/kFading has nothing to land
+	/// on, so it falls through to whatever a plain click would otherwise do
+	/// (the speech skip).
+	bool isListed() const { return _active && (_phase == kLive || _phase == kOpening); }
+
 	/// [0xa60e]: the option that was picked ended the conversation.
 	bool isFinished() const { return _finished; }
 

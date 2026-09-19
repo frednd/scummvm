@@ -317,9 +317,20 @@ void AlienEngine::loadStoreScript(const char *name) {
  * the arms load a dialog file of their own and the room's own file is not read
  * until further down.
  */
+/// The salesman's own slots (kPoseGreetCase/kPoseTurnCase on 0, kPoseHandCase
+/// on 3, the two talking slots, kPoseFetchCase on 5): a port addition
+/// (setHold()) so he is drawn between poses instead of the store's between-line
+/// blank the original itself does (finding #100, MIDAS:sub_19a6b case 0 --
+/// mode 4, count 1, rate 0, which the port's own draw rule would otherwise
+/// erase one tick pair after storePose() sets it).
+static const uint kSalesmanSlots[] = { 0, 3, 4, 5, 6, 7 };
+
 void AlienEngine::startStore() {
 	if (_room != kStoreRoom)
 		return;
+
+	for (uint slot : kSalesmanSlots)
+		_anims.setHold(slot, true);
 
 	_storeStep = 0;
 	_storePos = 0;

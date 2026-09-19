@@ -103,10 +103,12 @@ static const int kBenX = 0x57, kBenY = 0x39;
 static const byte kBenInk[3] = { 0x3f, 0x3f, 0x3f };
 
 /// PAL_SMOK, the eleven frames of him standing in the road smoking, which the
-/// room's opening starts and its tick keeps going (roominit.cpp, anims.cpp).
+/// room's opening starts and its tick keeps going (roominit.cpp, anims.cpp) --
+/// entirely separate from the pose machine below, and never touched by it.
 static const uint kIdleSlot = 0;
 
-/// And PAL_ANIM, which is everything he does with his hands.
+/// And PAL_ANIM, which is everything he does with his hands: the talk cycle
+/// and the idle hold both play this slot.
 static const uint kSluggsSlot = 1;
 
 /// MIDAS:sub_19a34's two cases: the pose byte it writes is [0xa52b], and the
@@ -119,8 +121,13 @@ static const byte kTalkFrames[] = {
 };
 static const int kTalkRate = 4;
 
-/// Case 0: one frame of the idle bank, held (mode 2, 0x19a3b).
-static const int kIdleFrame = 1, kIdleRate = 1;
+/// Case 0: MIDAS:sub_19a34's prologue pushes `1,1,1,0` before calling mode 2
+/// (`push 1` slot, `push 1` first, `push 1` count, `push 0` rate) -- slot 1,
+/// the talking slot itself, held on its own first frame. A transcription slip
+/// once had this playing slot 0 (the idle smoking loop) instead, which left
+/// slot 1 to run its talk list down to its trailing 0 and go blank the moment
+/// a line ended (finding #102's follow-up).
+static const int kIdleFrame = 1, kIdleRate = 0;
 
 /// The fifty frames of state 5, off the list at 0x1e14 -- mode 8, and the one
 /// play in the room the talking loop must not pick up.
@@ -152,13 +159,18 @@ static const byte kStepLine = 0x15;		///< every other conversation ends here
  * run once because it does not.
  */
 void AlienEngine::sluggsPose(byte pose) {
+	// A port addition (anim.h's setHold()): whatever the talk cycle's frame
+	// list ends on, and the one tick pair between a finished play and the
+	// next pose this function issues, never go blank on screen.
+	_anims.setHold(kSluggsSlot, true);
+
 	if (pose == kPoseTalk) {
 		_anims.setLoopFlag(kSluggsSlot, 1);
 		_anims.play(kSluggsSlot, 0, ARRAYSIZE(kTalkFrames), kTalkRate, kLoopMode,
 					kTalkFrames);
 	} else {
 		_anims.setLoopFlag(kSluggsSlot, 0);
-		_anims.play(kIdleSlot, kIdleFrame, 1, kIdleRate, kPoseMode);
+		_anims.play(kSluggsSlot, kIdleFrame, 1, kIdleRate, kPoseMode);
 	}
 
 	debugC(3, kDebugRooms, "sluggs: pose %u", pose);

@@ -296,7 +296,13 @@ void ChatMenu::advance() {
 }
 
 bool ChatMenu::click(int cursorY) {
-	if (!_active || _phase != kLive || cursorY < kBandTop)
+	// A pick lands as soon as the topic is listed (OBJ:sub_0acb9): the
+	// original does not wait for the colour ramp (kOpening) to finish before
+	// it answers a click, and a player reading the options as they arrive
+	// otherwise has the first click swallowed for nothing. The bands
+	// themselves are already final by the time kOpening starts (build() sets
+	// them once, before the ramp), so hit-testing them early is safe.
+	if (!_active || (_phase != kLive && _phase != kOpening) || cursorY < kBandTop)
 		return false;
 
 	for (uint i = 0; i < kOptions; i++) {

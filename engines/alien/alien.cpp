@@ -2951,6 +2951,23 @@ byte AlienEngine::rotateOutcome(const Hotspot &spot) {
 }
 
 void AlienEngine::clickAt(int x, int y, bool rightButton) {
+	// While the conversation menu is listed it owns the bottom of the screen:
+	// a click there picks an option and never reaches the room (chat.cpp),
+	// and it is tested before the speech-skip gate below. The port's
+	// speech-skip convenience does not exist in the original (see the
+	// comment on that gate), so it must never eat the click a player makes
+	// to answer a line the room or another party is still speaking under an
+	// open menu -- the greeting on first opening a topic, and the option's
+	// own line plus any reply the room adds after each pick, are exactly
+	// when this matters. isListed() covers kLive and kOpening; a menu that
+	// is kPicked/kSettled/kFading has no option to land on and falls through
+	// to the ordinary gates below.
+	if (_chat.isListed()) {
+		if (!rightButton)
+			_chat.click(y);
+		return;
+	}
+
 	// A click while someone is talking cuts the line short, the same as the
 	// countdown running out -- and this is tested before the input gate below,
 	// so it works under a machine that has taken the cursor away as well. The
@@ -2983,16 +3000,11 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (_openingStep || !CursorMan.isVisible())
 		return;
 
-	// While the conversation menu is listed it owns the bottom of the screen:
-	// a click there picks an option and never reaches the room (chat.cpp).
-	// While the conversation menu is listed nothing else answers a click:
-	// OBJ:sub_0967e sets [0xa604], which is the flag 1021's click dispatch tests
-	// before it walks anybody anywhere.
-	if (_chat.isActive()) {
-		if (!rightButton)
-			_chat.click(y);
+	// The menu may still be active but past its listed phases (kPicked and
+	// onward): the pick has been taken, and the room path below must not run
+	// while the tree is still settling, the same as before.
+	if (_chat.isActive())
 		return;
-	}
 
 	// 1021:0x6c1, the first thing the dispatch does: the line the last click
 	// left standing goes, and the hover is free to answer again.

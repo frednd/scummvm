@@ -203,6 +203,28 @@ public:
 	byte loopFlag(uint slot) const;
 
 	/**
+	 * Marks a slot as a character that must never go blank -- a port addition,
+	 * not anything the original does (MIDAS:snd_func_1482 really does skip a
+	 * finished mode 4/5/7/8 slot, see anim.h's table). Once held, whenever
+	 * draw() would otherwise show nothing for this slot -- no frames left in a
+	 * mode that does not persist or restore, or the visible frame is the blank
+	 * below the first / the terminator above the last -- it draws the last real
+	 * frame the slot showed instead. A gap of exactly one tick pair between a
+	 * finished play and the next one issued by a room's step hook (the ordinary
+	 * case: see the tick-order note in anim.cpp) never reaches the screen.
+	 *
+	 * Not a substitute for relaunching a loop correctly -- a slot that never
+	 * plays again just keeps showing its last frame forever, silently, which is
+	 * why plays on a held slot should still be logged (kDebugGraphics level 2)
+	 * if the room's own loop drops out for good. Opt-in per slot: applying it
+	 * everywhere would keep dead animations (an opened door, a finished cutscene
+	 * flourish) glued to the screen, which is exactly what finding #35 warned
+	 * against.
+	 */
+	void setHold(uint slot, bool value);
+	bool holdFlag(uint slot) const;
+
+	/**
 	 * Plays every loaded slot forward through its whole bank.
 	 *
 	 * A debug facility: it is what a room would look like if everything in it
@@ -292,6 +314,9 @@ private:
 		byte loop;				///< [0xa53a]: the room's guard on this slot's loop
 		byte mode;
 		const byte *frames;		///< the frame list, for modes 6, 7 and 8
+
+		bool hold;				///< a port addition: never show this slot blank
+		mutable int heldFrame;	///< 1-based, the last real frame drawn while held
 
 		Slot() { clear(); }
 		void clear();
