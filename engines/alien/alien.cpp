@@ -212,6 +212,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
 		_cemeteryLookWait(false),
 		_mazeClicks(0), _mazeStep(0),
+		_poolStep(0),
+		_divingStep(0), _divingPos(0), _divingClicks(0),
+		_shoreClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1179,6 +1182,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// (maze.cpp).
 	startMaze();
 
+	// And room 46's swim, the same way (diving.cpp).
+	startDiving();
+
+	// And room 41's door to the maze (shore.cpp).
+	startShore();
+
 	// And the scenes the room raises on entry, which the loop plays once the
 	// room's first frame is up: the original reaches them from entry 2, which
 	// the transition does not call until the room is on the screen. Raising
@@ -1460,6 +1469,13 @@ void AlienEngine::stepClock() {
 		// And room 43's, which ends the simplified maze once the click count
 		// runs out (maze.cpp).
 		stepMaze();
+
+		// And room 48's, which the diving suit starts and which ends by
+		// arming the way down into room 46 (pool.cpp).
+		stepPool();
+
+		// And room 46's chest, its key, and the swim across (diving.cpp).
+		stepDiving();
 
 		// And room 30's, which is the whole of the antique store: the
 		// conversation, the arrow traded for the diving suit, and the walk out
@@ -3055,6 +3071,16 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (!rightButton && armMaze())
 		return;
 
+	// Room 46's swim across to the shore, standing in for the real
+	// walk-arrival latch the same way (diving.cpp).
+	if (!rightButton && armDivingSwim())
+		return;
+
+	// Room 41's door to the maze, standing in for the real three-state guard
+	// the same way (shore.cpp).
+	if (!rightButton && armShoreDoor())
+		return;
+
 	// The two buttons do different jobs, which is the whole of playtest report
 	// 19. The **left** button only ever walks: the room's own loop calls the
 	// overlay's entry 0 with the click point when [0x8d0e] is set
@@ -3280,6 +3306,18 @@ void AlienEngine::finishAction() {
 	// lift already moves for them (cemetery.cpp).
 	if (!item)
 		armCemeteryStatue(spot.obj, verb);
+
+	// And room 21's Yodle, whose talk hands over the picklock the diving
+	// area's chest needs (yodle.cpp).
+	if (!item)
+		armYodle(spot.obj, verb);
+
+	// And room 48's pool, which the diving suit answers with a machine of its
+	// own rather than a script row (pool.cpp).
+	armPool(spot.obj, item);
+
+	// And room 46's chest and its key (diving.cpp).
+	armDiving(spot.obj, item);
 
 	// And three bodies carry state the lift does not: the sewer's ladder, its
 	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).

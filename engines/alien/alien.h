@@ -292,6 +292,25 @@ private:
 	bool armMaze();
 	void stepMaze();
 
+	/// Room 48's pool, and the diving suit that opens the way down to room 46
+	/// (pool.cpp).
+	bool armPool(int obj, byte item);
+	void stepPool();
+
+	/// Room 46's chest, its key, and the swim across to the shore
+	/// (diving.cpp).
+	void startDiving();
+	bool armDiving(int obj, byte item);
+	bool armDivingSwim();
+	void stepDiving();
+
+	/// Room 41's door to the maze, simplified the same way (shore.cpp).
+	void startShore();
+	bool armShoreDoor();
+
+	/// Room 21's Yodle, and the picklock his talk hands over (yodle.cpp).
+	bool armYodle(int obj, byte verb);
+
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
 	void armMailbox(int obj, byte item);
@@ -706,6 +725,18 @@ private:
 	/// axe-in-the-wall finish once they run out (maze.cpp).
 	uint _mazeClicks;
 	byte _mazeStep;
+
+	/// Room 48's pool: the step of the dive machine (pool.cpp).
+	byte _poolStep;
+
+	/// Room 46's chest and its swim: the machine step, the wait counter, and
+	/// the strokes taken so far (diving.cpp).
+	byte _divingStep;
+	uint16 _divingPos;
+	uint _divingClicks;
+
+	/// Room 41's simplified door: clicks taken toward the maze (shore.cpp).
+	uint _shoreClicks;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether

@@ -10,8 +10,12 @@ MODULE_OBJS = \
 	cliff.o \
 	living.o \
 	maze.o \
+	pool.o \
 	mailbox.o \
 	cutscenes.o \
+	diving.o \
+	shore.o \
+	yodle.o \
 	cutsceneplay.o \
 	basement.o \
 	cemetery.o \
