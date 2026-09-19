@@ -311,6 +311,20 @@ private:
 	/// Room 21's Yodle, and the picklock his talk hands over (yodle.cpp).
 	bool armYodle(int obj, byte verb);
 
+	/// The valve between rooms 49 and 50, and the steam it lets through
+	/// (steam.cpp).
+	void startSteam();
+	bool armSteamValve();
+	bool armSteamDoor();
+	void stepSteam();
+
+	/// Room 22's teleporter and room 56 at the other end, simplified to one
+	/// destination each way (teleport.cpp).
+	void startTeleport();
+	bool armTeleportPark(int obj, byte verb);
+	bool armTeleportReturn();
+	void stepTeleport();
+
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
 	void armMailbox(int obj, byte item);
@@ -737,6 +751,17 @@ private:
 
 	/// Room 41's simplified door: clicks taken toward the maze (shore.cpp).
 	uint _shoreClicks;
+
+	/// The valve machine between rooms 49 and 50: clicks taken so far, and
+	/// ticks left of the delay standing in for either room's cutscene
+	/// (steam.cpp).
+	uint _steamClicks;
+	uint _steamStep;
+
+	/// Room 22's teleporter: ticks left of its delay, and room 56's simplified
+	/// return, clicks taken so far (teleport.cpp).
+	uint _teleportStep;
+	uint _teleportReturnClicks;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether

@@ -215,6 +215,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_poolStep(0),
 		_divingStep(0), _divingPos(0), _divingClicks(0),
 		_shoreClicks(0),
+		_steamClicks(0), _steamStep(0),
+		_teleportStep(0), _teleportReturnClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1188,6 +1190,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// And room 41's door to the maze (shore.cpp).
 	startShore();
 
+	// And the valve between rooms 49 and 50, and room 56's return trip
+	// (steam.cpp, teleport.cpp).
+	startSteam();
+	startTeleport();
+
 	// And the scenes the room raises on entry, which the loop plays once the
 	// room's first frame is up: the original reaches them from entry 2, which
 	// the transition does not call until the room is on the screen. Raising
@@ -1476,6 +1483,13 @@ void AlienEngine::stepClock() {
 
 		// And room 46's chest, its key, and the swim across (diving.cpp).
 		stepDiving();
+
+		// And the delay standing in for the valve machine between rooms 49
+		// and 50 (steam.cpp).
+		stepSteam();
+
+		// And the delay standing in for room 22's teleporter (teleport.cpp).
+		stepTeleport();
 
 		// And room 30's, which is the whole of the antique store: the
 		// conversation, the arrow traded for the diving suit, and the walk out
@@ -3081,6 +3095,18 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (!rightButton && armShoreDoor())
 		return;
 
+	// Room 56's return trip to the park, standing in for the position-driven
+	// arrival cutscene the same way (teleport.cpp).
+	if (!rightButton && armTeleportReturn())
+		return;
+
+	// The valve between rooms 49 and 50, standing in for the runtime hotspot
+	// neither room's static table carries (steam.cpp).
+	if (!rightButton && armSteamValve())
+		return;
+	if (!rightButton && armSteamDoor())
+		return;
+
 	// The two buttons do different jobs, which is the whole of playtest report
 	// 19. The **left** button only ever walks: the room's own loop calls the
 	// overlay's entry 0 with the click point when [0x8d0e] is set
@@ -3311,6 +3337,11 @@ void AlienEngine::finishAction() {
 	// area's chest needs (yodle.cpp).
 	if (!item)
 		armYodle(spot.obj, verb);
+
+	// And room 22's teleporter, once the transistor the lift already handles
+	// has repaired it (teleport.cpp).
+	if (!item)
+		armTeleportPark(spot.obj, verb);
 
 	// And room 48's pool, which the diving suit answers with a machine of its
 	// own rather than a script row (pool.cpp).

@@ -16,6 +16,8 @@ MODULE_OBJS = \
 	diving.o \
 	shore.o \
 	yodle.o \
+	steam.o \
+	teleport.o \
 	cutsceneplay.o \
 	basement.o \
 	cemetery.o \
