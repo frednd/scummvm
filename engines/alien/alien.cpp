@@ -217,6 +217,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_shoreClicks(0),
 		_steamClicks(0), _steamStep(0),
 		_teleportStep(0), _teleportReturnClicks(0),
+		_corridorClicks(0), _corridorStep(0),
+		_scannerClicks(0), _waitingClicks(0), _bossClicks(0), _jailClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1195,6 +1197,15 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	startSteam();
 	startTeleport();
 
+	// And the four-way junction, the scanner, the number board, the boss
+	// fight and the jail's escape, all simplified the same way (corridor.cpp,
+	// scanner.cpp, waiting.cpp, boss.cpp, jail.cpp).
+	startCorridor();
+	startScanner();
+	startWaiting();
+	startBoss();
+	startJail();
+
 	// And the scenes the room raises on entry, which the loop plays once the
 	// room's first frame is up: the original reaches them from entry 2, which
 	// the transition does not call until the room is on the screen. Raising
@@ -1490,6 +1501,11 @@ void AlienEngine::stepClock() {
 
 		// And the delay standing in for room 22's teleporter (teleport.cpp).
 		stepTeleport();
+
+		// And the delay standing in for the walk to room 53's own exit
+		// hotspot, once the maintenance man has cleared the way
+		// (corridor.cpp).
+		stepCorridor();
 
 		// And room 30's, which is the whole of the antique store: the
 		// conversation, the arrow traded for the diving suit, and the walk out
@@ -3107,6 +3123,20 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (!rightButton && armSteamDoor())
 		return;
 
+	// The four-way junction, the scanner, the number board, the boss fight
+	// and the jail's escape, all standing in for their own missing exit the
+	// same way (corridor.cpp, scanner.cpp, waiting.cpp, boss.cpp, jail.cpp).
+	if (!rightButton && armCorridorNext())
+		return;
+	if (!rightButton && armScanner())
+		return;
+	if (!rightButton && armWaitingBoard())
+		return;
+	if (!rightButton && armBoss())
+		return;
+	if (!rightButton && armJailExit())
+		return;
+
 	// The two buttons do different jobs, which is the whole of playtest report
 	// 19. The **left** button only ever walks: the room's own loop calls the
 	// overlay's entry 0 with the click point when [0x8d0e] is set
@@ -3337,6 +3367,11 @@ void AlienEngine::finishAction() {
 	// area's chest needs (yodle.cpp).
 	if (!item)
 		armYodle(spot.obj, verb);
+
+	// And room 53/57's maintenance man, whose talk clears the way to the
+	// ending (corridor.cpp).
+	if (!item)
+		armCorridorMan(spot.obj, verb);
 
 	// And room 22's teleporter, once the transistor the lift already handles
 	// has repaired it (teleport.cpp).

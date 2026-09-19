@@ -18,6 +18,11 @@ MODULE_OBJS = \
 	yodle.o \
 	steam.o \
 	teleport.o \
+	corridor.o \
+	scanner.o \
+	waiting.o \
+	boss.o \
+	jail.o \
 	cutsceneplay.o \
 	basement.o \
 	cemetery.o \

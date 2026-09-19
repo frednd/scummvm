@@ -325,6 +325,33 @@ private:
 	bool armTeleportReturn();
 	void stepTeleport();
 
+	/// Rooms 51/53/55/57, the four-way junction, and room 53's maintenance
+	/// man, the only way out of it toward the ending (corridor.cpp).
+	void startCorridor();
+	bool armCorridorNext();
+	bool armCorridorMan(int obj, byte verb);
+	void stepCorridor();
+
+	/// Room 52's security scanner, simplified to a click count the same way
+	/// (scanner.cpp).
+	void startScanner();
+	bool armScanner();
+
+	/// Room 54's number board and the call in to Jack's room, simplified the
+	/// same way (waiting.cpp).
+	void startWaiting();
+	bool armWaitingBoard();
+
+	/// Room 60, Jack's room: no overlay at all, ported for reachability only
+	/// (boss.cpp).
+	void startBoss();
+	bool armBoss();
+
+	/// Room 58's escape back to the ship, simplified the same way
+	/// (jail.cpp).
+	void startJail();
+	bool armJailExit();
+
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
 	void armMailbox(int obj, byte item);
@@ -762,6 +789,24 @@ private:
 	/// return, clicks taken so far (teleport.cpp).
 	uint _teleportStep;
 	uint _teleportReturnClicks;
+
+	/// Rooms 51/53/55/57's simplified four-way cycle: clicks taken toward the
+	/// next room, and room 53's own delay before leaving for the ending
+	/// (corridor.cpp).
+	uint _corridorClicks;
+	uint _corridorStep;
+
+	/// Room 52's simplified scan: clicks taken so far (scanner.cpp).
+	uint _scannerClicks;
+
+	/// Room 54's simplified number board: clicks taken so far (waiting.cpp).
+	uint _waitingClicks;
+
+	/// Room 60's simplified fight: clicks taken so far (boss.cpp).
+	uint _bossClicks;
+
+	/// Room 58's simplified escape: clicks taken so far (jail.cpp).
+	uint _jailClicks;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether
