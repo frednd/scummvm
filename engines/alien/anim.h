@@ -144,6 +144,25 @@ public:
 	void play(uint slot, int first, int count, int rate, int mode,
 			  const byte *frames = nullptr);
 
+	/**
+	 * Takes a slot off the screen: no frames left, nothing left behind.
+	 *
+	 * The original has no such call -- a play there always runs to its own end
+	 * -- but it does have banks that draw the character himself, and those are
+	 * bracketed by [0xa94d], the "draw the character" byte. What ends such an
+	 * animation in the original is running into its terminator on the same tick
+	 * the byte comes back; a bank that ships fewer frames than the room plays,
+	 * or a machine that hands the character back early, would otherwise leave
+	 * the drawn-on version of him standing under the real one. This is the port
+	 * clearing the slot at that point instead of relying on the frame count
+	 * landing exactly right (AlienEngine::showCharacter).
+	 *
+	 * Unlike stop(), which is the original's own way of cutting a range short
+	 * by zeroing its frame counter, this also clears the flags that would keep
+	 * the last frame on screen or stamp it into the plate.
+	 */
+	void takeDown(uint slot);
+
 	/** One animation tick: advances every slot with frames left. */
 	void tick();
 

@@ -83,6 +83,10 @@ public:
 
 	uint topic() const { return _topic; }
 
+	/// [0xa60c]: which option was picked, 1..4, or 0 while none has been. The
+	/// machines that wait on one option in particular read it (store.cpp).
+	uint choice() const { return _choice; }
+
 	/** Open on a topic of this file's tree; a topic with no options does not open. */
 	bool open(const TalFile &tal, uint topic);
 

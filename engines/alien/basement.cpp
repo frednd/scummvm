@@ -155,10 +155,9 @@ void AlienEngine::enterBasement(int room) {
 
 	// 0x0837: eleven frames of him coming down, with the character and the
 	// cursor out of the way until the animation gives them back.
-	_anims.play(kClimbSlot, 1, 11, 2, 1);
+	playCharacterAnim(kClimbSlot, 1, 11, 2, 1);
 	_basementStep = kStepArriving;
 	_basementClimbing = true;
-	_drawCharacter = false;
 	CursorMan.showMouse(false);
 	debugC(1, kDebugRooms, "basement: down from room %d, step %d",
 		   _mode, kStepArriving);
@@ -179,8 +178,10 @@ void AlienEngine::stepBasement() {
 	// state machine, which ends two frames earlier.
 	if (_basementClimbing && _anims.remaining(kClimbSlot) == kArrivalRelease) {
 		_basementClimbing = false;
-		_drawCharacter = true;
-		_dirty = true;
+		// The slot goes down with him: the climb has one frame left here, and
+		// leaving it to finish would put the drawn-on Ben back on the ladder
+		// for that frame with the walker already at the foot of it.
+		showCharacter();
 		walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
 		debugC(1, kDebugRooms, "basement: off the ladder, walking to %d,%d",
 			   kOffLadderX, kOffLadderY);
@@ -253,12 +254,10 @@ void AlienEngine::stepBasement() {
 	if (_armed == kArmedLadder && _ben.idleCount() >= kLadderWait &&
 		_script.flag(kLadderArmed) == 0) {
 		// 0x0bb5
-		_anims.play(kLadderSlot, 1, 0x10, 2, 1);
+		playCharacterAnim(kLadderSlot, 1, 0x10, 2, 1);
 		_basementStep = kStepLadder;
 		_script.setFlag(kLadderArmed, 1);
 		_script.setFlag(kCabinetVariant, 0);
-		_drawCharacter = false;
-		_dirty = true;
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "basement: up the ladder, step 0x%02x", kStepLadder);
 		return;
@@ -267,11 +266,9 @@ void AlienEngine::stepBasement() {
 	if (_armed == kArmedHole && _ben.idleCount() >= kHoleWait &&
 		_script.flag(kHoleArmed) == 0) {
 		// 0x0c21
-		_anims.play(kHoleSlot, 1, 0x21, 3, 1);
+		playCharacterAnim(kHoleSlot, 1, 0x21, 3, 1);
 		_basementStep = kStepHole;
 		_script.setFlag(kHoleArmed, 1);
-		_drawCharacter = false;
-		_dirty = true;
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "basement: into the hole, step 0x%02x", kStepHole);
 		return;

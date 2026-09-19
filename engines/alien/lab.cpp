@@ -118,7 +118,9 @@ void AlienEngine::armLab(int obj, bool item) {
 	// item-use path and 0x4e25 the plain-verb one, which is what `item` is here.
 	if (item && obj == kLabPlank) {
 		_labStep = kStepPlank;
-		_drawCharacter = false;
+		// The play itself is in the click body; naming the slot here is what
+		// lets showCharacter() take it down again with him.
+		hideCharacter(kPlankSlot);
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "lab: the plank comes off, step %d", kStepPlank);
 		return;
@@ -134,7 +136,7 @@ void AlienEngine::armLab(int obj, bool item) {
 
 	if (!item && obj == kLabKey) {
 		_labStep = kStepKey;
-		_drawCharacter = false;
+		hideCharacter(kKeySlot);
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "lab: the key, step 0x%02x", kStepKey);
 		return;
@@ -153,7 +155,7 @@ void AlienEngine::stepLab() {
 	case kStepPlank:
 		if (_anims.remaining(kPlankSlot) != 2)
 			break;
-		_drawCharacter = true;
+		showCharacter();
 		_labStep = kStepPlankSpeak;
 		_labPos = 0;
 		break;
@@ -174,7 +176,7 @@ void AlienEngine::stepLab() {
 		if (_anims.remaining(kKeySlot) != 2)
 			break;
 		CursorMan.showMouse(true);
-		_drawCharacter = true;
+		showCharacter();
 		_labStep = 0;
 		_inventory.add(kBigKey);
 		debugC(1, kDebugRooms, "lab: item %d taken", kBigKey);

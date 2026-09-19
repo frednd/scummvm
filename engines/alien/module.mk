@@ -7,6 +7,9 @@ MODULE_OBJS = \
 	anims.o \
 	charanim.o \
 	chat.o \
+	cliff.o \
+	living.o \
+	mailbox.o \
 	cutscenes.o \
 	cutsceneplay.o \
 	basement.o \
@@ -39,6 +42,9 @@ MODULE_OBJS = \
 	lift.o \
 	library.o \
 	sewer.o \
+	sluggs.o \
+	hippie.o \
+	store.o \
 	sfx.o \
 	tables.o \
 	tal.o \

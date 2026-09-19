@@ -24,6 +24,7 @@
 
 #include "common/language.h"
 #include "common/serializer.h"
+#include "common/random.h"
 #include "engines/engine.h"
 #include "graphics/surface.h"
 
@@ -101,6 +102,7 @@ public:
 	Common::Error loadGameStream(Common::SeekableReadStream *stream) override;
 	bool canSaveGameStateCurrently(Common::U32String *msg = nullptr) override;
 	bool canLoadGameStateCurrently(Common::U32String *msg = nullptr) override;
+	bool canSaveAutosaveCurrently() override;
 
 	const ADGameDescription *_gameDescription;
 	const char *getGameId() const;
@@ -161,6 +163,32 @@ private:
 	void runPlayCommand(const PlayCommand &cmd);
 
 	void walkTo(int x, int y, int arrivalFacing = Walker::kFacingKeep);
+
+	/**
+	 * Plays a bank that draws the character himself.
+	 *
+	 * Half a dozen rooms hand Ben over to an animation slot -- the rope in the
+	 * basement, the cliff, the plank in the lab, the stethoscope in the library,
+	 * the blast in the park, getting up off the road in town -- and each of them
+	 * brackets the play with [0xa94d], the byte every room's tick tests before
+	 * it draws the walker. This is both halves of that in one call: the byte
+	 * goes down and the slot is remembered, so showCharacter() can take the
+	 * slot down again when the walker comes back. Without that the drawn-on Ben
+	 * is left standing wherever the range ended -- a bank that ships fewer
+	 * frames than the room plays, or a machine that hands him back before the
+	 * terminator, and there are two Bens on screen.
+	 */
+	void playCharacterAnim(uint slot, int first, int count, int rate, int mode);
+
+	/// Hides the walker without starting anything: for a machine that plays its
+	/// bank on a later step than the one that takes the character away.
+	void hideCharacter(uint slot = kNoCharacterSlot);
+
+	/// Gives the walker back and clears every slot playCharacterAnim() started.
+	void showCharacter();
+
+	/// No slot: hideCharacter() taking the character away on its own.
+	static const uint kNoCharacterSlot = 0xFFFF;
 	void sweepWalkGeometry();
 	void dumpHotspots();
 	void stepClock();
@@ -174,6 +202,7 @@ private:
 	bool menuAllowed() const;
 	void holdItem(byte item);
 	void lookAtItem(byte item);
+	bool combineItems(byte held, byte clicked);
 	void dumpItems();
 	void dumpSfx();
 	void syncGame(Common::Serializer &s);
@@ -238,6 +267,53 @@ private:
 
 	void enterBasement(int room);
 	void stepBasement();
+
+	/// Room 11's television, the tape it plays and the arrow that comes down
+	/// with it (living.cpp).
+	bool armLiving(int obj, byte item, int anchorX, int anchorY);
+	void livingCassette(int obj, byte item);
+	void startTape();
+	void stepLiving();
+
+	/// Room 31's two ledges and the climb between them (cliff.cpp).
+	void armCliff(int clickX, int clickY, WalkTarget &target);
+	void stepCliff();
+
+	/// The mailbox full of dynamite, and the road it blows him into
+	/// (mailbox.cpp).
+	void armMailbox(int obj, byte item);
+	void stepMailbox();
+	void enterTown(int room);
+	void stepTown();
+
+	/// Room 34's Sluggs, the one hand that gives out the observatory keys
+	/// (sluggs.cpp).
+	bool armSluggs(int obj, byte verb, bool item);
+	void stepSluggs();
+	void sluggsTalk(byte speaker, byte line, byte count);
+	void sluggsSpeak();
+	void sluggsPose(byte pose);
+
+	/// Room 23's Gameson, the hippie chained to the tree: the six dialog files
+	/// his conversation swaps between, and the walkman traded for his game
+	/// (hippie.cpp).
+	bool armHippie(int obj, byte verb, int item);
+	void startHippie();
+	void stepHippie();
+	void hippiePick();
+	void hippieAnswer();
+	void hippiePose(byte pose);
+	void loadHippieScript(byte which);
+
+	/// The 24h antique store, which is one long [0xa49f] machine and no
+	/// rectangles at all (store.cpp).
+	void startStore();
+	void stepStore();
+	void storeSpeak(byte code);
+	void storeSalesmanLine(byte code);
+	void storePose(byte pose);
+	void storeWalk(int viaX, int viaY, int x, int y, int facing);
+	void loadStoreScript(const char *name);
 	bool roomHasSharedExit(int room) const;
 	void cancelOpening();
 	void stepEnding();
@@ -425,6 +501,12 @@ private:
 	/// opening anything on the click itself.
 	bool _menuRequest;
 
+	/// Whether the GUI's own menu is up. Nothing in the original has a
+	/// counterpart -- it is the autosave, which ScummVM takes behind the menu
+	/// and again on the way into a load (canSaveAutosaveCurrently, saveload.cpp).
+	/// Not part of the save file: it is true only while a modal dialog is open.
+	bool _inMenu;
+
 	/// [0xa6bb]: the item picked out of the bar and not yet used on anything.
 	/// While it is set the status line reads "USE <item> WITH <object>" and a
 	/// click on an object is an item use rather than the object's own verb.
@@ -552,6 +634,12 @@ private:
 	/// and the walker are both on screen (playtest report 3).
 	bool _drawCharacter;
 
+	/// The slots playing a bank that draws the character himself, one bit per
+	/// slot. playCharacterAnim() sets a bit and showCharacter() takes the slot
+	/// down again, so that the drawn-on Ben leaves the screen on the same frame
+	/// the walker's Ben comes back to it.
+	uint16 _characterAnimSlots;
+
 	/// [0xa948] as the loop last saw it: the frame it comes back on is the one
 	/// that has to rebuild the hover, since the port only hovers on motion.
 	bool _cursorWasVisible;
@@ -561,6 +649,80 @@ private:
 
 	/// Room 13's, which is the same byte in the original (basement.cpp).
 	byte _basementStep;
+
+	/// Room 11's [0xa49f] machine, which is the tape the remote control starts
+	/// (living.cpp).
+	byte _livingStep;
+
+	/// Room 31's, and the [0xa738] beside it that says which climb an arrival
+	/// is going to start (cliff.cpp). [0xa49c] is kept per room, the way the
+	/// lab and the library keep theirs.
+	byte _cliffStep;
+	byte _cliffClimb;
+	uint16 _cliffPos;
+
+	/// The point the climb waits for him at, and -- for the way up -- the point
+	/// the click that started it had asked for, the original's [0xa732],
+	/// [0xa734] and [0xa736].
+	int _cliffX, _cliffY, _cliffFacing;
+	int _cliffResumeX, _cliffResumeY, _cliffResumeFacing;
+
+	/// Room 25's [0xa49f] machine and the counter it times itself off, and
+	/// room 33's own state for the landing at the other end (mailbox.cpp).
+	byte _mailboxStep;
+	uint16 _mailboxPos;
+	byte _townStep;
+
+	/// Room 34's [0xa49f] machine and the conversation running beside it: the
+	/// step, its counter, the outcome the two speakers are taking turns over
+	/// ([0xa4a2]), whose turn it is ([0xa4a3]), how many lines are still owed
+	/// ([0xad40]) and whether Sluggs has a line standing (sluggs.cpp).
+	byte _sluggsStep;
+	uint16 _sluggsPos;
+	byte _sluggsLine;
+	byte _sluggsSpeaker;
+	byte _sluggsLeft;
+	bool _sluggsSpeaking;
+	bool _sluggsTalking;
+
+	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
+	/// its counter, the dialog id owed to the pick that was just made, whether
+	/// it is still waiting for that pick's own line to come down, and whether
+	/// Gameson has a line standing (hippie.cpp).
+	byte _hippieStep;
+	uint16 _hippiePos;
+	byte _hippieReply;
+	TalFile::Entry _hippieReplyEntry;
+	int _hippieReplyTicks;
+	bool _hippieAnswer;
+	bool _hippieTalking;
+
+	/// What the conversation menu's last pick was, for the rooms that answer
+	/// one: the reply is the fourth byte of the tree record -- a dialog id,
+	/// which DIALOG:sub_0bf08 hands straight to the renderer -- and the topic
+	/// and option are [0xa634] and [0xa60c], which OBJ's two per-handler hooks
+	/// test (chat.cpp).
+	byte _chatPickReply;
+	byte _chatPickNext;
+	uint _chatPickTopic;
+	uint _chatPickChoice;
+	bool _chatPickNew;
+
+	/// Room 30's own machine: the step, its counter, the line the two speakers
+	/// are taking turns over and whose turn it is, and the item the player has
+	/// offered over the counter (store.cpp). The line survives the room, the
+	/// way [0xa4a2] does: the return visit with the suit picks up where the
+	/// trade's own banter stopped.
+	byte _storeStep;
+	uint16 _storePos;
+	byte _storeLine;
+	byte _storeSpeaker;
+	byte _storeOffer;
+	bool _storeWalked;
+	bool _storeTalking;
+
+	/// GFX:sub_26ebc, the resident random the store picks its refusal with.
+	Common::RandomSource _rnd;
 
 	/// Whether slot 0 is running room 13's arrival climb, which is what the
 	/// original can read off the slot itself (basement.cpp).

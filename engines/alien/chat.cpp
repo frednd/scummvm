@@ -450,6 +450,15 @@ void AlienEngine::stepChat() {
 	// of the file's entries rather than an entry of its own.
 	TalFile::ChatOption pick;
 	if (_chat.takePick(pick)) {
+		// What the room is owed by it: the reply (a dialog id of its own), the
+		// next-topic byte and the topic and option it was picked in. Room 23's
+		// two hooks read all four (hippie.cpp); nothing else does yet.
+		_chatPickReply = pick.reply;
+		_chatPickNext = pick.next;
+		_chatPickTopic = _chat.topic();
+		_chatPickChoice = _chat.choice();
+		_chatPickNew = true;
+
 		const TalFile::Entry &entry = _tal.entry(pick.entry);
 		TalFile::Entry line;
 		for (uint i = 0; i < pick.lines && pick.line + i < entry.lines.size(); i++)

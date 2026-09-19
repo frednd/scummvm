@@ -174,6 +174,10 @@ void AlienEngine::enterSewer(int room) {
 		return;
 
 	CursorMan.showMouse(false);
+	// SEW_CLIM draws Ben on the ladder, so the walker goes away for it: this is
+	// the [0xa94d] beside the cursor at 0e7b:0x060b, and the slot it names is
+	// the one room init has just started backwards.
+	hideCharacter(kLadderSlot);
 	_sewerStep = kStepArriving;
 	debugC(1, kDebugRooms, "sewer: down the ladder from room %d, step %d",
 		   _mode, kStepArriving);
@@ -249,6 +253,9 @@ void AlienEngine::stepSewer() {
 		if (_anims.remaining(kLadderSlot) != 2)
 			break;
 		CursorMan.showMouse(true);
+		// 0e7b:0x0782, and the slot goes down with him so the ladder's last two
+		// frames are not left standing under the walker.
+		showCharacter();
 		_sewerStep = 0;
 		_ben.faceTo(kFacingFront);
 		debugC(1, kDebugRooms, "sewer: at the foot of the ladder");
@@ -256,6 +263,8 @@ void AlienEngine::stepSewer() {
 
 	case kStepClimbing:
 		CursorMan.showMouse(false);
+		// 0e7b:0x0752: the body has the climb running on slot 1 already.
+		hideCharacter(kLadderSlot);
 		_sewerStep = kStepLeaving;
 		break;
 

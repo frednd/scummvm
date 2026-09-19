@@ -191,6 +191,20 @@ bool AlienEngine::canLoadGameStateCurrently(Common::U32String *msg) {
 }
 
 /**
+ * The autosave, which must not run behind the menu.
+ *
+ * Engine::loadGameState takes an autosave before every load, so loading the
+ * autosave slot from the GUI wrote the state being escaped over the state being
+ * loaded -- the player got back exactly what they were trying to leave
+ * (playtest report). The periodic autosave is no better while a modal dialog is
+ * up: the frame under it is the one the player is about to replace. Both are
+ * the same answer, because the whole menu runs inside `_inMenu`.
+ */
+bool AlienEngine::canSaveAutosaveCurrently() {
+	return !_inMenu && canSaveGameStateCurrently(nullptr);
+}
+
+/**
  * Read one of the original's saves.
  *
  * Only the fields whose addresses are established are taken: the room, the

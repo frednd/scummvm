@@ -516,14 +516,14 @@ static const WalkGeom kWalkGeom[] = {
 	{ kWalkZone,       135,  129,  319,  137,  157,  154,    3, 1, { { 0xa737,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 135,129..319,137 -> 157,154 facing 3
 	{ kWalkZone,       151,  117,  319,  128,  157,  154,    3, 1, { { 0xa737,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 151,117..319,128 -> 157,154 facing 3
 	{ kWalkZone,       169,    0,  319,  116,  157,  154,    3, 1, { { 0xa737,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 169,0..319,116 -> 157,154 facing 3
-	{ kWalkSnapLeft,   214,  137,  319,  159,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapleft 214,137..319,159
-	{ kWalkZone,       201,    0,  319,  136,  206,  137,    2, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 201,0..319,136 -> 206,137 facing 2
-	{ kWalkSnapDown,   169,    0,  200,  135,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 169,0..200,135
-	{ kWalkSnapRight,  120,  138,  151,  159,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapright 120,138..151,159
-	{ kWalkSnapRight,  135,  129,  151,  137,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapright 135,129..151,137
-	{ kWalkZone,       151,  117,  169,  128,  151,  129,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 151,117..169,128 -> 151,129 facing 1
-	{ kWalkObject,       3,    0,    0,    0,  192,  165,    3, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 3 -> 192,165 facing 3
-	{ kWalkSubmode,      3,    0,    0,    0,    2,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// object 3 arms submode 2
+	{ kWalkSnapLeft,   214,  137,  319,  159,    0,    0,    0, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapleft 214,137..319,159
+	{ kWalkZone,       201,    0,  319,  136,  206,  137,    2, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 201,0..319,136 -> 206,137 facing 2
+	{ kWalkSnapDown,   169,    0,  200,  135,    0,    0,    0, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 169,0..200,135
+	{ kWalkSnapRight,  120,  138,  151,  159,    0,    0,    0, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapright 120,138..151,159
+	{ kWalkSnapRight,  135,  129,  151,  137,    0,    0,    0, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapright 135,129..151,137
+	{ kWalkZone,       151,  117,  169,  128,  151,  129,    1, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 151,117..169,128 -> 151,129 facing 1
+	{ kWalkObject,       3,    0,    0,    0,  192,  165,    3, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 3 -> 192,165 facing 3
+	{ kWalkSubmode,      3,    0,    0,    0,    2,    0,    0, 1, { { 0xa737,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// object 3 arms submode 2
 	{ kWalkMaxY,       141,    0,    0,    0,    0,  141,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// clamp y at 141 to 141
 	{ kWalkSnapDown,     0,   95,   43,  114,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 0,95..43,114
 	{ kWalkZone,         0,    0,   43,   94,   43,   94,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,0..43,94 -> 43,94 facing 1
@@ -605,30 +605,30 @@ static const WalkGeom kWalkGeom[] = {
 	{ kWalkSubmode,      2,    0,    0,    0,    1,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// object 2 arms submode 1
 	{ kWalkSubmode,      3,    0,    0,    0,    2,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// object 3 arms submode 2
 	{ kWalkMaxY,       142,    0,    0,    0,    0,  142,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// clamp y at 142 to 142
-	{ kWalkSnapUp,     179,  105,  222,  121,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 179,105..222,121
-	{ kWalkSnapUp,     223,  110,  233,  122,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 223,110..233,122
-	{ kWalkSnapDown,   215,   98,  226,  104,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 215,98..226,104
-	{ kWalkSnapDown,   227,   98,  234,  109,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 227,98..234,109
-	{ kWalkSnapDown,   235,   98,  240,  114,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 235,98..240,114
-	{ kWalkSnapUp,      95,   98,  178,  111,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 95,98..178,111
-	{ kWalkSnapUp,      83,  102,   94,  111,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 83,102..94,111
-	{ kWalkSnapUp,      69,  106,   82,  115,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 69,106..82,115
-	{ kWalkSnapUp,       0,  137,   62,  159,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 0,137..62,159
-	{ kWalkSnapRight,    0,  111,   24,  136,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapright 0,111..24,136
-	{ kWalkZone,         0,    0,   24,  110,   25,  111,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,0..24,110 -> 25,111 facing 4
-	{ kWalkSnapDown,    25,    0,   64,  112,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 25,0..64,112
-	{ kWalkSnapDown,    65,   97,   80,  103,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 65,97..80,103
-	{ kWalkZone,        65,    0,   95,   54,   77,  104,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 65,0..95,54 -> 77,104 facing 1
-	{ kWalkSnapDown,    96,    0,  213,   96,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 96,0..213,96
-	{ kWalkZone,       214,    0,  319,   97,  214,   97,    2, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 214,0..319,97 -> 214,97 facing 2
-	{ kWalkSnapDown,   239,   98,  319,  119,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 239,98..319,119
-	{ kWalkSnapUp,     258,  136,  319,  159,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 258,136..319,159
-	{ kWalkObject,       1,    0,    0,    0,   77,  104,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 1 -> 77,104 facing 1
-	{ kWalkObject,       2,    0,    0,    0,  165,   98,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 2 -> 165,98 facing 1
-	{ kWalkObject,       3,    0,    0,    0,  242,  123,    3, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 3 -> 242,123 facing 3
-	{ kWalkObject,       5,    7,    0,    0,   80,  121,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 5, 7 -> 80,121 facing 4
-	{ kWalkObject,       6,    8,    0,    0,   80,  121,    2, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 6, 8 -> 80,121 facing 2
-	{ kWalkSubmode,      2,    0,    0,    0,    1,    0,    0, 1, { { 0xa781,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// object 2 arms submode 1
+	{ kWalkSnapUp,     179,  105,  222,  121,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 179,105..222,121
+	{ kWalkSnapUp,     223,  110,  233,  122,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 223,110..233,122
+	{ kWalkSnapDown,   215,   98,  226,  104,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 215,98..226,104
+	{ kWalkSnapDown,   227,   98,  234,  109,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 227,98..234,109
+	{ kWalkSnapDown,   235,   98,  240,  114,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 235,98..240,114
+	{ kWalkSnapUp,      95,   98,  178,  111,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 95,98..178,111
+	{ kWalkSnapUp,      83,  102,   94,  111,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 83,102..94,111
+	{ kWalkSnapUp,      69,  106,   82,  115,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 69,106..82,115
+	{ kWalkSnapUp,       0,  137,   62,  159,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 0,137..62,159
+	{ kWalkSnapRight,    0,  111,   24,  136,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapright 0,111..24,136
+	{ kWalkZone,         0,    0,   24,  110,   25,  111,    4, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,0..24,110 -> 25,111 facing 4
+	{ kWalkSnapDown,    25,    0,   64,  112,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 25,0..64,112
+	{ kWalkSnapDown,    65,   97,   80,  103,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 65,97..80,103
+	{ kWalkZone,        65,    0,   95,   54,   77,  104,    1, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 65,0..95,54 -> 77,104 facing 1
+	{ kWalkSnapDown,    96,    0,  213,   96,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 96,0..213,96
+	{ kWalkZone,       214,    0,  319,   97,  214,   97,    2, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 214,0..319,97 -> 214,97 facing 2
+	{ kWalkSnapDown,   239,   98,  319,  119,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 239,98..319,119
+	{ kWalkSnapUp,     258,  136,  319,  159,    0,    0,    0, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 258,136..319,159
+	{ kWalkObject,       1,    0,    0,    0,   77,  104,    1, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 1 -> 77,104 facing 1
+	{ kWalkObject,       2,    0,    0,    0,  165,   98,    1, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 2 -> 165,98 facing 1
+	{ kWalkObject,       3,    0,    0,    0,  242,  123,    3, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 3 -> 242,123 facing 3
+	{ kWalkObject,       5,    7,    0,    0,   80,  121,    4, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 5, 7 -> 80,121 facing 4
+	{ kWalkObject,       6,    8,    0,    0,   80,  121,    2, 1, { { 0xa77f,   0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 6, 8 -> 80,121 facing 2
+	{ kWalkSubmode,      2,    0,    0,    0,    1,    0,    0, 2, { { 0xa77f,   0, false }, { 0xa781,   0, false }, { 0, 0, false } } },	// object 2 arms submode 1
 	{ kWalkSnapUp,      23,   51,   58,  159,    0,    0,    0, 1, { { 0xa77f,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 23,51..58,159
 	{ kWalkZone,         0,    0,   22,  159,   23,   50,    4, 1, { { 0xa77f,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,0..22,159 -> 23,50 facing 4
 	{ kWalkSnapDown,    23,    0,   58,   47,    0,    0,    0, 1, { { 0xa77f,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 23,0..58,47
@@ -637,14 +637,14 @@ static const WalkGeom kWalkGeom[] = {
 	{ kWalkObject,       6,    7,    8,    0,   58,   50,    2, 1, { { 0xa77f,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 6, 7, 8 -> 58,50 facing 2
 	{ kWalkObject,       5,    0,    0,    0,   29,   47,    4, 1, { { 0xa77f,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 5 -> 29,47 facing 4
 	{ kWalkSubmode,      5,    0,    0,    0,    2,    0,    0, 1, { { 0xa77f,   1, false }, { 0, 0, false }, { 0, 0, false } } },	// object 5 arms submode 2
-	{ kWalkSnapDown,   134,    0,  157,   48,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 134,0..157,48
-	{ kWalkSnapUp,     134,   50,  157,  159,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 134,50..157,159
-	{ kWalkZone,       158,    0,  319,  159,  157,   49,    2, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 158,0..319,159 -> 157,49 facing 2
-	{ kWalkZone,         0,    0,  133,  159,  134,   49,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,0..133,159 -> 134,49 facing 4
-	{ kWalkObject,       5,    7,    9,    0,  134,   49,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 5, 7, 9 -> 134,49 facing 4
-	{ kWalkObject,       3,    0,    0,    0,  142,   50,    3, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 3 -> 142,50 facing 3
-	{ kWalkObject,       6,    0,    0,    0,  142,   48,    1, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 6 -> 142,48 facing 1
-	{ kWalkSubmode,      6,    0,    0,    0,    3,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// object 6 arms submode 3
+	{ kWalkSnapDown,   134,    0,  157,   48,    0,    0,    0, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 134,0..157,48
+	{ kWalkSnapUp,     134,   50,  157,  159,    0,    0,    0, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// snapup 134,50..157,159
+	{ kWalkZone,       158,    0,  319,  159,  157,   49,    2, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 158,0..319,159 -> 157,49 facing 2
+	{ kWalkZone,         0,    0,  133,  159,  134,   49,    4, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,0..133,159 -> 134,49 facing 4
+	{ kWalkObject,       5,    7,    9,    0,  134,   49,    4, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 5, 7, 9 -> 134,49 facing 4
+	{ kWalkObject,       3,    0,    0,    0,  142,   50,    3, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 3 -> 142,50 facing 3
+	{ kWalkObject,       6,    0,    0,    0,  142,   48,    1, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// objects 6 -> 142,48 facing 1
+	{ kWalkSubmode,      6,    0,    0,    0,    3,    0,    0, 1, { { 0xa77f,   2, false }, { 0, 0, false }, { 0, 0, false } } },	// object 6 arms submode 3
 	{ kWalkMaxY,       136,    0,    0,    0,    0,  136,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// clamp y at 136 to 136
 	{ kWalkZone,         0,    0,   26,  159,   26,  133,    4, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// zone 0,0..26,159 -> 26,133 facing 4
 	{ kWalkSnapDown,    27,    0,   63,  121,    0,    0,    0, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } } },	// snapdown 27,0..63,121

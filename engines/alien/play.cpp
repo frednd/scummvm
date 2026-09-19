@@ -73,6 +73,9 @@ bool PlayScript::load(const Common::String &path) {
 		} else if (verb == "use") {
 			cmd.type = PlayCommand::kUse;
 			cmd.a = parseInt(tok.nextToken());
+		} else if (verb == "combine") {
+			cmd.type = PlayCommand::kCombine;
+			cmd.a = parseInt(tok.nextToken());
 		} else if (verb == "unuse") {
 			cmd.type = PlayCommand::kUnuse;
 		} else if (verb == "wait") {

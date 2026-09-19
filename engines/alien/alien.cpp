@@ -195,22 +195,34 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0),
 		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
-		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false),
+		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false),
+		_storeStep(0), _storePos(0), _storeLine(1), _storeSpeaker(0), _storeOffer(0),
+		_storeWalked(false), _storeTalking(false), _rnd("alien"),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
+		_livingStep(0), _cliffStep(0), _cliffClimb(0), _cliffPos(0), _cliffX(0), _cliffY(0),
+		_cliffFacing(Walker::kFacingKeep), _cliffResumeX(0), _cliffResumeY(0),
+		_cliffResumeFacing(Walker::kFacingKeep),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
 		_dialogId(1), _lastEvent(0), _speechCustom(false), _liftPending(false),
 		_libraryStep(0), _libraryPos(0),
+		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
+		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
+		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
+		_hippieAnswer(false),
+		_hippieTalking(false),
+		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
+		_chatPickNew(false),
 		_cursorX(0), _cursorY(0), _chatColorsHeld(false),
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
 		_openingStep(0), _openingPending(true), _roomClock(0),
-		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true),
-		_cursorWasVisible(true), _sewerStep(0),
+		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
+		_cursorWasVisible(true), _mailboxStep(0), _mailboxPos(0), _townStep(0), _sewerStep(0),
 		_basementStep(0), _basementClimbing(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
@@ -481,7 +493,13 @@ Common::Error AlienEngine::run() {
 			// A scripted run drives the game, not the GUI, and the dialog would
 			// sit waiting for a click that the script has no way to send.
 			if (!_playActive) {
+				// The dialog is modal, so a load started from it runs inside
+				// the flag -- which is the whole point of the flag: ScummVM
+				// autosaves on the way into every load (Engine::loadGameState),
+				// and the slot it writes is the one the player is loading.
+				_inMenu = true;
 				openMainMenuDialog();
+				_inMenu = false;
 				_dirty = true;
 			}
 		}
@@ -565,9 +583,13 @@ bool AlienEngine::playIdle() const {
 	// input at all until it hands the cursor back (finding #89), so a click
 	// scripted into that gap is dropped rather than acted on. Waiting for
 	// [0xa948] is what the player does.
+	// Room 31's climb is an arrival waiting to fire and then a machine of its
+	// own, exactly as _armed and the cursor are for every other room: the walk
+	// to the rock ends with the character idle for the tick before the climb
+	// starts, and a click scripted into that gap is taken at the wrong ledge.
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
-		   !_armed && CursorMan.isVisible();
+		   !_armed && !_cliffClimb && !_cliffStep && CursorMan.isVisible();
 }
 
 void AlienEngine::stepPlayScript() {
@@ -634,6 +656,17 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		debugC(1, kDebugPlay, "play: %u: use %d (%s)", cmd.sourceLine, cmd.a,
 			   _inventory.name((byte)cmd.a).c_str());
 		holdItem((byte)cmd.a);
+		break;
+
+	// The bar's own click path, minus the geometry: a script cannot put the
+	// cursor on the square an item happens to sit on, and which square that is
+	// says nothing about the combine.
+	case PlayCommand::kCombine:
+		debugC(1, kDebugPlay, "play: %u: combine %d (%s) with held item %d (%s)",
+			   cmd.sourceLine, cmd.a, _inventory.name((byte)cmd.a).c_str(), _heldItem,
+			   _inventory.name(_heldItem).c_str());
+		if (_heldItem && _inventory.has((byte)cmd.a))
+			combineItems(_heldItem, (byte)cmd.a);
 		break;
 
 	case PlayCommand::kUnuse:
@@ -951,12 +984,44 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	_sewerStep = 0;
 	_basementStep = 0;
 	_basementClimbing = false;
+	_livingStep = 0;
+	_cliffStep = 0;
+	_cliffClimb = 0;
+	_cliffPos = 0;
+	_mailboxStep = 0;
+	_mailboxPos = 0;
+	_townStep = 0;
 	_libraryStep = 0;
+	_sluggsStep = 0;
+	_sluggsPos = 0;
+	_sluggsLeft = 0;
+	_sluggsSpeaking = false;
+	_sluggsTalking = false;
+	_hippieStep = 0;
+	_hippiePos = 0;
+	_hippieReply = 0;
+	_hippieAnswer = false;
+	_hippieTalking = false;
+	_chatPickNew = false;
 	_chat.close();
 
 	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
-	// does not carry the character's absence into the next one.
+	// does not carry the character's absence into the next one. The slots go
+	// with it: the room's banks are about to be dropped anyway, and a machine
+	// that was still holding him keeps no claim on a slot of the next room.
+	_characterAnimSlots = 0;
 	_drawCharacter = true;
+
+	// And [0xa948] with it: OBJ:sub_08567 writes the pair together (0251:6096
+	// and 0251:60a5). Every machine that leaves a room takes the cursor away
+	// for its animation and leaves it away -- the ladder up out of the basement
+	// and the one up out of the sewer among them -- and relies on the next
+	// room's open to hand it back. Without this the game arrives in the next
+	// room with no pointer and no way to click anything (playtest report).
+	// It runs here, before the per-room arrivals below, because those are the
+	// original's overlay init, which follows sub_08567 and is entitled to take
+	// the cursor away again for the way in.
+	CursorMan.showMouse(true);
 
 	// OBJ:sub_08567, the shared room open every overlay's entry 1 calls, puts
 	// the DL1 clip line back at the bottom of the playfield (0251:605f). Only
@@ -990,6 +1055,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// And room 13's, which is the climb down when he came in over it
 	// (basement.cpp).
 	enterBasement(room);
+
+	// And room 33's, which is him landing in the road after the mailbox went
+	// up -- the far end of [0x33bc] (mailbox.cpp).
+	enterTown(room);
 
 	// The rectangles the room registers, by running entry 1 of its overlay as
 	// tools/gen_hotspots.py lifted it. Which ones exist depends on the puzzle
@@ -1091,6 +1160,18 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// And the lab does the same at the other end of the game: a new game opens
 	// with the character talking to himself before the player gets the cursor.
 	startOpening();
+
+	// And the antique store, whose whole scene is a machine of its own: the way
+	// in picks which of three dialog files the room speaks out of, so it runs
+	// here rather than with the other arrivals, after the room's own file has
+	// been read (store.cpp).
+	startStore();
+
+	// And room 23, whose hippie stands in one of two loops by whether his game
+	// has already changed hands -- two calls into the handler's own pose
+	// dispatcher, which is not a shape the opening table can carry
+	// (hippie.cpp).
+	startHippie();
 
 	// And the scenes the room raises on entry, which the loop plays once the
 	// room's first frame is up: the original reaches them from entry 2, which
@@ -1204,6 +1285,31 @@ void AlienEngine::stepSpriteBank(int delta) {
 	if (bank < 0)
 		bank += count;
 	loadSpriteBank((uint)bank);
+}
+
+void AlienEngine::hideCharacter(uint slot) {
+	if (slot != kNoCharacterSlot && slot < AnimSlots::kSlotCount)
+		_characterAnimSlots |= (uint16)(1 << slot);
+
+	_drawCharacter = false;
+	_dirty = true;
+}
+
+void AlienEngine::playCharacterAnim(uint slot, int first, int count, int rate, int mode) {
+	hideCharacter(slot);
+	_anims.play(slot, first, count, rate, mode);
+	debugC(1, kDebugGraphics, "character anim: slot %u has him for %d frames", slot, count);
+}
+
+void AlienEngine::showCharacter() {
+	for (uint i = 0; i < AnimSlots::kSlotCount; i++) {
+		if (_characterAnimSlots & (1 << i))
+			_anims.takeDown(i);
+	}
+	_characterAnimSlots = 0;
+
+	_drawCharacter = true;
+	_dirty = true;
 }
 
 void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
@@ -1322,6 +1428,34 @@ void AlienEngine::stepClock() {
 		stepSewer();
 		stepBasement();
 
+		// And room 31's climb between the foot of the cliff and the ledge on
+		// top of it, which is what arms the two doors up there (cliff.cpp).
+		stepCliff();
+
+		// And room 11's tape, the only thing in the game that puts the arrow on
+		// the dish (living.cpp).
+		stepLiving();
+
+		// And room 25's, which the matches on the mailbox start once their
+		// line has come down, and room 33's landing at the end of it
+		// (mailbox.cpp).
+		stepMailbox();
+		stepTown();
+
+		// And room 34's, which is the conversation that hands over the
+		// observatory keys -- the one source the tables have none of
+		// (sluggs.cpp).
+		stepSluggs();
+
+		// And room 30's, which is the whole of the antique store: the
+		// conversation, the arrow traded for the diving suit, and the walk out
+		// that is the room's only exit (store.cpp).
+		stepStore();
+
+		// And room 23's, which answers a pick out of the conversation tree and
+		// runs the walkman-for-gameson trade behind it (hippie.cpp).
+		stepHippie();
+
 		// And room 8's safe, whose steps are timed off the same counter room 3's
 		// are (library.cpp). The owl's half of that machine is per frame and is
 		// stepped with the conversation menu, further down.
@@ -1338,6 +1472,10 @@ void AlienEngine::stepClock() {
 			// And room 3's entry 3 tests the same word for the computer's
 			// line, which is what opens the lift panel (lift.cpp).
 			stepLiftCall();
+
+			// And room 25's, which lights the fuse when the matches' line
+			// comes down (mailbox.cpp).
+			stepMailbox();
 		}
 
 		// OBJ:0x86df drops the talk flag once the line has under 25 half ticks
@@ -1519,9 +1657,101 @@ bool AlienEngine::clickBar(int x, int y, bool rightButton) {
 		return true;
 	}
 
+	// A left click on a filled slot with something already in hand is not a
+	// swap: 1021:0x949 hands it to 10c9:sub_10d65, the resident combine, and the
+	// hand is only reloaded when it was empty.
+	const byte clicked = slot >= 0 ? _inventory.slotItem((uint)slot) : 0;
+	if (_heldItem && clicked) {
+		combineItems(_heldItem, clicked);
+		return true;
+	}
+
 	if (slot >= 0)
-		holdItem(_inventory.slotItem((uint)slot));
+		holdItem(clicked);
 	return true;
+}
+
+// The two items a combine is written against, and what it leaves behind.
+// 10c9:sub_10d65 spells each pair out in both orders -- it compares the held
+// item [0xa64e] against the first and the clicked one [0xa64f] against the
+// second, so a pair written once would only answer one way round -- and so does
+// this table, row for row.
+struct CombineRule {
+	byte held;			///< [0xa64e], the item in hand
+	byte clicked;		///< [0xa64f], the slot clicked on
+	byte drop[2];		///< inv_remove, in the original's order (0 = none)
+	byte add;			///< inv_add (0 = none)
+	byte replaceFrom;	///< inv_replace, the item looked for (0 = no replace)
+	byte replaceTo;		///< inv_replace, the item left on the same square
+	uint16 flag;		///< the flag the combine sets to 1 (0 = none)
+	byte outcome;		///< the room TAL record it speaks (0 = silent)
+};
+
+// 10c9:0x14e onwards. The first two pairs are written out inline, the last two
+// go through 10c9:sub_10d21, the generic "replace one of them and speak"
+// helper, which is why they carry a replace rather than a remove/add.
+static const CombineRule kCombines[] = {
+	// Battery into the remote control: the one combine that sets a flag, and
+	// [0xa6f1] is what rooms 15 and 11 read as the living-room door (10c9:0x190).
+	{ 26,  7, { 26,  7 },  7, 0, 0, 0xa6f1, 0x36 },
+	{  7, 26, { 26,  7 },  7, 0, 0, 0xa6f1, 0x36 },
+	// Gameson and the super radio become the teleport engine (10c9:0x1dd).
+	{ 30, 36, { 30, 36 }, 35, 0, 0, 0,      0    },
+	{ 36, 30, { 30, 36 }, 35, 0, 0, 0,      0    },
+	// The pumpkin carved with the piece of glass or with the scissors
+	// (10c9:0x201, four sub_10d21 calls).
+	{ 23, 21, {  0,  0 },  0, 21, 22, 0,    0x34 },
+	{ 21, 23, {  0,  0 },  0, 21, 22, 0,    0x34 },
+	{ 13, 21, {  0,  0 },  0, 21, 22, 0,    0x34 },
+	{ 21, 13, {  0,  0 },  0, 21, 22, 0,    0x34 },
+};
+
+bool AlienEngine::combineItems(byte held, byte clicked) {
+	// The tail of sub_10d65: a pair with no body of its own is refused, but only
+	// when the two names really differ. Clicking the slot the hand came from
+	// falls out of the routine at 0x28c with the item still held.
+	if (held == clicked)
+		return false;
+
+	int anchorX, anchorY;
+	characterAnchor(anchorX, anchorY);
+
+	for (uint i = 0; i < ARRAYSIZE(kCombines); ++i) {
+		const CombineRule &rule = kCombines[i];
+		if (rule.held != held || rule.clicked != clicked)
+			continue;
+
+		for (uint drop = 0; drop < ARRAYSIZE(rule.drop); ++drop) {
+			if (rule.drop[drop])
+				_inventory.remove(rule.drop[drop]);
+		}
+		if (rule.add)
+			_inventory.add(rule.add);
+		if (rule.replaceFrom)
+			_inventory.replace(rule.replaceFrom, rule.replaceTo);
+		if (rule.flag)
+			_script.setFlag(rule.flag, 1);
+
+		debugC(1, kDebugItems, "bar: combined item %u (%s) with item %u (%s)",
+			   held, _inventory.name(held).c_str(), clicked,
+			   _inventory.name(clicked).c_str());
+
+		// The line comes out of the room's own file: sub_0b5cc reads the record
+		// through [0x994e], the EMS image of the TAL the room loaded.
+		if (rule.outcome)
+			queueOutcome(_tal, rule.outcome, anchorX, anchorY);
+
+		// [0xa6bb] = 0: the hand is spent either way.
+		holdItem(Inventory::kNoItem);
+		return true;
+	}
+
+	// 10c9:0x257 raises dialog branch 1, which DIALOG:sub_0b776 turns into
+	// record 3 of the shared file -- the same refusal an item used on the wrong
+	// object gets.
+	queueOutcome(_talkall, kOutcomeNoCombination, anchorX, anchorY);
+	holdItem(Inventory::kNoItem);
+	return false;
 }
 
 void AlienEngine::holdItem(byte item) {
@@ -2831,6 +3061,11 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 			debugC(1, kDebugRooms, "exit: object %u arms submode %u at %d,%d facing %u",
 				   obj, target.submode, target.x, target.y, target.facing);
 		}
+		// Room 31 answers a click off the ledge he is standing on with a climb,
+		// and may send the walk to the rock rather than to the point the
+		// geometry named (cliff.cpp).
+		armCliff(roomX, y, target);
+
 		walkTo(target.x, target.y, target.facing);
 	} else {
 		walkTo(roomX, y);
@@ -2944,17 +3179,53 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
+	// And room 34's Sluggs, for the same reason: the talk on him is entry 3's
+	// own, the lifted rows for the room are the two item uses, and the keys are
+	// handed over by the machine behind it (sluggs.cpp).
+	if (armSluggs(spot.obj, verb, item != Inventory::kNoItem)) {
+		_script.buildHotspots(_room, _spots);
+		_hover = -1;
+		const Common::Point road = g_system->getEventManager()->getMousePos();
+		updateHover(road.x, road.y);
+		return;
+	}
+
+	// And room 23's Gameson, whose talk and whose walkman both end in the
+	// conversation menu: the lifted rows for the room have the guards and none
+	// of the bodies, because a body that is a call is not an opcode the lift
+	// has (hippie.cpp).
+	if (armHippie(spot.obj, verb, item)) {
+		_script.buildHotspots(_room, _spots);
+		_hover = -1;
+		const Common::Point crossroads = g_system->getEventManager()->getMousePos();
+		updateHover(crossroads.x, crossroads.y);
+		return;
+	}
+
 	// Four of room 8's bodies pick their animation slot from a scratch byte the
 	// lift could not follow, and two of them it dropped altogether: the safe's
 	// door and the two things on its shelf are run by the room instead
 	// (library.cpp). A body the room takes is not offered to the table.
 	const bool libraryHandled = runLibraryBody(spot.obj, item != Inventory::kNoItem);
-	const bool handled = libraryHandled || _script.run(spot.obj, verb, item);
+
+	// Room 11's television is answered the same way: the remote control's
+	// branches are the room's click dispatch and not script rows (living.cpp).
+	const bool livingHandled = armLiving(spot.obj, item, anchorX, anchorY);
+	const bool ranScript = _script.run(spot.obj, verb, item);
+	const bool handled = libraryHandled || livingHandled || ranScript;
+
+	// And the other half of that dispatch, which runs after the row rather than
+	// instead of it: the cassette going into a set that is already on.
+	livingCassette(spot.obj, item);
 
 	// One object in the game is answered by a hook of its room's own rather
 	// than by a script body: room 7's light switch (bedroom.cpp).
 	if (!item && isBedroomSwitch(spot.obj))
 		bedroomSwitch(anchorX, anchorY);
+
+	// The matches on the mailbox take the cursor away for the length of their
+	// line, which is the half of that branch the lift left behind (mailbox.cpp).
+	armMailbox(spot.obj, item);
 
 	// And three bodies carry state the lift does not: the sewer's ladder, its
 	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).

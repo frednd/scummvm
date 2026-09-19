@@ -32,6 +32,8 @@ namespace Alien {
 
 static const byte kMarker[8] = { 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00 };
 static const uint kMaxFrames = 200;
+/// The staging buffer a strip address indexes: 320 by 200.
+static const uint32 kScreenPixels = 320 * 200;
 
 DL1Sprite::DL1Sprite() : _data(nullptr), _size(0), _typeId(0), _longForm(false) {
 }
@@ -131,6 +133,15 @@ bool DL1Sprite::parseFrames(uint32 bboxAt, uint nframes, bool longForm, ParseRes
 			if (!frame.strips.empty() && addr == words)
 				break;
 			if (words == 0)
+				break;
+
+			// A strip's address is an offset into the 320x200 staging buffer,
+			// so a run that starts outside it, or walks off its end, is not a
+			// strip at all -- it is the editor's fill, which is what PAL_BLOW
+			// carries after its fourth frame. Ending the frame there is what
+			// keeps the three frames the file declares but never authored from
+			// being decoded as one enormous white span across the screen.
+			if (addr >= kScreenPixels || (uint32)addr + (uint32)words * 2 > kScreenPixels)
 				break;
 
 			uint32 pixels = (uint32)words * 2;

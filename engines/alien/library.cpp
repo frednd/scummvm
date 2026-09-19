@@ -284,7 +284,9 @@ void AlienEngine::armLibrarySafe(int obj, byte item) {
 
 	_libraryStep = kStepListen;
 	_libraryPos = 0;
-	_drawCharacter = false;
+	// The four plays below all land on this one slot, so naming it once here
+	// hands the whole sequence to showCharacter() at the end of it.
+	hideCharacter(kStetSlot);
 	CursorMan.showMouse(false);
 
 	debugC(1, kDebugRooms, "library: the stethoscope goes on the safe, step 0x%02x",
@@ -337,7 +339,10 @@ void AlienEngine::stepLibrarySafe() {
 		// frames before it ends, which is where the walker takes the pose back.
 		if (_anims.remaining(kStetSlot) != 2)
 			break;
-		_drawCharacter = true;
+		// Mode 2 comes back to the frame it started on when it runs out, so
+		// the slot would go on drawing him crouched at the safe with the walker
+		// already standing: it goes down with him.
+		showCharacter();
 		_libraryStep = kStepSwing;
 		_libraryPos = 0;
 		break;

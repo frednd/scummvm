@@ -178,6 +178,20 @@ void AnimSlots::relaunch(uint slot) {
 	play(slot, s.first, s.count, s.rate, s.mode, s.frames);
 }
 
+void AnimSlots::takeDown(uint slot) {
+	if (slot >= kSlotCount)
+		return;
+
+	Slot &s = _slots[slot];
+	s.started = false;
+	s.remaining = 0;
+	s.persist = false;
+	s.restore = false;
+	s.baked = true;			// nothing of it goes into the plate either
+	s.loop = 0;
+	debugC(2, kDebugGraphics, "anim: slot %u taken down", slot);
+}
+
 void AnimSlots::stepLoops() {
 	for (uint i = 0; i < _loopCount; i++) {
 		const AnimLoop &row = _loops[i];
@@ -318,8 +332,20 @@ int AnimSlots::visibleFrame(const Slot &slot) const {
 	// high one, so the wrap is a plain modulo over 0..frameCount() with the sign
 	// forced positive. Only mode 1 to 5 reach here: the modes that open on a
 	// cursor of zero read their frame list above.
+	//
+	// A range that only just overruns its bank is not that: it is a single pass
+	// over a file that ships fewer frames than it declares, and wrapping it puts
+	// the animation's *first* frame back on screen at the end. Room 33 is where
+	// that showed: TOW_GETU declares 99 frames, ships 97, and is played as 99 --
+	// so the two frames past the terminator wrapped round to frame 1, leaving
+	// Ben lying in the road under the Ben who had just stood up. Every single
+	// pass in the game ends within a frame or two of the bank, and every real
+	// loop (room 46's propeller, the axe in the maze) is three passes or more --
+	// tools/check_anims.py sorts every range in the game by that same test -- so
+	// the cycle is only entered when the range covers two of them or more. Below that the overrun runs off the end and draws
+	// nothing, which is what the terminator does anyway.
 	const int cycle = (int)slot.bank.frameCount() + 1;
-	if (cycle > 1 && (frame > cycle || frame < 1))
+	if (cycle > 1 && slot.count >= 2 * cycle && (frame > cycle || frame < 1))
 		frame = ((frame % cycle) + cycle) % cycle;
 
 	return frame;

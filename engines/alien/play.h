@@ -46,6 +46,8 @@ namespace Alien {
  *                        coordinates, not room ones, because the bar does not
  *                        scroll.
  *   use N                take inventory item N into the hand
+ *   combine N            left click the slot item N sits on with something
+ *                        already in hand, which is the bar's own combine
  *   unuse                put down whatever is in the hand
  *   wait N                advance N master ticks with nothing happening
  *   settle [N]            advance ticks until Ben, speech, anims and any
@@ -75,6 +77,7 @@ struct PlayCommand {
 		kRightClick,
 		kHover,
 		kUse,
+		kCombine,
 		kUnuse,
 		kWait,
 		kSettle,
