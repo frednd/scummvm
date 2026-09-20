@@ -218,6 +218,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_shoreStep(0),
 		_steamClicks(0), _steamStep(0),
 		_parkStep(0), _parkWait(0),
+		_forestStep(0), _forestWait(0),
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false),
@@ -890,7 +891,17 @@ void AlienEngine::applyCharPalette(int room) {
 	keepCharPalette(room, charPalette);
 }
 
-bool AlienEngine::loadRoom(int room, bool secondPlate) {
+bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
+	// A self-reload (takeExit's submode 111, "this room again") carries no
+	// char_place of its own unless one happens to be guarded on the room just
+	// left, which on a self-reload it never is -- so without keepPosition the
+	// walk-node fallback below moves Ben to whatever the room's first KIERRA
+	// node happens to be. Captured before anything else runs, since nothing
+	// between here and the placement below touches _ben.
+	const int keptX = _ben.walkX();
+	const int keptY = _ben.walkY();
+	const int keptFacing = _ben.facing();
+
 	// Before anything is read: the two mazes take their position from the way
 	// in, and their plate and their rectangles are both read from it
 	// (maze.cpp).
@@ -1107,6 +1118,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 		_ben.placeSprite(placeX, placeY, placeFacing);
 		debugC(1, kDebugRooms, "room %d: opens with the character at %d,%d facing %d",
 			   room, _ben.walkX(), _ben.walkY(), placeFacing);
+	} else if (keepPosition) {
+		// The original never moves him on a reload that names no char_place of
+		// its own -- see keptX/keptY/keptFacing above.
+		_ben.place(keptX, keptY, keptFacing);
 	} else if (_walk.nodes().count()) {
 		_ben.place(_walk.nodes().x(0), _walk.nodes().y(0));
 	} else {
@@ -1537,6 +1552,7 @@ void AlienEngine::stepClock() {
 		// it leaves behind (park.cpp).
 		stepPark();
 		stepYodle();
+		stepForestParrot();
 
 		// And the delay standing in for room 22's teleporter (teleport.cpp).
 		stepTeleport();
@@ -3071,9 +3087,14 @@ bool AlienEngine::takeExit(byte submode) {
 	debugC(1, kDebugRooms, "exit: room %d submode %u -> room %d", _mode, submode, room);
 
 	// Submode 111 names the room itself: a close-up or a cutscene that comes
-	// back to where it started. Reloading is the closest the port gets until
-	// those scenes are understood.
-	if (!loadRoom(room)) {
+	// back to where it started, and the original reloads it too. The only
+	// thing to get right on a self-reload is the character: it names no
+	// char_place of its own, so without keepPosition he would otherwise land
+	// on the room's first walk node (playtest report, room 28's telescope and
+	// monitor -- telescope.cpp claims that pair before this ever runs, but the
+	// game's other bare submode-111 rows, rooms 3/15/22/26/52 among them,
+	// still fall through to here).
+	if (!loadRoom(room, false, room == _mode)) {
 		debugC(1, kDebugRooms, "exit: room %d would not load, staying in %d",
 			   room, _mode);
 		return false;
@@ -3455,6 +3476,11 @@ void AlienEngine::finishAction() {
 	// things carried to him (yodle.cpp).
 	armYodle(spot.obj, verb, item);
 
+	// And room 26's parrot, whose reaction to anything but the moldy bread it
+	// wants is a brush-off and whose reaction to that is a machine of its own,
+	// neither of them an opcode the lift has (forest.cpp).
+	armForestParrot(spot.obj, verb, item);
+
 	// And room 53/57's maintenance man, whose talk clears the way to the
 	// ending (corridor.cpp).
 	if (!item)
@@ -3514,7 +3540,13 @@ void AlienEngine::finishAction() {
 	// as soon as the click is over, with no arrival to wait for.
 	if (_script.submodeRequest() != RoomScript::kNoSubmode) {
 		_armed = 0;
-		takeExit(_script.submodeRequest());
+
+		// Room 28's telescope and its computer both end in the table as
+		// nothing but this submode: the real bodies are calls the lift cannot
+		// carry, and this is the arrival test they run under
+		// (ovr_1c_0eb7:0x0128, telescope.cpp).
+		if (!runTelescopeScreen(spot.obj, verb, _script.submodeRequest()))
+			takeExit(_script.submodeRequest());
 	}
 }
 

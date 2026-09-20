@@ -18,8 +18,10 @@ MODULE_OBJS = \
 	shore.o \
 	yodle.o \
 	steam.o \
+	telescope.o \
 	teleport.o \
 	park.o \
+	forest.o \
 	corridor.o \
 	scanner.o \
 	waiting.o \

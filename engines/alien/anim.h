@@ -128,6 +128,18 @@ public:
 	 */
 	void loadBanks(const char *const *names, uint count);
 
+	/**
+	 * Loads one bank into one slot, leaving every other slot exactly as it
+	 * stands -- unlike loadRoom() and loadBanks(), which both drop everything
+	 * first.
+	 *
+	 * 15f3:sub_16450 loads O_SCANV1.DL1 or O_SCANV2.DL1 into slot 4 mid-run,
+	 * with the observatory computer's menu, cursor and result banks all still
+	 * playing in their own slots (telescope.cpp); loadBanks() would silently
+	 * wipe the screen it is meant to add to.
+	 */
+	void loadBank(uint slot, const char *name);
+
 	/// Clears the slots without touching the loaded banks.
 	void reset();
 

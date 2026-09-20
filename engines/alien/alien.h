@@ -124,7 +124,7 @@ public:
 	byte gameSubmode() const { return _lastSubmode; }
 
 private:
-	bool loadRoom(int room, bool secondPlate = false);
+	bool loadRoom(int room, bool secondPlate = false, bool keepPosition = false);
 	void stepRoom(int delta);
 	static int roomWidth(int room);
 	const char *charPaletteFile(int room) const;
@@ -264,6 +264,12 @@ private:
 	bool armLiftCall(int obj, int anchorX, int anchorY);
 	void stepLiftCall();
 	void playLiftPanel();
+
+	/// Room 28's telescope view and observatory computer, both of which the
+	/// lifted table only ever arms as game_submode = 111 (telescope.cpp).
+	bool runTelescopeScreen(int obj, byte verb, byte submode);
+	void playTelescopeView();
+	void playObservatoryScreen();
 	void stepHallway();
 	void playPeephole();
 
@@ -355,6 +361,11 @@ private:
 	/// leaves behind (park.cpp).
 	void startPark();
 	void stepPark();
+
+	/// Room 26's parrot: the brush-off and the moldy bread it actually wants
+	/// (forest.cpp).
+	void armForestParrot(int obj, byte verb, int item);
+	void stepForestParrot();
 
 	/// Room 22's teleporter and room 56 at the other end, simplified to one
 	/// destination each way (teleport.cpp).
@@ -833,6 +844,10 @@ private:
 	/// whichever of its two waits is running (park.cpp).
 	byte _parkStep;
 	uint _parkWait;
+
+	/// Room 26's parrot machine (forest.cpp).
+	byte _forestStep;
+	uint _forestWait;
 
 	/// Room 21's Yodle: the step of his machine, [0xa49c] beside it, the run
 	/// standing in [0xa4a2] and the menu reply owed (yodle.cpp).

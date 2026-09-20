@@ -79,6 +79,28 @@ void AnimSlots::loadBanks(const char *const *names, uint count) {
 	}
 }
 
+void AnimSlots::loadBank(uint slot, const char *name) {
+	if (slot >= kSlotCount)
+		return;
+
+	Slot &s = _slots[slot];
+	s.clear();
+	s.bank.unload();
+	s.name.clear();
+
+	if (!name || !*name)
+		return;
+
+	if (!s.bank.load(Common::Path(Common::String(name)))) {
+		debugC(1, kDebugResource, "slot %u: could not load %s", slot, name);
+		return;
+	}
+
+	s.name = name;
+	debugC(2, kDebugResource, "slot %u: %s, %u frames", slot, name,
+		   s.bank.frameCount());
+}
+
 void AnimSlots::reset() {
 	for (uint i = 0; i < kSlotCount; i++) {
 		const bool loaded = _slots[i].started;
