@@ -195,7 +195,7 @@ void AlienEngine::bedroomSwitch(int anchorX, int anchorY) {
 
 	// What is clickable changed with the light, so the room's rectangles are
 	// registered again before the next click can land.
-	_script.buildHotspots(_room, _spots);
+	rebuildHotspots();
 }
 
 /// True for the one click the room does not answer for itself.

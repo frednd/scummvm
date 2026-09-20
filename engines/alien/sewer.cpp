@@ -304,7 +304,7 @@ void AlienEngine::stepSewer() {
 
 		// The hatch's rectangle is guarded on [0x33be], so the room's hotspots
 		// have to be built again now that it is clear.
-		_script.buildHotspots(_room, _spots);
+		rebuildHotspots();
 		break;
 
 	case kStepHatch:

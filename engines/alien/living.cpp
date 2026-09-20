@@ -236,7 +236,7 @@ void AlienEngine::stepLiving() {
 			break;
 		_livingStep = 0;
 		CursorMan.showMouse(true);
-		_script.buildHotspots(_room, _spots);
+		rebuildHotspots();
 		_dirty = true;
 		debugC(1, kDebugRooms, "living: the tape has run, the arrow is on the dish");
 		break;

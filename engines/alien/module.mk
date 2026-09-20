@@ -10,6 +10,7 @@ MODULE_OBJS = \
 	cliff.o \
 	living.o \
 	maze.o \
+	mazetables.o \
 	pool.o \
 	mailbox.o \
 	cutscenes.o \
@@ -18,6 +19,7 @@ MODULE_OBJS = \
 	yodle.o \
 	steam.o \
 	teleport.o \
+	park.o \
 	corridor.o \
 	scanner.o \
 	waiting.o \
@@ -36,6 +38,7 @@ MODULE_OBJS = \
 	inventory.o \
 	lighting.o \
 	metaengine.o \
+	observatory.o \
 	occlusion.o \
 	opening.o \
 	overlay.o \

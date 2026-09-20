@@ -163,7 +163,7 @@ void AlienEngine::stepRoomClock() {
 	// appears without the player having clicked anything. The port registers
 	// its rectangles only when something moves the state, so this is one of
 	// those moments.
-	_script.buildHotspots(_room, _spots);
+	rebuildHotspots();
 	_hover = -1;
 	const Common::Point mouse = g_system->getEventManager()->getMousePos();
 	updateHover(mouse.x, mouse.y);

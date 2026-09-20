@@ -373,7 +373,7 @@ static const AnimLoop kAnimLoops[] = {
 	{  6, 0xa540 },	// ovr_12_0e6b_room_18_-_sitting_room.asm
 	{  7, 0xa541 },	// ovr_12_0e6b_room_18_-_sitting_room.asm
 	{  3, 0xa52d },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
-	{  0, 0x0000 },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
+	{  0, 0x293c },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
 	{  0, 0xa52a },	// ovr_17_0e9f_room_23_-_crossroads.asm
 	{  0, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
 	{  3, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm

@@ -207,15 +207,20 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
 		_dialogId(1), _lastEvent(0), _speechCustom(false), _liftPending(false),
+		_observatoryLook(false),
 		_libraryStep(0), _libraryPos(0),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
 		_cemeteryLookWait(false),
-		_mazeClicks(0), _mazeStep(0),
+		_mazeStep(0), _mazePose(0),
 		_poolStep(0),
 		_divingStep(0), _divingPos(0), _divingClicks(0),
-		_shoreClicks(0),
+		_shoreStep(0),
 		_steamClicks(0), _steamStep(0),
+		_parkStep(0), _parkWait(0),
+		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
+		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
+		_yodleAnswer(false),
 		_teleportStep(0), _teleportReturnClicks(0),
 		_corridorClicks(0), _corridorStep(0),
 		_scannerClicks(0), _waitingClicks(0), _bossClicks(0), _jailClicks(0),
@@ -737,7 +742,7 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		// written flag has to build them again -- the engine does it after every
 		// click for the same reason. Without it a script can set the state a
 		// hotspot waits for and still not be able to click it.
-		_script.buildHotspots(_room, _spots);
+		rebuildHotspots();
 		break;
 
 	case PlayCommand::kExpectFlag: {
@@ -886,6 +891,11 @@ void AlienEngine::applyCharPalette(int room) {
 }
 
 bool AlienEngine::loadRoom(int room, bool secondPlate) {
+	// Before anything is read: the two mazes take their position from the way
+	// in, and their plate and their rectangles are both read from it
+	// (maze.cpp).
+	mazeEnter(room);
+
 	const int width = roomWidth(room);
 	const bool wide = width > kScreenWidth;
 
@@ -906,7 +916,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// standing.
 	Graphics::Surface loaded;
 	byte palette[256 * 3];
-	if (!loadGamePCX(Common::Path(plate), loaded, palette)) {
+	// The two mazes have no plate of their own: the screen is composed piece by
+	// piece from the cell, out of the three MAZBLK plates (maze.cpp). Failing
+	// that -- missing art -- roomPlate() answers the FADE43.PCX both inits open
+	// on, so the room still loads.
+	if (!mazeBackground(room, loaded, palette) &&
+		!loadGamePCX(Common::Path(plate), loaded, palette)) {
 		loaded.free();
 		return false;
 	}
@@ -1073,7 +1088,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// tools/gen_hotspots.py lifted it. Which ones exist depends on the puzzle
 	// state, so this runs after the script has the room bound and again
 	// whenever a click has moved the state.
-	_script.buildHotspots(room, _spots);
+	rebuildHotspots(room);
 
 	// With the anim channel on, the room opens with everything in it moving
 	// rather than in its opening state -- a way to see every bank a room holds
@@ -1182,20 +1197,25 @@ bool AlienEngine::loadRoom(int room, bool secondPlate) {
 	// (hippie.cpp).
 	startHippie();
 
-	// And room 43's maze, whose click count resets on every arrival
-	// (maze.cpp).
+	// And the two mazes, whose dialog file the shared overlay's manifest names
+	// wrongly and whose torch the cell may not have (maze.cpp).
 	startMaze();
 
 	// And room 46's swim, the same way (diving.cpp).
 	startDiving();
 
-	// And room 41's door to the maze (shore.cpp).
+	// And room 41's machines (shore.cpp).
 	startShore();
 
 	// And the valve between rooms 49 and 50, and room 56's return trip
 	// (steam.cpp, teleport.cpp).
 	startSteam();
 	startTeleport();
+
+	// And room 22's arrival scene, which is the room's own machine rather than
+	// a lifted cutscene (park.cpp).
+	startPark();
+	startYodle();
 
 	// And the four-way junction, the scanner, the number board, the boss
 	// fight and the jail's escape, all simplified the same way (corridor.cpp,
@@ -1347,6 +1367,11 @@ void AlienEngine::showCharacter() {
 
 void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 	if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), x, y, _route)) {
+		// The two mazes have no mask to route through and move him anyway, the
+		// way the original's forced routes do (maze.cpp).
+		if (mazeWalkTo(x, y, arrivalFacing))
+			return;
+
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
 		return;
 	}
@@ -1458,6 +1483,12 @@ void AlienEngine::stepClock() {
 		// The panel the lab computer opens, which waits for the computer's own
 		// line to come down -- by the countdown or by a click (lift.cpp).
 		stepLiftCall();
+
+		// And room 19's fuse-panel cover, which waits for the line the look at
+		// it raised (observatory.cpp). Stepped here as well as off the line
+		// coming down, because a line dismissed by a click ends between the
+		// two and the cover would otherwise stay shut.
+		stepObservatoryPanel();
 		stepSewer();
 		stepBasement();
 
@@ -1484,9 +1515,12 @@ void AlienEngine::stepClock() {
 		// counts one more wrong answer (cemetery.cpp).
 		stepCemetery();
 
-		// And room 43's, which ends the simplified maze once the click count
-		// runs out (maze.cpp).
+		// And maze A's, the scene the crystal door opens into (maze.cpp).
 		stepMaze();
+
+		// And room 41's: the pick-axe, and the climb between its two cave
+		// mouths (shore.cpp).
+		stepShore();
 
 		// And room 48's, which the diving suit starts and which ends by
 		// arming the way down into room 46 (pool.cpp).
@@ -1498,6 +1532,11 @@ void AlienEngine::stepClock() {
 		// And the delay standing in for the valve machine between rooms 49
 		// and 50 (steam.cpp).
 		stepSteam();
+
+		// And room 22's arrival scene: the voice in the booth, and the wreck
+		// it leaves behind (park.cpp).
+		stepPark();
+		stepYodle();
 
 		// And the delay standing in for room 22's teleporter (teleport.cpp).
 		stepTeleport();
@@ -1532,6 +1571,10 @@ void AlienEngine::stepClock() {
 			// And room 3's entry 3 tests the same word for the computer's
 			// line, which is what opens the lift panel (lift.cpp).
 			stepLiftCall();
+
+			// And room 19's, which takes the cover off the fuse box once the
+			// line the look raised has come down (observatory.cpp).
+			stepObservatoryPanel();
 
 			// And room 25's, which lights the fuse when the matches' line
 			// comes down (mailbox.cpp).
@@ -2150,20 +2193,44 @@ void AlienEngine::dumpCutscenes() {
  * table's own name is the exception here rather than the rule. Every other room
  * takes the table entry.
  */
+void AlienEngine::rebuildHotspots(int room) {
+	// The rectangles the room registers, by running entry 1 of its overlay as
+	// tools/gen_hotspots.py lifted it. Which ones exist depends on the puzzle
+	// state, so this runs on the way in and again whenever a click has moved the
+	// state.
+	_script.buildHotspots(room < 0 ? _room : room, _spots);
+
+	// The two mazes are the exception: theirs are per cell rather than per flag,
+	// which is a guard the lift cannot carry, so the maze replaces the table
+	// outright (maze.cpp).
+	buildMazeHotspots(room < 0 ? _room : room);
+
+	// The table can be shorter than it was -- an item taken out of it, or a
+	// maze cell with fewer ways out than the last -- and what was hovered is an
+	// index into it. updateHover recomputes it on the next mouse move, but not
+	// while a machine has the cursor, so drop it here rather than leave it
+	// pointing past the end.
+	if (_hover >= (int)_spots.size()) {
+		_hover = -1;
+		_labelSlot = 0;
+	}
+}
+
 Common::String AlienEngine::roomPlate(int room) const {
 	if (room == 7 && !_script.flag(0xa6fa))
 		return "GAME7X.PCX";
 
-	// Rooms 43 and 44, the maze: MAIN's own dispatch sends each to a resident
-	// helper rather than to the overlay directly (roommap.py: "MAIN:sub_00000"
-	// and "MAIN:sub_0008c"), which is why the table this reads has nothing for
-	// either -- whatever built it walks each room's own overlay entry point,
-	// and the maze's actual background is picked cell by cell from inside the
-	// tick (ovr_2b_0f8d_...asm's `[0xa77c]`-indexed swap, maze.cpp). FADE43.PCX
-	// is what both entry points open on before that first swap runs (the
-	// literal pools at 0x570 and 0x84e). Left blank without this, `loadRoom`
-	// fails outright: booting straight into either room hangs the headless
-	// run in the engine's own "could not load the starting room" error path.
+	// Rooms 43 and 44, the two mazes: MAIN's own dispatch sends each to a
+	// resident helper rather than to the overlay directly (roommap.py:
+	// "MAIN:sub_00000" and "MAIN:sub_0008c"), which is why the table this reads
+	// has nothing for either -- whatever built it walks each room's own overlay
+	// entry point. Neither has a plate at all in the original either: the screen
+	// is composed piece by piece from the cell, which mazeBackground() does
+	// (maze.cpp). FADE43.PCX, what both entry points open on before their first
+	// composition (the literal pools at 0x570 and 0x84e), is the answer here so
+	// that a missing MAZBLK still leaves a room that loads -- without one,
+	// booting into either hangs the headless run in the engine's own "could not
+	// load the starting room" error path.
 	if (room == 43 || room == 44)
 		return "FADE43.PCX";
 
@@ -2982,6 +3049,12 @@ void AlienEngine::checkExit() {
 }
 
 bool AlienEngine::takeExit(byte submode) {
+	// Except in the two mazes, where an armed submode is a turn rather than a
+	// door: seg_main.asm answers it out of the cell table and re-enters the
+	// same room, and only four of them ever reach the chain at all (maze.cpp).
+	if (mazeExit(submode))
+		return true;
+
 	// The room's tick loop ends here, and ending it is what sets game_mode to
 	// the room being left (OBJ:sub_0879a). The main loop then walks its chain of
 	// check_event() calls with that pair.
@@ -3095,20 +3168,9 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (clickBar(x, y, rightButton))
 		return;
 
-	// Room 43's maze, simplified: any left click while it is under way counts
-	// as one correct turn, rather than resolving the real per-cell exit table
-	// (maze.cpp).
-	if (!rightButton && armMaze())
-		return;
-
 	// Room 46's swim across to the shore, standing in for the real
 	// walk-arrival latch the same way (diving.cpp).
 	if (!rightButton && armDivingSwim())
-		return;
-
-	// Room 41's door to the maze, standing in for the real three-state guard
-	// the same way (shore.cpp).
-	if (!rightButton && armShoreDoor())
 		return;
 
 	// Room 56's return trip to the park, standing in for the position-driven
@@ -3175,6 +3237,13 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	const int roomX = x + _scrollX;
 
 	const byte obj = _hover >= 0 ? _spots[_hover].obj : 0;
+
+	// HOTSPOT:sub_13605 (1336:02ba): a left click latches the object under the
+	// cursor, a right one clears it, and rooms whose tick answers an arrival
+	// read it back to find out what the walk was for -- the shore's two cave
+	// mouths (shore.cpp), the cemetery's statue, the sewer's ladder.
+	_script.setFlag(0xa644, asLeft ? obj : 0);
+
 	WalkTarget target;
 	// Every click rearms from scratch, as the original rewrites walk_submode
 	// [0xa87d] each time entry 0 runs.
@@ -3303,7 +3372,7 @@ void AlienEngine::finishAction() {
 	// the owl's other arm without the guards that keep it off a talk
 	// (library.cpp).
 	if (armLibrary(spot.obj, verb, item != Inventory::kNoItem, anchorX, anchorY)) {
-		_script.buildHotspots(_room, _spots);
+		rebuildHotspots();
 		_hover = -1;
 		const Common::Point owl = g_system->getEventManager()->getMousePos();
 		updateHover(owl.x, owl.y);
@@ -3314,19 +3383,37 @@ void AlienEngine::finishAction() {
 	// own, the lifted rows for the room are the two item uses, and the keys are
 	// handed over by the machine behind it (sluggs.cpp).
 	if (armSluggs(spot.obj, verb, item != Inventory::kNoItem)) {
-		_script.buildHotspots(_room, _spots);
+		rebuildHotspots();
 		_hover = -1;
 		const Common::Point road = g_system->getEventManager()->getMousePos();
 		updateHover(road.x, road.y);
 		return;
 	}
 
+	// And room 19's fuse-panel cover, for the same reason: the lifted pair for
+	// it has the branch that shuts the cover and not the one that opens it, so
+	// the table on its own could only ever shut a cover nothing opened
+	// (observatory.cpp).
+	if (!item && armObservatoryPanel(spot.obj, verb)) {
+		rebuildHotspots();
+		_hover = -1;
+		const Common::Point dome = g_system->getEventManager()->getMousePos();
+		updateHover(dome.x, dome.y);
+		return;
+	}
+
+	// The look at the same cover *is* a lifted row -- it raises event 10 -- and
+	// what the lift has none of is the arrival that answers the line. Armed
+	// before the row so that the row is what speaks.
+	if (!item)
+		armObservatoryLook(spot.obj, verb);
+
 	// And room 23's Gameson, whose talk and whose walkman both end in the
 	// conversation menu: the lifted rows for the room have the guards and none
 	// of the bodies, because a body that is a call is not an opcode the lift
 	// has (hippie.cpp).
 	if (armHippie(spot.obj, verb, item)) {
-		_script.buildHotspots(_room, _spots);
+		rebuildHotspots();
 		_hover = -1;
 		const Common::Point crossroads = g_system->getEventManager()->getMousePos();
 		updateHover(crossroads.x, crossroads.y);
@@ -3364,9 +3451,9 @@ void AlienEngine::finishAction() {
 		armCemeteryStatue(spot.obj, verb);
 
 	// And room 21's Yodle, whose talk hands over the picklock the diving
-	// area's chest needs (yodle.cpp).
-	if (!item)
-		armYodle(spot.obj, verb);
+	// area's chest needs, and who builds the teleporter out of the three
+	// things carried to him (yodle.cpp).
+	armYodle(spot.obj, verb, item);
 
 	// And room 53/57's maintenance man, whose talk clears the way to the
 	// ending (corridor.cpp).
@@ -3384,6 +3471,10 @@ void AlienEngine::finishAction() {
 
 	// And room 46's chest and its key (diving.cpp).
 	armDiving(spot.obj, item);
+
+	// And the pick-axe on the rocks at the shore, which is what opens the way
+	// into the second maze (shore.cpp).
+	armShoreAxe(spot.obj, item);
 
 	// And three bodies carry state the lift does not: the sewer's ladder, its
 	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).
@@ -3410,7 +3501,7 @@ void AlienEngine::finishAction() {
 	// The original re-registers every rectangle on the next frame, so a body
 	// that opened a door has already changed what is clickable by the time the
 	// player can click again.
-	_script.buildHotspots(_room, _spots);
+	rebuildHotspots();
 	_hover = -1;
 	const Common::Point mouse = g_system->getEventManager()->getMousePos();
 	updateHover(mouse.x, mouse.y);

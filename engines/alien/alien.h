@@ -36,6 +36,7 @@
 #include "alien/font.h"
 #include "alien/hotspots.h"
 #include "alien/inventory.h"
+#include "alien/mazetables.h"
 #include "alien/overlay.h"
 #include "alien/pack.h"
 #include "alien/play.h"
@@ -250,6 +251,15 @@ private:
 	void stepLab();
 	void stepLabHole();
 
+	/// Room 19's fuse-panel cover: the rectangle the lift could not carry
+	/// because its width is computed, the look that opens it and the move that
+	/// toggles it (observatory.cpp).
+	bool armObservatoryPanel(int obj, byte verb);
+	void armObservatoryLook(int obj, byte verb);
+	void stepObservatoryPanel();
+	void openObservatoryPanel();
+	void closeObservatoryPanel();
+
 	/// The lab computer and the lift car it parks (lift.cpp).
 	bool armLiftCall(int obj, int anchorX, int anchorY);
 	void stepLiftCall();
@@ -286,11 +296,22 @@ private:
 	void cemeteryStatuePick();
 	void stepCemetery();
 
-	/// Room 43's maze, simplified to a click count rather than the real
-	/// per-cell routing table (maze.cpp).
+	/// The room's hotspot table, rebuilt from the puzzle state -- and from the
+	/// cell, in the two mazes. Defaults to the room the engine is in; loadRoom
+	/// passes the room it is opening, which is not yet _room.
+	void rebuildHotspots(int room = -1);
+
+	/// Rooms 43 and 44, the two mazes: their per-cell backgrounds, arrows and
+	/// routing, and the crystal door that ends maze A (maze.cpp).
 	void startMaze();
-	bool armMaze();
 	void stepMaze();
+	bool mazeBackground(int room, Graphics::Surface &plate, byte *palette);
+	void buildMazeHotspots(int room);
+	void mazeEnter(int room);
+	void mazePlace();
+	bool mazeExit(byte &submode);
+	bool mazeWalkTo(int x, int y, int arrivalFacing);
+	const MazeCell *mazeCell(int room) const;
 
 	/// Room 48's pool, and the diving suit that opens the way down to room 46
 	/// (pool.cpp).
@@ -306,10 +327,22 @@ private:
 
 	/// Room 41's door to the maze, simplified the same way (shore.cpp).
 	void startShore();
-	bool armShoreDoor();
+	bool armShoreAxe(int obj, byte item);
+	void shoreArrival();
+	void stepShore();
 
-	/// Room 21's Yodle, and the picklock his talk hands over (yodle.cpp).
-	bool armYodle(int obj, byte verb);
+	/// Room 21's Yodle: the picklock, the menu, and the teleporter he builds
+	/// out of what is brought to him (yodle.cpp).
+	void startYodle();
+	bool armYodle(int obj, byte verb, int item);
+	void yodleArm(byte which);
+	void yodleCheckIn(byte &first, byte &count);
+	void loadYodleScript(byte which);
+	void yodleTalk(byte speaker, byte line, byte count);
+	void yodleSpeak();
+	void yodlePick();
+	bool yodleRunDone() const;
+	void stepYodle();
 
 	/// The valve between rooms 49 and 50, and the steam it lets through
 	/// (steam.cpp).
@@ -317,6 +350,11 @@ private:
 	bool armSteamValve();
 	bool armSteamDoor();
 	void stepSteam();
+
+	/// Room 22's arrival scene: the voice in the booth, and the wreck it
+	/// leaves behind (park.cpp).
+	void startPark();
+	void stepPark();
 
 	/// Room 22's teleporter and room 56 at the other end, simplified to one
 	/// destination each way (teleport.cpp).
@@ -693,6 +731,10 @@ private:
 	byte _labStep;
 	bool _liftPending;			///< the computer's line is up; the panel follows it
 
+	/// Room 19: the cover has been looked at and its line is still up. The
+	/// cover comes off when the line comes down (observatory.cpp).
+	bool _observatoryLook;
+
 	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
 	/// every tick pair, which two of that room's steps time themselves off.
 	uint16 _labPos;
@@ -762,10 +804,11 @@ private:
 	/// the topic-0 conversation reopens (cemetery.cpp).
 	bool _cemeteryLookWait;
 
-	/// Room 43's simplified maze: clicks taken so far, and the step of the
-	/// axe-in-the-wall finish once they run out (maze.cpp).
-	uint _mazeClicks;
+	/// The two mazes: the step of the crystal-door scene, and the submode the
+	/// last cell was left by, which says where the next one is entered from
+	/// (maze.cpp). The cell itself is a state-block flag, [0xa77c].
 	byte _mazeStep;
+	byte _mazePose;
 
 	/// Room 48's pool: the step of the dive machine (pool.cpp).
 	byte _poolStep;
@@ -776,14 +819,33 @@ private:
 	uint16 _divingPos;
 	uint _divingClicks;
 
-	/// Room 41's simplified door: clicks taken toward the maze (shore.cpp).
-	uint _shoreClicks;
+	/// Room 41's own machines: the step of the pick-axe swing, or of whichever
+	/// climb between the two cave mouths is running (shore.cpp).
+	byte _shoreStep;
 
 	/// The valve machine between rooms 49 and 50: clicks taken so far, and
 	/// ticks left of the delay standing in for either room's cutscene
 	/// (steam.cpp).
 	uint _steamClicks;
 	uint _steamStep;
+
+	/// Room 22's arrival scene: the step of its machine, and ticks left of
+	/// whichever of its two waits is running (park.cpp).
+	byte _parkStep;
+	uint _parkWait;
+
+	/// Room 21's Yodle: the step of his machine, [0xa49c] beside it, the run
+	/// standing in [0xa4a2] and the menu reply owed (yodle.cpp).
+	byte _yodleStep;
+	uint _yodlePos;
+	byte _yodleLine;
+	byte _yodleLeft;
+	byte _yodleSpeaker;
+	bool _yodleSpeaking;
+	byte _yodleReply;
+	TalFile::Entry _yodleReplyEntry;
+	int _yodleReplyTicks;
+	bool _yodleAnswer;
 
 	/// Room 22's teleporter: ticks left of its delay, and room 56's simplified
 	/// return, clicks taken so far (teleport.cpp).

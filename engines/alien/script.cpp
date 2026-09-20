@@ -242,6 +242,17 @@ void RoomScript::buildHotspots(int room, Common::Array<Hotspot> &out) const {
 				*fields[f] = vars[slot - 1];
 		}
 
+		// And then the four coordinates, which follow the byte fields in
+		// varOf. A temporary is a byte in the original too, so a computed
+		// coordinate is always 0..255 -- the registration routine widens it
+		// with `xor ah, ah`, never sign-extends it.
+		int16 *coords[4] = { &spot.x1, &spot.y1, &spot.x2, &spot.y2 };
+		for (uint c = 0; c < ARRAYSIZE(coords); c++) {
+			const byte slot = op.varOf[ARRAYSIZE(fields) + c];
+			if (slot && (uint)(slot - 1) < varCount)
+				*coords[c] = vars[slot - 1];
+		}
+
 		out.push_back(spot);
 	}
 }

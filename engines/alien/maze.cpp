@@ -20,118 +20,624 @@
  */
 
 #include "common/file.h"
+#include "graphics/cursorman.h"
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/mazetables.h"
+#include "alien/resources.h"
 
 namespace Alien {
 
-// Rooms 43/44/45, the maze between the shore and the crystal chamber --
-// ported here as a simplified straight-line walk rather than the real
-// self-routing engine.
+// Rooms 43 and 44, the two mazes.
 //
-// `disasm/ovr_2b_0f8d_...asm` is one overlay standing in for three room
-// numbers, and unlike every other room in the game its position is not the
-// room number at all: [0xa77c] is a maze-cell index, `imul di, ax, 7` into a
-// seven-byte-stride per-cell table (two of them -- 0x6450 for room 43's own
-// view, 0x65dc for room 44's -- one per physical maze section), each cell's
-// bytes gating which of up to six directional arrows entry 1/2 register
-// (`HOTSPOT:sub_13731`/`sub_1387d`/`sub_138f6`) and which background/DL1 set
-// the room's own init swaps in. Reaching cell 0x23 while showing as room 43
-// runs a seven-step [0xa49f] cutscene of its own (0x722-0x7ec): Ben turns,
-// walks to the wall, and finds the pick-axe (`ROOM43.TAL` outcomes 22 "What
-// the..." and 23 "Wow..."), then arms submode 5 -- which `seg_main.asm`
-// rewrites to 10 before the transition chain runs, landing on room 45
-// (`transitions.cpp`: room 43 submode 10 -> room 45).
+// Every other room in the game is a room number. These two are a cell index in
+// [0xa77c], and they are two *different* mazes rather than two halves of one:
+// `disasm/ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm` serves both
+// from one stub -- entry 1 is room 43's hotspot program, entry 2 is room 44's,
+// entries 3 and 4 their two inits and loops -- and each has its own pair of
+// tables in the resident data segment, lifted by tools/gen_maze.py into
+// mazetables.cpp. Room 45, the crystal entry, shares the stub and nothing else.
 //
-// `transitions.cpp` also settles which of the two maze rooms matters: room 41
-// (the shore) submode 3 opens on room 43, and both of room 44's own exits
-// (submodes 1 and 2) lead straight back to room 41. So 44 is a loop -- a wrong
-// turn out of 43's cell graph that returns to the entrance rather than a
-// second leg of forward progress -- and room 45 has no tick entry at all
-// (`docs/rooms.md`: "Room 45 is the only one with an init but no tick"), so it
-// asks nothing further of the port once it can be reached.
+// Three things are per cell, and the lift can express none of them, because
+// each guard is an indexed compare (`cmp byte ptr [di + 0x6450], 1`) rather
+// than the flag compare the generators know how to read:
 //
-// Modelling the real per-cell table -- both rooms' worth of it, the six
-// direction rectangles per cell, and the turn-by-turn route a walkthrough
-// gives as compass directions rather than cell numbers -- is a job of its own
-// (docs/playthrough_findings.md finding #7's "bigger lift than the guard/effect
-// tables roomlogic.py already lifts"). This is the simplified stand-in: room
-// 44 is left unvisited, and room 43 counts plain clicks instead of resolving
-// which of the cell table's arrows was under the cursor, ending in the same
-// two lines and the same axe the original does.
-static const int kMazeRoom = 43;
+//   the background   seven pieces of corridor, each copied from one of three
+//                    MAZBLK plates (CHARANIM:sub_13ede, 13b8:035e)
+//   the arrows       the same seven bytes decide which of the six directional
+//                    rectangles entry 1 or 2 registers
+//   the torch        slot 0's MAZ_TOR1 loop runs only where the far wall is an
+//                    opening (0x066a, 0x0967)
+//
+// So tools/gen_hotspots.py, gen_roominit.py and gen_plates.py all dropped the
+// guard and then attributed the same rows to all three room numbers. This file
+// takes rooms 43 and 44 back off them: buildMazeHotspots() rebuilds the table
+// from the cell, mazeBackground() composes the plate, and startMaze() silences
+// the torch where the original never starts it. Room 45's copies are left
+// alone -- it is out of this pass, and its own way out to room 32 currently
+// rides on the over-copied object 2.
+//
+// Stepping is not in the overlay either. `seg_main.asm` does it after the room
+// loop returns (0000:0050 for room 43, 0000:00e0 for room 44): read the armed
+// submode as a direction, index the cell's four neighbours, write the new cell
+// and re-enter the same room without ever reaching the transition chain. The
+// four submodes that do leave, and the crystal door in between, are the tests
+// that run around it -- see mazeExit().
+static const int kMazeRoomA = 43;
+static const int kMazeRoomB = 44;
+static const int kShoreRoom = 41;	///< the only room either of them is entered from
 
-/// However many turns the real maze takes to cross, this is not: a click
-/// count standing in for it.
-static const uint kMazeSteps = 6;
+/// [0xa77c], the cell. In the state block, so it survives the room reload a
+/// step performs, and a save taken inside the maze.
+static const uint16 kCell = 0xa77c;
+/// [0xa77d], whether the crystal door has been opened. Shared with rooms 31
+/// and 40, which read it as plain story progress.
+static const uint16 kDoorOpen = 0xa77d;
+/// [0xa77e], whether the pick-axe is still in maze B's alcove.
+static const uint16 kAxeThere = 0xa77e;
+/// [0xa77f], which of room 41's three mouths he comes back out of.
+static const uint16 kShoreMouth = 0xa77f;
 
-static const byte kAxe = 39;				///< OBJ:sprite_add, item 39, "pick-axe"
-static const byte kOutcomeFound = 22;		///< ROOM43.TAL, "What the..."
-static const byte kOutcomeWow = 23;		///< ROOM43.TAL, "Wow..."
-static const byte kMazeExitSubmode = 10;	///< transitions.cpp: room 43, submode 10 -> room 45
+/// The cells the two mazes open on, and the one each leaves by.
+static const byte kCellCrystalDoor = 0x23;	///< maze A's far end, the crystal door
+static const byte kCellAxe = 0x12;			///< maze B's alcove, where the pick-axe is
+static const byte kCellFarMouth = 0x0e;		///< maze B's second way back to the shore
+static const byte kNoCell = 0xff;
 
-static const byte kStepFound = 1;
-static const byte kStepWow = 2;
+// CHARANIM:sub_13b80 (13b8:0000), the whole of it: an armed submode is a
+// direction, and two submodes share each of forward and back.
+static const byte kDirForward = 1;
+static const byte kDirRight = 2;
+static const byte kDirBack = 3;
+static const byte kDirLeft = 4;
+static const byte kNoDir = 0;
 
-/// Every arrival resets the click count: the real room only keeps [0xa77c]
-/// across a re-entry the simplified path never takes.
-void AlienEngine::startMaze() {
-	if (_room != kMazeRoom)
+/// The seven pieces of the view, in the order the tile bytes have them
+/// (CHARANIM:sub_13d0f / sub_13de3, through sub_13ce1).
+static const struct { int16 x, y, w, h; } kMazePieces[7] = {
+	{   0, 13, 64, 142 },	// far left column
+	{  64, 13, 64, 121 },	// left of centre
+	{ 128, 13, 64, 142 },	// centre: the far wall, the torch, the crystal door
+	{ 192, 13, 64, 121 },	// right of centre
+	{ 256, 13, 64, 142 },	// far right column
+	{  64, 134, 64, 21 },	// foreground, bottom left
+	{ 192, 134, 64, 21 }	// foreground, bottom right
+};
+
+/// The three plates a piece is copied from, indexed by its tile byte
+/// (13b8:0337, 0x344, 0x351). The base is also what fills the strip above the
+/// view and the strip below it, which no piece covers.
+static const char *const kMazePlates[3] = { "MAZBLK21.PCX", "MAZBLK11.PCX", "MAZBLK31.PCX" };
+
+/// What a registration is conditional on.
+enum MazeSpotGuard {
+	kSpotOpen = 0,		///< the piece is an opening
+	kSpotNotWall,		///< the piece is an opening or a decor block
+	kSpotDecor,			///< the piece is a decor block
+	kSpotAxe,			///< [0xa77e]: the pick-axe is still there
+	kSpotAlways
+};
+
+/**
+ * One rectangle of the two hotspot programs, with what it is conditional on.
+ *
+ * Entry 1 (room 43, 0x0290-0x03b4) and entry 2 (room 44, 0x03e1-0x0564) are the
+ * same eight rectangles in the same order, differing only in their label
+ * numbering, plus the three room 44 has of its own: the skeleton in the alcove,
+ * the pick-axe on it, and the cap beside it. `piece` is the tile byte the
+ * registration is guarded on.
+ */
+struct MazeSpot {
+	byte guard;
+	byte piece;
+	int16 x1, y1, x2, y2;
+	byte labelA;		///< entry 1's slot in R43.TAL
+	byte labelB;		///< entry 2's, for the same rectangle in R44.TAL
+	byte obj;
+	byte verb;
+	byte outcomeCount;
+	byte outcomes[4];
+	bool roomBOnly;
+};
+
+static const MazeSpot kMazeSpots[] = {
+	// The six arrows, and the far wall between them. Verb 5 is "walk to".
+	{ kSpotOpen,    0,   6,  22,  45, 111, 1, 1,  2, 5, 1, {  1, 0, 0, 0 }, false },
+	{ kSpotNotWall, 0,  40,  54,  67,  81, 2, 2,  8, 5, 1, { 17, 0, 0, 0 }, false },
+	{ kSpotOpen,    1,  70,  21, 126, 115, 3, 1,  3, 5, 1, {  1, 0, 0, 0 }, false },
+	{ kSpotOpen,    2, 147,  55, 164,  91, 4, 3,  1, 5, 3, {  2, 3, 4, 0 }, false },
+	{ kSpotOpen,    3, 200,  27, 254, 110, 3, 1,  4, 5, 1, {  1, 0, 0, 0 }, false },
+	{ kSpotOpen,    4, 274,  35, 319, 122, 3, 1,  5, 5, 1, {  1, 0, 0, 0 }, false },
+	// Maze B's alcove: the skeleton, the pick-axe on it, and the cap. The cap
+	// is registered in every cell of maze B, guard or not (0x050a) -- it is
+	// only ever on screen in the one cell that draws the alcove.
+	{ kSpotDecor,   4, 251,  76, 304, 126, 0, 4, 10, 5, 4, { 14, 24, 25, 26 }, true },
+	{ kSpotAxe,     0, 259,  57, 291,  88, 0, 5, 11, 1, 1, {  0, 0, 0, 0 }, true },
+	{ kSpotAlways,  0, 262,  89, 273,  97, 0, 6, 20, 5, 1, { 20, 0, 0, 0 }, true },
+	// And the two ways back, which are drawn in the foreground rather than up
+	// the corridor, so they come last.
+	{ kSpotOpen,    5,  64, 134, 127, 159, 6, 7,  6, 5, 1, { 11, 0, 0, 0 }, false },
+	{ kSpotOpen,    6, 192, 134, 255, 159, 6, 7,  7, 5, 1, { 12, 0, 0, 0 }, false }
+};
+
+/// The torch, where the far wall is an opening: slot 0's MAZ_TOR1 (0x0679).
+static const uint kTorchSlot = 0;
+/// The crystal door's own bank, slot 2 in room 43 and the axe's in room 44.
+static const uint kDoorSlot = 2;
+static const int kDoorFrames = 0x0d;
+static const int kDoorRate = 2;
+static const int kDoorMode = 2;
+
+// The crystal-door scene, [0xa49f] 3..8 at 0x0722-0x07ec, and the two lines it
+// speaks out of ROOM43.TAL.
+static const byte kOutcomeWhat = 0x16;	///< "What the..."
+static const byte kOutcomeWow = 0x17;	///< "Wow..."
+static const int16 kDoorWalkFromX = 0xf7, kDoorWalkY = 0x82;
+static const int16 kDoorWalkToX = 0x111;
+static const int16 kDoorStepX = 0x120;
+static const byte kDoorFacing = 2;
+static const byte kDoorTurnFacing = 3;	///< 0x0731, the turn toward the door
+
+static const byte kStepDoorPlay = 3;
+static const byte kStepWhat = 4;
+static const byte kStepWalk = 5;
+static const byte kStepWow = 6;
+static const byte kStepStep = 7;
+static const byte kStepLeave = 8;
+
+/// transitions.cpp: room 43, submode 10 -> room 45. seg_main rewrites the
+/// submode 5 the scene arms into this one (0000:0085).
+static const byte kCrystalExitSubmode = 10;
+/// And the three mouths back to room 41: submodes 1 and 2 (transitions.cpp).
+static const byte kShoreSubmodeA = 1;
+static const byte kShoreSubmodeB = 2;
+
+/// Where a cell is entered from, by the submode he left the last one by:
+/// CHARANIM:sub_13f90 (13b8:0410), as sprite origins.
+static const struct { byte pose; int16 x, y; byte facing; } kMazeArrivals[] = {
+	{ 1, 0x109, 0x37, 4 },
+	{ 2, 0x05b, 0x46, 1 },
+	{ 4, 0x0d7, 0x48, 1 },
+	{ 5, 0x020, 0x35, 2 },
+	{ 6, 0x061, 0x38, 3 },
+	{ 7, 0x0ce, 0x34, 3 }
+};
+static const int16 kMazeArrivalX = 0xd3, kMazeArrivalY = 0x43;
+static const byte kMazeArrivalFacing = 1;
+
+static bool isMaze(int room) {
+	return room == kMazeRoomA || room == kMazeRoomB;
+}
+
+/// CHARANIM:sub_13b80: submode to direction, or zero for a submode that is not
+/// one of the six the geometry arms.
+static byte mazeDirection(byte submode) {
+	switch (submode) {
+	case 1:
+		return kDirLeft;
+	case 2:
+	case 4:
+		return kDirForward;
+	case 5:
+		return kDirRight;
+	case 6:
+	case 7:
+		return kDirBack;
+	default:
+		return kNoDir;
+	}
+}
+
+const MazeCell *AlienEngine::mazeCell(int room) const {
+	uint count = 0;
+	const MazeCell *cells = mazeCells(room, count);
+	const byte cell = _script.flag(kCell);
+	if (!cells || cell >= count)
+		return nullptr;
+
+	return &cells[cell];
+}
+
+/**
+ * The seven pieces of corridor, composed into the room's background.
+ *
+ * CHARANIM:sub_13ede loads one plate at a time and copies every piece that
+ * names it, which keeps three plates off the heap at once; the port holds the
+ * base for its palette anyway, so it does the same walk per plate.
+ *
+ * Returns false for any other room, and for a maze whose art is missing -- and
+ * then loadRoom falls back on roomPlate()'s FADE43.PCX, which is what both
+ * inits open on before their first swap.
+ */
+bool AlienEngine::mazeBackground(int room, Graphics::Surface &plate, byte *palette) {
+	if (!isMaze(room))
+		return false;
+
+	const MazeCell *cell = mazeCell(room);
+	if (!cell)
+		return false;
+
+	// The base plate is also the palette, and fills the strips above and below
+	// the view that no piece covers.
+	if (!loadGamePCX(Common::Path(kMazePlates[0]), plate, palette))
+		return false;
+
+	for (uint value = 0; value < ARRAYSIZE(kMazePlates); value++) {
+		bool wanted = false;
+		for (uint piece = 0; piece < ARRAYSIZE(kMazePieces); piece++)
+			wanted |= cell->tile[piece] == value;
+		// Value 0 is the base, which is already in place.
+		if (!wanted || value == 0)
+			continue;
+
+		Graphics::Surface source;
+		byte unused[256 * 3];
+		if (!loadGamePCX(Common::Path(kMazePlates[value]), source, unused)) {
+			debugC(1, kDebugResource, "maze: room %d has no %s", room, kMazePlates[value]);
+			continue;
+		}
+
+		for (uint piece = 0; piece < ARRAYSIZE(kMazePieces); piece++) {
+			if (cell->tile[piece] != value)
+				continue;
+
+			const Common::Rect rect(kMazePieces[piece].x, kMazePieces[piece].y,
+									kMazePieces[piece].x + kMazePieces[piece].w,
+									kMazePieces[piece].y + kMazePieces[piece].h);
+			if (rect.right > source.w || rect.bottom > source.h ||
+				rect.right > plate.w || rect.bottom > plate.h)
+				continue;
+
+			for (int16 y = rect.top; y < rect.bottom; y++)
+				memcpy(plate.getBasePtr(rect.left, y), source.getBasePtr(rect.left, y),
+					   rect.width());
+		}
+
+		source.free();
+	}
+
+	debugC(1, kDebugRooms, "maze: room %d cell 0x%02x is %d%d%d%d%d%d%d", room,
+		   _script.flag(kCell), cell->tile[0], cell->tile[1], cell->tile[2],
+		   cell->tile[3], cell->tile[4], cell->tile[5], cell->tile[6]);
+	return true;
+}
+
+/**
+ * A walk in a room with no walk mask: the two-point route the maze needs.
+ *
+ * Neither maze ships a KIERRA file -- there is no `KIER43`, no `KIER44`, and
+ * the overlay does not even name the walk-nowhere default -- so the router has
+ * no ring to search and no mask to test, and the port's ordinary walk goes
+ * nowhere at all. The original has a second way to move him that needs neither:
+ * `1021:sub_1023c` writes a route of exactly two points and the arrival turn
+ * straight into the mover's own globals (`walk_route_len [0xa87c] := 2`), and it
+ * is what the maze's own crystal-door scene uses, in this same maskless room.
+ * So that is what an arrow click gets here: a straight line to the approach
+ * point the geometry named, which is all the corridor has room for anyway.
+ */
+bool AlienEngine::mazeWalkTo(int x, int y, int arrivalFacing) {
+	if (!isMaze(_room))
+		return false;
+
+	_route.count = 0;
+	_route.points[_route.count].x = (int16)_ben.walkX();
+	_route.points[_route.count].y = (int16)_ben.walkY();
+	_route.count++;
+	_route.points[_route.count].x = (int16)x;
+	_route.points[_route.count].y = (int16)y;
+	_route.count++;
+
+	debugC(1, kDebugGraphics, "maze: straight walk %d,%d -> %d,%d facing %d",
+		   _route.points[0].x, _route.points[0].y, x, y, arrivalFacing);
+	_ben.follow(_route, x, y, arrivalFacing);
+	_dirty = true;
+	return true;
+}
+
+/**
+ * The cell's rectangles, in place of the ones the lift attributed to the room.
+ *
+ * Runs after RoomScript::buildHotspots, which is where every other room's table
+ * comes from, so the maze's own table replaces it outright rather than being
+ * filtered: the guards that decide these are not flags, and the lift dropped
+ * every one of them.
+ */
+void AlienEngine::buildMazeHotspots(int room) {
+	if (!isMaze(room))
 		return;
 
-	_mazeClicks = 0;
-	_mazeStep = 0;
+	const MazeCell *cell = mazeCell(room);
+	if (!cell)
+		return;
+
+	_spots.clear();
+
+	for (uint i = 0; i < ARRAYSIZE(kMazeSpots); i++) {
+		const MazeSpot &spot = kMazeSpots[i];
+		if (spot.roomBOnly && room != kMazeRoomB)
+			continue;
+
+		const byte tile = cell->tile[spot.piece];
+		bool wanted = false;
+		switch (spot.guard) {
+		case kSpotOpen:
+			wanted = tile == 1;
+			break;
+		case kSpotNotWall:
+			wanted = tile == 1 || tile == 2;
+			break;
+		case kSpotDecor:
+			wanted = tile == 2;
+			break;
+		case kSpotAxe:
+			wanted = _script.flag(kAxeThere) == 1;
+			break;
+		default:
+			wanted = true;
+			break;
+		}
+
+		if (!wanted)
+			continue;
+
+		Hotspot out;
+		out.x1 = spot.x1;
+		out.y1 = spot.y1;
+		out.x2 = spot.x2;
+		out.y2 = spot.y2;
+		out.label = room == kMazeRoomA ? spot.labelA : spot.labelB;
+		out.obj = spot.obj;
+		out.verb = spot.verb;
+		out.outcomeCount = spot.outcomeCount;
+		for (uint o = 0; o < ARRAYSIZE(out.outcomes); o++)
+			out.outcomes[o] = spot.outcomes[o];
+
+		_spots.push_back(out);
+	}
+
+	debugC(1, kDebugHotspots, "maze: room %d cell 0x%02x registers %u rectangles",
+		   room, _script.flag(kCell), _spots.size());
+}
+
+/**
+ * Where in the maze the way in from the shore lands.
+ *
+ * Runs before the room's plate and its rectangles, because both are read from
+ * the cell: 0x05c8 for maze A, 0x08a5 and 0x08bd for maze B's two mouths, each
+ * also naming which side of the screen he walks in from. Without it a maze
+ * re-entered would open on whatever cell it was last left at, which the
+ * original never does -- inside the maze nothing but the step moves [0xa77c].
+ */
+void AlienEngine::mazeEnter(int room) {
+	if (!isMaze(room) || _mode != kShoreRoom)
+		return;
+
+	if (room == kMazeRoomA && _lastSubmode == 3) {
+		_script.setFlag(kCell, 0);
+		_mazePose = 4;
+	} else if (room == kMazeRoomB && _lastSubmode == 1) {
+		_script.setFlag(kCell, 0);
+		_mazePose = 2;
+	} else if (room == kMazeRoomB && _lastSubmode == 2) {
+		_script.setFlag(kCell, kCellFarMouth);
+		_mazePose = 4;
+	} else {
+		return;
+	}
+
+	debugC(1, kDebugRooms, "maze: room %d opens on cell 0x%02x, entered as %u",
+		   room, _script.flag(kCell), _mazePose);
+}
+
+/**
+ * Where the cell stands him: CHARANIM:sub_13f90 (13b8:0410), keyed on [0xa87f].
+ *
+ * He walks in from the side opposite the one he left by, and neither maze has a
+ * char_place of its own in roominit.cpp -- the original's inits call this
+ * instead, both for a step inside the maze and for the way in from the shore.
+ */
+void AlienEngine::mazePlace() {
+	int16 x = kMazeArrivalX, y = kMazeArrivalY;
+	byte facing = kMazeArrivalFacing;
+	for (uint i = 0; i < ARRAYSIZE(kMazeArrivals); i++) {
+		if (kMazeArrivals[i].pose != _mazePose)
+			continue;
+		x = kMazeArrivals[i].x;
+		y = kMazeArrivals[i].y;
+		facing = kMazeArrivals[i].facing;
+		break;
+	}
+	_ben.placeSprite(x, y, facing);
+}
+
+/// Every arrival: where the way in stands him, the room's own dialog file, and
+/// the torch the cell may not have.
+void AlienEngine::startMaze() {
+	if (!isMaze(_room))
+		return;
+
+	// The step places him itself, once the room it re-entered is up; this is
+	// the way in from the shore, whose pose mazeEnter() has already chosen.
+	if (_mode == kShoreRoom)
+		mazePlace();
 
 	// The generic room open reads one script name out of the shared overlay's
 	// own manifest and gets room 45's rather than 43's -- the overlay serves
 	// three room numbers and the reader was never written to tell them apart.
-	// Load the right one by hand, the way hippie.cpp corrects for the six
-	// files room 23's conversation swaps between.
+	// Both mazes speak out of room43.tal (the string pools at 0x570 and 0x84e).
 	const Common::Path script("room43.tal");
 	if (Common::File::exists(script))
 		_tal.load(script, &_pack);
+
+	// The torch burns on the far wall, so it burns only where there is one to
+	// see: the original's play sits under the same guard the centre arrow does
+	// (0x066a for room 43, 0x0967 for room 44), and roominit.cpp has it
+	// unconditional because that guard is an indexed compare.
+	const MazeCell *cell = mazeCell(_room);
+	if (cell && cell->tile[2] != 1)
+		_anims.stop(kTorchSlot);
 }
 
 /**
- * One click, one turn: the simplified stand-in for resolving which of the
- * cell table's directional arrows the cursor was over.
+ * A submode armed in the maze, before the transition chain sees it.
  *
- * Returns true once the maze has taken the click, the way the owl and Sluggs
- * do, so it is never also read as a walk.
+ * This is `seg_main.asm` 0000:0019-0000:00db, in its order: the mouths back to
+ * room 41 first, because they rewrite the submode into one the chain answers
+ * and suppress the step; then the crystal door, which the room's own loop
+ * reaches before MAIN gets the chance (0x07fb); then the step itself, which
+ * re-enters the room and never returns to the chain at all.
+ *
+ * Returns true when the maze has answered the submode, and leaves `submode`
+ * rewritten when it has not.
  */
-bool AlienEngine::armMaze() {
-	if (_room != kMazeRoom || _mazeStep)
+bool AlienEngine::mazeExit(byte &submode) {
+	if (!isMaze(_room))
 		return false;
 
-	_mazeClicks++;
-	debugC(1, kDebugRooms, "maze: turn %u of %u", _mazeClicks, kMazeSteps);
+	const MazeCell *cell = mazeCell(_room);
+	if (!cell)
+		return false;
 
-	if (_mazeClicks >= kMazeSteps) {
-		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		_inventory.add(kAxe);
-		queueOutcome(_tal, kOutcomeFound, anchorX, anchorY);
-		_mazeStep = kStepFound;
-		debugC(1, kDebugItems, "maze: finds item %u (%s)", kAxe, _inventory.name(kAxe).c_str());
+	const byte at = _script.flag(kCell);
+
+	// 0000:0019, 0000:00a6 and 0000:00c3: the three mouths. Each names which
+	// of room 41's three views he comes out into.
+	if (_room == kMazeRoomA && at == 0 && submode == 7) {
+		_script.setFlag(kShoreMouth, 2);
+		submode = kShoreSubmodeA;
+		return false;
 	}
+	if (_room == kMazeRoomB && at == kCellFarMouth && submode == 7) {
+		_script.setFlag(kShoreMouth, 1);
+		submode = kShoreSubmodeA;
+		return false;
+	}
+	if (_room == kMazeRoomB && at == 0 && submode == 6) {
+		_script.setFlag(kShoreMouth, 0);
+		submode = kShoreSubmodeB;
+		return false;
+	}
+
+	// 0x07fb: the first arrival made in front of the crystal door, whichever
+	// arrow it was, is the scene instead of a step. [0xa77d] makes it once
+	// only, and its own exit comes back through here with the flag set, which
+	// is the submode 5 the test below rewrites.
+	if (_room == kMazeRoomA && at == kCellCrystalDoor && !_script.flag(kDoorOpen)) {
+		_script.setFlag(kDoorOpen, 1);
+		_mazeStep = kStepDoorPlay;
+		CursorMan.showMouse(false);
+		playCharacterAnim(kDoorSlot, 1, kDoorFrames, kDoorRate, kDoorMode);
+		debugC(1, kDebugRooms, "maze: the crystal door opens");
+		return true;
+	}
+
+	// 0000:0077: and with the door already open, the one submode that leaves.
+	if (_room == kMazeRoomA && at == kCellCrystalDoor && submode == 5) {
+		submode = kCrystalExitSubmode;
+		return false;
+	}
+
+	// 0000:0050: otherwise a step. The arrow he walked to is a direction, and
+	// the cell's four neighbours say where it goes.
+	const byte dir = mazeDirection(submode);
+	if (dir == kNoDir)
+		return false;
+
+	const byte next = cell->next[dir - 1];
+	if (next == kNoCell) {
+		debugC(1, kDebugRooms, "maze: room %d cell 0x%02x has no way out in direction %u",
+			   _room, at, dir);
+		return true;
+	}
+
+	debugC(1, kDebugRooms, "maze: room %d cell 0x%02x -> 0x%02x, direction %u",
+		   _room, at, next, dir);
+	_script.setFlag(kCell, next);
+	_mazePose = submode;
+
+	// The room's loop ends for a step exactly as it does for a real exit, and
+	// ending it is what sets game_mode to the room being left (OBJ:sub_0879a,
+	// called from 0x0847 either way). So the re-entry sees the maze's own
+	// handler code rather than the shore's, and mazeEnter() leaves the cell
+	// this step just wrote alone.
+	const int room = _room;
+	_mode = (byte)room;
+	_lastSubmode = submode;
+	if (!loadRoom(room))
+		return true;
+
+	mazePlace();
 
 	return true;
 }
 
-/// The two lines the original speaks over finding the axe, then the door.
+/// The crystal-door scene, [0xa49f] 3..8 (0x0722-0x07ec).
 void AlienEngine::stepMaze() {
-	if (_room != kMazeRoom || !_mazeStep || !speechDone())
+	if (_room != kMazeRoomA || !_mazeStep)
 		return;
 
-	if (_mazeStep == kStepFound) {
+	switch (_mazeStep) {
+	case kStepDoorPlay:
+		// 0x0722: the door's own thirteen frames come up first, and he turns
+		// to face it.
+		if (_anims.isBusy(kDoorSlot))
+			break;
+		_ben.faceTo(kDoorTurnFacing);
+		_mazeStep = kStepWhat;
+		break;
+
+	case kStepWhat: {
+		// 0x0741: "What the..."
+		if (_ben.isTurning())
+			break;
+		int anchorX, anchorY;
+		characterAnchor(anchorX, anchorY);
+		queueOutcome(_tal, kOutcomeWhat, anchorX, anchorY);
+		_mazeStep = kStepWalk;
+		break;
+	}
+
+	case kStepWalk:
+		// 0x0773: a route he is given rather than one he asked for, from the
+		// arrow he arrived on to the doorway itself.
+		if (!speechDone())
+			break;
+		_ben.place(kDoorWalkFromX, kDoorWalkY);
+		walkTo(kDoorWalkToX, kDoorWalkY, kDoorFacing);
+		_mazeStep = kStepWow;
+		break;
+
+	case kStepWow: {
+		// 0x079c: "Wow..." once he is there.
+		if (_ben.isWalking() || _ben.isTurning())
+			break;
 		int anchorX, anchorY;
 		characterAnchor(anchorX, anchorY);
 		queueOutcome(_tal, kOutcomeWow, anchorX, anchorY);
-		_mazeStep = kStepWow;
-	} else if (_mazeStep == kStepWow) {
+		_mazeStep = kStepStep;
+		break;
+	}
+
+	case kStepStep:
+		// 0x07c5: and the step through it.
+		if (!speechDone())
+			break;
+		walkTo(kDoorStepX, kDoorWalkY, kDoorFacing);
+		_mazeStep = kStepLeave;
+		break;
+
+	case kStepLeave:
+		// 0x07dd: submode 5, which seg_main rewrites into the 10 the chain
+		// answers with room 45.
+		if (_ben.isWalking() || _ben.isTurning())
+			break;
 		_mazeStep = 0;
-		takeExit(kMazeExitSubmode);
+		takeExit(5);
+		break;
+
+	default:
+		break;
 	}
 }
 

@@ -94,9 +94,12 @@ struct HotspotOp {
 	byte outcomeCount;
 	byte outcomes[4];
 
-	/// Per field -- label, obj, verb, outcomes 1..4 -- the slot supplying it
-	/// plus one, or zero when the overlay pushed an immediate.
-	byte varOf[7];
+	/// Per field -- label, obj, verb, outcomes 1..4, then x1, y1, x2, y2 --
+	/// the slot supplying it plus one, or zero when the overlay pushed an
+	/// immediate. The four coordinates come last because only one rectangle
+	/// in the game computes one: room 19's fuse panel widens its own box once
+	/// the panel is open (ovr_13_0eb3:0x04ea pushes [0x9926] as x1).
+	byte varOf[11];
 };
 
 /**

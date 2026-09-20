@@ -296,7 +296,7 @@ void AlienEngine::stepCliff() {
 
 		// The room's hotspots and its geometry both read [0xa737], so the ledge
 		// has to be built again now that he is standing on it.
-		_script.buildHotspots(_room, _spots);
+		rebuildHotspots();
 		walkTo(_cliffResumeX, _cliffResumeY, _cliffResumeFacing);
 		debugC(1, kDebugRooms, "cliff: up on the ledge, walking on to %d,%d",
 			   _cliffResumeX, _cliffResumeY);

@@ -25,7 +25,7 @@
 // The frame every animation slot opens on, as the room's own enter routine sets
 // it: the effects it runs, with the puzzle-state guards they sit under.
 //
-//   281 plays over 42 rooms, and 466 bytes of frame list.
+//   273 plays over 42 rooms, and 466 bytes of frame list.
 
 #include "alien/roominit.h"
 
@@ -104,14 +104,6 @@ static const ScriptEffect kRoomInit[] = {
 	{ kOpCharPlace,      5, {     0,   615,     0,    62,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 615, 0, 62, 4)
 	{ kOpCharPlace,      5, {     0,     7,     0,    47,     2,     0 }, 0x00,   0, 1, { { 0xa880, 21, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 7, 0, 47, 2)
 	{ kOpCharPlace,      5, {     0,   120,     0,    45,     1,     0 }, 0x00,   0, 1, { { 0xa880, 56, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 120, 0, 45, 1)
-	{ kOpAnimPlay4,      4, {     0,     1,     9,     4,     0,     0 }, 0x00,   0, 2, { { 0xa0cc, 0, false, 0 }, { 0xa0c4, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(0, 1, 9, 4)
-	{ kOpAnimPlay4,      4, {     0,    10,    16,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(0, 10, 16, 3)
-	{ kOpAnimPlay4,      4, {     0,    27,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa4ea, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(0, 27, 1, 0)
-	{ kOpAnimPlay1,      4, {     0,    26,    13,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 26, 13, 3)
-	{ kOpAnimPlay1,      4, {     5,     1,    27,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 27, 2)
-	{ kOpAnimPlay1,      4, {     3,     1,    14,     3,     0,     0 }, 0x00,   0, 1, { { 0x98fe, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 14, 3)
-	{ kOpAnimPlay1,      4, {     5,     1,    27,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 27, 2)
-	{ kOpAnimPlay1,      4, {     6,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 11, 3)
 	{ kOpCharPlace,      5, {     0,     9,     0,    51,     2,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 9, 0, 51, 2)
 	{ kOpCharPlace,      5, {     0,   177,     0,    45,     3,     0 }, 0x00,   0, 1, { { 0xa880, 31, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 177, 0, 45, 3)
 	{ kOpAnimPlay1,      4, {     1,     1,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0x33b8, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 1, 0)
@@ -337,35 +329,35 @@ static const RoomInitRoom kRoomInitRooms[] = {
 	{ 18,  51,  8 },
 	{ 19,  59,  6 },
 	{ 21,  65,  4 },
-	{ 22,  69, 11 },
-	{ 23,  80,  3 },
-	{ 25,  83,  3 },
-	{ 26,  86, 12 },
-	{ 27,  98,  7 },
-	{ 28, 105,  1 },
-	{ 30, 106,  3 },
-	{ 31, 109, 14 },
-	{ 32, 123, 14 },
-	{ 33, 137,  6 },
-	{ 34, 143,  6 },
-	{ 35, 149,  5 },
-	{ 41, 154, 12 },
-	{ 43, 166,  1 },
-	{ 44, 167,  1 },
-	{ 45, 168,  7 },
-	{ 46, 175,  5 },
-	{ 48, 180,  6 },
-	{ 49, 186,  7 },
-	{ 50, 193,  4 },
-	{ 51, 197,  5 },
-	{ 52, 202, 16 },
-	{ 53, 218,  5 },
-	{ 54, 223, 13 },
-	{ 55, 236, 12 },
-	{ 56, 248, 10 },
-	{ 57, 258,  8 },
-	{ 58, 266,  7 },
-	{ 59, 273,  8 },
+	{ 22,  69,  3 },
+	{ 23,  72,  3 },
+	{ 25,  75,  3 },
+	{ 26,  78, 12 },
+	{ 27,  90,  7 },
+	{ 28,  97,  1 },
+	{ 30,  98,  3 },
+	{ 31, 101, 14 },
+	{ 32, 115, 14 },
+	{ 33, 129,  6 },
+	{ 34, 135,  6 },
+	{ 35, 141,  5 },
+	{ 41, 146, 12 },
+	{ 43, 158,  1 },
+	{ 44, 159,  1 },
+	{ 45, 160,  7 },
+	{ 46, 167,  5 },
+	{ 48, 172,  6 },
+	{ 49, 178,  7 },
+	{ 50, 185,  4 },
+	{ 51, 189,  5 },
+	{ 52, 194, 16 },
+	{ 53, 210,  5 },
+	{ 54, 215, 13 },
+	{ 55, 228, 12 },
+	{ 56, 240, 10 },
+	{ 57, 250,  8 },
+	{ 58, 258,  7 },
+	{ 59, 265,  8 },
 };
 
 // Every frame list the openings play, end to end. Modes 6, 7 and 8 step a
