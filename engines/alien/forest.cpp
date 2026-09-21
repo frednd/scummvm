@@ -188,7 +188,13 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case 0x24:
-		if (_anims.remaining(kParrotSlot) != 0)
+		// Not remaining(kParrotSlot) == 0: room 26's loop table
+		// (animLoopsForRoom) carries this slot as an unconditional relaunch,
+		// so AnimSlots::relaunch() restarts it the instant remaining hits 1
+		// and it never reaches 0 -- exactly what left the cursor hidden and
+		// Ben idling forever. A fixed wait sized to the play (count 0x18 at
+		// rate 0, roughly a tick a frame) stands in for it instead.
+		if (_forestWait++ < kWaitSwallow)
 			break;
 		_anims.play(kOverlaySlot, 0xa, 1, 2, 1);
 		_forestStep = 0x25;
@@ -196,7 +202,8 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case 0x25:
-		if (_anims.remaining(kOverlaySlot) != 0)
+		// Slot 4 is the same story (kWaitPeck covers its short count-1 play).
+		if (_forestWait++ < kWaitPeck)
 			break;
 		_forestStep = 0x26;
 		break;
@@ -224,7 +231,9 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case 0x29:
-		if (_anims.remaining(kParrotSlot) != 0 || _forestWait++ < kWaitSquawk)
+		// Same unconditional-loop slot as 0x24/0x25 (kParrotSlot == slot 3);
+		// the tick wait alone stands in for the play, which is one frame.
+		if (_forestWait++ < kWaitSquawk)
 			break;
 		queueOutcome(_tal, kFeedLine5, kAnchorX, kAnchorY);
 		_forestStep = 0x2a;
