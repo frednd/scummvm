@@ -109,8 +109,17 @@ void AlienEngine::armCemeteryStatue(int obj, byte verb) {
 		return;
 
 	if (verb == kVerbTalkTo && _script.flag(kPhraseNeeded) == 1) {
-		openChat((uint)_script.flag(kTopic));
-		debugC(1, kDebugChat, "cemetery: the statue's topic is %u", (uint)_script.flag(kTopic));
+		// Calculate topic based on Yodle's hint and gravestone read
+		uint topic = 0;
+		if (_script.flag(0xa72d) == 1) {
+			topic = 1;
+			if (_script.flag(0xa72c) == 1) {
+				topic = 2;
+			}
+		}
+		_script.setFlag(kTopic, topic);
+		openChat(topic);
+		debugC(1, kDebugChat, "cemetery: the statue's topic is %u", topic);
 	} else if (verb == kVerbLookAt) {
 		// 0x00b8: the look queues its own line through the generic outcome
 		// path: taking the cursor away and waiting for it is all this room
@@ -153,14 +162,14 @@ void AlienEngine::cemeteryStatuePick() {
 	characterAnchor(anchorX, anchorY);
 
 	if (topic == kCorrectTopic && choice == kCorrectChoice) {
-		_script.setFlag(kPhraseNeeded, 0);
-		_anims.setLoopFlag(kRewardSlot, 0);
-		_anims.play(kRewardSlot, 1, kRewardFrames, kStatueRate, kStatueMode);
-		_anims.setLoopFlag(kOpenSlot, 0);
-		_anims.play(kOpenSlot, 1, kOpenFrames, kStatueRate, kStatueMode);
-		queueOutcome(_tal, kOutcomeSolved, anchorX, anchorY);
-		debugC(1, kDebugRooms, "cemetery: the phrase is right, the statue opens");
+		// Go to state 0x28 which waits for the picked dialogue to finish speaking
+		// before starting the statue opening animation sequence
+		_script.setFlag(0xa49f, 0x28);
+		debugC(1, kDebugRooms, "cemetery: the phrase is right, waiting for speech");
 		return;
+	} else {
+		// Wrong answers just play an outcome and show the mouse again in stepCemetery
+		_cemeteryLookWait = true;
 	}
 
 	const byte attempts = (byte)_script.flag(kAttempts);
@@ -184,8 +193,32 @@ void AlienEngine::stepCemetery() {
 
 	if (_cemeteryLookWait && speechDone()) {
 		_cemeteryLookWait = false;
-		_script.setFlag(kTopic, 0);
-		openChat(0);
+		if (_script.flag(kPhraseNeeded) == 1) {
+			_script.setFlag(kTopic, 0);
+			openChat(0);
+		}
+		CursorMan.showMouse(true);
+	}
+
+	if (_script.flag(0xa49f) == 0x28 && speechDone()) {
+		_script.setFlag(0xa49f, 0x29);
+		_anims.setLoopFlag(kRewardSlot, 0);
+		_anims.play(kRewardSlot, 1, kRewardFrames, kStatueRate, kStatueMode);
+	}
+
+	if (_script.flag(0xa49f) == 0x29 && !_anims.isBusy(kRewardSlot)) {
+		_script.setFlag(kPhraseNeeded, 0);
+		_script.setFlag(0xa962, 1);
+		int anchorX, anchorY;
+		characterAnchor(anchorX, anchorY);
+		queueOutcome(_tal, kOutcomeSolved, anchorX, anchorY);
+		_anims.setLoopFlag(kOpenSlot, 0);
+		_anims.play(kOpenSlot, 1, kOpenFrames, kStatueRate, kStatueMode);
+		_script.setFlag(0xa49f, 0x4b);
+	}
+
+	if (_script.flag(0xa49f) == 0x4b && !_anims.isBusy(kOpenSlot) && speechDone()) {
+		_script.setFlag(0xa49f, 0);
 		CursorMan.showMouse(true);
 	}
 
