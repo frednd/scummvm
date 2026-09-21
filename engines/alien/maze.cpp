@@ -572,6 +572,39 @@ bool AlienEngine::mazeExit(byte &submode) {
 	return true;
 }
 
+/// Room 45 crystal entry scene.
+void AlienEngine::stepCrystal() {
+	if (_room != 45) {
+		_crystalStep = 0;
+		return;
+	}
+
+	switch (_crystalStep) {
+	case 0:
+		_crystalStep = 1;
+		_crystalWait = 0;
+		CursorMan.showMouse(false);
+		break;
+	case 1:
+		if (_crystalWait++ > 30) {
+			int anchorX, anchorY;
+			characterAnchor(anchorX, anchorY);
+			// Show the conversation and give the phone number
+			_inventory.add(40);
+			queueOutcome(_tal, 0x14, anchorX, anchorY);
+			_crystalStep = 2;
+		}
+		break;
+	case 2:
+		if (speechDone()) {
+			_crystalStep = 3;
+			takeExit(1); // submode 1: room 45 -> room 32
+			CursorMan.showMouse(true);
+		}
+		break;
+	}
+}
+
 /// The crystal-door scene, [0xa49f] 3..8 (0x0722-0x07ec).
 void AlienEngine::stepMaze() {
 	if (_room != kMazeRoomA || !_mazeStep)

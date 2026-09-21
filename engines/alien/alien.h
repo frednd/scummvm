@@ -311,6 +311,7 @@ private:
 	/// routing, and the crystal door that ends maze A (maze.cpp).
 	void startMaze();
 	void stepMaze();
+	void stepCrystal();
 	bool mazeBackground(int room, Graphics::Surface &plate, byte *palette);
 	void buildMazeHotspots(int room);
 	void mazeEnter(int room);
@@ -819,6 +820,8 @@ private:
 	/// last cell was left by, which says where the next one is entered from
 	/// (maze.cpp). The cell itself is a state-block flag, [0xa77c].
 	byte _mazeStep;
+	byte _crystalStep;
+	uint _crystalWait;
 	byte _mazePose;
 
 	/// Room 48's pool: the step of the dive machine (pool.cpp).

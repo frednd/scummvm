@@ -1530,6 +1530,9 @@ void AlienEngine::stepClock() {
 		// counts one more wrong answer (cemetery.cpp).
 		stepCemetery();
 
+		// And room 45, the crystal entry scene (maze.cpp).
+		stepCrystal();
+
 		// And maze A's, the scene the crystal door opens into (maze.cpp).
 		stepMaze();
 
@@ -1905,6 +1908,26 @@ void AlienEngine::lookAtItem(byte item) {
 	int anchorX, anchorY;
 	characterAnchor(anchorX, anchorY);
 	queueOutcome(_talkall, code, anchorX, anchorY);
+
+	// 10c9:0x4f7 - item right-click script.
+	if (item == 2 && _script.flag(0xa7e5) == 1) {
+		_inventory.add(6);
+		_script.setFlag(0xa7e5, 0);
+	} else if (item == 10 && _script.flag(0xa7e6) == 1) {
+		_inventory.add(11);
+		_script.setFlag(0xa7e6, 0);
+	} else if (item == 7 && _script.flag(0xa6f1) == 1) {
+		_inventory.add(26);
+		queueOutcome(_talkall, 0x37, anchorX, anchorY);
+		_script.setFlag(0xa6f1, 0);
+	} else if (item == 35) { // 0x23: Teleport engine
+		_inventory.remove(35);
+		_inventory.add(36); // super radio
+		_inventory.add(30); // gameson
+	} else if (item == 22) { // 0x16: pumpkin mask? wait, 16 is 22 in decimal
+		// Wait, did it do something? "cmp byte ptr [bp - 1], 0x16" -> je 0x11297 -> jmp 0x1131d
+		// It seems it doesn't modify inventory, just jumps. So nothing more here.
+	}
 }
 
 void AlienEngine::sweepClicks() {

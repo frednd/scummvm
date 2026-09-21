@@ -64,6 +64,12 @@ bool AlienEngine::armJailExit() {
 	if (_room != kJailRoom || _heldItem != Inventory::kNoItem || _hover >= 0)
 		return false;
 
+	// The player picks up the second security card from the slot during the escape.
+	if (!_inventory.has(42)) {
+		_inventory.add(42);
+		debugC(1, kDebugRooms, "jail: picked up security card (item 42)");
+	}
+
 	_jailClicks++;
 	debugC(1, kDebugRooms, "jail: step %u of %u back to the ship", _jailClicks, kEscapeClicks);
 
