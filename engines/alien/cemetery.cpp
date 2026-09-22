@@ -1,3 +1,4 @@
+#include "common/file.h"
 /* ScummVM - Graphic Adventure Engine
  *
  * ScummVM is the legal property of its developers, whose names
@@ -217,6 +218,12 @@ void AlienEngine::stepCemetery() {
 	if (_script.flag(0xa49f) == 0x29 && !_anims.isBusy(kRewardSlot)) {
 		_script.setFlag(kPhraseNeeded, 0);
 		_script.setFlag(0xa962, 1);
+
+		Common::Path pathB("KIER32B.Pic");
+		if (!Common::File::exists(pathB))
+			pathB = Common::Path("KIER32B.PIC");
+		_walk.loadMaskPage(0, pathB);
+
 		int anchorX, anchorY;
 		characterAnchor(anchorX, anchorY);
 		queueOutcome(_tal, kOutcomeSolved, anchorX, anchorY);

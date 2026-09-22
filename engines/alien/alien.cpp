@@ -988,6 +988,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// The walk mask and the node ring, so a click can be routed. Rooms with no
 	// KIERRA files have no free movement at all, and those keep an empty mask.
 	_walk.load(room, _assets);
+	if (room == 32 && _script.flag(0xa72e) == 0) {
+		Common::Path pathB("KIER32B.Pic");
+		if (!Common::File::exists(pathB))
+			pathB = Common::Path("KIER32B.PIC");
+		_walk.loadMaskPage(0, pathB);
+	}
 	_route.count = 0;
 
 	_spots.clear();
