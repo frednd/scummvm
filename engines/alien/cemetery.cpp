@@ -135,8 +135,15 @@ void AlienEngine::armCemeteryStatue(int obj, byte verb) {
  * arm on its own (walkgeom.cpp, this file's header).
  */
 void AlienEngine::armCemeteryExit(const WalkTarget &target) {
-	if (_room != kCemeteryRoom || target.x != kCaveX || target.y != kCaveY
-			|| target.facing != kCaveFacing)
+	if (_room != kCemeteryRoom)
+		return;
+
+	const bool isCaveTarget = (target.x == 64 && target.y == 137) ||
+	                          (target.x == 108 && target.y == 117) ||
+	                          (target.x == 79 && target.y == 139) ||
+	                          (target.x == kCaveX && target.y == kCaveY);
+
+	if (!isCaveTarget)
 		return;
 
 	if (_script.flag(kPhraseNeeded) != 0) {
@@ -148,10 +155,11 @@ void AlienEngine::armCemeteryExit(const WalkTarget &target) {
 	}
 
 	_armed = kCaveSubmode;
-	_armedX = kCaveX;
-	_armedY = kCaveY;
-	_armedFacing = kCaveFacing;
-	debugC(1, kDebugRooms, "cemetery: the cave is open");
+	_armedX = target.x;
+	_armedY = target.y;
+	_armedFacing = target.facing;
+	debugC(1, kDebugRooms, "cemetery: the cave is open, arming submode %u at %d,%d facing %u",
+	       kCaveSubmode, target.x, target.y, target.facing);
 }
 
 /// The pick the menu hands back: right on topic 2, or one more wrong answer.
