@@ -211,7 +211,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_libraryStep(0), _libraryPos(0),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
-		_cemeteryLookWait(false),
+		_cemeteryLookWait(false), _cemeteryStep(0),
 		_mazeStep(0), _mazePose(0),
 		_poolStep(0),
 		_divingStep(0), _divingPos(0), _divingClicks(0),
@@ -1535,6 +1535,11 @@ void AlienEngine::stepClock() {
 		// And room 32's statue, whose menu pick either opens the cave or
 		// counts one more wrong answer (cemetery.cpp).
 		stepCemetery();
+
+		// And room 28's telescope lever, whose [0xa49f] machine is the only
+		// thing that writes [0xa760] -- which is what the observatory
+		// computer saves as co-ordinates 1 or 2 (telescope.cpp).
+		stepTelescopeLever();
 
 		// And room 45, the crystal entry scene (maze.cpp).
 		stepCrystal();
@@ -3312,10 +3317,6 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		// geometry named (cliff.cpp).
 		armCliff(roomX, y, target);
 
-		// And room 32's statue, which guards the same zone with no submode of
-		// its own to arm (cemetery.cpp).
-		armCemeteryExit(target);
-
 		walkTo(target.x, target.y, target.facing);
 	} else {
 		walkTo(roomX, y);
@@ -3479,7 +3480,11 @@ void AlienEngine::finishAction() {
 	// Room 11's television is answered the same way: the remote control's
 	// branches are the room's click dispatch and not script rows (living.cpp).
 	const bool livingHandled = armLiving(spot.obj, item, anchorX, anchorY);
-	const bool ranScript = _script.run(spot.obj, verb, item);
+	// -- and the table really does not see it. The lift now recovers the two
+	// shelf bodies it used to drop (the slot comes out of the scratch word
+	// [0x9908]), so leaving the row to run as well handed the key and the
+	// disks out twice.
+	const bool ranScript = !libraryHandled && _script.run(spot.obj, verb, item);
 	const bool handled = libraryHandled || livingHandled || ranScript;
 
 	// And the other half of that dispatch, which runs after the row rather than
@@ -3499,6 +3504,11 @@ void AlienEngine::finishAction() {
 	// lift already moves for them (cemetery.cpp).
 	if (!item)
 		armCemeteryStatue(spot.obj, verb);
+
+	// And room 28's lever, whose Pull the table plays but does not persist
+	// (telescope.cpp).
+	if (!item)
+		armTelescopeLever(spot.obj, verb);
 
 	// And room 21's Yodle, whose talk hands over the picklock the diving
 	// area's chest needs, and who builds the teleporter out of the three

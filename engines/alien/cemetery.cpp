@@ -57,14 +57,30 @@ namespace Alien {
 // and 0x28-0x2a is the right one: it clears [0xa72e], plays the statue opening
 // (slot 1, then slot 2) and speaks outcome 0x11.
 //
-// The other half is the exit itself. walkgeom.cpp's room 32 rows carry the
-// zone `0,0..43,94 -> 43,94 facing 1` (entry 0's `walk_zone(0,0,0x2b,0x5e,
-// 0x2b,0x5e,1)`) with no `kWalkSubmode` row after it, because the original
-// does not arm it that way: entry 2's own walk-blocked handler
-// (0x0c35-0x0c79) tests [0xa644], the latch that zone sets, and only writes
-// `game_submode := 3` (0x0b8e) once [0xa72e] is already 0. Answer the statue
-// right and the cave is open; walk there first and the statue turns you back
-// with outcome 14 instead.
+// The other half is the exit itself, and it is not a `kWalkSubmode` row at
+// all. Object 1 is the laser beams across the cave mouth -- outcome 15, "Laser
+// beams. Cool." -- and walkgeom.cpp's zone `355,0..479,115 -> 377,107 facing
+// 2` is what a click on them walks to. Nothing arms submode 3 on the way out
+// of that click; entry 2's own walk-blocked handler does it on the way in
+// (0x0c35-0x0c79):
+//
+//   [0x9908] == 1      the route has run out -- he has arrived
+//   [0xa644] == 1      and the click that started the walk was on object 1,
+//                      the latch HOTSPOT:sub_13605 keeps and clickAt mirrors
+//   [0xa72e] == 1      the statue still wants the phrase: queue_event 14, "I
+//                      can't walk through the beams. They'd cut me to pieces."
+//   [0xa72e] == 0      the beams are down: the cursor and the walker go
+//                      ([0xa948], [0xa94d]), slot 3 plays his sixteen frames
+//                      of walking in, and [0xa49f] := 0x3c
+//
+// and state 0x3c (0x0b7e) waits for slot 3 to run out ([0xa4ed] == 0) before
+// it writes `game_submode := 3` (0x0b8e), which is transitions.cpp's
+// `{ 32, 3, 40 }`. So the exit is an arrival machine of the same shape as the
+// shore's two cave mouths (shore.cpp) and the sewer's ladder, not a door.
+//
+// The port used to arm submode 3 from the click instead, against a list of
+// coordinates none of which is the zone's, and raise a flag ([0xa962]) that
+// nothing read: the beams opened and walking into them did nothing.
 static const int kCemeteryRoom = 32;
 
 static const byte kStatue = 2;			///< the object both the talk and the look answer
@@ -94,10 +110,16 @@ static const int kOpenFrames = 9;
 static const int kStatueRate = 3;
 static const int kStatueMode = 1;	///< anim_play_mode1
 
-/// entry 0's walk_zone target (0x2b,0x5e) facing 1, and the submode it arms
-/// once the statue has opened.
-static const int kCaveX = 0x2b, kCaveY = 0x5e;
-static const byte kCaveFacing = 1;
+/// [0xa644], the object the last left click was on (shore.cpp reads the same
+/// latch), and the object that is the way into the cave.
+static const uint16 kClickedObj = 0xa644;
+static const byte kLasers = 1;
+
+/// His sixteen frames of walking in (0x0c67), and the state that waits for
+/// them before the submode goes out (0x0b7e).
+static const uint kCaveSlot = 3;
+static const int kCaveFrames = 0x10;
+static const byte kStepEnterCave = 0x3c;
 static const byte kCaveSubmode = 3;
 
 /**
@@ -131,36 +153,40 @@ void AlienEngine::armCemeteryStatue(int obj, byte verb) {
 }
 
 /**
- * The exit the statue guards: room 32's own hook alongside armCliff, since
- * the zone that reaches it has no `kWalkSubmode` row for the click dispatch to
- * arm on its own (walkgeom.cpp, this file's header).
+ * A walk finished at the beams (0x0c35-0x0c79).
+ *
+ * The room's own arrival test, run from the tick rather than from the click,
+ * because that is where the original keeps it: the click has no submode to
+ * arm, and whether the walk is a way out is decided when it lands.
  */
-void AlienEngine::armCemeteryExit(const WalkTarget &target) {
-	if (_room != kCemeteryRoom)
+void AlienEngine::cemeteryArrival() {
+	if (_room != kCemeteryRoom || _cemeteryStep)
+		return;
+	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
 		return;
 
-	const bool isCaveTarget = (target.x == 64 && target.y == 137) ||
-	                          (target.x == 108 && target.y == 117) ||
-	                          (target.x == 79 && target.y == 139) ||
-	                          (target.x == kCaveX && target.y == kCaveY);
-
-	if (!isCaveTarget)
+	if (_script.flag(kClickedObj) != kLasers)
 		return;
+
+	// 0x0c43: the latch is spent whichever way the test goes, so a second
+	// arrival at the same spot says nothing a second time.
+	_script.setFlag(kClickedObj, 0);
+
+	int anchorX, anchorY;
+	characterAnchor(anchorX, anchorY);
 
 	if (_script.flag(kPhraseNeeded) != 0) {
-		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
+		// 0x0c4f: the beams are still up.
 		queueOutcome(_tal, kOutcomeNotYet, anchorX, anchorY);
-		debugC(1, kDebugRooms, "cemetery: the statue still wants the phrase");
+		debugC(1, kDebugRooms, "cemetery: the beams are still up");
 		return;
 	}
 
-	_armed = kCaveSubmode;
-	_armedX = target.x;
-	_armedY = target.y;
-	_armedFacing = target.facing;
-	debugC(1, kDebugRooms, "cemetery: the cave is open, arming submode %u at %d,%d facing %u",
-	       kCaveSubmode, target.x, target.y, target.facing);
+	// 0x0c5d: the cursor and the walker both go, and slot 3 has him.
+	CursorMan.showMouse(false);
+	playCharacterAnim(kCaveSlot, 1, kCaveFrames, kStatueRate, kStatueMode);
+	_cemeteryStep = kStepEnterCave;
+	debugC(1, kDebugRooms, "cemetery: through the beams and into the cave");
 }
 
 /// The pick the menu hands back: right on topic 2, or one more wrong answer.
@@ -217,7 +243,6 @@ void AlienEngine::stepCemetery() {
 
 	if (_script.flag(0xa49f) == 0x29 && !_anims.isBusy(kRewardSlot)) {
 		_script.setFlag(kPhraseNeeded, 0);
-		_script.setFlag(0xa962, 1);
 
 		Common::Path pathB("KIER32B.Pic");
 		if (!Common::File::exists(pathB))
@@ -240,6 +265,16 @@ void AlienEngine::stepCemetery() {
 	if (_chatPickNew) {
 		_chatPickNew = false;
 		cemeteryStatuePick();
+	}
+
+	cemeteryArrival();
+
+	// 0x0b7e: and the submode goes out once slot 3 has run out, not before.
+	if (_cemeteryStep == kStepEnterCave && !_anims.isBusy(kCaveSlot)) {
+		_cemeteryStep = 0;
+		showCharacter();
+		debugC(1, kDebugRooms, "cemetery: submode %u, into room 40", kCaveSubmode);
+		takeExit(kCaveSubmode);
 	}
 }
 

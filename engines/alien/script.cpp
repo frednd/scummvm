@@ -34,7 +34,7 @@
 namespace Alien {
 
 RoomScript::RoomScript() : _vm(nullptr), _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
-		_room(0), _queued(kNoEvent), _submode(kNoSubmode),
+		_room(0), _queued(kNoEvent), _submode(kNoSubmode), _machine(0),
 		_placed(false), _placeX(0), _placeY(0), _placeFacing(0), _frameList(cutsceneFrameList) {
 	reset();
 }
@@ -45,7 +45,13 @@ void RoomScript::resetScene() {
 	_scenePos = 0;
 }
 
+// _machine is not in syncGame(): the original's save is a fixed 5412 bytes
+// whose layout is checked against the real thing (save/fields), and [0xa49f]
+// is not in it. Nothing is lost -- a machine only ever holds a value while it
+// is running, and a save cannot be taken while one owns the screen.
+
 void RoomScript::reset() {
+	_machine = 0;
 	memset(_flags, 0, sizeof(_flags));
 	memset(_latches, 0, sizeof(_latches));
 	resetScene();
@@ -328,6 +334,11 @@ byte RoomScript::flag(uint16 addr) const {
 	if (addr == kScenePos + 1)
 		return (byte)(_scenePos >> 8);
 
+	// And the room machine, which is a byte of its own for the same reason:
+	// it falls between the clocks and the state block.
+	if (addr == kMachine)
+		return _machine;
+
 	const byte *slot = flagSlot(addr);
 	return slot ? *slot : 0;
 }
@@ -342,6 +353,11 @@ void RoomScript::setFlag(uint16 addr, byte value) {
 
 	if (addr == kScenePos) {
 		_scenePos = value;
+		return;
+	}
+
+	if (addr == kMachine) {
+		_machine = value;
 		return;
 	}
 

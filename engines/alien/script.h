@@ -116,6 +116,16 @@ public:
 	/// an offset in that stream.
 	static const uint16 kScenePos = 0xa498;
 
+	/// The room state machine [0xa49f]: the byte a room's click arms and its
+	/// tick walks, one step per state, for everything too long to be a script
+	/// row -- the statue opening, the telescope lever, the sewer's valve. It
+	/// sits between the scene clock and the state block and so had no home
+	/// here at all: every setFlag() on it was dropped on the floor and every
+	/// read of it answered 0, which quietly disabled every machine written
+	/// against it (finding #112). Kept as a byte of its own, the way the two
+	/// clocks above are, and saved with them.
+	static const uint16 kMachine = 0xa49f;
+
 	/// No outcome code queued. The original uses zero for "nothing to say".
 	static const byte kNoEvent = 0;
 
@@ -266,6 +276,7 @@ private:
 	byte _scene[kSceneCount];
 	uint16 _cutscenePos;
 	uint16 _scenePos;
+	byte _machine;
 	const ScriptBlock *_blocks;
 	uint _blockCount;
 	int _room;

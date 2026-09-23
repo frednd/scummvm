@@ -634,6 +634,154 @@ void AlienEngine::playObservatoryScreen() {
 	_dirty = true;
 }
 
+// --- The telescope lever: the machine that persists [0xa760] ---------------
+//
+// Object 9's Pull is in the lifted table twice, once per direction, and each
+// row does no more than play the twenty-one frames of Ben working the lever --
+// slot 1 raising it, slot 2 lowering it. The lever's own byte is never written
+// there, which is why [0xa760] had no writer anywhere in the port and the
+// observatory computer could only ever save co-ordinates 1
+// (tools/playthrough_observatory.txt says so in its own comment). The write is
+// two states further on: each row also sets [0xa49f], and the room's tick runs
+// a six-state machine over it (ovr_1c_0eb7:0x09cb).
+//
+//   raise   3 -> slot 1 has three frames left        -> 5
+//           5 -> ovr0eb7_sub_0000: slot 0 forward,
+//                [0xa760] := 1, the servo sample     -> 6
+//           6 -> slot 0 idle, cursor back            -> 0
+//
+//   lower  20 -> slot 2 has three frames left        -> 21
+//          21 -> ovr0eb7_sub_002e: slot 0 backward,
+//                [0xa760] := 0, the same sample
+//                a little lower                      -> 22
+//          22 -> slot 0 idle, cursor back            -> 0
+//
+// The three-frames-left test is what dovetails the two animations: the lever
+// arm starts moving while Ben is still pulling, rather than after he lets go.
+// The [0xa49f] write is invisible to the lift -- it is not a state address
+// (STATE_FLAG in tools/roomlogic.py) -- so the row keeps the animation and the
+// machine is hand-written, the same split as room 32's statue.
+
+static const byte kLeverObj = 9;
+static const byte kVerbPull = 13;
+
+/// [0xa75a] and [0xa759]: the two the lifted Pull rows are guarded on -- the
+/// observatory has power and the dome is in a state to move. Without them the
+/// row plays nothing, so the machine must not arm either.
+static const uint16 kLeverReady1 = 0xa75a;
+static const uint16 kLeverReady2 = 0xa759;
+
+static const byte kLeverRaisePull = 3;		///< waiting on slot 1
+static const byte kLeverRaiseMove = 5;		///< the arm goes up
+static const byte kLeverRaiseDone = 6;		///< waiting on slot 0
+static const byte kLeverLowerPull = 0x14;	///< waiting on slot 2
+static const byte kLeverLowerMove = 0x15;	///< the arm comes down
+static const byte kLeverLowerDone = 0x16;	///< waiting on slot 0
+
+static const uint kLeverArmSlot = 0;	///< the lever arm itself, both directions
+static const uint kRaisePullSlot = 1;	///< Ben pulling it up
+static const uint kLowerPullSlot = 2;	///< Ben pulling it down
+
+/// ovr0eb7_sub_0000 and sub_002e: the arm, mode 1 up and mode 3 (backward) down.
+static const int kArmFirstUp = 1;
+static const int kArmFirstDown = 0x20;
+static const int kArmFrames = 0x20;
+static const int kArmRate = 2;
+static const int kArmModeUp = 1;
+static const int kArmModeDown = 3;
+
+/// The servo, INPUT:sfx_play_delayed(1, 0, rate, 64, 20, 0) -- the same sample
+/// either way, a little slower coming down.
+static const uint kServoSample = 1;
+static const uint32 kServoRateUp = 0x2af8;	///< 11000
+static const uint32 kServoRateDown = 0x2710;	///< 10000
+static const byte kServoVolume = 0x40;
+static const int8 kServoPan = 0x14;
+
+/// Frames left on the pull when the arm starts moving (0x09d2, 0x0a0f). The
+/// original tests for exactly three, and the port's stepper does hold each
+/// count for the rate's three ticks, so the equality would hold here too; the
+/// test is `<=` so that a rate change could never step straight past it and
+/// leave the lever armed for ever.
+static const int kHandover = 3;
+
+/**
+ * 0x0251..0x02f9 of entry 3, after the lifted row has played its frames: the
+ * [0xa49f] write the table cannot carry.
+ *
+ * The two rows are mutually exclusive on [0xa760], so reading it here picks the
+ * same direction the row did. The room's own guards are re-tested rather than
+ * assumed: a Pull the row refused (no power, wrong dome state) reaches here
+ * too, and arming on it would move the lever with no animation under it.
+ */
+void AlienEngine::armTelescopeLever(int obj, byte verb) {
+	if (_room != kRoom || obj != kLeverObj || verb != kVerbPull)
+		return;
+	if (_script.flag(kLeverReady1) != 1 || _script.flag(kLeverReady2) != 1)
+		return;
+	if (_script.flag(0xa49f) != 0)
+		return;
+
+	const bool raising = _script.flag(kLever) == 0;
+	_script.setFlag(0xa49f, raising ? kLeverRaisePull : kLeverLowerPull);
+	// 0x0286/0x028b and 0x02de/0x02e3: the cursor goes away for the length of
+	// the pull, and the machine's last state is what gives it back.
+	CursorMan.showMouse(false);
+	debugC(1, kDebugTelescope, "telescope: the lever is being %s",
+		   raising ? "raised" : "lowered");
+}
+
+/// The machine itself, stepped from the room tick.
+void AlienEngine::stepTelescopeLever() {
+	if (_room != kRoom)
+		return;
+
+	const byte state = (byte)_script.flag(0xa49f);
+
+	// 0x09d2: three frames before Ben lets go.
+	if (state == kLeverRaisePull) {
+		if (_anims.remaining(kRaisePullSlot) <= kHandover)
+			_script.setFlag(0xa49f, kLeverRaiseMove);
+		return;
+	}
+
+	// 0x09e4: the arm goes up, and the lever is up from here on.
+	if (state == kLeverRaiseMove) {
+		_anims.play(kLeverArmSlot, kArmFirstUp, kArmFrames, kArmRate, kArmModeUp);
+		_script.setFlag(kLever, 1);
+		_sound.play(kServoSample, kServoRateUp, kServoVolume, kServoPan);
+		_script.setFlag(0xa49f, kLeverRaiseDone);
+		debugC(1, kDebugTelescope, "telescope: the lever is up, [0xa760] = 1");
+		return;
+	}
+
+	// 0x0a0f, the same three frames on the other slot.
+	if (state == kLeverLowerPull) {
+		if (_anims.remaining(kLowerPullSlot) <= kHandover)
+			_script.setFlag(0xa49f, kLeverLowerMove);
+		return;
+	}
+
+	// 0x0a21: mode 3, so the arm runs the same frames backward.
+	if (state == kLeverLowerMove) {
+		_anims.play(kLeverArmSlot, kArmFirstDown, kArmFrames, kArmRate, kArmModeDown);
+		_script.setFlag(kLever, 0);
+		_sound.play(kServoSample, kServoRateDown, kServoVolume, kServoPan);
+		_script.setFlag(0xa49f, kLeverLowerDone);
+		debugC(1, kDebugTelescope, "telescope: the lever is down, [0xa760] = 0");
+		return;
+	}
+
+	// 0x09f8 and 0x0a35: both directions end the same way, on the arm slot
+	// running out, and both give the cursor back.
+	if (state == kLeverRaiseDone || state == kLeverLowerDone) {
+		if (_anims.remaining(kLeverArmSlot) == 0) {
+			_script.setFlag(0xa49f, 0);
+			CursorMan.showMouse(true);
+		}
+	}
+}
+
 /**
  * The dispatch finishAction() falls into on room 28's submode 111, before
  * takeExit() ever sees it -- the original's arrival test

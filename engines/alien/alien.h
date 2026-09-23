@@ -268,6 +268,9 @@ private:
 	/// Room 28's telescope view and observatory computer, both of which the
 	/// lifted table only ever arms as game_submode = 111 (telescope.cpp).
 	bool runTelescopeScreen(int obj, byte verb, byte submode);
+	/// Room 28's lever, the one writer of [0xa760] (telescope.cpp).
+	void armTelescopeLever(int obj, byte verb);
+	void stepTelescopeLever();
 	void playTelescopeView();
 	void playObservatoryScreen();
 	void stepHallway();
@@ -298,7 +301,7 @@ private:
 	/// Room 32's statue, the phrase it wants and the cave it guards
 	/// (cemetery.cpp).
 	void armCemeteryStatue(int obj, byte verb);
-	void armCemeteryExit(const WalkTarget &target);
+	void cemeteryArrival();
 	void cemeteryStatuePick();
 	void stepCemetery();
 
@@ -815,6 +818,7 @@ private:
 	/// Room 32's statue: waiting for the look's own line to come down before
 	/// the topic-0 conversation reopens (cemetery.cpp).
 	bool _cemeteryLookWait;
+	byte _cemeteryStep;	///< [0xa49f] while the cave is being walked into
 
 	/// The two mazes: the step of the crystal-door scene, and the submode the
 	/// last cell was left by, which says where the next one is entered from
