@@ -388,10 +388,12 @@ private:
 	bool armCorridorMan(int obj, byte verb);
 	void stepCorridor();
 
-	/// Room 52's security scanner, simplified to a click count the same way
-	/// (scanner.cpp).
+	/// Room 52's security scanner: the resident gate in front of the room,
+	/// its DL2 scan, and the robot's arrest (scanner.cpp).
+	int scannerGate(int room);
+	void playScannerScan(bool mask);
 	void startScanner();
-	bool armScanner();
+	void stepScanner();
 
 	/// Room 54's number board and the call in to Jack's room, simplified the
 	/// same way (waiting.cpp).
@@ -897,8 +899,10 @@ private:
 	/// (corridor.cpp).
 	uint _corridorStep;
 
-	/// Room 52's simplified scan: clicks taken so far (scanner.cpp).
-	uint _scannerClicks;
+	/// Room 52: the gate sent him in without the mask, and the room's
+	/// [0xa49f] machine step that arrests him (scanner.cpp).
+	bool _scannerArrest;
+	byte _scannerStep;
 
 	/// Room 54's simplified number board: clicks taken so far (waiting.cpp).
 	uint _waitingClicks;

@@ -226,7 +226,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleAnswer(false),
 		_teleportStep(0), _teleportReturnClicks(0),
 		_corridorStep(0),
-		_scannerClicks(0), _waitingClicks(0), _waitingStep(0), _waitingPos(0), _bossClicks(0), _jailClicks(0),
+		_scannerArrest(false), _scannerStep(0), _waitingClicks(0), _waitingStep(0), _waitingPos(0), _bossClicks(0), _jailClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -913,6 +913,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	const int keptY = _ben.walkY();
 	const int keptFacing = _ben.facing();
 
+	// Room 52 is dispatched through MAIN:sub_001eb, which plays the scan and
+	// may send him to the jail instead (scanner.cpp). A self-reload is the
+	// room coming back to itself, not an entry through the door.
+	if (!keepPosition)
+		room = scannerGate(room);
+
 	// Before anything is read: the two mazes take their position from the way
 	// in, and their plate and their rectangles are both read from it
 	// (maze.cpp).
@@ -1249,9 +1255,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startPark();
 	startYodle();
 
-	// And the ship's four elevator floors (corridor.cpp), then the scanner,
-	// the number board, the boss fight and the jail's escape, simplified the
-	// same way (scanner.cpp, waiting.cpp, boss.cpp, jail.cpp).
+	// And the ship's four elevator floors (corridor.cpp), the scanner's
+	// robot (scanner.cpp), then the number board, the boss fight and the
+	// jail's escape, simplified the same way (waiting.cpp, boss.cpp,
+	// jail.cpp).
 	startCorridor();
 	startScanner();
 	startWaiting();
@@ -1586,6 +1593,9 @@ void AlienEngine::stepClock() {
 		// walk to room 53's own exit hotspot once the maintenance man has
 		// cleared the way (corridor.cpp, elevator.cpp).
 		stepCorridor();
+
+		// And room 52's robot, once the scan has found no mask (scanner.cpp).
+		stepScanner();
 
 		// And room 30's, which is the whole of the antique store: the
 		// conversation, the arrow traded for the diving suit, and the walk out
@@ -3294,11 +3304,9 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (!rightButton && armSteamDoor())
 		return;
 
-	// The scanner, the number board, the boss fight and the jail's escape,
-	// all standing in for their own missing exit the same way (scanner.cpp,
-	// waiting.cpp, boss.cpp, jail.cpp).
-	if (!rightButton && armScanner())
-		return;
+	// The number board, the boss fight and the jail's escape, all standing
+	// in for their own missing exit the same way (waiting.cpp, boss.cpp,
+	// jail.cpp).
 	if (!rightButton && armWaitingBoard())
 		return;
 	if (!rightButton && armBoss())
