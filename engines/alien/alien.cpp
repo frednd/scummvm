@@ -225,7 +225,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false),
 		_teleportStep(0), _teleportReturnClicks(0),
-		_corridorClicks(0), _corridorStep(0),
+		_corridorStep(0),
 		_scannerClicks(0), _waitingClicks(0), _waitingStep(0), _waitingPos(0), _bossClicks(0), _jailClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
@@ -1249,9 +1249,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startPark();
 	startYodle();
 
-	// And the four-way junction, the scanner, the number board, the boss
-	// fight and the jail's escape, all simplified the same way (corridor.cpp,
-	// scanner.cpp, waiting.cpp, boss.cpp, jail.cpp).
+	// And the ship's four elevator floors (corridor.cpp), then the scanner,
+	// the number board, the boss fight and the jail's escape, simplified the
+	// same way (scanner.cpp, waiting.cpp, boss.cpp, jail.cpp).
 	startCorridor();
 	startScanner();
 	startWaiting();
@@ -1582,9 +1582,9 @@ void AlienEngine::stepClock() {
 		// And the delay standing in for room 22's teleporter (teleport.cpp).
 		stepTeleport();
 
-		// And the delay standing in for the walk to room 53's own exit
-		// hotspot, once the maintenance man has cleared the way
-		// (corridor.cpp).
+		// And the ship's elevator door, and the delay standing in for the
+		// walk to room 53's own exit hotspot once the maintenance man has
+		// cleared the way (corridor.cpp, elevator.cpp).
 		stepCorridor();
 
 		// And room 30's, which is the whole of the antique store: the
@@ -3294,11 +3294,9 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (!rightButton && armSteamDoor())
 		return;
 
-	// The four-way junction, the scanner, the number board, the boss fight
-	// and the jail's escape, all standing in for their own missing exit the
-	// same way (corridor.cpp, scanner.cpp, waiting.cpp, boss.cpp, jail.cpp).
-	if (!rightButton && armCorridorNext())
-		return;
+	// The scanner, the number board, the boss fight and the jail's escape,
+	// all standing in for their own missing exit the same way (scanner.cpp,
+	// waiting.cpp, boss.cpp, jail.cpp).
 	if (!rightButton && armScanner())
 		return;
 	if (!rightButton && armWaitingBoard())

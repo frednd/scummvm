@@ -383,7 +383,8 @@ private:
 	/// Rooms 51/53/55/57, the four-way junction, and room 53's maintenance
 	/// man, the only way out of it toward the ending (corridor.cpp).
 	void startCorridor();
-	bool armCorridorNext();
+	void corridorArrival();
+	void playElevatorPanel();
 	bool armCorridorMan(int obj, byte verb);
 	void stepCorridor();
 
@@ -894,7 +895,6 @@ private:
 	/// Rooms 51/53/55/57's simplified four-way cycle: clicks taken toward the
 	/// next room, and room 53's own delay before leaving for the ending
 	/// (corridor.cpp).
-	uint _corridorClicks;
 	uint _corridorStep;
 
 	/// Room 52's simplified scan: clicks taken so far (scanner.cpp).

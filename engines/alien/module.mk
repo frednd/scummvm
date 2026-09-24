@@ -23,6 +23,7 @@ MODULE_OBJS = \
 	park.o \
 	forest.o \
 	corridor.o \
+	elevator.o \
 	scanner.o \
 	waiting.o \
 	boss.o \

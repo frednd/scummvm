@@ -26,24 +26,26 @@
 
 namespace Alien {
 
-// Rooms 51, 53, 55 and 57, the four-way junction between the park teleporter
-// and the ship's hallways -- and the maintenance man in 53/57 who is the only
-// way out of it toward the ending.
+// Rooms 51, 53, 55 and 57, the four floors of the alien ship -- and the
+// maintenance man in 53/57 who is the only way out of them toward the ending.
 //
-// Every one of the four rooms carries the same four-destination table in its
-// walk geometry (transitions.cpp: 101->53, 102->57, 103->51, 104->55), but no
-// row of any of their kWalkObject entries arms one: `LOGIC:sub_1265c`
-// (`seg_logic.asm:0x1265c`) picks among them from `[0xa79e]`/`[0xa79f]`, which
-// nothing in any of the four overlays' own hotspot tables writes -- the real
-// choice is made by walking into one of four unlabelled doorways this pass
-// did not resolve which object is which.
+// The four are joined by an elevator, not by doorways. Every one of them
+// carries the same four rows in the transition chain (transitions.cpp: 101->53,
+// 102->57, 103->51, 104->55), and LOGIC:sub_1265c, which each room calls as its
+// frame loop ends, picks among them from [0xa79e] once [0xa79f] says the panel
+// has been used. What writes both is the resident CHARANIM:sub_150f4 (room 51:
+// sub_151bc, the same body), called from every room's tick: a walk that ends
+// ([0x9908] == 1) with the click that started it on object 2 ([0xa644] == 2)
+// opens the panel, 15f3:sub_16895 (elevator.cpp), and raises [0xa79f] and
+// [0xa881] as it returns. Object 2 is a registered rectangle with a walk row
+// in all four rooms (check_hotspots.py / check_walkgeom.py --sweep), so the
+// arrival test below is all the room side needs.
 //
-// Ported as a fixed cycle rather than the real four-way choice: a plain click
-// with nothing held and no hotspot under it, in any of the four rooms, always
-// leaves by the same one of its four real destinations (51->55, 55->53,
-// 53->57, 57->51), the way room 41's door and room 46's swim already stand in
-// for their own multi-state guards. Clicking round the cycle enough times
-// reaches every room; it is never the fastest way between two of them.
+// Each room's prologue then answers [0xa7a1], which the panel raises on its
+// way out: the lifted opening already plays the doors and puts Ben in front of
+// them, but the prologue's flag writes are hand-owned by rule (gen_roominit.py,
+// plays_of), and without them [0xa7a1] was never cleared and every later way
+// in replayed the elevator. Room 55 also answers [0xa7a0], the no-card trip.
 //
 // Room 53 (and, since the two rooms share one overlay, room 57 as well)
 // also carries the one thing this leg actually needs: object 3, verb 6
@@ -65,12 +67,24 @@ static const int kHallwayRoomA = 53;
 static const int kHallwayRoomB = 57;
 static const int kCorridorRoom = 55;
 
-static const byte kNextClicks = 3;
+/// Object 2 in all four rooms: the elevator door (sub_150f4 / sub_151bc).
+static const byte kElevatorObj = 2;
+/// [0xa644], the object the last left click was on (cemetery.cpp).
+static const uint16 kClickedObj = 0xa644;
 
-static const byte kLobbyNextSubmode = 104;		///< transitions.cpp: room 51, submode 104 -> room 55
-static const byte kCorridorNextSubmode = 101;	///< transitions.cpp: room 55, submode 101 -> room 53
-static const byte kHallwayANextSubmode = 102;	///< transitions.cpp: room 53, submode 102 -> room 57
-static const byte kHallwayBNextSubmode = 103;	///< transitions.cpp: room 57, submode 103 -> room 51
+/// [0xa7a1]: the panel has just been used, so this room opens at its elevator.
+static const uint16 kElevatorArrival = 0xa7a1;
+/// Room 51's pair of door flags and the other three rooms' pair, raised as the
+/// doors are drawn open (ovr_33_0faa:0x03ad, ovr_35_0f9e:0x0857/0x0d7c,
+/// ovr_37_0f9a:0x03c4) so the rooms' door ticks do not open them again.
+static const uint16 kDoorA = 0xa7a2;
+static const uint16 kDoorAWas = 0xa7a3;
+static const uint16 kDoorB = 0xa7a4;
+static const uint16 kDoorBWas = 0xa7a5;
+/// [0xa7a0]: the panel was left with no card; room 55 speaks line 5
+/// (ovr_37_0f9a:0x041d, answered at the top of entry 3 as [0xa956] == 5).
+static const uint16 kNoCardLine = 0xa7a0;
+static const byte kOutcomeNoCard = 5;
 
 static const byte kMaintenanceMan = 3;
 static const byte kVerbTalkTo = 6;
@@ -81,50 +95,50 @@ static const uint16 kTalkDone = 0xa7d9;		///< no writer but the man's own talk
 static const byte kWinExitSubmode = 2;			///< transitions.cpp: room 53, submode 2 -> room 59
 static const uint kWinExitDelay = 20;
 
-/// Every arrival resets the click count toward whichever room is next.
-void AlienEngine::startCorridor() {
-	if (_room != kLobbyRoom && _room != kHallwayRoomA && _room != kHallwayRoomB &&
-		_room != kCorridorRoom)
-		return;
-
-	_corridorClicks = 0;
+static bool isElevatorRoom(int room) {
+	return room == kLobbyRoom || room == kHallwayRoomA || room == kHallwayRoomB ||
+		   room == kCorridorRoom;
 }
 
-/// A plain click, standing in for the real four-way choice: see this file's
-/// header. Consumes the click the way room 41's door does, so it must never
-/// take one meant for the room's own rectangles.
-bool AlienEngine::armCorridorNext() {
-	if (_heldItem != Inventory::kNoItem || _hover >= 0)
-		return false;
+/// The prologue's [0xa7a1] and [0xa7a0] arms, the flag writes the lift leaves
+/// to hand code (see this file's header).
+void AlienEngine::startCorridor() {
+	if (!isElevatorRoom(_room))
+		return;
 
-	byte submode;
-	switch (_room) {
-	case kLobbyRoom:
-		submode = kLobbyNextSubmode;
-		break;
-	case kCorridorRoom:
-		submode = kCorridorNextSubmode;
-		break;
-	case kHallwayRoomA:
-		submode = kHallwayANextSubmode;
-		break;
-	case kHallwayRoomB:
-		submode = kHallwayBNextSubmode;
-		break;
-	default:
-		return false;
+	if (_script.flag(kElevatorArrival) == 1) {
+		_script.setFlag(kElevatorArrival, 0);
+		if (_room == kLobbyRoom) {
+			_script.setFlag(kDoorA, 1);
+			_script.setFlag(kDoorAWas, 1);
+		} else {
+			_script.setFlag(kDoorB, 1);
+			_script.setFlag(kDoorBWas, 1);
+		}
+		debugC(1, kDebugRooms, "corridor: out of the elevator into room %d", _room);
 	}
 
-	_corridorClicks++;
-	debugC(1, kDebugRooms, "corridor: step %u of %u round the cycle", _corridorClicks, kNextClicks);
-
-	if (_corridorClicks >= kNextClicks) {
-		_corridorClicks = 0;
-		CursorMan.showMouse(false);
-		takeExit(submode);
+	if (_room == kCorridorRoom && _script.flag(kNoCardLine) == 1) {
+		_script.setFlag(kNoCardLine, 0);
+		int anchorX, anchorY;
+		characterAnchor(anchorX, anchorY);
+		queueOutcome(_tal, kOutcomeNoCard, anchorX, anchorY);
+		debugC(1, kDebugRooms, "corridor: back without a card");
 	}
+}
 
-	return true;
+/// CHARANIM:sub_150f4 / sub_151bc: a walk that ended at the elevator door.
+void AlienEngine::corridorArrival() {
+	if (!isElevatorRoom(_room))
+		return;
+	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+		return;
+	if (_script.flag(kClickedObj) != kElevatorObj)
+		return;
+
+	// 0x158a: the latch is spent as the panel opens.
+	_script.setFlag(kClickedObj, 0);
+	playElevatorPanel();
 }
 
 /// The maintenance man: a real hotspot, simplified to one exchange.
@@ -153,6 +167,8 @@ bool AlienEngine::armCorridorMan(int obj, byte verb) {
 
 /// The delay standing in for the walk to object 6's own hotspot.
 void AlienEngine::stepCorridor() {
+	corridorArrival();
+
 	if (_room != kHallwayRoomA || !_corridorStep)
 		return;
 
