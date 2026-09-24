@@ -395,10 +395,11 @@ private:
 	void startScanner();
 	void stepScanner();
 
-	/// Room 54's number board and the call in to Jack's room, simplified the
-	/// same way (waiting.cpp).
+	/// Room 54's call in to Jack's room: the way out through object 1, taken
+	/// over once his number is up, and the door's own refusal (waiting.cpp).
 	void startWaiting();
-	bool armWaitingBoard();
+	bool hijackWaitingExit(byte submode);
+	void waitingArrival();
 
 	/// Room 54's ticket machine, which is not simplified: the [0xa49f] machine
 	/// behind object 12 and the three numbers it gives out (waiting.cpp).
@@ -903,9 +904,6 @@ private:
 	/// [0xa49f] machine step that arrests him (scanner.cpp).
 	bool _scannerArrest;
 	byte _scannerStep;
-
-	/// Room 54's simplified number board: clicks taken so far (waiting.cpp).
-	uint _waitingClicks;
 
 	/// Room 54's [0xa49f] machine: the ticket machine, and the number that is
 	/// finally called (waiting.cpp).

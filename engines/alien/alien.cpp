@@ -226,7 +226,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleAnswer(false),
 		_teleportStep(0), _teleportReturnClicks(0),
 		_corridorStep(0),
-		_scannerArrest(false), _scannerStep(0), _waitingClicks(0), _waitingStep(0), _waitingPos(0), _bossClicks(0), _jailClicks(0),
+		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0), _bossClicks(0), _jailClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1611,8 +1611,8 @@ void AlienEngine::stepClock() {
 		// stepped with the conversation menu, further down.
 		stepLibrarySafe();
 
-		// And room 54's ticket machine, which is where the three ticket
-		// numbers come from (waiting.cpp).
+		// And room 54's machine: the three ticket numbers, and the way in
+		// to Jack's room once his number is up (waiting.cpp).
 		stepWaitingMachine();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
@@ -3159,6 +3159,12 @@ void AlienEngine::checkExit() {
 
 	const byte submode = _armed;
 	_armed = 0;
+
+	// Room 54's tick tail sees the exit armed but not yet taken, and can drop
+	// it for a machine of its own (waiting.cpp).
+	if (hijackWaitingExit(submode))
+		return;
+
 	takeExit(submode);
 }
 
@@ -3304,11 +3310,8 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (!rightButton && armSteamDoor())
 		return;
 
-	// The number board, the boss fight and the jail's escape, all standing
-	// in for their own missing exit the same way (waiting.cpp, boss.cpp,
-	// jail.cpp).
-	if (!rightButton && armWaitingBoard())
-		return;
+	// The boss fight and the jail's escape, both standing in for their own
+	// missing exit the same way (boss.cpp, jail.cpp).
 	if (!rightButton && armBoss())
 		return;
 	if (!rightButton && armJailExit())

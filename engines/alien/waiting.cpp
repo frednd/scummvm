@@ -26,8 +26,8 @@
 
 namespace Alien {
 
-// Room 54, the waiting room, and the ticket machine and number board between
-// it and Jack's room.
+// Room 54, the waiting room: the ticket machine, and the way in to Jack's room
+// (room 60) beside it.
 //
 // tools/roomlogic.py lifts a handful of this room's ordinary bodies (the
 // chairs' canned lines, the machine at object 13 giving up item 45 and later
@@ -74,12 +74,28 @@ namespace Alien {
 //
 // Its own way back (transitions.cpp: room 54, submode 1 -> room 57) is
 // already armed generically, a kWalkSubmode row on a real hotspot (object 1).
-// Only the call in to Jack's room is not, and that one is still a stand-in:
-// the original hijacks the same object-1 arrival (0x0e9b) and only when
-// [0xa7d7] stands -- the maintenance man's badge, item 44, which is granted by
-// the hallways' own machine and is job 15's, not this one's. Until then the
-// walk in is ported the way room 52's scan is, a plain click with nothing held
-// and no hotspot under it.
+// The way in to Jack's room is that same exit, taken over. The tick's tail
+// (0x0e9b) looks at it after OBJ:sub_078dd has armed it -- [0xa881] set, and
+// [0xa644] still naming object 1 -- and, while
+//
+//   [0xa7d7] == 1  the maintenance man's badge (item 44, the hallways' own
+//                  machine, ovr_35_0f9e:0x1020 -- job 15's, not this one's)
+//   [0xa7b4] == 0  ships 1; only the jail clears it, as the guard tells him
+//                  "the Boss wants to see you" (CHARANIM:sub_15c32, 0x2300)
+//   [0xa7e4] == 0  he has not been in there yet
+//
+// all hold, it drops the exit ([0xa881], walk_submode and game_submode back
+// to 0) and starts state 0x96 instead: the board flickers through slot 5's
+// frame list and a chime plays, "Wait a minute..." (0x22), he walks up to the
+// board, "I think I have that figure in one of these tickets here... Here we
+// go.." (0x23), he walks to the door at object 5, the door opens (slot 6),
+// and 0x9c raises [0xa7e4] and leaves on game_submode 0x32 -- transitions.cpp's
+// { 54, 50, 60 }.
+//
+// The door itself answers a walk that ends on it (0x0e56, [0x9908] == 1 with
+// [0xa644] == 5): "The doors don't seem to open. I think I'll just have to
+// wait for my turn." (0x28), or once he has been through, "I better not go in
+// there anymore." (0x24).
 static const int kWaitingRoom = 54;
 
 static const uint16 kTicketOut = 0xa7e0;	///< a ticket is in the slot
@@ -138,15 +154,67 @@ static const byte kStepDeskDone = 0x6e;
 
 static const byte kCallSubmode = 100;		///< transitions.cpp: room 54 -> room 54
 
-static const byte kBoardClicks = 3;
-static const byte kJackExitSubmode = 50;	///< transitions.cpp: room 54, submode 50 -> room 60
+// The call in to Jack's room, 0x0e9b and states 0x96..0x9c.
+static const uint16 kClickedObj = 0xa644;	///< the object the last left click was on
+static const uint16 kBadge = 0xa7d7;		///< the maintenance man's badge
+static const uint16 kNotSummoned = 0xa7b4;	///< ships 1; the jail's guard clears it
+static const uint16 kBeenInside = 0xa7e4;	///< he has been in Jack's room
 
-/// Every arrival resets the click count, and answers the self-link.
+static const int kWayOut = 1;			///< object 1, submode 1 -> room 57
+static const byte kWayOutSubmode = 1;
+static const int kJackDoor = 5;			///< object 5, the door itself
+
+static const byte kStepNotice = 0x96;		///< the board flickers
+static const byte kStepWaitMinute = 0x97;
+static const byte kStepToBoard = 0x98;
+static const byte kStepFigure = 0x99;
+static const byte kStepToDoor = 0x9a;
+static const byte kStepDoorOpen = 0x9b;
+static const byte kStepEnter = 0x9c;
+
+static const byte kLineWaitMinute = 0x22;	///< "Wait a minute..."
+static const byte kLineFigure = 0x23;		///< "I think I have that figure..."
+static const byte kLineNotYet = 0x28;		///< the door, before his turn
+static const byte kLineNotAgain = 0x24;	///< the door, after it
+
+static const uint16 kWaitMinuteWait = 0x14;
+static const uint16 kToBoardWait = 0x1e;
+static const uint16 kFigureWait = 0x46;
+static const uint16 kDoorWait = 0x37;
+
+/// MIDAS:sub_18962(5, 0, 0xc, 9, ds:0x6fb8): the board, mode 6 over this list.
+static const uint kBoardSlot = 5;
+static const byte kBoardFrames[] = { 1, 2, 1, 2, 1, 3, 1, 3, 1, 3, 1, 3 };
+static const int kBoardRate = 9, kBoardMode = 6;
+
+/// sfx_play_delayed(3, 0, 0x4650, 0x40, 0, 1), the chime that goes with it.
+static const uint kChimeSample = 3;
+static const uint32 kChimeRate = 0x4650;
+static const byte kChimeVolume = 0x40;
+
+/// OBJ:sub_07890, the two places he is walked to: in front of the board, and
+/// the door (the same point object 5's own walk row names).
+static const int kBoardX = 0xa0, kBoardY = 0x7b, kBoardFacing = 1;
+static const int kDoorX = 0x11c, kDoorY = 0x70, kDoorFacing = 2;
+
+/// anim_play_mode1(6, 1, 0xb, 2), the door opening -- the same eleven frames
+/// the room plays backwards when he comes back out (0x08d2) -- and
+/// INPUT:sub_01d38(1), the shared door sound: sfx_play_delayed(1, 0, 0x2af8,
+/// 0x37, 0x32, 1).
+static const uint kDoorSlot = 6;
+static const int kDoorFrames = 0xb, kDoorRate = 2;
+static const uint kDoorSample = 1;
+static const uint32 kDoorSampleRate = 0x2af8;
+static const byte kDoorVolume = 0x37;
+static const int8 kDoorPanning = 0x32;
+
+static const byte kJackExitSubmode = 0x32;	///< transitions.cpp: room 54, submode 50 -> room 60
+
+/// Every arrival answers the self-link.
 void AlienEngine::startWaiting() {
 	if (_room != kWaitingRoom)
 		return;
 
-	_waitingClicks = 0;
 	_waitingStep = kStepIdle;
 	_waitingPos = 0;
 
@@ -214,7 +282,12 @@ bool AlienEngine::armWaitingButton(int obj, byte verb) {
  * One step of the machine, on the tick pair the room's own entry 2 runs on.
  */
 void AlienEngine::stepWaitingMachine() {
-	if (_room != kWaitingRoom || _waitingStep == kStepIdle)
+	if (_room != kWaitingRoom)
+		return;
+
+	waitingArrival();
+
+	if (_waitingStep == kStepIdle)
 		return;
 
 	// [0xa49c], which LOGIC:sub_11f79 advances on every tick pair whether or
@@ -313,30 +386,105 @@ void AlienEngine::stepWaitingMachine() {
 		_waitingStep = kStepIdle;
 		break;
 
+	case kStepNotice:
+		_anims.play(kBoardSlot, 0, ARRAYSIZE(kBoardFrames), kBoardRate, kBoardMode, kBoardFrames);
+		_sound.queue(kChimeSample, kChimeRate, kChimeVolume, 0, 1);
+		_waitingPos = 0;
+		_waitingStep = kStepWaitMinute;
+		break;
+
+	case kStepWaitMinute:
+		if (_waitingPos <= kWaitMinuteWait)
+			break;
+		speakWaiting(kLineWaitMinute);
+		_waitingPos = 0;
+		_waitingStep = kStepToBoard;
+		break;
+
+	case kStepToBoard:
+		if (_waitingPos <= kToBoardWait)
+			break;
+		walkTo(kBoardX, kBoardY, kBoardFacing);
+		_waitingPos = 0;
+		_waitingStep = kStepFigure;
+		break;
+
+	case kStepFigure:
+		if (_waitingPos <= kFigureWait)
+			break;
+		speakWaiting(kLineFigure);
+		_waitingStep = kStepToDoor;
+		break;
+
+	case kStepToDoor:
+		if (!waitingLineDone())
+			break;
+		walkTo(kDoorX, kDoorY, kDoorFacing);
+		_waitingPos = 0;
+		_waitingStep = kStepDoorOpen;
+		break;
+
+	case kStepDoorOpen:
+		if (_waitingPos <= kDoorWait)
+			break;
+		_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, 1);
+		_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanning, 1);
+		_waitingStep = kStepEnter;
+		break;
+
+	case kStepEnter:
+		// [0xa4f0], slot 6's frames left.
+		if (_anims.remaining(kDoorSlot) != 0)
+			break;
+		// The original wipes the screen here too (OBJ:sub_02f27); the port's
+		// room change does without it, the same as maze.cpp's.
+		_script.setFlag(kBeenInside, 1);
+		_waitingStep = kStepIdle;
+		_waitingPos = 0;
+		CursorMan.showMouse(true);
+		takeExit(kJackExitSubmode);
+		break;
+
 	default:
 		break;
 	}
 }
 
-/// A plain click, standing in for holding the right number when it is called.
-bool AlienEngine::armWaitingBoard() {
-	if (_room != kWaitingRoom || _heldItem != Inventory::kNoItem || _hover >= 0)
+/**
+ * 0x0e9b: the way out through object 1, taken over while his number is up.
+ *
+ * checkExit() asks this before it takes an exit the arrival has fired, which
+ * is the point the original's tick tail sees it: armed, and not yet taken.
+ */
+bool AlienEngine::hijackWaitingExit(byte submode) {
+	if (_room != kWaitingRoom || submode != kWayOutSubmode || _waitingStep != kStepIdle)
 		return false;
-	// Not while the ticket machine owns the room.
-	if (_waitingStep != kStepIdle)
+	if (_script.flag(kNotSummoned) != 0 || _script.flag(kBadge) != 1 ||
+		_script.flag(kBeenInside) != 0 || _script.flag(kClickedObj) != kWayOut)
 		return false;
 
-	_waitingClicks++;
-	debugC(1, kDebugRooms, "waiting: step %u of %u until the number is called", _waitingClicks,
-		   kBoardClicks);
+	_script.setFlag(kClickedObj, 0);
+	CursorMan.showMouse(false);
+	_waitingStep = kStepNotice;
+	_waitingPos = 0;
 
-	if (_waitingClicks >= kBoardClicks) {
-		_waitingClicks = 0;
-		CursorMan.showMouse(false);
-		takeExit(kJackExitSubmode);
-	}
-
+	debugC(1, kDebugRooms, "waiting: his number is up, step 0x%02x", kStepNotice);
 	return true;
+}
+
+/// 0x0e56: a walk that ends on the door to Jack's room.
+void AlienEngine::waitingArrival() {
+	if (_waitingStep != kStepIdle)
+		return;
+	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+		return;
+	if (_script.flag(kClickedObj) != kJackDoor)
+		return;
+
+	_script.setFlag(kClickedObj, 0);
+	const byte line = _script.flag(kBeenInside) == 1 ? kLineNotAgain : kLineNotYet;
+	speakWaiting(line);
+	debugC(1, kDebugRooms, "waiting: the door to Jack's room, outcome 0x%02x", line);
 }
 
 } // End of namespace Alien
