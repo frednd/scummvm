@@ -363,11 +363,11 @@ const AnimBank *animBanksForRoom(int room, uint &count) {
 
 static const AnimLoop kAnimLoops[] = {
 	{  2, 0x0000 },	// ovr_03_0e57_room_3_-_uncle's_lab.asm
-	{  4, 0x0000 },	// ovr_07_0e63_room_7_-_bedroom.asm
+	{  4, 0xa6fa },	// ovr_07_0e63_room_7_-_bedroom.asm
 	{  8, 0x0000 },	// ovr_0a_0e73_room_10_-_kitchen.asm
-	{  2, 0x0000 },	// ovr_0b_0e77_room_11_-_living_room.asm
+	{  2, 0xa725 },	// ovr_0b_0e77_room_11_-_living_room.asm
 	{  5, 0x0000 },	// ovr_0d_0e6f_room_13_-_basement.asm
-	{  7, 0x0000 },	// ovr_0d_0e6f_room_13_-_basement.asm
+	{  7, 0xa6f0 },	// ovr_0d_0e6f_room_13_-_basement.asm
 	{  3, 0xa53d },	// ovr_0f_0e5b_room_15_-_entrance_hall_sali.asm
 	{  4, 0x0000 },	// ovr_12_0e6b_room_18_-_sitting_room.asm
 	{  6, 0xa540 },	// ovr_12_0e6b_room_18_-_sitting_room.asm
@@ -375,7 +375,7 @@ static const AnimLoop kAnimLoops[] = {
 	{  3, 0xa52d },	// ovr_15_0ea7_room_21_-_yodle's_tree_hut.asm
 	{  0, 0x293c },	// ovr_16_0ea3_room_22_-_parlor___teleport.asm
 	{  0, 0xa52a },	// ovr_17_0e9f_room_23_-_crossroads.asm
-	{  0, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
+	{  0, 0xa752 },	// ovr_1a_0eaf_room_26_-_forest.asm
 	{  3, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
 	{  4, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
 	{  5, 0x0000 },	// ovr_1a_0eaf_room_26_-_forest.asm
@@ -390,7 +390,7 @@ static const AnimLoop kAnimLoops[] = {
 	{  5, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
 	{  6, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
 	{  7, 0x0000 },	// ovr_20_0e8b_room_32_-_cemetery.asm
-	{  1, 0x0000 },	// ovr_21_0e97_room_33_-_town.asm
+	{  1, 0xa76c },	// ovr_21_0e97_room_33_-_town.asm
 	{  0, 0x0000 },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
 	{  1, 0xa52b },	// ovr_22_0e93_room_34_-_hippie___pal_area.asm
 	{  3, 0x0000 },	// ovr_23_0e7b_room_35_-_sewer.asm
@@ -403,12 +403,12 @@ static const AnimLoop kAnimLoops[] = {
 	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  1, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
-	{  0, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
+	{  0, 0xa784 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  6, 0x0000 },	// ovr_2b_0f8d_rooms_43_44_45_-_maze_+_crystal_entry.asm
 	{  0, 0x0000 },	// ovr_2e_0ec3_room_46_-_diving_area___underwater.asm
 	{  0, 0x0000 },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
 	{  2, 0x0000 },	// ovr_30_0ebf_room_48_-_alien_ship_upper_level.asm
-	{  1, 0x0000 },	// ovr_31_0f85_room_49_-_engine_room.asm
+	{  1, 0xa798 },	// ovr_31_0f85_room_49_-_engine_room.asm
 	{  2, 0x0000 },	// ovr_31_0f85_room_49_-_engine_room.asm
 	{  3, 0x0000 },	// ovr_31_0f85_room_49_-_engine_room.asm
 	{  0, 0x0000 },	// ovr_32_0f81_room_50_-_steam_room.asm

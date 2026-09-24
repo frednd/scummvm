@@ -315,6 +315,8 @@ private:
 	void startMaze();
 	void stepMaze();
 	void stepCrystal();
+	void crystalSpeak();
+	void crystalSay(byte outcome);
 	bool mazeBackground(int room, Graphics::Surface &plate, byte *palette);
 	void buildMazeHotspots(int room);
 	void mazeEnter(int room);
@@ -394,6 +396,13 @@ private:
 	/// same way (waiting.cpp).
 	void startWaiting();
 	bool armWaitingBoard();
+
+	/// Room 54's ticket machine, which is not simplified: the [0xa49f] machine
+	/// behind object 12 and the three numbers it gives out (waiting.cpp).
+	bool armWaitingButton(int obj, byte verb);
+	void stepWaitingMachine();
+	void speakWaiting(byte code);
+	bool waitingLineDone() const;
 
 	/// Room 60, Jack's room: no overlay at all, ported for reachability only
 	/// (boss.cpp).
@@ -826,6 +835,14 @@ private:
 	byte _mazeStep;
 	byte _crystalStep;
 	uint _crystalWait;
+
+	/// Room 45's two-speaker run, the same four the DLGREQ runner keeps
+	/// everywhere it appears (sluggs.cpp): whose turn, which outcome, how many
+	/// are left, and whether a run is standing at all.
+	byte _crystalSpeaker;
+	byte _crystalLine;
+	byte _crystalLeft;
+	bool _crystalSpeaking;
 	byte _mazePose;
 
 	/// Room 48's pool: the step of the dive machine (pool.cpp).
@@ -885,6 +902,13 @@ private:
 
 	/// Room 54's simplified number board: clicks taken so far (waiting.cpp).
 	uint _waitingClicks;
+
+	/// Room 54's [0xa49f] machine: the ticket machine, and the number that is
+	/// finally called (waiting.cpp).
+	byte _waitingStep;
+
+	/// [0xa49c] as room 54 reads it, cleared where each of its steps starts.
+	uint16 _waitingPos;
 
 	/// Room 60's simplified fight: clicks taken so far (boss.cpp).
 	uint _bossClicks;

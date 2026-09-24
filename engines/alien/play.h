@@ -48,6 +48,9 @@ namespace Alien {
  *   use N                take inventory item N into the hand
  *   combine N            left click the slot item N sits on with something
  *                        already in hand, which is the bar's own combine
+ *   look N               right click the slot item N sits on with an empty
+ *                        hand, which is the bar's own look -- and the only way
+ *                        to reach the item right-click script (10c9:0x4f7)
  *   unuse                put down whatever is in the hand
  *   wait N                advance N master ticks with nothing happening
  *   settle [N]            advance ticks until Ben, speech, anims and any
@@ -78,6 +81,7 @@ struct PlayCommand {
 		kHover,
 		kUse,
 		kCombine,
+		kLook,
 		kUnuse,
 		kWait,
 		kSettle,

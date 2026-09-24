@@ -213,6 +213,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
 		_cemeteryLookWait(false), _cemeteryStep(0),
 		_mazeStep(0), _mazePose(0),
+		_crystalStep(0), _crystalWait(0), _crystalSpeaker(0), _crystalLine(0),
+		_crystalLeft(0), _crystalSpeaking(false),
 		_poolStep(0),
 		_divingStep(0), _divingPos(0), _divingClicks(0),
 		_shoreStep(0),
@@ -224,7 +226,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleAnswer(false),
 		_teleportStep(0), _teleportReturnClicks(0),
 		_corridorClicks(0), _corridorStep(0),
-		_scannerClicks(0), _waitingClicks(0), _bossClicks(0), _jailClicks(0),
+		_scannerClicks(0), _waitingClicks(0), _waitingStep(0), _waitingPos(0), _bossClicks(0), _jailClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -682,6 +684,15 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 			   _inventory.name(_heldItem).c_str());
 		if (_heldItem && _inventory.has((byte)cmd.a))
 			combineItems(_heldItem, (byte)cmd.a);
+		break;
+
+	// The other half of the bar's click path, minus the same geometry: a look
+	// at a carried item, which is where the item right-click script runs.
+	case PlayCommand::kLook:
+		debugC(1, kDebugPlay, "play: %u: look %d (%s)", cmd.sourceLine, cmd.a,
+			   _inventory.name((byte)cmd.a).c_str());
+		if (_inventory.has((byte)cmd.a))
+			lookAtItem((byte)cmd.a);
 		break;
 
 	case PlayCommand::kUnuse:
@@ -1590,6 +1601,10 @@ void AlienEngine::stepClock() {
 		// stepped with the conversation menu, further down.
 		stepLibrarySafe();
 
+		// And room 54's ticket machine, which is where the three ticket
+		// numbers come from (waiting.cpp).
+		stepWaitingMachine();
+
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
 			nextSpeech();
 
@@ -1935,9 +1950,48 @@ void AlienEngine::lookAtItem(byte item) {
 		_inventory.remove(35);
 		_inventory.add(36); // super radio
 		_inventory.add(30); // gameson
-	} else if (item == 22) { // 0x16: pumpkin mask? wait, 16 is 22 in decimal
-		// Wait, did it do something? "cmp byte ptr [bp - 1], 0x16" -> je 0x11297 -> jmp 0x1131d
-		// It seems it doesn't modify inventory, just jumps. So nothing more here.
+	} else if (item == 22) { // 0x16: the pumpkin mask, and the only way to put it on
+		// 10c9:0x5fe..0x68c. The longest arm of the script by far, and the one
+		// the port had stubbed out as a no-op: three refusals and, in the one
+		// room that allows it, the wear itself.
+		//
+		// [0xa79b] is the mask-is-on flag -- the byte charPaletteFile() reads to
+		// give rooms 51..59 PUMP_PAL (or room 52 SEC_BPAL) over their own --
+		// and nothing in the tree wrote it before this, so the alien ship
+		// could only ever be walked with Ben's own palette.
+		_script.setFlag(0xa602, 0);
+
+		if (_script.flag(0xa79b) == 1) {
+			// Already wearing it.
+			queueOutcome(_talkall, 0x4d, anchorX, anchorY);
+		} else if (_room == 58 && _script.flag(0xa7b1) == 1) {
+			// In the jail, once [0xa7b1] stands (the escape gate, job 13).
+			queueOutcome(_talkall, 0x4e, anchorX, anchorY);
+		} else if (_room != 56 && _room != 58) {
+			// Anywhere but the transporter chamber and the jail: no reason to.
+			queueOutcome(_talkall, 0x4f, anchorX, anchorY);
+		}
+
+		// Room 56 only, and only once -- [0xa602] is the room's own
+		// answered-this-click byte, cleared at the top of the arm, so the
+		// guard here can only fail if something else in the same click set it.
+		if (_room == 56 && _script.flag(0xa79b) == 0 && _script.flag(0xa602) == 0) {
+			_script.setFlag(0xa602, 1);
+			_script.setFlag(0xa79b, 1);
+
+			// [0xa881] = 1 and game_submode = 10, then the walk target and the
+			// owed facing copied over the live ones so the reload puts him back
+			// where he stood. transitions.cpp's { 56, 10, 56 } is a self-link,
+			// and takeExit() keeps the position for exactly that case, so the
+			// copy is what keepPosition already does.
+			takeExit(10);
+		}
+	} else if (item == 18) { // 0x12: the note, read once
+		// 10c9:0x68d. Reading it is all there is to it, but the mailbox in
+		// room 25 counts the trips it has made since ([0xa774], up to 2) and
+		// answers a look with label 0x12 + that count instead of 0x11
+		// (ovr_19_0e8f:0x1a7 and 0x327).
+		_script.setFlag(0xa7e7, 1);
 	}
 }
 
@@ -3545,6 +3599,11 @@ void AlienEngine::finishAction() {
 	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).
 	if (!item)
 		armSewer(spot.obj, verb);
+
+	// And room 54's ticket machine button, for the same reason: the lifted body
+	// on it is only the refusal (waiting.cpp).
+	if (!item)
+		armWaitingButton(spot.obj, verb);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
 

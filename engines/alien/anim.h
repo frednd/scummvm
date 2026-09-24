@@ -256,8 +256,14 @@ public:
 	/// leave those out or it waits for ever.
 	bool isBusyOnce() const;
 
-	/// Whether stepLoops() would relaunch this slot as things stand.
+	/// Whether the room loops this slot at all -- membership in the loop
+	/// table, not whether its guard is set. isBusyOnce() is the caller, and a
+	/// loop slot is never a one-shot in flight either way.
 	bool isLooping(uint slot) const;
+
+	/// Whether one lifted loop row's relaunch is switched on as things stand.
+	/// stepLoops() only; isLooping() must not use it (finding #113).
+	bool loopArmed(const AnimLoop &row) const;
 
 	/** Composites the current frame of every slot that has one, scroll-adjusted like Walker::draw. */
 	void draw(Graphics::Surface &dest, int scrollX = 0,
@@ -341,6 +347,11 @@ private:
 	int _room;
 
 	/// The room's own loop calls, from animLoopsForRoom.
+	/// The room's script, for the loop rows guarded on a puzzle flag rather
+	/// than on a loop or pose byte (loopArmed()). Set by loadRoom(); null for
+	/// the cutscene player's banks, which have no loop rows at all.
+	const RoomScript *_state;
+
 	const AnimLoop *_loops;
 	uint _loopCount;
 };

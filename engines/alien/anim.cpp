@@ -47,7 +47,7 @@ void AnimSlots::Slot::clear() {
 	heldFrame = 0;
 }
 
-AnimSlots::AnimSlots() : _room(0), _loops(nullptr), _loopCount(0) {
+AnimSlots::AnimSlots() : _room(0), _loops(nullptr), _loopCount(0), _state(nullptr) {
 }
 
 void AnimSlots::loadBanks(const char *const *names, uint count) {
@@ -60,6 +60,7 @@ void AnimSlots::loadBanks(const char *const *names, uint count) {
 	_room = -1;
 	_loops = nullptr;
 	_loopCount = 0;
+	_state = nullptr;
 
 	for (uint i = 0; i < count && i < kSlotCount; i++) {
 		if (!names[i] || !*names[i])
@@ -118,6 +119,7 @@ void AnimSlots::loadRoom(int room, const RoomScript &state) {
 	}
 
 	_room = room;
+	_state = &state;
 	_loops = animLoopsForRoom(room, _loopCount);
 	if (_loopCount)
 		debugC(2, kDebugGraphics, "room %d loops %u slots", room, _loopCount);
@@ -218,15 +220,38 @@ void AnimSlots::takeDown(uint slot) {
 	debugC(2, kDebugGraphics, "anim: slot %u taken down", slot);
 }
 
+/**
+ * Whether one lifted row's relaunch is switched on as things stand.
+ *
+ * A row with no flag is a call the room makes every frame. A row with one is
+ * made only while that byte is set, and the byte is of two kinds: the slot's
+ * own loop byte (or the pose byte a few rooms use in its place), which the
+ * slot carries, and an ordinary puzzle flag, which has to be read out of the
+ * state block. Seven rooms guard a relaunch on the second kind, and room 45 is
+ * the room that showed it up: its standing loop is switched on by [0xa784],
+ * two states into the crystal entry's machine, and running it before that ate
+ * the `remaining == 1` edge the state after it waits for, which stopped the
+ * scene dead with Awlox half out of the crystal (finding #113).
+ *
+ * Only stepLoops() asks this. isLooping() deliberately does not -- see its own
+ * comment: a parked loop slot is no more a one-shot in flight than a running
+ * one, so it answers on membership alone.
+ */
+bool AnimSlots::loopArmed(const AnimLoop &row) const {
+	if (!row.flag)
+		return true;
+
+	if (row.flag >= RoomScript::kFlagBase
+			&& row.flag < RoomScript::kFlagBase + RoomScript::kFlagCount)
+		return _state && _state->flag(row.flag) == 1;
+
+	return _slots[row.slot].loop != 0;
+}
+
 void AnimSlots::stepLoops() {
 	for (uint i = 0; i < _loopCount; i++) {
 		const AnimLoop &row = _loops[i];
-		if (row.slot >= kSlotCount)
-			continue;
-
-		// A row with no flag is a call the room makes every frame; one with a
-		// flag is made only while the room has that byte set.
-		if (row.flag && !_slots[row.slot].loop)
+		if (row.slot >= kSlotCount || !loopArmed(row))
 			continue;
 
 		relaunch(row.slot);
@@ -314,12 +339,22 @@ void AnimSlots::playAll(int rate) {
 }
 
 bool AnimSlots::isLooping(uint slot) const {
+	// Membership, not armed state: a slot the room ever loops is one whose
+	// `remaining` never means "still playing". Armed, it is relaunched for as
+	// long as the room stands and would keep isBusyOnce() true forever;
+	// unarmed, it is parked on the last frame of a persisting play with
+	// `remaining == 1`, which also never falls to zero. Neither is a one-shot
+	// the harness should wait out, so both answer the same.
+	//
+	// stepLoops() is the one that wants loopArmed(). Threading the guard in
+	// here as well would make a parked slot -- one whose guard is clear, so
+	// nothing relaunches it -- count as busy for as long as the room stands,
+	// and isBusyOnce() is what the scripted harness's `settle` waits on. No
+	// leg has been seen to hang on it, because the rooms that guard a loop
+	// park the slot with nothing left rather than on a held frame, but the
+	// asymmetry is not worth carrying for that reason alone.
 	for (uint i = 0; i < _loopCount; i++) {
-		if (_loops[i].slot != slot)
-			continue;
-		// The guarded rows only count while the room has their byte set, the
-		// same test stepLoops() makes before it relaunches.
-		if (!_loops[i].flag || _slots[slot].loop)
+		if (_loops[i].slot == slot)
 			return true;
 	}
 	return false;

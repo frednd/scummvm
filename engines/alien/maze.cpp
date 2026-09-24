@@ -572,35 +572,257 @@ bool AlienEngine::mazeExit(byte &submode) {
 	return true;
 }
 
-/// Room 45 crystal entry scene.
-void AlienEngine::stepCrystal() {
-	if (_room != 45) {
-		_crystalStep = 0;
+// --- Room 45, the crystal entry -------------------------------------------
+//
+// The room the crystal door at maze A's far end opens into, and the one place
+// in the game the phone number (item 40) comes from. Its overlay entry is the
+// same file the two mazes use, but it is not a room in the ordinary sense: it
+// is entry 5 (0x0aa8), a scene with a loop of its own that never registers a
+// hotspot, never walks and leaves by writing game_submode itself. So it is all
+// one [0xa49f] machine, the shape store.cpp's whole room already is.
+//
+// Nine states at 0x0bee, in the order they run:
+//
+//   3     the screen wipe (OBJ:sub_02f27) and "What is this place..", which
+//         is outcome 1 of room45.tal
+//   4     wait for it to come down
+//   0x0e  0x19 ticks later, CRY_ENT1's first fifteen frames: Awlox coming out
+//         of the crystal
+//   0x0f  on the last of them, [0xa784] -- which is what turns the looping
+//         relaunch of that slot on -- and the thirty frames he stands in
+//   0x10  0x28 ticks later, "Uh..." (outcome 2)
+//   0x12  and when that is down, the conversation: DLGREQ:sub_0c4d1 with
+//         three outcomes from 0x14, Awlox first
+//   0x13  run it; when it ends, ENT_NOTE -- seventy-four frames of him holding
+//         the number out
+//   0x14  wait for those
+//   0x19  and then, the moment the standing loop comes round to its own first
+//         frame again ([0xa4ca] == 15, which only a relaunch can make true),
+//         inv_add(40) and ENT_BENB: Ben taking it
+//   0x28  four frames into that the input gate closes, and on the last one the
+//         room writes submode 1 and leaves
+//
+// The count the runner is handed is three, not the ten lines the file holds,
+// because outcome 0x16 chains 0x16..0x1c in room45.tal's own outcome table --
+// six of Awlox's speech are one entry as far as the machine is concerned.
+//
+// What the port does not do here is the wipe: OBJ:sub_02f27 walks the EMS work
+// pointer up the screen a line at a time, and there is nothing behind it to
+// reveal, the room having just been loaded.
+//
+// Two things the generators carry rather than this file. gen_roominit.py used
+// to lift all five of the machine's plays into room 45's opening table, where
+// they fired in a row the moment the room loaded; room 45 is now TICK_OWNED
+// alongside 22 and 32, so the opening is the two effects in front of the loop
+// (ENT_DROP, and the placement) and nothing else. And the relaunch that makes
+// [0xa4ca] come back to 15 is anims.cpp's loop row for slot 0, which is
+// lifted without its [0xa784] guard -- gen_anims.py only reads guards out of
+// the [0xa53a] loop-flag block. Harmless: the slot has nothing playing on it
+// until state 0x0e, and both of the plays that follow want the relaunch.
+static const int kCrystalRoom = 45;
+
+static const byte kCrystalWhat = 3;
+static const byte kCrystalWhatDown = 4;
+static const byte kCrystalComeOut = 0x0e;
+static const byte kCrystalStandIn = 0x0f;
+static const byte kCrystalUh = 0x10;
+static const byte kCrystalUhDown = 0x12;
+static const byte kCrystalTalking = 0x13;
+static const byte kCrystalNote = 0x14;
+static const byte kCrystalTake = 0x19;
+static const byte kCrystalGo = 0x28;
+
+static const uint kCryDoorSlot = 0;		///< CRY_ENT1, Awlox out of the crystal
+static const uint kCryNoteSlot = 4;		///< ENT_NOTE, the number held out
+static const uint kCryBenSlot = 5;		///< ENT_BENB, Ben taking it
+static const uint kCryDropSlot = 6;		///< ENT_DROP, which the opening starts
+
+static const int kCryOutFirst = 1, kCryOutCount = 15;
+static const int kCryStandFirst = 15, kCryStandCount = 30;
+static const int kCryNoteCount = 74;
+static const int kCryBenCount = 10;
+static const int kCryRate = 2;
+
+/// [0xa4ca], slot 0's current frame: the standing loop is back at its first.
+static const int kCryStandFrame = 15;
+
+static const byte kCryWhatLine = 1;		///< "What is this place.."
+static const byte kCryUhLine = 2;		///< "Uh..."
+static const byte kCryTalkFirst = 0x14;	///< "Greetings, Ben."
+static const byte kCryTalkCount = 3;
+
+/// The two anchors and inks of the thirteen immediates at 0x0c90. Awlox stands
+/// off to the right and speaks in the pale blue every other alien does; Ben
+/// answers low and left, in white.
+static const int kAwloxX = 0xdf, kAwloxY = 0x30;
+static const byte kAwloxInk[3] = { 0x2d, 0x2d, 0x3f };
+static const int kCryBenX = 0x34, kCryBenY = 0x3f;
+static const byte kCryBenInk[3] = { 0x3f, 0x3f, 0x3f };
+
+/// [0xa49c] again: 0x19 before he comes out, 0x28 before Ben answers.
+static const uint kCryOutWait = 0x19;
+static const uint kCryUhWait = 0x28;
+
+static const byte kCryPhoneNumber = 40;	///< OBJ:inv_add(0x28)
+static const byte kCrystalExit = 1;		///< game_submode 1, back to the cemetery
+
+static const int kCryForward = 1;		///< mode 1: forward, left behind (anim.h)
+
+/// [0xa784]: not a puzzle flag but the switch on the looping relaunch of slot
+/// 0, which state 0x19 below is timed to.
+static const uint16 kCrystalLoopOn = 0xa784;
+
+/// DLGREQ:sub_0c432, one pass, the same alternating runner sluggs.cpp explains.
+void AlienEngine::crystalSpeak() {
+	if (!_crystalLeft) {
+		_crystalSpeaking = false;
 		return;
 	}
 
-	switch (_crystalStep) {
-	case 0:
+	const bool awlox = _crystalSpeaker == 0;
+	const byte *ink = awlox ? kAwloxInk : kCryBenInk;
+	setTextColor(ink[0], ink[1], ink[2]);
+	uploadTextColor();
+	queueOutcome(_tal, _crystalLine, awlox ? kAwloxX : kCryBenX,
+				 awlox ? kAwloxY : kCryBenY);
+
+	debugC(1, kDebugRooms, "crystal: %s says outcome 0x%02x",
+		   awlox ? "Awlox" : "Ben", _crystalLine);
+
+	_crystalSpeaker = _crystalSpeaker ? 0 : 1;
+	_crystalLine++;
+	_crystalLeft--;
+}
+
+/// One of the two lines the machine speaks on its own, outside the runner.
+void AlienEngine::crystalSay(byte outcome) {
+	setTextColor(kCryBenInk[0], kCryBenInk[1], kCryBenInk[2]);
+	uploadTextColor();
+
+	int anchorX, anchorY;
+	characterAnchor(anchorX, anchorY);
+	queueOutcome(_tal, outcome, anchorX, anchorY);
+}
+
+/// Room 45 crystal entry scene: the [0xa49f] machine at 0x0bee.
+void AlienEngine::stepCrystal() {
+	if (_room != kCrystalRoom) {
+		_crystalStep = 0;
+		_crystalSpeaking = false;
+		return;
+	}
+
+	// 0x0b8c: the opening arms it, and takes the cursor away for the whole of
+	// it -- nothing in this room is ever clicked.
+	if (!_crystalStep) {
 		_crystalStep = 1;
 		_crystalWait = 0;
+		_crystalSpeaking = false;
+		_script.setFlag(RoomScript::kMachine, kCrystalWhat);
 		CursorMan.showMouse(false);
+	}
+
+	// A conversation keeps itself going, one line per line that came down.
+	if (_crystalSpeaking && speechDone())
+		crystalSpeak();
+
+	// [0xa49c], which LOGIC advances whether or not a state is reading it.
+	_crystalWait++;
+
+	switch (_script.flag(RoomScript::kMachine)) {
+	case kCrystalWhat:
+		// 0x0bf5: the wipe, then the first thing he says to himself.
+		crystalSay(kCryWhatLine);
+		_script.setFlag(RoomScript::kMachine, kCrystalWhatDown);
 		break;
-	case 1:
-		if (_crystalWait++ > 30) {
-			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			// Show the conversation and give the phone number
-			_inventory.add(40);
-			queueOutcome(_tal, 0x14, anchorX, anchorY);
-			_crystalStep = 2;
-		}
+
+	case kCrystalWhatDown:
+		// 0x0c0d: [0xad1c], the line being down.
+		if (!speechDone())
+			break;
+		_script.setFlag(RoomScript::kMachine, kCrystalComeOut);
+		_crystalWait = 0;
 		break;
-	case 2:
-		if (speechDone()) {
-			_crystalStep = 3;
-			takeExit(1); // submode 1: room 45 -> room 32
-			CursorMan.showMouse(true);
-		}
+
+	case kCrystalComeOut:
+		if (_crystalWait <= kCryOutWait)
+			break;
+		_anims.play(kCryDoorSlot, kCryOutFirst, kCryOutCount, kCryRate, kCryForward);
+		_script.setFlag(RoomScript::kMachine, kCrystalStandIn);
+		break;
+
+	case kCrystalStandIn:
+		// 0x0c45: on the last frame of it, and not after -- the relaunch below
+		// would otherwise never be told to start.
+		if (_anims.remaining(kCryDoorSlot) != 1)
+			break;
+		_script.setFlag(kCrystalLoopOn, 1);
+		_anims.play(kCryDoorSlot, kCryStandFirst, kCryStandCount, kCryRate, kCryForward);
+		_script.setFlag(RoomScript::kMachine, kCrystalUh);
+		_crystalWait = 0;
+		break;
+
+	case kCrystalUh:
+		if (_crystalWait <= kCryUhWait)
+			break;
+		crystalSay(kCryUhLine);
+		_script.setFlag(RoomScript::kMachine, kCrystalUhDown);
+		break;
+
+	case kCrystalUhDown:
+		if (!speechDone())
+			break;
+		_crystalSpeaker = 0;
+		_crystalLine = kCryTalkFirst;
+		_crystalLeft = kCryTalkCount;
+		_crystalSpeaking = true;
+		crystalSpeak();
+		_script.setFlag(RoomScript::kMachine, kCrystalTalking);
+		break;
+
+	case kCrystalTalking:
+		// 0x0cc1: [0xad3f], the run having nothing left to say.
+		if (_crystalSpeaking || !speechDone())
+			break;
+		CursorMan.showMouse(false);
+		_anims.play(kCryNoteSlot, 1, kCryNoteCount, kCryRate, kCryForward);
+		_script.setFlag(RoomScript::kMachine, kCrystalNote);
+		_crystalWait = 0;
+		break;
+
+	case kCrystalNote:
+		if (_anims.remaining(kCryNoteSlot) != 0)
+			break;
+		_script.setFlag(RoomScript::kMachine, kCrystalTake);
+		break;
+
+	case kCrystalTake:
+		// 0x0d02: the one moment in the scene that is timed to the standing
+		// loop rather than to a play of its own.
+		if (_anims.frame(kCryDoorSlot) != kCryStandFrame)
+			break;
+		_inventory.add(kCryPhoneNumber);
+		_anims.stop(kCryDoorSlot);
+		_anims.stop(kCryDropSlot);
+		_anims.play(kCryDoorSlot, kCryStandFirst, 1, 0, kCryForward);
+		_anims.play(kCryBenSlot, 1, kCryBenCount, kCryRate, kCryForward);
+		_script.setFlag(RoomScript::kMachine, kCrystalGo);
+		debugC(1, kDebugRooms, "crystal: item %u handed over", kCryPhoneNumber);
+		break;
+
+	case kCrystalGo:
+		// 0x0d46 also drops [0xa94d] four frames in. The port has no home for
+		// that byte and the cursor has been away since the opening, so there
+		// is nothing here for it to close.
+		if (_anims.remaining(kCryBenSlot) != 1)
+			break;
+		_script.setFlag(RoomScript::kMachine, 0);
+		_crystalStep = 0;
+		CursorMan.showMouse(true);
+		takeExit(kCrystalExit);
+		break;
+
+	default:
 		break;
 	}
 }
