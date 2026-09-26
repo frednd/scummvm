@@ -323,6 +323,9 @@ private:
 	void mazePlace();
 	bool mazeExit(byte &submode);
 	bool mazeWalkTo(int x, int y, int arrivalFacing);
+
+	/// A two-point route from where he stands, for the rooms with no walk mask.
+	void straightWalkTo(int x, int y, int arrivalFacing);
 	const MazeCell *mazeCell(int room) const;
 
 	/// Room 48's pool, and the diving suit that opens the way down to room 46
@@ -408,10 +411,12 @@ private:
 	void speakWaiting(byte code);
 	bool waitingLineDone() const;
 
-	/// Room 60, Jack's room: no overlay at all, ported for reachability only
-	/// (boss.cpp).
+	/// Room 60, Jack's room: no overlay at all, and a conversation rather than
+	/// a fight -- the boss hands over his escape pod card (boss.cpp).
 	void startBoss();
-	bool armBoss();
+	void stepBoss();
+	void bossSpeak();
+	bool bossWalkTo(int x, int y, int arrivalFacing);
 
 	/// Room 58's escape back to the ship, simplified the same way
 	/// (jail.cpp).
@@ -912,8 +917,17 @@ private:
 	/// [0xa49c] as room 54 reads it, cleared where each of its steps starts.
 	uint16 _waitingPos;
 
-	/// Room 60's simplified fight: clicks taken so far (boss.cpp).
-	uint _bossClicks;
+	/// Room 60's [0xa49f] machine and [0xa49c] as it reads it (boss.cpp).
+	byte _bossStep;
+	uint16 _bossPos;
+
+	/// And its conversation: whose turn it is, the outcome standing next, how
+	/// many are left, and whether the boss's talking loop is up.
+	byte _bossSpeaker;
+	byte _bossLine;
+	byte _bossLeft;
+	bool _bossSpeaking;
+	bool _bossTalking;
 
 	/// Room 58's simplified escape: clicks taken so far (jail.cpp).
 	uint _jailClicks;

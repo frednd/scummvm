@@ -485,12 +485,6 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	// and clearing it again (ovr_1a_0eaf:0x069f).
 	_script.setFlag(kScenePlayed, 1);
 
-	// The boss fight ends with cutscene 9, which gives the final security card.
-	if (number == 9 && !_inventory.has(43)) {
-		_inventory.add(43);
-		debugC(1, kDebugCutscene, "cutscene 9: boss fight complete, added item 43");
-	}
-
 	if (room > 0 && loadRoom(room)) {
 		_ben.place(benX, benY, benFacing);
 

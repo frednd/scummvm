@@ -320,18 +320,7 @@ bool AlienEngine::mazeWalkTo(int x, int y, int arrivalFacing) {
 	if (!isMaze(_room))
 		return false;
 
-	_route.count = 0;
-	_route.points[_route.count].x = (int16)_ben.walkX();
-	_route.points[_route.count].y = (int16)_ben.walkY();
-	_route.count++;
-	_route.points[_route.count].x = (int16)x;
-	_route.points[_route.count].y = (int16)y;
-	_route.count++;
-
-	debugC(1, kDebugGraphics, "maze: straight walk %d,%d -> %d,%d facing %d",
-		   _route.points[0].x, _route.points[0].y, x, y, arrivalFacing);
-	_ben.follow(_route, x, y, arrivalFacing);
-	_dirty = true;
+	straightWalkTo(x, y, arrivalFacing);
 	return true;
 }
 

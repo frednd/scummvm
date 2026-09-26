@@ -47,7 +47,8 @@ void AnimSlots::Slot::clear() {
 	heldFrame = 0;
 }
 
-AnimSlots::AnimSlots() : _room(0), _loops(nullptr), _loopCount(0), _state(nullptr) {
+AnimSlots::AnimSlots() : _room(0), _loops(nullptr), _loopCount(0), _state(nullptr),
+		_handLoops(0) {
 }
 
 void AnimSlots::loadBanks(const char *const *names, uint count) {
@@ -60,6 +61,7 @@ void AnimSlots::loadBanks(const char *const *names, uint count) {
 	_room = -1;
 	_loops = nullptr;
 	_loopCount = 0;
+	_handLoops = 0;
 	_state = nullptr;
 
 	for (uint i = 0; i < count && i < kSlotCount; i++) {
@@ -120,6 +122,7 @@ void AnimSlots::loadRoom(int room, const RoomScript &state) {
 
 	_room = room;
 	_state = &state;
+	_handLoops = 0;
 	_loops = animLoopsForRoom(room, _loopCount);
 	if (_loopCount)
 		debugC(2, kDebugGraphics, "room %d loops %u slots", room, _loopCount);
@@ -353,11 +356,18 @@ bool AnimSlots::isLooping(uint slot) const {
 	// leg has been seen to hang on it, because the rooms that guard a loop
 	// park the slot with nothing left rather than on a held frame, but the
 	// asymmetry is not worth carrying for that reason alone.
+	if (slot < kSlotCount && (_handLoops & (1 << slot)))
+		return true;
 	for (uint i = 0; i < _loopCount; i++) {
 		if (_loops[i].slot == slot)
 			return true;
 	}
 	return false;
+}
+
+void AnimSlots::markLooping(uint slot) {
+	if (slot < kSlotCount)
+		_handLoops |= 1 << slot;
 }
 
 bool AnimSlots::isBusyOnce() const {

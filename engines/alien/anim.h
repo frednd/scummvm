@@ -237,6 +237,14 @@ public:
 	bool holdFlag(uint slot) const;
 
 	/**
+	 * Names a slot as one the room's tick keeps looping, for a room whose tick
+	 * is hand-ported rather than lifted into the loop table -- room 60, whose
+	 * frame loop is resident code (boss.cpp). It only changes isLooping(): the
+	 * caller still does its own relaunching. Cleared with the room's banks.
+	 */
+	void markLooping(uint slot);
+
+	/**
 	 * Plays every loaded slot forward through its whole bank.
 	 *
 	 * A debug facility: it is what a room would look like if everything in it
@@ -354,6 +362,9 @@ private:
 
 	const AnimLoop *_loops;
 	uint _loopCount;
+
+	/// Slots a hand-ported tick relaunches itself (markLooping()), one bit each.
+	uint16 _handLoops;
 };
 
 } // End of namespace Alien

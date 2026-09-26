@@ -226,7 +226,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleAnswer(false),
 		_teleportStep(0), _teleportReturnClicks(0),
 		_corridorStep(0),
-		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0), _bossClicks(0), _jailClicks(0),
+		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
+		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
+		_bossSpeaking(false), _bossTalking(false), _jailClicks(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1407,8 +1409,9 @@ void AlienEngine::showCharacter() {
 void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 	if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), x, y, _route)) {
 		// The two mazes have no mask to route through and move him anyway, the
-		// way the original's forced routes do (maze.cpp).
-		if (mazeWalkTo(x, y, arrivalFacing))
+		// way the original's forced routes do (maze.cpp), and room 60's entry 0
+		// walks him straight to the click (boss.cpp).
+		if (mazeWalkTo(x, y, arrivalFacing) || bossWalkTo(x, y, arrivalFacing))
 			return;
 
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
@@ -1419,6 +1422,21 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 		   _ben.walkX(), _ben.walkY(), x, y, _route.count,
 		   _walk.mask().blocked(x, y) ? "blocked" : "walkable", arrivalFacing);
 
+	_ben.follow(_route, x, y, arrivalFacing);
+	_dirty = true;
+}
+
+void AlienEngine::straightWalkTo(int x, int y, int arrivalFacing) {
+	_route.count = 0;
+	_route.points[_route.count].x = (int16)_ben.walkX();
+	_route.points[_route.count].y = (int16)_ben.walkY();
+	_route.count++;
+	_route.points[_route.count].x = (int16)x;
+	_route.points[_route.count].y = (int16)y;
+	_route.count++;
+
+	debugC(1, kDebugGraphics, "straight walk %d,%d -> %d,%d facing %d",
+		   _route.points[0].x, _route.points[0].y, x, y, arrivalFacing);
 	_ben.follow(_route, x, y, arrivalFacing);
 	_dirty = true;
 }
@@ -1614,6 +1632,9 @@ void AlienEngine::stepClock() {
 		// And room 54's machine: the three ticket numbers, and the way in
 		// to Jack's room once his number is up (waiting.cpp).
 		stepWaitingMachine();
+
+		// And room 60's, the boss and his escape pod card (boss.cpp).
+		stepBoss();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
 			nextSpeech();
@@ -3310,10 +3331,7 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (!rightButton && armSteamDoor())
 		return;
 
-	// The boss fight and the jail's escape, both standing in for their own
-	// missing exit the same way (boss.cpp, jail.cpp).
-	if (!rightButton && armBoss())
-		return;
+	// The jail's escape, standing in for its own missing exit (jail.cpp).
 	if (!rightButton && armJailExit())
 		return;
 
