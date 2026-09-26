@@ -418,10 +418,17 @@ private:
 	void bossSpeak();
 	bool bossWalkTo(int x, int y, int arrivalFacing);
 
-	/// Room 58's escape back to the ship, simplified the same way
+	/// Room 58: the corridor's conversation through the bars and its two
+	/// ways out, and the escape back to the ship, still simplified
 	/// (jail.cpp).
 	void startJail();
 	bool armJailExit();
+	bool armJailTalk(int obj, byte verb);
+	void stepJail();
+	void jailConversation();
+	void jailSpeak();
+	void jailUnclePose(byte pose);
+	void jailYodlePose(byte pose);
 
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
@@ -931,6 +938,22 @@ private:
 
 	/// Room 58's simplified escape: clicks taken so far (jail.cpp).
 	uint _jailClicks;
+
+	/// Room 58's [0xa49f] and [0xa49c], the DLGREQ run the conversation is
+	/// working through (the same runner boss.cpp has), where Ben's lines are
+	/// anchored, the two prisoners' pose bytes [0xa52b]/[0xa52a], and the
+	/// [0xa7bd]/[0xa7be] clock that settles the uncle after a talk.
+	byte _jailStep;
+	uint16 _jailPos;
+	byte _jailSpeaker;
+	byte _jailLine;
+	byte _jailLeft;
+	bool _jailSpeaking;
+	int _jailBenX, _jailBenY;
+	byte _jailUncle;
+	byte _jailYodle;
+	byte _jailClock;
+	uint16 _jailClockPos;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether

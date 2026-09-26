@@ -309,6 +309,11 @@ public:
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }
 	int frame(uint slot) const { return _slots[slot].frame; }
 
+	/// The frame a slot last put on screen: the original's `0xa54a` byte array,
+	/// which MIDAS:snd_func_1482 fills from the frame (or, for a list, the
+	/// list's entry) as it draws, and which room 58 waits on.
+	int shownFrame(uint slot) const { return visibleFrame(_slots[slot]); }
+
 	/// Frames a slot still has to advance: the original's `0xa4ea` array, which
 	/// room scripts guard on directly (see RoomScript::animSlotByte).
 	int remaining(uint slot) const { return _slots[slot].remaining; }

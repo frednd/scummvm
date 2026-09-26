@@ -229,6 +229,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
 		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
 		_bossSpeaking(false), _bossTalking(false), _jailClicks(0),
+		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
+		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
+		_jailClock(0), _jailClockPos(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -1635,6 +1638,10 @@ void AlienEngine::stepClock() {
 
 		// And room 60's, the boss and his escape pod card (boss.cpp).
 		stepBoss();
+
+		// And room 58's: the conversation through the bars and the way out
+		// it ends in (jail.cpp).
+		stepJail();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
 			nextSpeech();
@@ -3605,6 +3612,11 @@ void AlienEngine::finishAction() {
 	// ending (corridor.cpp).
 	if (!item)
 		armCorridorMan(spot.obj, verb);
+
+	// And room 58's prisoners, whose talk is the conversation the corridor
+	// runs on its own when Ben comes in with the force field down (jail.cpp).
+	if (!item)
+		armJailTalk(spot.obj, verb);
 
 	// And room 22's teleporter, once the transistor the lift already handles
 	// has repaired it (teleport.cpp).
