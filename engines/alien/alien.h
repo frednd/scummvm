@@ -376,10 +376,11 @@ private:
 	void armForestParrot(int obj, byte verb, int item);
 	void stepForestParrot();
 
-	/// Room 22's teleporter and room 56 at the other end, simplified to one
-	/// destination each way (teleport.cpp).
+	/// Room 22's phone, which dials the teleporter, and room 56's simplified
+	/// return trip (teleport.cpp).
 	void startTeleport();
-	bool armTeleportPark(int obj, byte verb);
+	void advanceChamberView(int room);
+	bool armTeleportPhone(int obj, byte verb, byte item);
 	bool armTeleportReturn();
 	void stepTeleport();
 
@@ -902,9 +903,11 @@ private:
 	int _yodleReplyTicks;
 	bool _yodleAnswer;
 
-	/// Room 22's teleporter: ticks left of its delay, and room 56's simplified
-	/// return, clicks taken so far (teleport.cpp).
-	uint _teleportStep;
+	/// Room 22's [0xa49f] machine for the phone, ticks left of its current
+	/// wait, and room 56's simplified return, clicks taken so far
+	/// (teleport.cpp).
+	byte _teleportStep;
+	uint _teleportWait;
 	uint _teleportReturnClicks;
 
 	/// Rooms 51/53/55/57's simplified four-way cycle: clicks taken toward the

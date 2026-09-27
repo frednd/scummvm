@@ -224,7 +224,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false),
-		_teleportStep(0), _teleportReturnClicks(0),
+		_teleportStep(0), _teleportWait(0), _teleportReturnClicks(0),
 		_corridorStep(0),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
 		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
@@ -1091,6 +1091,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// the sewer ever moves it, and it moves it every frame it is flooded.
 	_clipBottom = kPlayfieldBottom;
 
+	// Room 56's view, before anything that draws or registers by it.
+	advanceChamberView(room);
+
 	_anims.loadRoom(room, _script);
 
 	// What the room does with a click on its own account, lifted out of its
@@ -1607,7 +1610,7 @@ void AlienEngine::stepClock() {
 		stepYodle();
 		stepForestParrot();
 
-		// And the delay standing in for room 22's teleporter (teleport.cpp).
+		// And room 22's phone, and the teleporter it dials (teleport.cpp).
 		stepTeleport();
 
 		// And the ship's elevator door, and the delay standing in for the
@@ -3529,6 +3532,20 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
+	// And room 22's phone, for the same reason: the lifted row for the number
+	// on it is a bare action_handled and the one for a plain use is only the
+	// refusal, while the dial and the teleporter it fires are the room's own
+	// machine (teleport.cpp).
+	if (armTeleportPhone(spot.obj, verb, item)) {
+		if (item)
+			holdItem(Inventory::kNoItem);
+		rebuildHotspots();
+		_hover = -1;
+		const Common::Point park = g_system->getEventManager()->getMousePos();
+		updateHover(park.x, park.y);
+		return;
+	}
+
 	// And room 19's fuse-panel cover, for the same reason: the lifted pair for
 	// it has the branch that shuts the cover and not the one that opens it, so
 	// the table on its own could only ever shut a cover nothing opened
@@ -3617,11 +3634,6 @@ void AlienEngine::finishAction() {
 	// runs on its own when Ben comes in with the force field down (jail.cpp).
 	if (!item)
 		armJailTalk(spot.obj, verb);
-
-	// And room 22's teleporter, once the transistor the lift already handles
-	// has repaired it (teleport.cpp).
-	if (!item)
-		armTeleportPark(spot.obj, verb);
 
 	// And room 48's pool, which the diving suit answers with a machine of its
 	// own rather than a script row (pool.cpp).
