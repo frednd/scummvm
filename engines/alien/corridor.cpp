@@ -47,8 +47,7 @@ namespace Alien {
 // plays_of), and without them [0xa7a1] was never cleared and every later way
 // in replayed the elevator. Room 55 also answers [0xa7a0], the no-card trip.
 //
-// Room 53 (and, since the two rooms share one overlay, room 57 as well)
-// also carries the one thing this leg actually needs: object 3, verb 6
+// Room 53 also carries the one thing this leg actually needs: object 3, verb 6
 // ("talk to") is a real, registered hotspot (check_hotspots.py --sweep 53:
 // 333,46..402,128) -- the maintenance man, whose conversation
 // (`ovr_35_0f9e:0x0155`, `OBJ:sub_0967e` over a topic counter at [0xa7d8])
@@ -152,9 +151,8 @@ bool AlienEngine::armCorridorMan(int obj, byte verb) {
 
 	_script.setFlag(kTalkDone, 1);
 
-	// Room 57 shares this hotspot but has no exit that either flag guards
-	// (transitions.cpp has no submode 2 out of it), so only room 53's talk
-	// starts the walk out.
+	// Entry 1 registers the man in room 53 only (its handler_code arm,
+	// ovr_35_0f9e:0x0473), so this is room 53's talk and the walk out.
 	if (_room != kHallwayRoomA)
 		return true;
 
@@ -162,6 +160,23 @@ bool AlienEngine::armCorridorMan(int obj, byte verb) {
 	_corridorStep = kWinExitDelay;
 	CursorMan.showMouse(false);
 	debugC(1, kDebugRooms, "corridor: the maintenance man clears the field, off to room 59");
+	return true;
+}
+
+/**
+ * Rooms 53 and 57 have no walk mask and no node ring: ovr_35_0f9e's two
+ * prologues name only R57, NOFADE, the TAL and the sprite banks, and never
+ * call the KIERRA loaders rooms 51, 54 and 55 do. Entry 0's clamps and snaps
+ * are what keep Ben on the floor there, so the click it resolved is walked to
+ * in a straight line, the open-floor reading finding #57 gives an absent mask
+ * page (docs/walk_system.md). Without this, plotRoute refused every click and
+ * Ben could not move in either hallway.
+ */
+bool AlienEngine::hallwayWalkTo(int x, int y, int arrivalFacing) {
+	if (_room != kHallwayRoomA && _room != kHallwayRoomB)
+		return false;
+
+	straightWalkTo(x, y, arrivalFacing);
 	return true;
 }
 

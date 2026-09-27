@@ -450,7 +450,10 @@ void AlienEngine::stepChat() {
 		return;
 	}
 
-	_chat.tick(_cursorY, speechDone());
+	// A room whose character answers picks holds the tree until the answer
+	// is down, as the original's does by answering before it moves on
+	// (jailguard.cpp).
+	_chat.tick(_cursorY, speechDone() && !jailGuardHoldsChat());
 
 	// What the player just said, spoken over him: the option is a slice of one
 	// of the file's entries rather than an entry of its own.

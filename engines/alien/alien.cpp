@@ -231,7 +231,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_bossSpeaking(false), _bossTalking(false), _jailClicks(0),
 		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
 		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
-		_jailClock(0), _jailClockPos(0),
+		_jailClock(0), _jailClockPos(0), _jailRedLoaded(false), _jailFieldPhase(0),
+		_scrollHold(-1),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false),
 		_hippieTalking(false),
@@ -990,6 +991,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_background = loaded;
 	_roomWidth = wide ? width : kScreenWidth;
 	_scrollX = 0;
+	_scrollHold = -1;
 	// The screen still shows the room being left, and _palette is still its
 	// palette, so this is the moment the original fades it away: OBJ:sub_0879a
 	// takes a copy as the old room's loop ends and OBJ:sub_07db3 fades that copy
@@ -1314,7 +1316,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		}
 	}
 
-	updateScroll();
+	updateScroll(true);
 
 	return true;
 }
@@ -1330,14 +1332,24 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
  * than only while he walks. That is why this is called from the tick whether or
  * not he is moving, and again wherever the character is put down (saveload.cpp).
  */
-void AlienEngine::updateScroll() {
+void AlienEngine::updateScroll(bool snap) {
 	int scroll = 0;
 	if (_roomWidth > kScreenWidth) {
-		scroll = _ben.spriteX() - kScreenWidth / 2;
+		// [0xa8e0]: a scene holding the camera on a point of its own centres
+		// that point instead of Ben, and pans there rather than jumping
+		// (LOGIC:sub_13015 reads [0xa8e2] in place of his x).
+		const int focus = _scrollHold >= 0 ? _scrollHold : _ben.spriteX();
+		scroll = focus - kScreenWidth / 2;
 		if (scroll < 0)
 			scroll = 0;
 		if (scroll > _roomWidth - kScreenWidth)
 			scroll = _roomWidth - kScreenWidth;
+		if (_scrollHold >= 0 && !snap) {
+			if (scroll > _scrollX + kHoldPanStep)
+				scroll = _scrollX + kHoldPanStep;
+			else if (scroll < _scrollX - kHoldPanStep)
+				scroll = _scrollX - kHoldPanStep;
+		}
 	}
 	if (scroll != _scrollX) {
 		_scrollX = scroll;
@@ -1416,8 +1428,11 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 	if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), x, y, _route)) {
 		// The two mazes have no mask to route through and move him anyway, the
 		// way the original's forced routes do (maze.cpp), and room 60's entry 0
-		// walks him straight to the click (boss.cpp).
-		if (mazeWalkTo(x, y, arrivalFacing) || bossWalkTo(x, y, arrivalFacing))
+		// walks him straight to the click (boss.cpp), as the two hallways' and
+		// the jail's walk geometry do with no mask behind it (corridor.cpp,
+		// jail.cpp).
+		if (mazeWalkTo(x, y, arrivalFacing) || bossWalkTo(x, y, arrivalFacing) ||
+			hallwayWalkTo(x, y, arrivalFacing) || jailWalkTo(x, y, arrivalFacing))
 			return;
 
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
@@ -2349,6 +2364,10 @@ void AlienEngine::rebuildHotspots(int room) {
 	// which is a guard the lift cannot carry, so the maze replaces the table
 	// outright (maze.cpp).
 	buildMazeHotspots(room < 0 ? _room : room);
+
+	// Room 58's two prisoners are registered by code the lift cannot carry
+	// either: a computed guard and a rectangle that moves (jailguard.cpp).
+	buildJailHotspots(room < 0 ? _room : room);
 
 	// The table can be shorter than it was -- an item taken out of it, or a
 	// maze cell with fewer ways out than the last -- and what was hovered is an
@@ -3635,6 +3654,10 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armJailTalk(spot.obj, verb);
 
+	// And the red card the guard leaves in the corridor's slot (jailguard.cpp).
+	if (!item)
+		armJailCard(spot.obj, verb);
+
 	// And room 48's pool, which the diving suit answers with a machine of its
 	// own rather than a script row (pool.cpp).
 	armPool(spot.obj, item);
@@ -4264,12 +4287,22 @@ void AlienEngine::redraw() {
 
 		// [0xa94d]: while a room plays the character's own action on one of its
 		// slots, the walker is not drawn at all (lab.cpp).
+		// Room 58's force field goes under him in the corridor (jailguard.cpp).
+		if (!jailFieldOverBen())
+			drawJailField(_screen);
+
 		if (_drawCharacter)
 			_ben.draw(_screen, _scrollX, _clipBottom);
 
 		// And the foreground the room authored over him, which is the whole of
 		// the original's depth model (occlusion.h).
 		applyOcclusion();
+
+		// And over him in the cell, and the guard after both, which is the
+		// order room 58's tick draws them in.
+		if (jailFieldOverBen())
+			drawJailField(_screen);
+		drawJailGuard(_screen);
 
 		if (_showWalk)
 			drawWalkOverlay();

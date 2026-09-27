@@ -66,10 +66,13 @@ namespace Alien {
 // pose 2, his talking list; the room's tick turns it to pose 3 as the line
 // comes down, and 0x5a after a talk ends ([0xa7bd] = 3) back to pose 1.
 //
-// What is still simplified: the cell view's own machine, the guard and his
-// conversations (job 13b/13c), and the way back to room 56 below, which is a
-// plain click with nothing held and no hotspot under it, standing in for
-// whatever the original actually gates it on.
+// The guard, his conversation in the corridor, the force field and the red
+// card he leaves in the slot are jailguard.cpp's.
+//
+// What is still simplified: the cell view's own machine (job 13c), and the way
+// back to room 56 below, which is a plain click in the cell with nothing held
+// and no hotspot under it, standing in for whatever the original actually
+// gates it on.
 static const int kJailRoom = 58;
 
 static const byte kEscapeClicks = 3;
@@ -164,6 +167,7 @@ void AlienEngine::startJail() {
 	_jailClock = 0;
 
 	jailYodlePose(kPoseIdle);
+	startJailGuard();
 	jailUnclePose(kPoseIdle);
 
 	// The char_place beside it is a lifted row (roominit.cpp).
@@ -327,6 +331,10 @@ void AlienEngine::stepJail() {
 	if (_room != kJailRoom)
 		return;
 
+	// The guard, his machine and the field, which run before the room's own
+	// [0xa49f] in the tick (jailguard.cpp).
+	stepJailGuard();
+
 	// 0x106b and 0x1080: a line down puts a talking prisoner back.
 	if (speechDone()) {
 		if (_jailUncle == kPoseTalk)
@@ -405,17 +413,26 @@ void AlienEngine::stepJail() {
 	}
 }
 
-/// A plain click, standing in for the real exit machine: see this file's
-/// header.
-bool AlienEngine::armJailExit() {
-	if (_room != kJailRoom || _heldItem != Inventory::kNoItem || _hover >= 0)
+/**
+ * Room 58 has no walk mask or node ring: ovr_3a_101d names no KIERRA file,
+ * like the hallways (corridor.cpp). Entry 0's clamps, one set a view, keep Ben
+ * on the floor, so the click it resolved is walked to in a straight line.
+ */
+bool AlienEngine::jailWalkTo(int x, int y, int arrivalFacing) {
+	if (_room != kJailRoom)
 		return false;
 
-	// The player picks up the second security card from the slot during the escape.
-	if (!_inventory.has(42)) {
-		_inventory.add(42);
-		debugC(1, kDebugRooms, "jail: picked up security card (item 42)");
-	}
+	straightWalkTo(x, y, arrivalFacing);
+	return true;
+}
+
+/// A plain click in the cell, standing in for the real exit machine: see this
+/// file's header. The corridor has real ways out (object 10 to room 51, and
+/// the pod), so this stays out of it.
+bool AlienEngine::armJailExit() {
+	if (_room != kJailRoom || _script.flag(kView) == kCorridor ||
+		_heldItem != Inventory::kNoItem || _hover >= 0)
+		return false;
 
 	_jailClicks++;
 	debugC(1, kDebugRooms, "jail: step %u of %u back to the ship", _jailClicks, kEscapeClicks);

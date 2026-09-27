@@ -28,6 +28,7 @@ MODULE_OBJS = \
 	waiting.o \
 	boss.o \
 	jail.o \
+	jailguard.o \
 	cutsceneplay.o \
 	basement.o \
 	cemetery.o \

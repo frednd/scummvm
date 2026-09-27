@@ -57,6 +57,9 @@ public:
 	static const int kScreenWidth = 320;
 	static const int kScreenHeight = 200;
 
+	/// How far a held camera pans a frame on its way to the point it holds.
+	static const int kHoldPanStep = 4;
+
 	/// The row the playfield ends on, and so the value OBJ:sub_08567 puts in
 	/// [0xa8e4] as every room opens: the DL1 blitter draws nothing at or below
 	/// it (see DL1Sprite::drawFrame and _clipBottom).
@@ -147,7 +150,7 @@ private:
 	void dumpScale();
 	void sweepScale();
 
-	void updateScroll();
+	void updateScroll(bool snap = false);
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);
 	void redraw();
@@ -391,6 +394,8 @@ private:
 	void playElevatorPanel();
 	bool armCorridorMan(int obj, byte verb);
 	void stepCorridor();
+	bool hallwayWalkTo(int x, int y, int arrivalFacing);
+	bool jailWalkTo(int x, int y, int arrivalFacing);
 
 	/// Room 52's security scanner: the resident gate in front of the room,
 	/// its DL2 scan, and the robot's arrest (scanner.cpp).
@@ -430,6 +435,25 @@ private:
 	void jailSpeak();
 	void jailUnclePose(byte pose);
 	void jailYodlePose(byte pose);
+
+	/// Room 58's guard, the force field over the cells, and the card the
+	/// guard leaves behind (jailguard.cpp).
+	void startJailGuard();
+	void stepJailGuard();
+	void jailGuardPose(byte pose);
+	void jailGuardAnimate();
+	void jailGuardMove();
+	void jailGuardWalk(int x, int y);
+	void jailGuardSpeak(byte code);
+	void jailGuardMachine();
+	void jailGuardTrigger();
+	void jailGuardAnchor(int &x, int &y) const;
+	void buildJailHotspots(int room);
+	bool armJailCard(int obj, byte verb);
+	void drawJailField(Graphics::Surface &dest) const;
+	void drawJailGuard(Graphics::Surface &dest) const;
+	bool jailFieldOverBen() const;
+	bool jailGuardHoldsChat() const;
 
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
@@ -957,6 +981,51 @@ private:
 	byte _jailYodle;
 	byte _jailClock;
 	uint16 _jailClockPos;
+
+	/// Room 58's guard (jailguard.cpp): the second character CHARANIM keeps
+	/// for this one room. His sprite set, JAIL_GUA; where he stands, [0xa8c6]
+	/// and [0xa8ca], and the 10.6 fixed-point mover behind it; the frame
+	/// stepper at [0xbee2..0xbf02]; and his machine, [0xbefc], with the clock
+	/// [0xbefa] it counts in.
+	struct JailGuard {
+		CharAnim anim;
+		int x, y;
+		int32 fx, fy;			///< [0xa8ce], [0xa8d2]: position << 6
+		int16 vx, vy;			///< [0xa8d6], [0xa8d8]
+		uint16 steps;			///< [0xbf00]
+		byte heading;			///< [0xa8dc]
+		bool arrived;			///< [0xbef8], the tick pair the steps run out
+
+		int frame;				///< [0xa8da], a record of JAIL_GUA.DAT
+		const byte *list;		///< the pose's frame list, or null
+		int index;				///< [0xbf02]
+		int start;				///< [0xbeea]
+		int base;				///< [0xbef2]
+		uint16 count;			///< [0xbee4]
+		uint16 countInit;		///< [0xbeec]
+		byte rate;				///< [0xbee6]
+		byte rateCount;			///< [0xbee7]
+		bool loop;				///< [0xbee2]
+		bool backward;			///< [0xbee8]
+		bool done;				///< [0xbef9], the tick pair the pose runs out
+		byte pose;				///< [0xad19]
+
+		byte step;				///< [0xbefc]
+		uint16 clock;			///< [0xbefa]
+		bool talking;			///< a line of his is up in pose 0xb
+		byte reply;				///< the menu pick's answer, owed once Ben's line is down
+	};
+	JailGuard _guard;
+
+	/// JAIL_RED.TBL: eight 256-entry colour maps, the force field's tint
+	/// (CHARANIM:sub_14aa2), and the phase [0xa7af] it flickers between.
+	byte _jailRed[8 * 256];
+	bool _jailRedLoaded;
+	byte _jailFieldPhase;
+
+	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
+	/// rather than on Ben, or -1 while it follows him.
+	int _scrollHold;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether

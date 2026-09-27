@@ -401,6 +401,12 @@ int AnimSlots::visibleFrame(const Slot &slot) const {
 	// bakes the final frame into the background page on the tick before that and
 	// never draws from the slot again. Clamping to the range shows the same
 	// pixels out of the slot itself.
+	// A slot nothing has been played on yet has no range to clamp to; it is
+	// asked about when a room reads a slot before its prologue has set it
+	// (room 58's hotspots, jailguard.cpp).
+	if (slot.count <= 0)
+		return slot.frame;
+
 	const int lo = slot.forward ? slot.first : slot.first - slot.count + 1;
 	const int hi = slot.forward ? slot.first + slot.count - 1 : slot.first;
 	int frame = CLIP(slot.frame, lo, hi);

@@ -27,8 +27,8 @@
 // on, and the scratch globals whose value some of them push as an outcome code
 // or a verb.
 //
-//   622 operations over 42 rooms: 478 registrations, of which
-//   82 have a field that comes from one of the 9 scratch slots.
+//   607 operations over 42 rooms: 467 registrations, of which
+//   79 have a field that comes from one of the 9 scratch slots.
 //   1 registration sites could not be read.
 
 #include "alien/hotspots.h"
@@ -553,14 +553,6 @@ static const HotspotOp kHotspotOps[] = {
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  467,  25,  493,  41,  4,  9,  5, 1, { 15, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 467,25..493,41 obj 9 verb 5 label 4 -> 15
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  162,  38,  190,  57,  4, 20,  5, 1, { 15, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 162,38..190,57 obj 20 verb 5 label 4 -> 15
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,   56,  40,  111, 114,  1,  2,  5, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 56,40..111,114 obj 2 verb 5 label 1 -> 0
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  171,  13,  237, 106,  8, 20,  5, 1, { 4, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 171,13..237,106 obj 20 verb 5 label 8 -> 4
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  305,  13,  349,  63,  8, 21,  5, 1, { 4, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 305,13..349,63 obj 21 verb 5 label 8 -> 4
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  371,  39,  412, 124,  2,  1,  5, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 371,39..412,124 obj 1 verb 5 label 2 -> 0
-	{ kHotspotSet,      0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   1,   1, 0, 0, 0, 0, 0, 0, 0, 0, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// [0x7db8] := 1
-	{ kHotspotSet,      1, { { 0xa7b0,   0, false }, { 0, 0, false }, { 0, 0, false } },   1,  12, 0, 0, 0, 0, 0, 0, 0, 0, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// [0x7db8] := 12
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  346,  90,  398, 139,  3,  4, 10, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0 } },	// 346,90..398,139 obj 4 verb 10 label 3 -> [0x7db8]
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  307, 108,  345, 139,  3,  4, 10, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0 } },	// 307,108..345,139 obj 4 verb 10 label 3 -> [0x7db8]
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  160,  34,  181,  49,  4,  8,  5, 1, { 255, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 160,34..181,49 obj 8 verb 5 label 4 -> 255
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  171,  13,  237, 106,  8, 20,  5, 1, { 15, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 171,13..237,106 obj 20 verb 5 label 8 -> 15
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  305,  13,  346, 106,  8, 21,  5, 1, { 15, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 305,13..346,106 obj 21 verb 5 label 8 -> 15
 	{ kHotspotRegister, 1, { { 0xa7d6,   1, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  333,  46,  402, 128,  5,  3,  6, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 333,46..402,128 obj 3 verb 6 label 5 -> 0
@@ -616,13 +608,6 @@ static const HotspotOp kHotspotOps[] = {
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  346,  90,  398, 139,  3,  4, 10, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0 } },	// 346,90..398,139 obj 4 verb 10 label 3 -> [0x7db8]
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  307, 108,  345, 139,  3,  4, 10, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0 } },	// 307,108..345,139 obj 4 verb 10 label 3 -> [0x7db8]
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  160,  34,  181,  49,  4,  8,  5, 1, { 255, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 160,34..181,49 obj 8 verb 5 label 4 -> 255
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  171,  13,  237, 106,  8, 20,  5, 1, { 15, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 171,13..237,106 obj 20 verb 5 label 8 -> 15
-	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  305,  13,  346, 106,  8, 21,  5, 1, { 15, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 305,13..346,106 obj 21 verb 5 label 8 -> 15
-	{ kHotspotRegister, 1, { { 0xa7d6,   1, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  333,  46,  402, 128,  5,  3,  6, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 333,46..402,128 obj 3 verb 6 label 5 -> 0
-	{ kHotspotSet,      1, { { 0xa7d6,   0, false }, { 0, 0, false }, { 0, 0, false } },   5,   3, 0, 0, 0, 0, 0, 0, 0, 0, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// [0x9926] := 3
-	{ kHotspotSet,      2, { { 0xa7d6,   0, false }, { 0xa7d9,   0, false }, { 0, 0, false } },   5,   9, 0, 0, 0, 0, 0, 0, 0, 0, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// [0x9926] := 9
-	{ kHotspotRegister, 1, { { 0xa7d6,   0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  376,  39,  404, 127,  6,  6,  3, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0 } },	// 376,39..404,127 obj 6 verb 3 label 6 -> [0x9926]
-	{ kHotspotRegister, 1, { { 0xa7d6,   0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  396,  77,  416,  90,  7,  5,  5, 1, { 8, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// 396,77..416,90 obj 5 verb 5 label 7 -> 8
 	{ kHotspotSet,      0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   5,   3, 0, 0, 0, 0, 0, 0, 0, 0, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// [0x9926] := 3
 	{ kHotspotSet,      1, { { 0xa7b2,   0, false }, { 0, 0, false }, { 0, 0, false } },   5,   5, 0, 0, 0, 0, 0, 0, 0, 0, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },	// [0x9926] := 5
 	{ kHotspotRegister, 0, { { 0, 0, false }, { 0, 0, false }, { 0, 0, false } },   0,   0,  377,  51,  393,  66,  1,  1,  5, 1, { 0, 0, 0, 0 }, { 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0 } },	// 377,51..393,66 obj 1 verb 5 label 1 -> [0x9926]
@@ -717,13 +702,13 @@ static const HotspotRoom kHotspotRooms[] = {
 	{ 50,  496,  6 },
 	{ 51,  502,  4 },
 	{ 52,  506, 10 },
-	{ 53,  516, 16 },
-	{ 54,  532, 21 },
-	{ 55,  553,  6 },
-	{ 56,  559, 12 },
-	{ 57,  571, 16 },
-	{ 58,  587, 25 },
-	{ 59,  612, 10 },
+	{ 53,  516,  8 },
+	{ 54,  524, 21 },
+	{ 55,  545,  6 },
+	{ 56,  551, 12 },
+	{ 57,  563,  9 },
+	{ 58,  572, 25 },
+	{ 59,  597, 10 },
 };
 
 const HotspotOp *hotspotProgramForRoom(int room, uint &count) {
