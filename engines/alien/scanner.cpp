@@ -193,7 +193,7 @@ void AlienEngine::playScannerScan(bool mask) {
 
 	debugC(1, kDebugCutscene, "scanner: %s over %s, %u frames", clip, plateName, count);
 
-	static const uint32 kTickMillis = 1000 / 70;
+	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 	uint32 last = g_system->getMillis();
 	uint32 tick = 0;
 	uint frame = 0;

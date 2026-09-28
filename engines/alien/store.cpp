@@ -179,6 +179,14 @@ static const byte kPoseGreetCase = 6, kPoseTurnCase = 1, kPoseTalkCase = 3,
 /// The two lines of the trade the gestures belong to (seg_0c25.asm 0xc32a).
 static const byte kFetchLine = 2, kHandLine = 6;
 
+/// The salesman's own slots (kPoseGreetCase/kPoseTurnCase on 0, kPoseHandCase
+/// on 3, the two talking slots, kPoseFetchCase on 5): a port addition
+/// (setHold()) so he is drawn between poses instead of the store's between-line
+/// blank the original itself does (finding #100, MIDAS:sub_19a6b case 0 --
+/// mode 4, count 1, rate 0, which the port's own draw rule would otherwise
+/// erase one tick pair after storePose() sets it).
+static const uint kSalesmanSlots[] = { 0, 3, 4, 5, 6, 7 };
+
 /**
  * MIDAS:sub_19a6b, the store's own animation dispatcher.
  *
@@ -186,23 +194,48 @@ static const byte kFetchLine = 2, kHandLine = 6;
  * stop: it takes the talking loop's slot away and clears the loop flags, which
  * is what the room does the frame a line comes down (0x08f1).
  */
+/// Which slot a pose plays on.
+static uint poseSlot(byte pose, bool behindCounter) {
+	switch (pose) {
+	case kPoseStopCase:
+		return behindCounter ? kTalkSlotCounter : kTalkSlotFloor;
+	case kPoseHandCase:
+		return 3;
+	case kPoseTalkCase:
+		return kTalkSlotCounter;
+	case kPoseFetchCase:
+		return 5;
+	case kPoseFloorCase:
+		return kTalkSlotFloor;
+	default:
+		return 0;
+	}
+}
+
 void AlienEngine::storePose(byte pose) {
 	// [0xa53e] = 0 at the top of every call: the talking loop only runs while
 	// the case that started it says so.
 	_anims.setLoopFlag(kTalkSlotCounter, 0);
 
-	switch (pose) {
-	case kPoseStopCase: {
-		const uint slot = _script.flag(kBehindCounter) == 0 ? kTalkSlotFloor
-															: kTalkSlotCounter;
-		_anims.stop(kTalkSlotCounter);
-		_anims.stop(kTalkSlotFloor);
-		_anims.stop(5);
-		_anims.stop(6);
-		_anims.setLoopFlag(kTalkSlotFloor, 0);
-		_anims.play(slot, 1, 1, 0, 4);
-		break;
+	// He is on one slot at a time. The original gets that for free -- a mode 4
+	// or 7 play leaves nothing behind once it has run -- but the port holds
+	// every one of his slots on its last frame (setHold above), so the pose he
+	// was in stays on the screen beside, or over, the one he is in now: the
+	// fetch and the hand-over played under his resting still (manual
+	// playthrough #6). Every other one of his slots goes as a pose starts.
+	const uint keep = poseSlot(pose, _script.flag(kBehindCounter) != 0);
+	for (uint slot : kSalesmanSlots) {
+		if (slot == keep)
+			continue;
+		_anims.takeDown(slot);
+		_anims.setHold(slot, true);
 	}
+
+	switch (pose) {
+	case kPoseStopCase:
+		_anims.setLoopFlag(kTalkSlotFloor, 0);
+		_anims.play(keep, 1, 1, 0, 4);
+		break;
 	case kPoseTurnCase:
 		_anims.play(0, 0, ARRAYSIZE(kPoseTurn), 3, kPoseMode, kPoseTurn);
 		break;
@@ -317,13 +350,6 @@ void AlienEngine::loadStoreScript(const char *name) {
  * the arms load a dialog file of their own and the room's own file is not read
  * until further down.
  */
-/// The salesman's own slots (kPoseGreetCase/kPoseTurnCase on 0, kPoseHandCase
-/// on 3, the two talking slots, kPoseFetchCase on 5): a port addition
-/// (setHold()) so he is drawn between poses instead of the store's between-line
-/// blank the original itself does (finding #100, MIDAS:sub_19a6b case 0 --
-/// mode 4, count 1, rate 0, which the port's own draw rule would otherwise
-/// erase one tick pair after storePose() sets it).
-static const uint kSalesmanSlots[] = { 0, 3, 4, 5, 6, 7 };
 
 void AlienEngine::startStore() {
 	if (_room != kStoreRoom)
@@ -465,6 +491,13 @@ void AlienEngine::stepStore() {
 			_storeStep = kStepOffer;
 			_storePos = 0;
 			CursorMan.showMouse(false);
+
+			// 0x06dc / 0x06fc: the menu slides off the bottom of the screen
+			// (OBJ:sub_02f27), whichever way the offer goes, and the bar stays
+			// away until the store is done with him.
+			_chatOwnsBar = false;
+			_chat.close();
+			hideBar();
 			debugC(1, kDebugItems, "store: offered item %u (%s)", _storeOffer,
 				   _inventory.name(_storeOffer).c_str());
 		}
@@ -548,12 +581,15 @@ void AlienEngine::stepStore() {
 		break;
 
 	case kStepClose:
-		// 0x07b7: the menu goes, and with it the cursor.
+		// 0x07b7: the menu goes, and with it the cursor, and the bar comes
+		// back up -- with the suit in it, if that is how it went (sub_030f4).
+		_chatOwnsBar = false;
 		if (_chat.isActive()) {
 			_chat.close();
 			CursorMan.showMouse(false);
 			_dirty = true;
 		}
+		showBar();
 
 		_storeStep = kStepLeaving;
 		_storePos = 0;

@@ -118,7 +118,7 @@ static const struct { byte height, top; } kThumb[7][7] = {
 	{ { 0, 0 }, {  5, 164 }, {  5, 169 }, {  5, 174 }, { 5, 179 }, { 6, 184 }, { 6, 190 } }
 };
 
-Inventory::Inventory() : _page(1) {
+Inventory::Inventory() : _page(1), _scroll(0) {
 	reset();
 }
 
@@ -159,6 +159,7 @@ void Inventory::reset() {
 	for (uint i = 0; i < kListSize; i++)
 		_counter[i] = 1;
 	_page = 1;
+	_scroll = 0;
 }
 
 void Inventory::add(byte item) {
@@ -418,6 +419,36 @@ void Inventory::drawThumb(Graphics::Surface &dest) const {
 		 kThumbX, kThumb[pages][page].top);
 }
 
+bool Inventory::stepScroll() {
+	const int target = scrollTarget();
+	if (_scroll == target)
+		return false;
+	if (_scroll < target)
+		_scroll = MIN(_scroll + kRollStep, target);
+	else
+		_scroll = MAX(_scroll - kRollStep, target);
+	return true;
+}
+
+void Inventory::drawRolling(const StaticTables &tables, Graphics::Surface &dest) const {
+	// sub_0a1cc: the row the roll is in shows from `cut` down, and the row
+	// after it fills the `cut` pixels left at the bottom of the slot.
+	const uint row = _scroll / kRowPixels;
+	const int cut = _scroll - (int)row * kRowPixels;
+
+	for (uint slot = 0; slot < kSlotCount; slot++) {
+		const byte upper = itemOn(row + 1, slot);
+		if (upper && cut < kSlotHeight)
+			blit(dest, _icons, tables.itemIconX(upper), tables.itemIconY(upper) + cut,
+				 kSlotWidth, kSlotHeight - cut, kSlotX[slot], kSlotY, true);
+
+		const byte lower = itemOn(row + 2, slot);
+		if (lower && cut > 0)
+			blit(dest, _icons, tables.itemIconX(lower), tables.itemIconY(lower),
+				 kSlotWidth, cut, kSlotX[slot], kSlotY + kSlotHeight - cut, true);
+	}
+}
+
 void Inventory::draw(const StaticTables &tables, Graphics::Surface &dest,
 					 int hoverSlot, Arrow hoverArrow, bool hoverMenu,
 					 byte heldItem) const {
@@ -425,7 +456,12 @@ void Inventory::draw(const StaticTables &tables, Graphics::Surface &dest,
 	// it is also what erases the previous frame's icons.
 	drawPanel(dest);
 
-	for (uint slot = 0; slot < kSlotCount; slot++) {
+	// Mid-roll there is nothing to light: [0xa63e] keeps the slot highlight
+	// (sub_0a6a4 / sub_0a6b4) off until the rows have settled.
+	if (isScrolling())
+		drawRolling(tables, dest);
+
+	for (uint slot = 0; slot < kSlotCount && !isScrolling(); slot++) {
 		const byte item = slotItem(slot);
 		if (!item)
 			continue;
@@ -480,6 +516,8 @@ void Inventory::syncGame(Common::Serializer &s) {
 	s.syncAsUint16LE(page);
 	if (s.isLoading())
 		_page = page;
+	if (s.isLoading())
+		snapScroll();
 }
 
 } // End of namespace Alien

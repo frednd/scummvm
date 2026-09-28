@@ -462,6 +462,29 @@ void AlienEngine::enterLibrary(int room) {
  *           items 20 and 14, [0xa70c] = 0
  *   obj 13  and the other one: items 19, [0xa70d] = 0
  */
+/**
+ * Where he stands to take something off the open safe's shelf.
+ *
+ * Not the original's: its geometry sends both shelf objects to 284,144 facing
+ * away, square in front of the safe, and at that depth his head and shoulders
+ * cover the very items he is reaching for, so the player never sees them go
+ * (manual playthrough #22). The port stands him beside the safe instead,
+ * facing it. The floor there is open, but the point is checked against the
+ * walk mask all the same, and the original's is kept if it is ever blocked.
+ */
+static const int kShelfSideX = 312, kShelfSideY = 140, kShelfSideFacing = 4;
+
+void AlienEngine::standClearOfSafe(byte obj, WalkTarget &target) const {
+	if (_room != kLibraryRoom || (obj != kSafeShelfPair && obj != kSafeShelfSingle))
+		return;
+	if (_walk.mask().blocked(kShelfSideX, kShelfSideY))
+		return;
+
+	target.x = kShelfSideX;
+	target.y = kShelfSideY;
+	target.facing = kShelfSideFacing;
+}
+
 bool AlienEngine::runLibraryBody(int obj, bool item) {
 	// The whole block sits under the plain-verb half of the dispatch
 	// ([0xa956] == 0x4e25), so an item in hand never reaches it.

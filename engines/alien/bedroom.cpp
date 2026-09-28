@@ -257,4 +257,29 @@ void AlienEngine::stepBedroomLift() {
 	takeExit(kLiftSubmode);
 }
 
+// Out through the bedroom door. Room 6's open, when the room left was the
+// bedroom, stands him in the doorway and then hands the walker a route of its
+// own, 1021:sub_1023c(0x7e, 0x67, 0x91, 0x67, 2) at ovr_06_0e5f:0x0841: a few
+// steps to the right, clear of the door. The lift carries the placement and
+// not the call, so he used to stand in the doorway (manual playthrough #9).
+static const int kLandingRoom = 6;
+static const int kFromBedroom = 7;
+static const int kClearOfDoorX = 0x91, kClearOfDoorY = 0x67, kClearOfDoorFacing = 2;
+
+/// Room 6 has just been placed: the walk out of the bedroom door.
+void AlienEngine::enterLanding(int room) {
+	if (room != kLandingRoom || _mode != kFromBedroom)
+		return;
+
+	// The route's first point is 0x7e,0x67, which is where the placement has
+	// just put his feet.
+	WalkRoute route;
+	route.points[0].x = (int16)_ben.walkX();
+	route.points[0].y = (int16)_ben.walkY();
+	route.count = 1;
+	_ben.follow(route, kClearOfDoorX, kClearOfDoorY, kClearOfDoorFacing);
+	debugC(1, kDebugRooms, "landing: out of the bedroom, %d,%d -> %d,%d",
+		   _ben.walkX(), _ben.walkY(), kClearOfDoorX, kClearOfDoorY);
+}
+
 } // End of namespace Alien

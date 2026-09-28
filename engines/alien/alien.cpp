@@ -241,7 +241,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_hippieTalking(false),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
 		_chatPickNew(false),
-		_cursorX(0), _cursorY(0), _chatColorsHeld(false),
+		_cursorX(0), _cursorY(0), _chatColorsHeld(false), _barHidden(false), _chatOwnsBar(false),
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
@@ -1086,6 +1086,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_hippieTalking = false;
 	_chatPickNew = false;
 	_chat.close();
+	_barHidden = false;
+	_chatOwnsBar = false;
 
 	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
 	// does not carry the character's absence into the next one. The slots go
@@ -1178,6 +1180,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	} else {
 		_ben.place(kScreenWidth / 2, 140);
 	}
+
+	// And the one room that walks him on from there (bedroom.cpp).
+	enterLanding(room);
 
 	// Most rooms name a room<n>.tal, but several speak through a shared file,
 	// and the ones without an overlay fall back to the naming convention.
@@ -1817,6 +1822,12 @@ void AlienEngine::stepClock() {
 	// The status line's fade runs off the frame, not off the animation gate.
 	stepLabelFade();
 
+	// And the bar's page roll, sub_0a688 in every room's pass. It waits while
+	// the bar is off the screen, so a page an item was added on behind a
+	// conversation still rolls into view once the bar is back.
+	if (!_chat.isActive() && !_barHidden && !_cutscene && _inventory.stepScroll())
+		_dirty = true;
+
 	// OBJ:0x7bb1 calls the mover on every tick pair and only the walk phase
 	// waits for the animation gate, so on the tick pair between two animation
 	// ticks he steps once more. Arrival is still answered on the animation
@@ -1892,6 +1903,14 @@ void AlienEngine::updateHover(int x, int y) {
 
 	_cursorX = x;
 	_cursorY = y;
+
+	// While a conversation is up the bar is not there: its rows hold the menu,
+	// and the status line's entries 66 and 67 are the first option's colours
+	// (chat.cpp). Hovering the rows where the item slots would be used to
+	// write an item's name into the line, which relit those two entries and
+	// then faded them over the option (manual playthrough #10).
+	if (_chat.isActive())
+		return;
 
 	const int roomX = x + _scrollX;
 
@@ -3547,6 +3566,10 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		// geometry named (cliff.cpp).
 		armCliff(roomX, y, target);
 
+		// And room 8's open safe, where the port stands him aside to take
+		// what is on its shelf (library.cpp).
+		standClearOfSafe(obj, target);
+
 		walkTo(target.x, target.y, target.facing);
 	} else {
 		walkTo(roomX, y);
@@ -4248,6 +4271,11 @@ void AlienEngine::stepLabelFade() {
 	if (!_labelFading)
 		return;
 
+	// And a fade the conversation opened over waits for it: the menu owns the
+	// entries until stepChat puts them back.
+	if (_chat.isActive())
+		return;
+
 	// OBJ:sub_06d66, one step per frame: the darkest shade loses one level a
 	// tick and the other two lose two, and the line is done once they are all
 	// black.
@@ -4447,6 +4475,8 @@ void AlienEngine::redraw() {
 		// them instead.
 		if (_chat.isActive()) {
 			_chat.draw(_chatFont, _screen);
+		} else if (_barHidden) {
+			_screen.fillRect(Common::Rect(0, kPlayfieldBottom + 1, _screen.w, _screen.h), 0);
 		} else {
 			_inventory.draw(_tables, _screen, _hoverSlot, _hoverArrow, _hoverMenu,
 							_heldItem);

@@ -228,6 +228,7 @@ private:
 	bool isBedroomSwitch(int obj) const;
 	bool hijackBedroomLift(byte submode);
 	void stepBedroomLift();
+	void enterLanding(int room);
 	void enterMansion(int room);
 	void stepMansion();
 	void applyOcclusion();
@@ -269,6 +270,7 @@ private:
 	bool armLiftCall(int obj, int anchorX, int anchorY);
 	void stepLiftCall();
 	void playLiftPanel();
+	bool liftWipe(const Graphics::Surface &to);
 
 	/// Room 28's telescope view and observatory computer, both of which the
 	/// lifted table only ever arms as game_submode = 111 (telescope.cpp).
@@ -526,6 +528,8 @@ private:
 
 	void sweepChatTrees();
 	void openChat(uint topic);
+	void hideBar();
+	void showBar();
 	void stepChat();
 
 	bool armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY);
@@ -533,6 +537,7 @@ private:
 	void armLibrarySafe(int obj, byte item);
 	void enterLibrary(int room);
 	bool runLibraryBody(int obj, bool item);
+	void standClearOfSafe(byte obj, WalkTarget &target) const;
 	void stepLibrarySafe();
 	void nextSpeech();
 	void stopSpeech();
@@ -772,6 +777,14 @@ private:
 	/// the menu's to give back.
 	byte _chatPalette[14 * 3];
 	bool _chatColorsHeld;
+
+	/// The bar has slid off the bottom of the screen (OBJ:sub_02f27) and not
+	/// yet come back (OBJ:sub_030f4): those forty rows are black, or the menu's.
+	bool _barHidden;
+	/// And the conversation is what took it, so the conversation's end is what
+	/// brings it back. A room that runs its own machine over the menu (the
+	/// store) takes that over.
+	bool _chatOwnsBar;
 
 	bool _dialogBand;				///< bottom band layout instead of over the speaker
 	bool _speech;					///< a line is on screen

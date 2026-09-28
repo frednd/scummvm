@@ -95,6 +95,16 @@ public:
 	bool pageUp();
 	bool pageDown();
 
+	/**
+	 * OBJ:sub_0a688 / sub_0a1cc: a page change is not a cut. The slots roll
+	 * two pixels a pass toward the page asked for, [0xa63c] chasing [0xa638],
+	 * the one row sliding out as the next slides in. True while it moved.
+	 */
+	bool stepScroll();
+	/// Put the rows where the page is, with no roll: a restored game.
+	void snapScroll() { _scroll = scrollTarget(); }
+	bool isScrolling() const { return _scroll != scrollTarget(); }
+
 	/** The item shown in a slot of the bar, or kNoItem for an empty slot. */
 	byte slotItem(uint slot) const { return itemOn(_page, slot); }
 
@@ -164,10 +174,17 @@ private:
 				  byte item, uint slot, bool hover) const;
 	void drawThumb(Graphics::Surface &dest) const;
 	void drawPanel(Graphics::Surface &dest) const;
+	void drawRolling(const StaticTables &tables, Graphics::Surface &dest) const;
+	int scrollTarget() const { return ((int)_page - 1) * kRowPixels; }
+
+	/// A page is one slot's height of roll, and the roll moves this far a pass.
+	static const int kRowPixels = 0x16;
+	static const int kRollStep = 2;
 
 	byte _list[kListSize];
 	byte _counter[kListSize];	///< per item, the click counter at DS:0x99D7
 	uint _page;
+	int _scroll;				///< [0xa63c], in pixels down the list
 
 	Graphics::Surface _icons;	///< KAMAT.PCX, the icon grid
 	Graphics::Surface _chrome;	///< OBJFILE.PCX, the arrows and the thumb

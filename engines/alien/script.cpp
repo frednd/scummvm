@@ -417,6 +417,15 @@ bool RoomScript::holds(const ScriptCond &cond) const {
 			equal = value == cond.value;
 			debugC(2, kDebugGraphics, "script: anim state 0x%04x is %d, guard wants %d",
 				   cond.addr, value, cond.value);
+		} else if (cond.addr == kScenePos || cond.addr == kScenePos + 1) {
+			// The stream cursor is a word the player keeps rather than a byte
+			// of a block, which flag() answers and flagSlot() does not. Reading
+			// it through the block made every `[0xa498] == N` guard false, so
+			// the two aliens in front of the house never played their last two
+			// lines' animations (manual playthrough #19). The room machine and
+			// the scene clock are left as they were: the room-init rows that
+			// guard on them belong to machines the port runs by hand.
+			equal = flag(cond.addr) == cond.value;
 		} else {
 			const byte *slot = flagSlot(cond.addr);
 			if (!slot)

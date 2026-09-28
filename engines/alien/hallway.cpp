@@ -191,7 +191,7 @@ void AlienEngine::playPeephole() {
 	debugC(1, kDebugCutscene, "hallway: %s, %s, music %u", kPeepholePlate, kPeepholeTal,
 		   kPeepholeMusic);
 
-	static const uint32 kTickMillis = 1000 / 70;
+	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 	uint32 last = g_system->getMillis();
 	uint32 tick = 0;
 

@@ -159,7 +159,7 @@ void AlienEngine::playTelescopeView() {
 	debugC(1, kDebugTelescope, "telescope: the view opens, lever %s",
 		   lowered ? "down" : "up");
 
-	static const uint32 kTickMillis = 1000 / 70;
+	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 	uint32 last = g_system->getMillis();
 	uint32 tick = 0;
 	bool quit = false;
@@ -387,7 +387,7 @@ void AlienEngine::playObservatoryScreen() {
 	debugC(1, kDebugTelescope, "telescope: the computer opens, %s",
 		   mode == kModeNoDisk ? "no disk" : "the menu");
 
-	static const uint32 kTickMillis = 1000 / 70;
+	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 	uint32 last = g_system->getMillis();
 	uint32 tick = 0;
 

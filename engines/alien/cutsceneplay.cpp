@@ -266,7 +266,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 	_dirty = true;
 
-	static const uint32 kTickMillis = 1000 / 70;
+	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 	uint32 last = g_system->getMillis();
 	uint32 tick = 0;
 
@@ -389,6 +389,23 @@ void AlienEngine::playCutsceneRecord(uint number) {
 		while (advance && !skipped) {
 			advance = false;
 			entered = true;
+
+			// A click cuts a line short, which the original cannot do -- its
+			// lines only time out. The line's tail procedure is what puts the
+			// speaker back at rest and drops the loop flag his talk cycle set,
+			// so a line clicked through before it ran left that flag up, and
+			// the next play on the speaker's slot -- the alien's walk out of the
+			// torture scene -- was relaunched by the loop stepper and played a
+			// second time (manual playthrough #18). The tail runs here instead.
+			if (speaking && !tailRun) {
+				runCutsceneProc(rec->subProcs[speaker == 0 ? 2 : 3]);
+				tailRun = true;
+			}
+			if (speaking) {
+				stopSpeech();
+				_queueNext = _queueCount;
+				speaking = false;
+			}
 
 			if (cursor >= stepCount) {
 				skipped = true;

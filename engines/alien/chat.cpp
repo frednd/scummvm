@@ -421,7 +421,101 @@ void AlienEngine::sweepChatTrees() {
 	}
 }
 
+/// The forty rows under the playfield, which the two slides move.
+static const int kBarTop = 160;
+static const int kBarRows = 40;
+
+/// OBJ:sub_02eca's glide: 8.8 fixed point, starting at the bottom of the screen
+/// and slowing by 0x1e a step, 27 steps.
+static const int kGlideStart = 0xc800;
+static const int kGlideStep = 0x300;
+static const int kGlideSlow = 0x1e;
+static const int kGlideSteps = 0x1b;
+
+static const uint32 kSlideTickMillis = AlienEngine::kMasterTickMillis;
+
+/// One master tick of a slide: OBJ:sub_02ea1 opens on OBJ:obj_set_active.
+static bool slideTick(AlienEngine *vm) {
+	g_system->updateScreen();
+	g_system->delayMillis(kSlideTickMillis);
+	Common::Event event;
+	while (g_system->getEventManager()->pollEvent(event)) {
+	}
+	return !vm->shouldQuit();
+}
+
+/**
+ * OBJ:sub_02f27: whatever the bottom forty rows hold slides down off the
+ * screen a row a tick, leaving them black.
+ *
+ * This blocks, as the original does: each step waits for the next master tick.
+ */
+void AlienEngine::hideBar() {
+	Graphics::Surface *shown = g_system->lockScreen();
+	Graphics::Surface bar;
+	bar.copyFrom(*shown);
+	g_system->unlockScreen();
+
+	byte black[320] = { 0 };
+	for (int step = 1; step <= kBarRows; step++) {
+		g_system->copyRectToScreen(black, 0, 0, kBarTop + step - 1, bar.w, 1);
+		if (step < kBarRows)
+			g_system->copyRectToScreen(bar.getBasePtr(0, kBarTop), bar.pitch, 0, kBarTop + step,
+									   bar.w, kBarRows - step);
+		if (!slideTick(this))
+			break;
+	}
+	bar.free();
+
+	_barHidden = true;
+	_dirty = true;
+	debugC(1, kDebugChat, "bar: slid off the screen");
+}
+
+/**
+ * OBJ:sub_030f4 by way of sub_02eca: the bar is put back together and glides
+ * up from the bottom of the screen, fast at first and slowing into place.
+ */
+void AlienEngine::showBar() {
+	if (!_barHidden)
+		return;
+	_barHidden = false;
+
+	// The frame the bar ends in. redraw() puts it on the screen as well, but
+	// nothing is shown before the first step has overwritten its bottom rows.
+	redraw();
+	Graphics::Surface frame;
+	frame.copyFrom(_screen);
+
+	byte black[320] = { 0 };
+	for (int y = kBarTop; y < kBarTop + kBarRows; y++)
+		g_system->copyRectToScreen(black, 0, 0, y, frame.w, 1);
+
+	int pos = kGlideStart, speed = kGlideStep;
+	for (int step = 0; step < kGlideSteps; step++) {
+		const int row = pos >> 8;
+		if (row < kBarTop + kBarRows)
+			g_system->copyRectToScreen(frame.getBasePtr(0, kBarTop), frame.pitch, 0, row,
+									   frame.w, kBarTop + kBarRows - row);
+		if (!slideTick(this))
+			break;
+		pos -= speed;
+		speed -= kGlideSlow;
+	}
+
+	g_system->copyRectToScreen(frame.getPixels(), frame.pitch, 0, 0, frame.w, frame.h);
+	g_system->updateScreen();
+	frame.free();
+	debugC(1, kDebugChat, "bar: back on the screen");
+}
+
 void AlienEngine::openChat(uint topic) {
+	// OBJ:sub_0967e slides the bar away before it lists anything.
+	if (!_chat.isActive() && !_barHidden) {
+		hideBar();
+		_chatOwnsBar = true;
+	}
+
 	if (!_chatColorsHeld) {
 		memcpy(_chatPalette, _palette + kChatFirstEntry * 3, sizeof(_chatPalette));
 		_chatColorsHeld = true;
@@ -446,6 +540,12 @@ void AlienEngine::stepChat() {
 													  kChatFirstEntry, kChatEntryCount);
 			_chatColorsHeld = false;
 			_dirty = true;
+		}
+
+		// And the bar comes back up (OBJ:sub_0ab84's tail, sub_030f4).
+		if (_chatOwnsBar) {
+			_chatOwnsBar = false;
+			showBar();
 		}
 		return;
 	}

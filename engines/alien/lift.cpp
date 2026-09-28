@@ -78,11 +78,30 @@ namespace Alien {
 // refusal. Every hit plays the press flash and then waits 0x64 animation ticks
 // before the case runs, which is the console "thinking"; nothing else is
 // accepted while that countdown, the refusal hold or a pending case is standing.
+//
+// Three of the slots loop, each relaunched by MIDAS:snd_func_112d from the loop
+// itself rather than by a room tick: the boot animation on slot 0 for as long
+// as the boot runs, the blinking prompt on slot 2 for as long as the console is
+// up, and the "Processing. Please wait..." spinner the press flash puts on slot
+// 1 for as long as the console is thinking (0x02a2, guarded on [bp-2]).
+//
+// And the screen changes twice by sub_15f46, a block wipe: 32x8 tiles copied
+// from the page to the screen left to right and row by row, one master tick
+// each. It clears the boot text (0x018b, the page memset to colour 0x90 first)
+// and it brings the console up on its first pass (0x046e).
+//
+// On the way out it sets [0xa6d2], which room 3's open answers by standing Ben
+// back at 117,52 facing away and giving him one of two lines, 0x1c and 0x1d in
+// turn by [0xa6d4] (ovr_03_0e57:0x0a70, the lifted room init).
+//
+// The port adds skipping (manual playthrough #23): a click ends the boot, a
+// wipe, the thinking countdown or the car's ride where it stands.
 static const int kLabRoom = 3;
 static const byte kComputer = 1;			///< room 3's object 1
 static const uint16 kTerminalUsed = 0xa6e1;	///< the floppy is in the toaster
 static const uint16 kPanelSeen = 0xa701;	///< [0xa701], set once the panel has run
 static const uint16 kCarFloor = 0xa700;		///< 0 = the car is at the bedroom
+static const uint16 kPanelReturn = 0xa6d2;	///< room 3's open: Ben is back from the panel
 
 static const byte kLineNoDisk = 0x1b;		///< the drive is empty
 static const byte kLineFirst = 0x23;		///< the computer answers, first time
@@ -113,6 +132,17 @@ static const int kBackward = 3;
 static const int kBootTicks = 0x46;		///< how long 64INIT runs before the console
 static const int kThinkTicks = 0x64;	///< between a button going down and its case
 static const int kRefuseTicks = 0x1e;	///< how long the refusal indicator stands
+
+/// sub_15f46's tiles, and the part of the screen they cover: 10 x 24 of them,
+/// which leaves the bottom eight rows alone.
+static const int kWipeW = 0x20, kWipeH = 8;
+static const int kWipeCols = 10, kWipeRows = 0x18;
+
+/// 0x018b: the boot text is cleared to this before the console comes in.
+static const byte kClearColour = 0x90;
+static const int kClearX = 8, kClearY = 8, kClearW = 0x130, kClearH = 0xb8;
+
+static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 
 static const byte kCaseUp = 1;
 static const byte kCaseDown = 2;
@@ -200,11 +230,44 @@ void AlienEngine::stepLiftCall() {
  * This blocks, the way a cutscene does: the room it interrupts is reloaded
  * afterwards, which is what submode 0x6f comes to.
  */
+/**
+ * 15f3:sub_15f46: bring `to` onto the screen a tile at a time.
+ *
+ * Whatever is on the screen now stays under the tiles still to come. Returns
+ * false if the player quit, which the caller treats as the quit box.
+ */
+bool AlienEngine::liftWipe(const Graphics::Surface &to) {
+	bool skip = false;
+	for (int row = 0; row < kWipeRows; row++) {
+		for (int col = 0; col < kWipeCols; col++) {
+			const int x = col * kWipeW, y = row * kWipeH;
+			g_system->copyRectToScreen(to.getBasePtr(x, y), to.pitch, x, y, kWipeW, kWipeH);
+			if (skip)
+				continue;
+
+			// OBJ:obj_set_active, a wait for the next master tick.
+			g_system->updateScreen();
+			g_system->delayMillis(kTickMillis);
+
+			Common::Event event;
+			while (g_system->getEventManager()->pollEvent(event)) {
+				if (event.type == Common::EVENT_KEYDOWN &&
+					event.kbd.keycode == Common::KEYCODE_ESCAPE)
+					return false;
+				if (event.type == Common::EVENT_LBUTTONDOWN ||
+					event.type == Common::EVENT_RBUTTONDOWN)
+					skip = true;
+			}
+			if (shouldQuit())
+				return false;
+		}
+	}
+	g_system->updateScreen();
+	return true;
+}
+
 void AlienEngine::playLiftPanel() {
 	const int room = _room;
-	const int benX = _ben.walkX();
-	const int benY = _ben.walkY();
-	const int benFacing = _ben.facing();
 
 	Graphics::Surface plate;
 	byte palette[256 * 3];
@@ -246,7 +309,6 @@ void AlienEngine::playLiftPanel() {
 	debugC(1, kDebugLift, "lift: the console opens, the car is %s",
 		   _script.flag(kCarFloor) == 0 ? "at the bedroom" : "in the basement");
 
-	static const uint32 kTickMillis = 1000 / 70;
 	uint32 last = g_system->getMillis();
 	uint32 tick = 0;
 
@@ -274,9 +336,30 @@ void AlienEngine::playLiftPanel() {
 				event.kbd.keycode == Common::KEYCODE_ESCAPE)
 				quit = true;
 
+			if (!click)
+				continue;
+
+			// Skipping, which the original has none of (#23): the boot runs out,
+			// the console stops thinking, the car arrives.
+			if (booting) {
+				bootLeft = 1;
+				continue;
+			}
+			if (pending && think > 1) {
+				think = 1;
+				continue;
+			}
+			if (indicator && _anims.isBusy(kShaftSlot)) {
+				if (_script.flag(kCarFloor) == 0)
+					_anims.play(kShaftSlot, 0xe, 1, 0, kForward);
+				else
+					_anims.takeDown(kShaftSlot);
+				continue;
+			}
+
 			// 0x02b0: both buttons are read, and nothing is accepted while a
 			// case is pending or either counter is standing.
-			if (!click || booting || pending || think > 0 || hold > 0)
+			if (pending || think > 0 || hold > 0)
 				continue;
 
 			const byte hit = liftBoxAt(event.mouse.x, event.mouse.y,
@@ -338,12 +421,23 @@ void AlienEngine::playLiftPanel() {
 			_anims.tick();
 
 			if (booting) {
+				// 0x0173: the boot animation loops for as long as it runs.
+				_anims.relaunch(kShaftSlot);
 				if (--bootLeft > 0)
 					continue;
 
-				// The boot sequence is over: the console plate and its three
-				// banks go in over it (0x01c9-0x0257).
+				// The boot sequence is over. 0x018b: the text is cleared to one
+				// colour and wiped off...
 				booting = false;
+				Graphics::Surface cleared;
+				cleared.copyFrom(_screen);
+				cleared.fillRect(Common::Rect(kClearX, kClearY, kClearX + kClearW,
+											  kClearY + kClearH), kClearColour);
+				if (!liftWipe(cleared))
+					quit = true;
+
+				// ...and the console plate and its three banks go in over it
+				// (0x01c9-0x0257).
 				Graphics::Surface panel;
 				byte panelPalette[256 * 3];
 				if (loadGamePCX(Common::Path(kPanelPlate), panel, panelPalette)) {
@@ -365,10 +459,27 @@ void AlienEngine::playLiftPanel() {
 				if (_script.flag(kCarFloor) == 0)
 					_anims.play(kShaftSlot, 0xe, 1, 0, kForward);
 
-				_dirty = true;
+				// 0x046e: the first pass of the console is wiped in over the
+				// cleared screen, which redraw() has to be kept from showing.
+				redraw();
+				Graphics::Surface console;
+				console.copyFrom(_screen);
+				g_system->copyRectToScreen(cleared.getPixels(), cleared.pitch, 0, 0,
+										   cleared.w, cleared.h);
+				if (!quit && !liftWipe(console))
+					quit = true;
+				console.free();
+				cleared.free();
+
 				shot = 1;
 				continue;
 			}
+
+			// 0x02a2: the spinner loops while the console thinks, the prompt
+			// blinks for as long as it is up.
+			if (think > 0)
+				_anims.relaunch(kPanelSlot);
+			_anims.relaunch(kCursorSlot);
 
 			if (think > 0)
 				think--;
@@ -456,14 +567,15 @@ void AlienEngine::playLiftPanel() {
 	_cutscene = false;
 	_clipBottom = clip;
 	_script.setFlag(kPanelSeen, 1);
+	_script.setFlag(kPanelReturn, 1);
 
 	debugC(1, kDebugLift, "lift: the console closes, the car is %s",
 		   _script.flag(kCarFloor) == 0 ? "at the bedroom" : "in the basement");
 
-	if (room > 0 && loadRoom(room)) {
-		_ben.place(benX, benY, benFacing);
+	// Room 3's open reads [0xa6d2]: it stands Ben back at 117,52 and
+	// gives him his line.
+	if (room > 0 && loadRoom(room))
 		_pendingCutscenes = false;
-	}
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 	CursorMan.showMouse(true);
 	_dirty = true;

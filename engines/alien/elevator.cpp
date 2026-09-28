@@ -246,7 +246,7 @@ void AlienEngine::playElevatorPanel() {
 		}
 	};
 
-	static const uint32 kTickMillis = 1000 / 70;
+	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 	uint32 last = g_system->getMillis();
 	uint32 tick = 0;
 	uint scripted = 0;
