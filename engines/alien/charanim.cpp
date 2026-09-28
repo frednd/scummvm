@@ -298,7 +298,7 @@ static const TurnSequence kTurns[] = {
 
 static const int kTurnFrameBase = 0x3f;
 
-// Walking speed, in 1/64 pixel per tick. The mover keeps whichever axis leads
+// Walking speed, in 1/64 pixel per tick pair. The mover keeps whichever axis leads
 // at a fixed rate and scales the other by the slope: 1.5 pixels across, 0.625
 // down, which is the perspective squash the room floors are drawn with.
 static const int kSpeedX = 96;
@@ -386,7 +386,8 @@ Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY
 		_frame(kIdleFrame[3]), _turnLeft(0), _idleCount(0), _idleCycle(0),
 		_idleStream(nullptr), _idleIndex(0), _idleLeft(0), _idleFrame(0),
 		_idleAllowed(true),
-		_talking(false), _talkReady(false), _talkPhase(0), _talkHalf(false) {
+		_talking(false), _talkReady(false), _talkPhase(0), _talkHalf(false),
+		_placements(0) {
 	memset(_turn, 0, sizeof(_turn));
 }
 
@@ -402,6 +403,7 @@ void Walker::place(int walkX, int walkY, int facing) {
 	_turnLeft = 0;
 	_route.count = 0;
 	_waypoint = 0;
+	_placements++;
 	resetIdle();
 	updateFrame();
 }
@@ -678,16 +680,35 @@ void Walker::tick(bool inventoryOpen) {
 
 	_talkReady = false;
 
+	// The walk cycle runs off its own counter rather than off the distance
+	// covered, so it keeps time across a change of direction. It steps on the
+	// animation gate only; the position steps twice as often (stepMove).
+	if (_steps > 0)
+		_phase = (_phase + 1) % kWalkFrames;
+
+	advance();
+	updateFrame();
+}
+
+bool Walker::stepMove() {
+	if (_turnLeft || !isWalking())
+		return false;
+
+	_talkReady = false;
+	advance();
+	updateFrame();
+	return true;
+}
+
+void Walker::advance() {
+	// OBJ:0x7780: one step of [0xa926]/[0xa928] while [0xa8f4] is left, then
+	// sub_09719 takes the next waypoint -- neither behind [0xa5f9].
 	if (_steps > 0) {
 		_fx += _stepX;
 		_fy += _stepY;
 		_x = _fx >> 6;
 		_y = _fy >> 6;
 		_steps--;
-
-		// The walk cycle runs off its own counter rather than off the distance
-		// covered, so it keeps time across a change of direction.
-		_phase = (_phase + 1) % kWalkFrames;
 	}
 
 	if (_steps <= 0) {
@@ -705,8 +726,6 @@ void Walker::tick(bool inventoryOpen) {
 			arrive();
 		}
 	}
-
-	updateFrame();
 }
 
 void Walker::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const {

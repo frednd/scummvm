@@ -197,6 +197,10 @@ public:
 	bool isWalking() const { return _waypoint < _route.count; }
 	bool isTurning() const { return _turnLeft != 0; }
 
+	/// Bumped by every place(): the camera snaps on a placement, the way
+	/// CHARANIM:sub_13bce rewrites [0xa0c4] itself, and pans otherwise.
+	uint placements() const { return _placements; }
+
 	/**
 	 * Restart the idle machine, which every click reaching LOGIC's walk
 	 * dispatch does: it zeroes [0xa808] and [0xa80a] whether or not the click
@@ -237,6 +241,14 @@ public:
 	 * machine: nothing fidgets while the bar is up.
 	 */
 	void tick(bool inventoryOpen = false);
+
+	/**
+	 * The mover's half of the tick on the other tick pair. OBJ:sub_098d1 runs
+	 * on every tick pair (~35 Hz): only the walk phase, the turn countdown and
+	 * the idle machine wait for [0xa5f9], the position step does not. Returns
+	 * whether he moved.
+	 */
+	bool stepMove();
 
 	void draw(Graphics::Surface &dest, int scrollX = 0,
 			  int clipBottom = DL1Sprite::kNoClipBottom) const;
@@ -283,6 +295,7 @@ public:
 
 private:
 	void startSegment();
+	void advance();
 	int facingToward(int targetX, int targetY) const;
 	void turnTo(int facing);
 	void arrive();
@@ -318,6 +331,7 @@ private:
 	/// at fixed points in that count starts a canned animation or turns him
 	/// round to face the player.
 	int _idleCount;
+	uint _placements;
 	int _idleCycle;
 	const byte *_idleStream;	///< the frame list being played, [0xa0bc]:[0xa0be]
 	int _idleIndex;				///< how far into it, [0xa0b8]

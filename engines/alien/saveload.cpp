@@ -157,7 +157,7 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 		// room back at scroll zero, so a wide room restored with the character
 		// off to one side opened unscrolled and panned across on his first step
 		// (playtest report 7 of 2026-09-06).
-		updateScroll();
+		updateScroll(true);
 
 		stopSpeech();
 		_pending = -1;
@@ -493,7 +493,7 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 		if (loadRoom(room)) {
 			_ben.place(x, y);
 			_ben.stop();
-			updateScroll();
+			updateScroll(true);
 		}
 	}
 

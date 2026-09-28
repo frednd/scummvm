@@ -57,8 +57,6 @@ public:
 	static const int kScreenWidth = 320;
 	static const int kScreenHeight = 200;
 
-	/// How far a held camera pans a frame on its way to the point it holds.
-	static const int kHoldPanStep = 4;
 
 	/// The row the playfield ends on, and so the value OBJ:sub_08567 puts in
 	/// [0xa8e4] as every room opens: the DL1 blitter draws nothing at or below
@@ -228,6 +226,10 @@ private:
 	void reloadPlates();
 	void bedroomSwitch(int anchorX, int anchorY);
 	bool isBedroomSwitch(int obj) const;
+	bool hijackBedroomLift(byte submode);
+	void stepBedroomLift();
+	void enterMansion(int room);
+	void stepMansion();
 	void applyOcclusion();
 	bool triggerCutscene(byte id);
 	void roomCutscenes(int room);
@@ -289,6 +291,7 @@ private:
 
 	void enterBasement(int room);
 	void stepBasement();
+	void takeBasementBattery(int obj);
 
 	/// Room 11's television, the tape it plays and the arrow that comes down
 	/// with it (living.cpp).
@@ -601,6 +604,11 @@ private:
 	bool _secondPlate;				///< showing the room's B plate rather than A
 	int _roomWidth;					///< room's total pixel width; 320 unless wide (see [0xa0c0])
 	int _scrollX;						///< live horizontal scroll offset (see [0xa0c4], sub_13bce)
+	int32 _scrollPos;					///< [0xa0c8]: _scrollX in 1/1024 px
+	int _scrollVel;						///< [0xa0cc]: pan speed, 1/1024 px a tick
+	byte _scrollState;					///< [0xa0ce]: 1 coasting right, 0 left, 0xff neither
+	int _scrollFocus;					///< [0xa0c2]: the x the camera is making for
+	uint _scrollPlacements;				///< Walker::placements() last snapped to
 
 	RoomScript _script;			///< the room's own reaction to a click
 	AnimSlots _anims;			///< the room's DL1 banks and what is playing on them
@@ -794,6 +802,10 @@ private:
 	/// Room 3's [0xa49f] machine, less the opening the two steps in opening.cpp
 	/// carry (lab.cpp). Zero when nothing is running.
 	byte _labStep;
+	/// Room 7's walk into the lift car: 0 idle, 1 his line, 2 WALKINC1 (bedroom.cpp).
+	byte _bedroomLiftStep;
+	/// Room 27's [0xa49f]: 3 while the manhole climb has the character (sewer.cpp).
+	byte _mansionStep;
 	bool _liftPending;			///< the computer's line is up; the panel follows it
 
 	/// Room 19: the cover has been looked at and its line is still up. The

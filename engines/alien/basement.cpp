@@ -79,6 +79,10 @@ static const int kDivingRoom = 46;
 static const uint kClimbSlot = 0;		///< the way in from the bedroom
 static const uint kHoleSlot = 9;		///< down to the sewer
 static const uint kLadderSlot = 10;		///< back up to the bedroom
+static const uint kSmokeSlot = 5;		///< ALA_SMOK, the machine's smoke
+static const uint kPipeSlot = 7;		///< BASEPIPE, the machine itself
+
+static const int kBatteryObject = 12;	///< the battery sitting in the machine
 
 static const uint16 kHoleArmed = 0xa6d0;	///< one-shot, cleared by the room open
 static const uint16 kLadderArmed = 0xa6d1;
@@ -273,6 +277,26 @@ void AlienEngine::stepBasement() {
 		debugC(1, kDebugRooms, "basement: into the hole, step 0x%02x", kStepHole);
 		return;
 	}
+}
+
+/**
+ * The tail of obj 12's body, the battery taken back out of the pipe machine
+ * (ovr_0d_0e6f:0x0158). Besides the frame, the flags and the item the lifted row
+ * carries, it writes 0 into [0xa4f1] and [0xa4ef] -- the frames-left bytes of
+ * slot 7 (BASEPIPE, the machine) and slot 5 (ALA_SMOK, its smoke). The room
+ * tick only relaunches a slot whose count is at 1 (MIDAS:snd_func_112d), so
+ * that is what stops both where they stand. The lift refuses writes into the
+ * slot arrays, which is why the machine stopped -- its loop is also guarded on
+ * [0xa6f0] -- but the smoke, looped unguarded, went on.
+ */
+void AlienEngine::takeBasementBattery(int obj) {
+	if (_room != kBasementRoom || obj != kBatteryObject)
+		return;
+
+	_anims.stop(kPipeSlot);
+	_anims.stop(kSmokeSlot);
+	debugC(1, kDebugRooms, "basement: battery out, slots %u and %u stopped", kPipeSlot,
+		   kSmokeSlot);
 }
 
 } // End of namespace Alien

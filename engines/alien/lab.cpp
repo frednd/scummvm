@@ -118,9 +118,13 @@ void AlienEngine::armLab(int obj, bool item) {
 	// item-use path and 0x4e25 the plain-verb one, which is what `item` is here.
 	if (item && obj == kLabPlank) {
 		_labStep = kStepPlank;
-		// The play itself is in the click body; naming the slot here is what
-		// lets showCharacter() take it down again with him.
-		hideCharacter(kPlankSlot);
+		// The play itself is in the click body. The slot is *not* named for
+		// showCharacter() to take down: the machine only gives [0xa94d] back
+		// two frames from the end, and those two frames (LAB_PLAN 88/89) are
+		// the hole alone, no Ben -- mode 1 runs them out and leaves the last,
+		// the key lying in the hole, in the plate. Taking the slot down there
+		// dropped it, and the boarded-up plank stayed on screen (#20).
+		hideCharacter();
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "lab: the plank comes off, step %d", kStepPlank);
 		return;
@@ -136,7 +140,8 @@ void AlienEngine::armLab(int obj, bool item) {
 
 	if (!item && obj == kLabKey) {
 		_labStep = kStepKey;
-		hideCharacter(kKeySlot);
+		// Likewise: LAB_TKEY 39/40 are the emptied hole, which has to bake.
+		hideCharacter();
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "lab: the key, step 0x%02x", kStepKey);
 		return;

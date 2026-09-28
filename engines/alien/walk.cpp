@@ -183,6 +183,8 @@ bool WalkNodes::load(const Common::Path &path) {
 // --------------------------------------------------------------------------
 
 Walk::Walk() {
+	memset(_slotX, 0, sizeof(_slotX));
+	memset(_slotY, 0, sizeof(_slotY));
 }
 
 void Walk::unload() {
@@ -247,12 +249,13 @@ bool Walk::load(int room, const RoomAssets &assets) {
 
 bool Walk::losBlocked(int x0, int y0, int x1, int y1) const {
 	// walk_los_blocked (OBJ 0x76df). The line is marched in 6.6 fixed point
-	// from (x1, y1) toward (x0, y0), sampling only every fourth pixel of the
-	// major axis, and a zero delta is forced to 1 rather than special-cased,
-	// which tilts a perfectly straight ray by one unit. Both quirks are what
-	// make a port pick the waypoints the original picked.
-	int dx = x0 - x1;
-	int dy = y0 - y1;
+	// from (x0, y0) -- the first pair pushed, [bp+0xa]/[bp+8] -- toward
+	// (x1, y1), sampling only every fourth pixel of the major axis, and a zero
+	// delta is forced to 1 rather than special-cased, which tilts a perfectly
+	// straight ray by one unit. The march never has to land on its far end, so
+	// which end it starts from changes the answer.
+	int dx = x1 - x0;
+	int dy = y1 - y0;
 	if (!dx)
 		dx = 1;
 	if (!dy)
@@ -271,8 +274,8 @@ bool Walk::losBlocked(int x0, int y0, int x1, int y1) const {
 	stepX <<= 2;
 	stepY <<= 2;
 
-	int fx = x1 << 6;
-	int fy = y1 << 6;
+	int fx = x0 << 6;
+	int fy = y0 << 6;
 	for (int i = (major >> 2) + 1; i > 0; i--) {
 		if (_mask.blocked(fx >> 6, fy >> 6))
 			return true;
@@ -320,97 +323,103 @@ uint Walk::nearestVisibleNode(int fromX, int fromY, int toX, int toY) const {
 	return best;
 }
 
-void Walk::buildRoute(int fromX, int fromY, int toX, int toY, bool forward,
-					  WalkRoute &route) const {
+uint Walk::buildRoute(int fromX, int fromY, int toX, int toY, bool forward) const {
 	// walk_build_route (OBJ 0x7a36). In the original the route is seeded with
 	// walk_pos, the destination, and the ring is swept until a node can see
 	// walk_from, the character; the mover then reads the route back to front.
-	// plotRoute calls this that way round and turns the answer around, because
-	// neither this search nor the line sampler is symmetric.
-	route.count = 0;
-	route.points[route.count].x = (int16)fromX;
-	route.points[route.count].y = (int16)fromY;
-	route.count++;
-
-	if (!_nodes.count())
-		return;
-
-	// When the two ends can already see each other no node is used at all,
-	// which is the common case in an open room.
-	if (!losBlocked(toX, toY, fromX, fromY)) {
-		route.points[route.count] = route.points[0];
-		route.count++;
-		return;
-	}
-
+	// plotRoute calls this that way round, because neither this search nor the
+	// line sampler is symmetric. Slot 1 is the destination.
 	uint cur = nearestVisibleNode(fromX, fromY, toX, toY);
 	if (cur == kNoNode)
 		cur = 0;
 
-	// The original has no ring completion guard and relies on some node seeing
-	// the target; when none can, it laps until the waypoint cap trips. Bounding
-	// the sweep at one lap plus the cap ends it in the same place without
-	// spinning.
-	const uint laps = _nodes.count() + WalkRoute::kMaxWaypoints;
-	for (uint step = 0; step < laps; step++) {
-		if (route.count > WalkRoute::kMaxWaypoints)
-			break;
+	uint idx = 1;
+	_slotX[idx] = (int16)fromX;
+	_slotY[idx] = (int16)fromY;
+	idx++;
 
-		route.points[route.count].x = (int16)_nodes.x(cur);
-		route.points[route.count].y = (int16)_nodes.y(cur);
-		route.count++;
+	// When the two ends can already see each other no node is used at all,
+	// which is the common case in an open room: slot 2 repeats the destination
+	// and the build ends without moving past it.
+	if (!_nodes.count() || !losBlocked(toX, toY, fromX, fromY)) {
+		_slotX[idx] = (int16)fromX;
+		_slotY[idx] = (int16)fromY;
+		return idx;
+	}
 
+	// The original has no guard but the waypoint cap, which a sweep that keeps
+	// dropping the waypoint it has just added never reaches; a generous bound
+	// on passes stands in for it.
+	for (uint pass = 0; pass < 0x1000; pass++) {
+		_slotX[idx] = (int16)_nodes.x(cur);
+		_slotY[idx] = (int16)_nodes.y(cur);
 		const bool done = !losBlocked(_nodes.x(cur), _nodes.y(cur), toX, toY);
 
 		// Shortcut: when the waypoint two back can see the new one, the one in
-		// between is dropped. This is what turns the raw ring walk into a path
-		// that hugs the corners.
-		if (route.count >= 3) {
-			const WalkRoute::Point &back = route.points[route.count - 3];
-			const WalkRoute::Point &head = route.points[route.count - 1];
-			if (!losBlocked(head.x, head.y, back.x, back.y)) {
-				route.points[route.count - 2] = head;
-				route.count--;
-			}
+		// between is dropped -- the new one is copied down over it, which leaves
+		// a copy behind in the slot it came from.
+		if (idx > 2 && !losBlocked(_slotX[idx], _slotY[idx], _slotX[idx - 2], _slotY[idx - 2])) {
+			_slotX[idx - 1] = _slotX[idx];
+			_slotY[idx - 1] = _slotY[idx];
+			idx--;
 		}
-
-		if (done)
-			break;
 
 		if (forward)
 			cur = (cur + 1) % _nodes.count();
 		else
 			cur = (cur + _nodes.count() - 1) % _nodes.count();
+
+		idx++;
+		if (done || idx > 0x3b)
+			break;
 	}
+	return idx;
+}
+
+uint16 Walk::routeLength(uint idx) const {
+	// walk_route_finish (OBJ 0x793d). The steps are summed from slot 0 to slot
+	// idx: one before the destination, which is always (0, 0), and one past the
+	// last waypoint, which is stale. All of it in 16 bits, each sum over eight,
+	// squared, and added -- the carry dropped at every step.
+	uint16 sumX = 0, sumY = 0;
+	for (uint i = 0; i < idx && i + 1 < kSlots; i++) {
+		sumX += (uint16)ABS(_slotX[i + 1] - _slotX[i]);
+		sumY += (uint16)ABS(_slotY[i + 1] - _slotY[i]);
+	}
+	sumX >>= 3;
+	sumY >>= 3;
+	return (uint16)((uint16)(sumX * sumX) + (uint16)(sumY * sumY));
 }
 
 bool Walk::plotRoute(int fromX, int fromY, int toX, int toY, WalkRoute &route) const {
 	if (!_mask.isLoaded())
 		return false;
 
-	// walk_plot_route: both directions around the ring, keep the shorter. The
-	// search runs from the destination toward the character, as the original's
-	// does.
-	WalkRoute forward, back;
-	buildRoute(toX, toY, fromX, fromY, true, forward);
-	buildRoute(toX, toY, fromX, fromY, false, back);
-	const WalkRoute &found = back.count < forward.count ? back : forward;
+	// walk_plot_route (OBJ 0x7c52): forward round the ring, then back, each
+	// measured; the backward build, being the last one made, stands unless the
+	// forward one is strictly shorter, in which case it is built again. The
+	// search runs from the destination toward the character.
+	const uint16 lenForward = routeLength(buildRoute(toX, toY, fromX, fromY, true));
+	uint idx = buildRoute(toX, toY, fromX, fromY, false);
+	const uint16 lenBack = routeLength(idx);
+	if (lenForward < lenBack)
+		idx = buildRoute(toX, toY, fromX, fromY, true);
 
-	// Turned around, so the list reads start to destination: the character's own
-	// position, which the original never stores, and then the waypoints ending
-	// on the destination. A route that needed no node comes back as the
-	// destination twice, so equal points are collapsed.
+	// walk_route_len = idx - 1: the mover takes slots idx - 1 down to 1. Turned
+	// around here so the list reads start to destination, with the character's
+	// own position, which the original never stores, in front. A route that
+	// needed no node comes back as the destination alone.
 	route.count = 0;
 	route.points[route.count].x = (int16)fromX;
 	route.points[route.count].y = (int16)fromY;
 	route.count++;
 
-	for (int i = (int)found.count - 1; i >= 0; i--) {
-		const WalkRoute::Point &p = found.points[i];
+	for (int i = (int)idx - 1; i >= 1 && route.count < WalkRoute::kMaxPoints; i--) {
 		const WalkRoute::Point &last = route.points[route.count - 1];
-		if (p.x == last.x && p.y == last.y)
+		if (_slotX[i] == last.x && _slotY[i] == last.y)
 			continue;
-		route.points[route.count] = p;
+		route.points[route.count].x = _slotX[i];
+		route.points[route.count].y = _slotY[i];
 		route.count++;
 	}
 

@@ -155,12 +155,27 @@ public:
 private:
 	/** walk_nearest_node (OBJ 0x7816); returns 0xFF when nothing is visible. */
 	uint nearestVisibleNode(int fromX, int fromY, int toX, int toY) const;
-	/** walk_build_route (OBJ 0x7a36) for one direction around the ring. */
-	void buildRoute(int fromX, int fromY, int toX, int toY, bool forward,
-					WalkRoute &route) const;
+	/**
+	 * walk_build_route (OBJ 0x7a36) for one direction around the ring, into
+	 * the slot store. Returns walk_route_idx: one past the last slot written.
+	 */
+	uint buildRoute(int fromX, int fromY, int toX, int toY, bool forward) const;
+	/** walk_route_finish (OBJ 0x793d): the length the two directions compare. */
+	uint16 routeLength(uint idx) const;
 
 	WalkMask _mask;
 	WalkNodes _nodes;
+
+	/**
+	 * The original's route arrays, ds:0x9f92 (x) and ds:0xa00c (y). They are
+	 * BSS, never cleared, and the length measure reads one slot either side of
+	 * what a build writes -- slot 0, which nothing writes, and the slot past the
+	 * last, which holds whatever an earlier build left there -- so they are kept
+	 * for the life of the engine, across rooms, the way the DOS build keeps them.
+	 */
+	enum { kSlots = 0x3d };
+	mutable int16 _slotX[kSlots];
+	mutable int16 _slotY[kSlots];
 };
 
 } // End of namespace Alien

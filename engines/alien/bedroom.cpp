@@ -25,6 +25,8 @@
 #include "alien/detection.h"
 #include "alien/resources.h"
 
+#include "graphics/cursorman.h"
+
 namespace Alien {
 
 // Room 7's light switch, and the only way into the bedroom's contents.
@@ -201,6 +203,58 @@ void AlienEngine::bedroomSwitch(int anchorX, int anchorY) {
 /// True for the one click the room does not answer for itself.
 bool AlienEngine::isBedroomSwitch(int obj) const {
 	return _room == kBedroom && obj == kSwitchObject;
+}
+
+// The walk into the lift car. Room 7's tick answers an arrival on walk submode
+// 2 -- the closet, walkgeom's objects 31/32 -- by itself rather than through
+// OBJ:sub_078dd (ovr_07_0e63:0x0eca): once he has stopped it queues event 0x26,
+// or 0x27 with [0xa6f2] set, takes the cursor, and clears the walk submode so
+// the shared routine never sees it. When that line has been spoken, entry 3
+// (0x00e4: [0xa956] == 0x4e2a, [0xacf6] 0x26/0x27) loads WALKINC1.DL1 into slot
+// 0 and plays its sixteen frames, the walker off ([0xa94d] = 0). The tick
+// writes game_submode 2 when slot 0 stands on frame 0x10 (0x0f18). The port
+// took the exit on arrival, so he walked up to the car and the ride cut in.
+static const byte kLiftSubmode = 2;
+static const byte kLiftLine = 0x26;
+static const byte kLiftLineAgain = 0x27;
+static const uint16 kLiftLineFlag = 0xa6f2;
+static const uint kWalkInSlot = 0;
+static const int kWalkInFrames = 0x10;
+static const int kWalkInRate = 3;
+
+bool AlienEngine::hijackBedroomLift(byte submode) {
+	if (_room != kBedroom || submode != kLiftSubmode)
+		return false;
+
+	int anchorX, anchorY;
+	characterAnchor(anchorX, anchorY);
+	queueOutcome(_tal, _script.flag(kLiftLineFlag) == 1 ? kLiftLineAgain : kLiftLine,
+				 anchorX, anchorY);
+	CursorMan.showMouse(false);
+	_bedroomLiftStep = 1;
+	debugC(1, kDebugBedroom, "bedroom: at the lift car, his line first");
+	return true;
+}
+
+void AlienEngine::stepBedroomLift() {
+	if (_room != kBedroom || !_bedroomLiftStep)
+		return;
+
+	if (_bedroomLiftStep == 1) {
+		if (!speechDone())
+			return;
+		_anims.loadBank(kWalkInSlot, "WALKINC1.DL1");
+		playCharacterAnim(kWalkInSlot, 1, kWalkInFrames, kWalkInRate, 1);
+		_bedroomLiftStep = 2;
+		debugC(1, kDebugBedroom, "bedroom: into the car");
+		return;
+	}
+
+	if (_anims.shownFrame(kWalkInSlot) != kWalkInFrames)
+		return;
+
+	_bedroomLiftStep = 0;
+	takeExit(kLiftSubmode);
 }
 
 } // End of namespace Alien

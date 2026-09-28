@@ -139,6 +139,8 @@ static const int kLabelInkFirst = 66;
 // no object behind it and is anchored at the middle of the playfield.
 static const int kAnchorX = 160;
 static const int kAnchorY = 90;
+// Line advance of the in-room speech block, DIALOG:sub_0b27b.
+static const int kSpeechAdvance = 9;
 
 // TALKALL.TAL holds the answers that belong to no room: the descriptions of the
 // carried items, and the two refusals the generic click path falls back on when
@@ -194,6 +196,7 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0),
+		_scrollPos(0), _scrollVel(0), _scrollState(0xff), _scrollFocus(0), _scrollPlacements(0),
 		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false),
 		_storeStep(0), _storePos(0), _storeLine(1), _storeSpeaker(0), _storeOffer(0),
@@ -244,7 +247,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
 		_openingStep(0), _openingPending(true), _roomClock(0),
-		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
+		_labStep(0), _bedroomLiftStep(0), _mansionStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true), _mailboxStep(0), _mailboxPos(0), _townStep(0), _sewerStep(0),
 		_basementStep(0), _basementClimbing(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
@@ -547,20 +550,27 @@ Common::Error AlienEngine::run() {
 			redraw();
 		g_system->updateScreen();
 
+		// The scenes the room raises as it opens. The original reaches them from
+		// inside entry 2 -- the room's tick, whose first run is the room's init
+		// -- so they play over the room the player has just walked into rather
+		// than over the one they left, but before its palette has come up: the
+		// new room is composed under black and a scene that starts there never
+		// shows it. Fading in first flashed the room before every such scene
+		// (manual playthrough #16). A scene ends by reloading the room, which
+		// asks for the fade again, so that frame is composed before it runs.
+		if (_pendingCutscenes) {
+			_pendingCutscenes = false;
+			roomCutscenes(_room);
+			if (_dirty) {
+				redraw();
+				g_system->updateScreen();
+			}
+		}
+
 		// The room's first composed frame is on the screen now, which is where
 		// the original raises the palette from black (fade.cpp).
 		if (_fadePending)
 			fadeIn();
-
-		// And with the room up, the scenes it raises as it opens. The original
-		// reaches them from inside entry 2 -- the room's tick, whose first run
-		// is the room's init -- and entry 2 is not called until the transition
-		// has put the room on the screen, so the scene plays over the room the
-		// player has just walked into rather than over the one they left.
-		if (_pendingCutscenes) {
-			_pendingCutscenes = false;
-			roomCutscenes(_room);
-		}
 
 		g_system->delayMillis(kLoopSleepMillis);
 	}
@@ -992,6 +1002,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_roomWidth = wide ? width : kScreenWidth;
 	_scrollX = 0;
 	_scrollHold = -1;
+	// Every wide room's init zeroes [0xa0c4]/[0xa0c6] and sets [0xa0ce] to
+	// 0xff; room 8 clears the speed too, and nothing else carries it over.
+	_scrollPos = 0;
+	_scrollVel = 0;
+	_scrollState = 0xff;
 	// The screen still shows the room being left, and _palette is still its
 	// palette, so this is the moment the original fades it away: OBJ:sub_0879a
 	// takes a copy as the old room's loop ends and OBJ:sub_07db3 fades that copy
@@ -1044,6 +1059,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// a room re-entered starts counting again (roomtick.cpp).
 	_roomClock = 0;
 	_labStep = 0;
+	_bedroomLiftStep = 0;
+	_mansionStep = 0;
 	_labPos = 0;
 	_labNearHole = false;
 	_sewerStep = 0;
@@ -1119,6 +1136,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// And the one room whose open carries more than the lift can express: the
 	// sewer's ladder, and the water it may still be full of (sewer.cpp).
 	enterSewer(room);
+	enterMansion(room);
 
 	// And room 13's, which is the climb down when he came in over it
 	// (basement.cpp).
@@ -1322,39 +1340,126 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 }
 
 /**
- * Recompute the live scroll offset the way `CHARANIM:sub_13bce` does:
- * `[0xa0c4] = clamp([0xa8ec] - 0xa0, 0, [0xa0c0] - 0x140)`. Narrow rooms
- * (`_roomWidth == kScreenWidth`) always resolve to zero.
+ * The camera. Two routines in the original write [0xa0c4]:
  *
- * The x it measures is the character's **sprite origin**, not the walk point --
- * the two are ten pixels apart -- and the routine it lives in is the one that
- * *places* him, so the original rewrites the camera on every placement rather
- * than only while he walks. That is why this is called from the tick whether or
- * not he is moving, and again wherever the character is put down (saveload.cpp).
+ * `CHARANIM:sub_13bce` *places* the character, and snaps the camera with him:
+ * `[0xa0c4] = clamp([0xa8ec] - 0xa0, 0, [0xa0c0] - 0x140)`, measured from the
+ * sprite origin (the walk point is ten pixels further on). Every place() does
+ * that here, spotted through Walker::placements(), and so does `snap`.
+ *
+ * `LOGIC:sub_13015`, which every wide room's loop calls once a pass with no
+ * gate, *pans* it. The x it makes for, [0xa0c2], only follows the character
+ * while his sprite is within 0x41 of the left edge or past 0xeb; in between
+ * it stays where it was, so he walks across the middle of the screen with the
+ * camera still. It pans right while that x is more than 0xaa into the screen
+ * and left while it is under 0x96, on a speed [0xa0cc] in 1/1024 px that grows
+ * by 0x28 a pass, and coasts to a stop on the same 0x28 once the scroll has
+ * moved ([0xa0ce]). A scene's hold, [0xa8e0]/[0xa8e2], just replaces the x.
+ *
+ * The loop never sleeps, so "a pass" is whatever the machine managed; the port
+ * takes one per master tick. Narrow rooms always resolve to zero.
  */
 void AlienEngine::updateScroll(bool snap) {
-	int scroll = 0;
-	if (_roomWidth > kScreenWidth) {
-		// [0xa8e0]: a scene holding the camera on a point of its own centres
-		// that point instead of Ben, and pans there rather than jumping
-		// (LOGIC:sub_13015 reads [0xa8e2] in place of his x).
-		const int focus = _scrollHold >= 0 ? _scrollHold : _ben.spriteX();
-		scroll = focus - kScreenWidth / 2;
-		if (scroll < 0)
-			scroll = 0;
-		if (scroll > _roomWidth - kScreenWidth)
-			scroll = _roomWidth - kScreenWidth;
-		if (_scrollHold >= 0 && !snap) {
-			if (scroll > _scrollX + kHoldPanStep)
-				scroll = _scrollX + kHoldPanStep;
-			else if (scroll < _scrollX - kHoldPanStep)
-				scroll = _scrollX - kHoldPanStep;
+	if (_roomWidth <= kScreenWidth) {
+		if (_scrollX != 0) {
+			_scrollX = 0;
+			_dirty = true;
+		}
+		_scrollPos = 0;
+		_scrollPlacements = _ben.placements();
+		return;
+	}
+
+	const int maxScroll = _roomWidth - kScreenWidth;
+	const int32 maxPos = (int32)maxScroll << 10;
+	const int x = _ben.spriteX();
+	const int prev = _scrollX;
+
+	if (snap || _ben.placements() != _scrollPlacements) {
+		_scrollPlacements = _ben.placements();
+		_scrollX = CLIP(x - kScreenWidth / 2, 0, maxScroll);
+		_scrollPos = (int32)_scrollX << 10;
+		_scrollFocus = x;
+		if (_scrollX != prev)
+			_dirty = true;
+		return;
+	}
+
+	// A scene that puts the camera somewhere itself (hallway.cpp, lift.cpp...)
+	// writes _scrollX alone; carry on from there rather than jump back.
+	if ((_scrollPos >> 10) != _scrollX)
+		_scrollPos = (int32)_scrollX << 10;
+
+	if (x - _scrollX > 0xeb || x - _scrollX < 0x41)
+		_scrollFocus = x;
+	if (_scrollHold >= 0)
+		_scrollFocus = _scrollHold;
+
+	// Right, but only from the left half of the room's width.
+	if (_scrollFocus - _scrollX > 0xaa && _scrollX < _roomWidth / 2) {
+		_scrollPos += _scrollVel;
+		_scrollVel += 0x28;
+		if (_scrollPos < 0)
+			_scrollPos = 0;
+		if (_scrollPos > maxPos) {
+			_scrollPos = maxPos;
+			_scrollVel = 0;
+		}
+		_scrollX = _scrollPos >> 10;
+		if (_scrollVel > 0x400) {
+			_scrollVel = 0x400;
+			_scrollState = 0xff;
 		}
 	}
-	if (scroll != _scrollX) {
-		_scrollX = scroll;
-		_dirty = true;
+
+	// Left. A speed still going right is braked twice over.
+	if (_scrollFocus - _scrollX < 0x96 && _scrollX > 0) {
+		_scrollPos += _scrollVel;
+		if (_scrollPos < 0)
+			_scrollPos = 0;
+		_scrollX = _scrollPos >> 10;
+		_scrollVel -= 0x28;
+		if (_scrollVel > 0)
+			_scrollVel -= 0x28;
+		if (_scrollVel < -0x400) {
+			_scrollVel = -0x400;
+			_scrollState = 0xff;
+		}
 	}
+
+	// Coasting after a move right...
+	if (_scrollState == 1) {
+		_scrollVel -= 0x28;
+		if (_scrollVel < 0x100)
+			_scrollVel = 0;
+		if (_scrollVel > 0x104) {
+			_scrollPos += _scrollVel;
+			if (_scrollPos > maxPos)
+				_scrollPos = maxPos;
+			_scrollX = _scrollPos >> 10;
+		}
+	}
+
+	// ...or after one left.
+	if (_scrollState == 0) {
+		_scrollVel += 0x28;
+		if (_scrollVel > -0x100)
+			_scrollVel = 0;
+		if (_scrollVel < -0x104) {
+			_scrollPos += _scrollVel;
+			if (_scrollPos < 0)
+				_scrollPos = 0;
+			_scrollX = _scrollPos >> 10;
+		}
+	}
+
+	if (_scrollX > prev)
+		_scrollState = 1;
+	else if (_scrollX < prev)
+		_scrollState = 0;
+
+	if (_scrollX != prev)
+		_dirty = true;
 }
 
 void AlienEngine::stepRoom(int delta) {
@@ -1557,6 +1662,8 @@ void AlienEngine::stepClock() {
 		// And room 35's own machine, which is the water it starts full of and
 		// the hatch that ends it (sewer.cpp).
 		stepLab();
+		stepBedroomLift();
+		stepMansion();
 
 		// The panel the lab computer opens, which waits for the computer's own
 		// line to come down -- by the countdown or by a click (lift.cpp).
@@ -1710,6 +1817,16 @@ void AlienEngine::stepClock() {
 	// The status line's fade runs off the frame, not off the animation gate.
 	stepLabelFade();
 
+	// OBJ:0x7bb1 calls the mover on every tick pair and only the walk phase
+	// waits for the animation gate, so on the tick pair between two animation
+	// ticks he steps once more. Arrival is still answered on the animation
+	// tick below.
+	if ((_tick & 3) == 2 && _ben.stepMove())
+		_dirty = true;
+
+	// The camera pans once a pass of the room loop, whatever else is gated.
+	updateScroll();
+
 	if (_tick & 3)
 		return;
 
@@ -1728,14 +1845,9 @@ void AlienEngine::stepClock() {
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
 	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !_libraryStep && !_labStep &&
-						!_sewerStep && !_basementStep && !_endingStep && !_openingStep);
+						!_sewerStep && !_mansionStep && !_basementStep && !_endingStep && !_openingStep);
 
 	_ben.tick(_script.flag(0xa605) != 0);
-
-	// The camera follows him whether or not he is going anywhere: the original
-	// writes it from the placement routine, so a character put down by anything
-	// other than the mover moves it too.
-	updateScroll();
 
 	if (moving) {
 		_dirty = true;
@@ -1888,7 +2000,7 @@ struct CombineRule {
 	byte replaceFrom;	///< inv_replace, the item looked for (0 = no replace)
 	byte replaceTo;		///< inv_replace, the item left on the same square
 	uint16 flag;		///< the flag the combine sets to 1 (0 = none)
-	byte outcome;		///< the room TAL record it speaks (0 = silent)
+	byte outcome;		///< the TALKALL record it speaks (0 = silent)
 };
 
 // 10c9:0x14e onwards. The first two pairs are written out inline, the last two
@@ -1940,10 +2052,13 @@ bool AlienEngine::combineItems(byte held, byte clicked) {
 			   held, _inventory.name(held).c_str(), clicked,
 			   _inventory.name(clicked).c_str());
 
-		// The line comes out of the room's own file: sub_0b5cc reads the record
-		// through [0x994e], the EMS image of the TAL the room loaded.
+		// The line comes out of the shared file, not the room's: sub_0b5cc is
+		// queue_event with the other EMS handle mapped first (OBJ:sub_02638,
+		// [0x993c], where queue_event's OBJ:sub_0262a maps [0x993a]) -- the
+		// TALKALL image. TALKALL's 0x36 is "There. The battery is in."; the
+		// room files' 0x36 are silent, which is why the combine said nothing.
 		if (rule.outcome)
-			queueOutcome(_tal, rule.outcome, anchorX, anchorY);
+			queueOutcome(_talkall, rule.outcome, anchorX, anchorY);
 
 		// [0xa6bb] = 0: the hand is spent either way.
 		holdItem(Inventory::kNoItem);
@@ -3215,6 +3330,11 @@ void AlienEngine::checkExit() {
 	if (hijackWaitingExit(submode))
 		return;
 
+	// And room 7's closet answers its arrival with a line and a walk of its
+	// own before the exit is written (bedroom.cpp).
+	if (hijackBedroomLift(submode))
+		return;
+
 	takeExit(submode);
 }
 
@@ -3678,6 +3798,11 @@ void AlienEngine::finishAction() {
 	// on it is only the refusal (waiting.cpp).
 	if (!item)
 		armWaitingButton(spot.obj, verb);
+
+	// And room 13's battery, whose body stops two animation slots by writing
+	// into the slot arrays, which the lifted row cannot (basement.cpp).
+	if (!item)
+		takeBasementBattery(spot.obj);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
 
@@ -4206,10 +4331,13 @@ void AlienEngine::drawSpeech(const TalFile::Entry &entry, int anchorX, int ancho
 	if (anchor + widest / 2 > 0x13b)
 		anchor = 0x13b - widest / 2;
 
+	// DIALOG:sub_0b27b draws the lines at [0xa9b0] + 0, 9, 0x12, 0x1b, 0x24:
+	// a 9 px advance, one row under the glyph height. The 10 and 11 above are
+	// only the clamp's estimates of the block, and it keeps them.
 	for (int i = 0; i < lines; i++) {
 		const Common::String &line = entry.lines[i];
 		const int x = anchor - _font.measure(line) / 2;
-		_font.drawString(_screen, line, x, top + i * 11);
+		_font.drawString(_screen, line, x, top + i * kSpeechAdvance);
 	}
 }
 
@@ -4231,12 +4359,14 @@ void AlienEngine::characterAnchor(int &x, int &y) const {
 
 void AlienEngine::drawBand(const TalFile::Entry &entry) {
 	// docs/dialog_system.md 3B: the narration layout, left margin 20, four
-	// lines at most, 14 px apart with the last line always at 140.
+	// lines at most, 14 px apart. DIALOG:0x1370.. pushes y 140 for one line
+	// and 126 as the first line for two, three and four (126/140/154/168):
+	// the block grows downwards, it is not bottom-aligned on 140.
 	const int lines = MIN<int>(entry.lines.size(), 4);
 	if (!lines)
 		return;
 
-	const int firstY = 140 - (lines - 1) * 14;
+	const int firstY = lines == 1 ? 140 : 126;
 	for (int i = 0; i < lines; i++)
 		_font.drawString(_screen, entry.lines[i], 20, firstY + i * 14);
 }
