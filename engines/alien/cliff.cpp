@@ -120,6 +120,10 @@ static const int kClimbY = 0x88;
 static const int kClimbFacing = 1;
 
 /// Where each climb puts him down, the char_place calls at 0x07b5 and 0x0828.
+/// CHARANIM:sub_13bce takes the sprite's origin, not the walk point (which is
+/// 10,64 on from it): the foot's 133,70 is the walk point 143,134, the foot of
+/// the climb. Taken as a walk point it stood him 64 rows up, in the air over
+/// the path (playtest issue #26).
 static const int kFootX = 133, kFootY = 70, kFootFacing = 3;
 static const int kLedgeX = 147, kLedgeY = 90, kLedgeFacing = 4;
 
@@ -259,7 +263,7 @@ void AlienEngine::stepCliff() {
 		showCharacter();
 		_ben.setScale(kFootScale);
 		_script.setFlag(kCliffLedge, 0);
-		_ben.place(kFootX, kFootY, kFootFacing);
+		_ben.placeSprite(kFootX, kFootY, kFootFacing);
 		_cliffStep = 0;
 		_dirty = true;
 		debugC(1, kDebugRooms, "cliff: down at the foot of the path");
@@ -290,7 +294,7 @@ void AlienEngine::stepCliff() {
 		_ben.setScale(kLedgeScale);
 		_script.setFlag(kCliffTop, 1);
 		_script.setFlag(kCliffLedge, 1);
-		_ben.place(kLedgeX, kLedgeY, kLedgeFacing);
+		_ben.placeSprite(kLedgeX, kLedgeY, kLedgeFacing);
 		_cliffStep = 0;
 		_dirty = true;
 

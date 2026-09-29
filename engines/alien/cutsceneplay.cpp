@@ -502,7 +502,8 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	// and clearing it again (ovr_1a_0eaf:0x069f).
 	_script.setFlag(kScenePlayed, 1);
 
-	if (room > 0 && loadRoom(room)) {
+	const bool handedBack = room > 0 && loadRoom(room);
+	if (handedBack) {
 		_ben.place(benX, benY, benFacing);
 
 		// The room is being put back, not entered: the original reaches its
@@ -514,7 +515,15 @@ void AlienEngine::playCutsceneRecord(uint number) {
 		// open.
 		_pendingCutscenes = false;
 	}
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+
+	// The hand-back is a room change like any other: loadRoom() has faded the
+	// scene's picture out (the copy OBJ:sub_07c28 takes at 0c55:18fd is what
+	// the room init fades) and left the new room under a black palette for the
+	// main loop to raise once its first frame is up. Pushing the room's palette
+	// here showed it at full brightness straight away and then dropped it to
+	// black for the fade in -- a cut, not a fade (playtest issue #30).
+	if (!handedBack)
+		g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 	CursorMan.showMouse(true);
 	_dirty = true;
 }

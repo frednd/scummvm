@@ -27,11 +27,12 @@
 
 namespace Alien {
 
-// Gameson, the hippie chained to the tree at the crossroads, and the walkman
-// that buys his hand-held game off him.
+// The hippie chained to the tree at the crossroads, and the walkman that buys
+// his hand-held game, the Gameson, off him.
 //
 // The playtest report called him the biker; the overlay calls the room's first
-// bank CROS_HIP and the walkthroughs call him Gameson, after the toy. He is
+// bank CROS_HIP. He has no name of his own: Gameson is the console, item 30, not
+// him (playtest issue #27). He is
 // room 23's object 1, and the rectangle that carries him is registered only
 // while [0x33b8] says he is still there (hotspots.cpp) -- the cliff's opening
 // clears that byte once the trade has been made (roominit.cpp).
@@ -93,7 +94,7 @@ namespace Alien {
 // already changed hands (0x03f6..0x0464).
 static const int kHippieRoom = 23;
 
-static const byte kGameson = 1;			///< the object his rectangle registers as
+static const byte kHippie = 1;			///< the object his rectangle registers as
 static const byte kVerbTalkTo = 6;
 
 static const byte kWalkman = 0x21;		///< what he takes
@@ -253,14 +254,14 @@ void AlienEngine::startHippie() {
 }
 
 /**
- * The talk verb on Gameson, and the walkman offered to him.
+ * The talk verb on the hippie, and the walkman offered to him.
  *
  * Entry 3's two halves, both of which end in a conversation the lift could not
  * carry. Returns true when the room has taken the click, the way the owl and
  * Sluggs do.
  */
 bool AlienEngine::armHippie(int obj, byte verb, int item) {
-	if (_room != kHippieRoom || obj != kGameson)
+	if (_room != kHippieRoom || obj != kHippie)
 		return false;
 
 	const bool held = _inventory.has(kWalkman);

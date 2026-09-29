@@ -63,9 +63,15 @@ namespace Alien {
 //   cmp byte ptr [0xa884], 0 / je skip          ; not before the first frame
 //   lcall OBJ:sub_0a717
 //
-// The [0xa884] half of that gate is the HUD bar's own flag (finding #57's
-// neighbour, the "two Bens" entry), and its whole life is the single composed
-// frame after a room opens; the port has no such frame, so it is not modelled.
+// The [0xa884] half of that gate is cleared by room init and set again by the
+// fade-in at the tail of the first composed frame (1021:sub_10c33, fade.cpp),
+// and the sampler runs before that tail. So the change the first tick sees --
+// the old room's level against the new room's first sample -- is never pushed:
+// a room opens on the full palette sub_073bf left in the scaled buffer, and only
+// a later change of level starts scaling it. A room whose map is flat never has
+// one. FADE34, the road outside Sluggs' house, is 64000 bytes of 32, and the
+// original keeps Ben at full brightness there for good; uploading that first
+// change is what held him at half in the port (playtest issue #25).
 
 /// The plate is copied from row 13 of the PCX, 320x150 of it.
 static const int kLightSkipRows = 13;
@@ -295,6 +301,11 @@ void AlienEngine::stepLighting() {
 	} else if (_room == kEngineRoom && _ben.spriteX() > kEngineSplit) {
 		_lightPrev = _lightLevel;
 		_lightLevel = (byte)(0xff - _script.flag(kEngineCounter));
+	}
+
+	if (!_lightArmed) {
+		_lightArmed = true;
+		return;
 	}
 
 	if (_lightLevel == _lightPrev)

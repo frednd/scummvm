@@ -421,6 +421,10 @@ void AlienEngine::sweepChatTrees() {
 	}
 }
 
+/// The two rooms whose own code speaks a pick's reply (hippie.cpp, yodle.cpp).
+static const int kHippieChatRoom = 23;
+static const int kYodleChatRoom = 21;
+
 /// The forty rows under the playfield, which the two slides move.
 static const int kBarTop = 160;
 static const int kBarRows = 40;
@@ -509,6 +513,24 @@ void AlienEngine::showBar() {
 	debugC(1, kDebugChat, "bar: back on the screen");
 }
 
+/**
+ * Whether a room still has the answer to the last pick to speak.
+ *
+ * The answer is spoken once the option's own line has come down, and that is
+ * the same frame the menu would otherwise list the next topic -- which, when
+ * it has a single option, picks itself and speaks over the answer before it
+ * was ever shown. The hippie's "What are you doing chained to that tree?" lost
+ * its reply to topic 10's "Ok. Never mind." that way (playtest issue #28).
+ */
+bool AlienEngine::chatReplyOwed() const {
+	if (jailGuardHoldsChat())
+		return true;
+	if (_chatPickNew && _chatPickReply)
+		return true;
+	return (_room == kHippieChatRoom && _hippieAnswer)
+		   || (_room == kYodleChatRoom && _yodleAnswer);
+}
+
 void AlienEngine::openChat(uint topic) {
 	// OBJ:sub_0967e slides the bar away before it lists anything.
 	if (!_chat.isActive() && !_barHidden) {
@@ -552,8 +574,8 @@ void AlienEngine::stepChat() {
 
 	// A room whose character answers picks holds the tree until the answer
 	// is down, as the original's does by answering before it moves on
-	// (jailguard.cpp).
-	_chat.tick(_cursorY, speechDone() && !jailGuardHoldsChat());
+	// (jailguard.cpp, hippie.cpp, yodle.cpp).
+	_chat.tick(_cursorY, speechDone() && !chatReplyOwed());
 
 	// What the player just said, spoken over him: the option is a slice of one
 	// of the file's entries rather than an entry of its own.

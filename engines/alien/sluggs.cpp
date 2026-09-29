@@ -85,6 +85,16 @@ static const byte kStageCount = 3;
 
 static const byte kKeys = 31;			///< OBJ:sprite_add(0x1f), the keys
 
+/// The keys held out to him again: DLGREQ:sub_0c275(0x3c), one line of his.
+static const byte kKeysBackLine = 0x3c;
+
+/// Item 15 offered to him (0x005d), counted in [0xa771], which stops at one:
+/// two lines the first time, four after.
+static const byte kOfferItem = 15;
+static const uint16 kOffered = 0xa771;
+static const byte kOfferLine[2] = { 0x3d, 0x3f };
+static const byte kOfferCount[2] = { 2, 4 };
+
 /// The four conversations, as (first outcome, how many lines) -- the arguments
 /// the room hands DLGREQ:sub_0c4d1 at 0x0593, 0x0151, 0x0151 and 0x0186. Ben
 /// opens every one of them.
@@ -230,8 +240,33 @@ void AlienEngine::sluggsTalk(byte speaker, byte line, byte count) {
  * the lifted rows for room 34 are the item-use pair and neither of them wants
  * a bare talk.
  */
-bool AlienEngine::armSluggs(int obj, byte verb, bool item) {
-	if (_room != kSluggsRoom || item || obj != kSluggs || verb != kVerbTalkTo)
+bool AlienEngine::armSluggs(int obj, byte verb, byte item) {
+	if (_room != kSluggsRoom || obj != kSluggs)
+		return false;
+
+	// Entry 3's item half (0x0033), which the lift sees as two rows that say
+	// nothing: both are DLGREQ calls. The keys held out to him are one line of
+	// his, spoken where he stands (DLGREQ:sub_0c275); item 15 is a short
+	// exchange, Sluggs first, that the bar slides away for like any other.
+	if (item == kKeys) {
+		sluggsTalk(0, kKeysBackLine, 1);
+		_sluggsStep = kStepLine;
+		_sluggsPos = 0;
+		return true;
+	}
+	if (item == kOfferItem) {
+		const byte asked = MIN<byte>(_script.flag(kOffered), 1);
+		hideBar();
+		sluggsTalk(0, kOfferLine[asked], kOfferCount[asked]);
+		_sluggsStep = kStepLine;
+		_sluggsPos = 0;
+		if (asked < 1)
+			_script.setFlag(kOffered, asked + 1);
+		debugC(1, kDebugRooms, "sluggs: item %u offered, exchange %u", item, asked);
+		return true;
+	}
+
+	if (item || verb != kVerbTalkTo)
 		return false;
 
 	// The rectangle is only registered while he is out there, but a click that
@@ -243,6 +278,9 @@ bool AlienEngine::armSluggs(int obj, byte verb, bool item) {
 	const byte stage = MIN<byte>(_script.flag(kStage), kStageCount);
 
 	// 0x0109: the keys are a machine, the other three are spoken from here.
+	// Every one of them slides the bar off first (OBJ:sub_02f27); the keys'
+	// does it in the machine's first state, the same tick.
+	hideBar();
 	if (stage == 0) {
 		_sluggsStep = kStepKeys;
 		_sluggsPos = 0;
@@ -261,6 +299,20 @@ bool AlienEngine::armSluggs(int obj, byte verb, bool item) {
 
 	debugC(1, kDebugRooms, "sluggs: conversation %u, step 0x%02x", stage, _sluggsStep);
 	return true;
+}
+
+/**
+ * The tail of the room's opening (ovr_22_0e93:0x04ba): while Sluggs is still
+ * out on the road, MIDAS:sub_19a34(0) stands him in slot 1 on his first frame.
+ *
+ * The lift carries slot 0's PAL_SMOK loop but not this call, and PAL_ANIM is
+ * Sluggs himself -- without it the room opened with his rectangle and nobody in
+ * it (playtest issue #24).
+ */
+void AlienEngine::enterSluggs(int room) {
+	if (room != kSluggsRoom || _script.flag(kSluggsHere) != 1)
+		return;
+	sluggsPose(kPoseIdle);
 }
 
 /// The room's [0xa49f] machine, and the pass the conversation makes beside it.
@@ -333,6 +385,9 @@ void AlienEngine::stepSluggs() {
 		setTextColor(0x3f, 0x3f, 0x3f);
 		uploadTextColor();
 		CursorMan.showMouse(true);
+		// OBJ:sub_030f4 at 0x0665 and 0x068c: and the bar glides back up. A
+		// line that never took it away (the keys held out) leaves it be.
+		showBar();
 		debugC(1, kDebugRooms, "sluggs: the conversation is over");
 		break;
 

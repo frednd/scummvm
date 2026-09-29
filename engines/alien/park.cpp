@@ -83,10 +83,16 @@ namespace Alien {
 // unconditional, which left the booth looping and state 0x2c waiting forever for
 // a slot that never ran out.
 //
-// Left out, and none of it shows: the scroll-lock bytes [0xa8e0], [0xa8e2] and
-// [0xa8a4] (the port's camera follows Ben rather than being driven), and the
-// [0xa0cc] scroll guard, which has no in-flight state here. The two [0xa49c]
-// waits are counted in ticks of this hook instead.
+// The camera is the room's as well (0x0d1a, every pass): while Ben's sprite is
+// left of 0x124 the room holds it at the left edge ([0xa8e0] = 1, [0xa8e2] =
+// 0), and past 0x123 it lets it go again -- unless the scene has taken it
+// ([0xa8a4]), in which case it stays held until the last line. The trigger
+// takes it, slides the bar away (OBJ:sub_02f9b) and waits in 0x28 for the pan
+// to come to rest ([0xa0cc] and [0xa0c4] both zero) before the booth speaks,
+// so the whole of it plays on the left half of the park where the booth is.
+// Without that hold the port's camera stayed on Ben, off to the right, and the
+// scene played out of sight with only its lines on the screen (playtest issue
+// #29). The two [0xa49c] waits are counted in ticks of this hook.
 //
 // The ride between the park and room 56 is a different pair of machines in the
 // same body (departure 0x96/0x98/0xaa, arrival 0xdc..0xdf, PAR_BENP), and it
@@ -107,6 +113,9 @@ static const int kTriggerX = 0x19a;
 static const int kStartX = 305;
 static const int kStartY = 106;
 static const int kStartFacing = 4;
+
+/// 0x0d1a: left of this the camera is held at the room's left edge.
+static const int kHoldBelowX = 0x124;
 
 /// And where he walks to for the second line, 0x0b97.
 static const int kLookX = 172;
@@ -154,6 +163,7 @@ void AlienEngine::startPark() {
 
 	_parkStep = 0;
 	_parkWait = 0;
+	_parkLock = false;			// 0x0599
 
 	if (_script.flag(kSceneSeen) != 0)
 		return;
@@ -167,14 +177,27 @@ void AlienEngine::stepPark() {
 	if (_room != kParkRoom)
 		return;
 
+	// 0x0d1a: the left half of the park holds the camera on itself, unless the
+	// scene already has it.
+	if (!_parkLock) {
+		if (_ben.spriteX() < kHoldBelowX)
+			_scrollHold = 0;
+		else
+			_scrollHold = -1;
+	}
+
 	if (!_parkStep) {
-		// 0x0d47: far enough west, and the latch has not been burnt.
-		if (_script.flag(kSceneSeen) != 0 || _ben.walkX() >= kTriggerX)
+		// 0x0d47: far enough west, no pan in flight, and the latch has not
+		// been burnt. The x is the sprite's, [0xa8ec].
+		if (_script.flag(kSceneSeen) != 0 || _ben.spriteX() >= kTriggerX || _scrollVel != 0)
 			return;
 
 		_script.setFlag(kSceneSeen, 1);
+		_scrollHold = 0;
+		_parkLock = true;
 		walkTo(kStartX, kStartY, kStartFacing);
 		CursorMan.showMouse(false);
+		hideBar();
 		_parkStep = kStepVoice;
 		debugC(1, kDebugRooms, "park: the scene starts, step 0x%02x", kStepVoice);
 		return;
@@ -185,6 +208,9 @@ void AlienEngine::stepPark() {
 
 	switch (_parkStep) {
 	case kStepVoice:
+		// 0x0a93: not before the camera has come to rest on the booth.
+		if (_scrollVel != 0 || _scrollX != 0)
+			break;
 		// 0x0aa1: the booth opens and whatever is in it shouts.
 		_anims.play(kBoothSlot, kOpenFirst, kOpenCount, kOpenRate, kOpenMode);
 		_anims.setLoopFlag(kBoothSlot, 1);
@@ -268,7 +294,10 @@ void AlienEngine::stepPark() {
 		if (!speechDone())
 			break;
 		_parkStep = 0;
+		_parkLock = false;
 		CursorMan.showMouse(true);
+		showBar();
+		_scrollHold = -1;
 		_dirty = true;
 		debugC(1, kDebugRooms, "park: the scene is over");
 		break;

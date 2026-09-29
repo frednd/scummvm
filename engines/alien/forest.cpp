@@ -31,7 +31,7 @@ namespace Alien {
 // Playtest report: giving the moldy bread to the parrot did nothing.
 // docs/room_scripts.md's Room 26 rows for object 6 are only ever
 // `action_handled = 1` -- the reaction itself is a `call`, the same reason
-// Yodle and Gameson needed their own files, and nothing in the port ever
+// Yodle and the hippie needed their own files, and nothing in the port ever
 // wrote [0xa752], the parrot's mood, past its new-game default of 1.
 //
 // ovr_1a_0eaf's entry 3 (item use) arms this room's [0xa49f] machine two

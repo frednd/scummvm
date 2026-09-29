@@ -31,7 +31,7 @@ namespace Alien {
 // Room 21, Yodle's tree hut: the picklock, and the teleporter he builds.
 //
 // Yodle is the busiest talker in the game and none of him is in the lifted
-// tables, for the reason room 23's Gameson is not either -- every one of his
+// tables, for the reason room 23's hippie is not either -- every one of his
 // bodies is a `call cs:<near>` into one of the overlay's own helpers, and a
 // body that is a call is not an opcode the lift has. What the tables do carry
 // for room 21 is the signboard, the puddle, the pipe and the matches; what

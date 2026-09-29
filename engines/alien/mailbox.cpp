@@ -117,7 +117,8 @@ static const byte kStepLeave = 0x0f;
 
 static const byte kSubmodeTown = 0x14;
 
-/// Room 33's half of it: where it puts him, and the state it waits in.
+/// Room 33's half of it: where it puts him (the sprite's origin, as the lifted
+/// char_place row has it), and the state it waits in.
 static const int kTownX = 179, kTownY = 79, kTownFacing = 4;
 static const byte kStepGetUp = 0x0a;
 static const int kGetUpCue = 2;
@@ -241,7 +242,7 @@ void AlienEngine::enterTown(int room) {
 	// 0x03d5: the latch is a hand-off and is spent on arrival.
 	_script.setFlag(kTownEntry, 0);
 	CursorMan.showMouse(false);
-	_ben.place(kTownX, kTownY, kTownFacing);
+	_ben.placeSprite(kTownX, kTownY, kTownFacing);
 	playCharacterAnim(kGetUpSlot, 1, kGetUpFrames, kGetUpRate, kPlayMode);
 	_townStep = kStepGetUp;
 	debugC(1, kDebugRooms, "mailbox: down in the road, step 0x%02x", kStepGetUp);

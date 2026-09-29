@@ -61,7 +61,7 @@ namespace Alien {
 //    second branch, because the first one's body is a `call` to
 //    ovr0eb3_sub_0068 rather than a run of opcodes -- so the port's table had
 //    a row that shut a cover nothing could open. Both halves live here and the
-//    pair is kept away from the table, the way room 23's Gameson is.
+//    pair is kept away from the table, the way room 23's hippie is.
 //
 // The routine itself, ovr0eb3_sub_0068 and its sibling at 0x01c2, is four plays
 // of slot 0 in mode 6 through ovr0eb3_sub_0000 -- a frame list out of the

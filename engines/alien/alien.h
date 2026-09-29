@@ -459,6 +459,7 @@ private:
 	void drawJailGuard(Graphics::Surface &dest) const;
 	bool jailFieldOverBen() const;
 	bool jailGuardHoldsChat() const;
+	bool chatReplyOwed() const;
 
 	/// The mailbox full of dynamite, and the road it blows him into
 	/// (mailbox.cpp).
@@ -469,13 +470,14 @@ private:
 
 	/// Room 34's Sluggs, the one hand that gives out the observatory keys
 	/// (sluggs.cpp).
-	bool armSluggs(int obj, byte verb, bool item);
+	bool armSluggs(int obj, byte verb, byte item);
+	void enterSluggs(int room);
 	void stepSluggs();
 	void sluggsTalk(byte speaker, byte line, byte count);
 	void sluggsSpeak();
 	void sluggsPose(byte pose);
 
-	/// Room 23's Gameson, the hippie chained to the tree: the six dialog files
+	/// Room 23's hippie, chained to the tree: the six dialog files
 	/// his conversation swaps between, and the walkman traded for his game
 	/// (hippie.cpp).
 	bool armHippie(int obj, byte verb, int item);
@@ -597,6 +599,9 @@ private:
 	/// [0x7d9c] and [0x7d9d]: the level the map yielded this frame and last.
 	byte _lightLevel;
 	byte _lightPrev;
+	/// [0xa884]: clear from room init until the first composed frame, and
+	/// the upload is gated on it (lighting.cpp).
+	bool _lightArmed;
 
 	DL1Sprite _sprite;
 	uint _spriteFrame;
@@ -934,6 +939,7 @@ private:
 	/// whichever of its two waits is running (park.cpp).
 	byte _parkStep;
 	uint _parkWait;
+	bool _parkLock;				///< [0xa8a4]: the scene holds the camera
 
 	/// Room 26's parrot machine (forest.cpp).
 	byte _forestStep;
@@ -1055,7 +1061,7 @@ private:
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether
 	/// it is still waiting for that pick's own line to come down, and whether
-	/// Gameson has a line standing (hippie.cpp).
+	/// the hippie has a line standing (hippie.cpp).
 	byte _hippieStep;
 	uint16 _hippiePos;
 	byte _hippieReply;

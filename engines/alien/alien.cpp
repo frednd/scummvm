@@ -197,7 +197,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
 		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0),
 		_scrollPos(0), _scrollVel(0), _scrollState(0xff), _scrollFocus(0), _scrollPlacements(0),
-		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
+		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _lightArmed(false), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false),
 		_storeStep(0), _storePos(0), _storeLine(1), _storeSpeaker(0), _storeOffer(0),
 		_storeWalked(false), _storeTalking(false), _rnd("alien"),
@@ -222,7 +222,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_divingStep(0), _divingPos(0), _divingClicks(0),
 		_shoreStep(0),
 		_steamClicks(0), _steamStep(0),
-		_parkStep(0), _parkWait(0),
+		_parkStep(0), _parkWait(0), _parkLock(false),
 		_forestStep(0), _forestWait(0),
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
@@ -620,9 +620,17 @@ bool AlienEngine::playIdle() const {
 	// own, exactly as _armed and the cursor are for every other room: the walk
 	// to the rock ends with the character idle for the tick before the climb
 	// starts, and a click scripted into that gap is taken at the wrong ledge.
+	// And the camera: room 22's booth scene fires only once a pan has come to
+	// rest ([0xa0cc] == 0), so a settle that ended with the view still gliding
+	// checked for it a tick too soon.
+	// And a conversation between a pick and the next topic's options: the
+	// room's reply to the pick goes up a tick after the pick's own line comes
+	// down, and a click scripted into that tick lands on no option at all.
+	const bool chatWaiting = _chat.isActive() && (!_chat.isListed() || chatReplyOwed());
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
-		   !_armed && !_cliffClimb && !_cliffStep && CursorMan.isVisible();
+		   !_armed && !_cliffClimb && !_cliffStep && _scrollVel == 0 &&
+		   !chatWaiting && CursorMan.isVisible();
 }
 
 void AlienEngine::stepPlayScript() {
@@ -1017,6 +1025,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	applyCharPalette(room);
 	loadOccluder(room);
 	loadLightMap(room);
+	_lightArmed = false;
 
 	// The sprite banks and the dialog file are named by the room's own scene
 	// overlay. Rooms driven from a resident segment have no overlay, and those
@@ -1147,6 +1156,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// And room 33's, which is him landing in the road after the mailbox went
 	// up -- the far end of [0x33bc] (mailbox.cpp).
 	enterTown(room);
+
+	// And room 34's, which puts Sluggs out on the road (sluggs.cpp).
+	enterSluggs(room);
 
 	// The rectangles the room registers, by running entry 1 of its overlay as
 	// tools/gen_hotspots.py lifted it. Which ones exist depends on the puzzle
@@ -1411,10 +1423,13 @@ void AlienEngine::updateScroll(bool snap) {
 			_scrollVel = 0;
 		}
 		_scrollX = _scrollPos >> 10;
-		if (_scrollVel > 0x400) {
+		if (_scrollVel > 0x400)
 			_scrollVel = 0x400;
-			_scrollState = 0xff;
-		}
+		// Whether or not the cap was hit: the jle over the clamp (0x11ea)
+		// lands on this store, not past it. A pan pass always leaves the
+		// state at 0xff, so the coast below only runs on a pass that did not
+		// pan.
+		_scrollState = 0xff;
 	}
 
 	// Left. A speed still going right is braked twice over.
@@ -1426,10 +1441,13 @@ void AlienEngine::updateScroll(bool snap) {
 		_scrollVel -= 0x28;
 		if (_scrollVel > 0)
 			_scrollVel -= 0x28;
-		if (_scrollVel < -0x400) {
+		if (_scrollVel < -0x400)
 			_scrollVel = -0x400;
-			_scrollState = 0xff;
-		}
+		// 0x1268's jge lands on the store too. Leaving the state at 0 here
+		// let the coast undo each pass's -0x28 the moment the camera had
+		// moved a pixel, so a pan left from rest stopped one pixel in
+		// (playtest issue #29: room 22's scene waited on it for good).
+		_scrollState = 0xff;
 	}
 
 	// Coasting after a move right...
@@ -3686,7 +3704,9 @@ void AlienEngine::finishAction() {
 	// And room 34's Sluggs, for the same reason: the talk on him is entry 3's
 	// own, the lifted rows for the room are the two item uses, and the keys are
 	// handed over by the machine behind it (sluggs.cpp).
-	if (armSluggs(spot.obj, verb, item != Inventory::kNoItem)) {
+	if (armSluggs(spot.obj, verb, item)) {
+		if (item)
+			holdItem(Inventory::kNoItem);
 		rebuildHotspots();
 		_hover = -1;
 		const Common::Point road = g_system->getEventManager()->getMousePos();
@@ -3726,7 +3746,7 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryLook(spot.obj, verb);
 
-	// And room 23's Gameson, whose talk and whose walkman both end in the
+	// And room 23's hippie, whose talk and whose walkman both end in the
 	// conversation menu: the lifted rows for the room have the guards and none
 	// of the bodies, because a body that is a call is not an opcode the lift
 	// has (hippie.cpp).
@@ -4453,8 +4473,12 @@ void AlienEngine::redraw() {
 			_ben.draw(_screen, _scrollX, _clipBottom);
 
 		// And the foreground the room authored over him, which is the whole of
-		// the original's depth model (occlusion.h).
-		applyOcclusion();
+		// the original's depth model (occlusion.h). Only over him: while a bank
+		// plays him instead, the walker's box is not where anything of his is
+		// drawn, and stamping there put a scrap of the mailbox's lamp over
+		// PAL_BLOW's whiteout.
+		if (_drawCharacter)
+			applyOcclusion();
 
 		// And over him in the cell, and the guard after both, which is the
 		// order room 58's tick draws them in.

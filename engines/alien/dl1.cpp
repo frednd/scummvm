@@ -105,6 +105,15 @@ bool DL1Sprite::parseFrames(uint32 bboxAt, uint nframes, bool longForm, ParseRes
 		uint frameIndex = out.frames.size();
 		uint16 startAddr = READ_LE_UINT16(_data + pos);
 
+		// A full-screen frame opens with 64000 -- one past the staging buffer
+		// -- instead of its first strip's address, and the strip follows it.
+		// PAL_BLOW's last three frames are shipped that way: the blast
+		// whitening the whole playfield (playtest issue #15).
+		if (startAddr >= kScreenPixels && pos + 8 <= _size) {
+			pos += 2;
+			startAddr = READ_LE_UINT16(_data + pos);
+		}
+
 		// A frame opens with its first strip's address repeated once, twice in
 		// a couple of files. Consume the copies.
 		while (pos + 4 <= _size && READ_LE_UINT16(_data + pos + 2) == startAddr)
@@ -137,10 +146,8 @@ bool DL1Sprite::parseFrames(uint32 bboxAt, uint nframes, bool longForm, ParseRes
 
 			// A strip's address is an offset into the 320x200 staging buffer,
 			// so a run that starts outside it, or walks off its end, is not a
-			// strip at all -- it is the editor's fill, which is what PAL_BLOW
-			// carries after its fourth frame. Ending the frame there is what
-			// keeps the three frames the file declares but never authored from
-			// being decoded as one enormous white span across the screen.
+			// strip. Reading the full-screen sentinel above as one is what drew
+			// a band of white across the blast instead of the whiteout.
 			if (addr >= kScreenPixels || (uint32)addr + (uint32)words * 2 > kScreenPixels)
 				break;
 
