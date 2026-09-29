@@ -226,7 +226,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_forestStep(0), _forestWait(0),
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
-		_yodleAnswer(false),
+		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
 		_teleportStep(0), _teleportWait(0), _teleportReturnClicks(0),
 		_corridorStep(0),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
@@ -1098,6 +1098,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_barHidden = false;
 	_chatOwnsBar = false;
 
+	// OBJ:0x6300, the room's teardown: he may turn round again in the next.
+	_ben.setTurnBlocked(false);
+
 	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
 	// does not carry the character's absence into the next one. The slots go
 	// with it: the room's banks are about to be dropped anyway, and a machine
@@ -1639,6 +1642,19 @@ void AlienEngine::sweepWalkGeometry() {
 	}
 }
 
+/**
+ * [0xa4a1]: a DLGREQ:sub_0c4d1 conversation is running. The runner sets it as
+ * it starts and clears it the pass after the last line comes down, and
+ * OBJ:sub_098d1 starts nothing while it is up -- so a long conversation leaves
+ * the idle count far past the moments its triggers test for equality, and he
+ * stands facing whoever he was talking to until he is moved (manual
+ * playthrough #35). The port runs the one runner in five copies.
+ */
+bool AlienEngine::dlgreqRunning() const {
+	return _sluggsSpeaking || _crystalSpeaking || _yodleSpeaking || _bossSpeaking ||
+		   _jailSpeaking;
+}
+
 void AlienEngine::stepClock() {
 	const uint32 now = g_system->getMillis();
 	if (now - _lastTick < kTickMillis)
@@ -1753,6 +1769,7 @@ void AlienEngine::stepClock() {
 		// it leaves behind (park.cpp).
 		stepPark();
 		stepYodle();
+		stepYodleWater();
 		stepForestParrot();
 
 		// And room 22's phone, and the teleporter it dials (teleport.cpp).
@@ -1874,7 +1891,8 @@ void AlienEngine::stepClock() {
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
 	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !_libraryStep && !_labStep &&
-						!_sewerStep && !_mansionStep && !_basementStep && !_endingStep && !_openingStep);
+						!_sewerStep && !_mansionStep && !_basementStep && !_endingStep && !_openingStep &&
+						!dlgreqRunning());
 
 	_ben.tick(_script.flag(0xa605) != 0);
 
@@ -3568,8 +3586,10 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 
 	WalkTarget target;
 	// Every click rearms from scratch, as the original rewrites walk_submode
-	// [0xa87d] each time entry 0 runs.
+	// [0xa87d] each time entry 0 runs -- and 1021:sub_105fa, the first thing
+	// entry 0 calls, lets him turn round again ([0xa958]).
 	_armed = 0;
+	_ben.setTurnBlocked(false);
 	if (_script.walkTarget(roomX, y, obj, target)) {
 		if (target.submode && asLeft) {
 			_armed = target.submode;
@@ -3592,6 +3612,14 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	} else {
 		walkTo(roomX, y);
 	}
+
+	// And a click in a room with walk nodes plots him a route -- a
+	// zero-length one if he is already there -- and that keeps him facing the
+	// way he stands (LOGIC's four dispatch sites, [0xa958] = 1, behind
+	// `cmp [0x9e5e], 0`): talking to someone leaves him turned to them, not
+	// to the player (manual playthrough #35).
+	if (_walk.nodes().count())
+		_ben.setTurnBlocked(true);
 
 	if (!act) {
 		// 1021:0x998: the line now reports the walk, not the object. The
@@ -3762,6 +3790,10 @@ void AlienEngine::finishAction() {
 	// lift could not follow, and two of them it dropped altogether: the safe's
 	// door and the two things on its shelf are run by the room instead
 	// (library.cpp). A body the room takes is not offered to the table.
+	// Room 21 puts its own file back before the bodies that speak out of it,
+	// which the lifted row would otherwise read out of a Yodle file (yodle.cpp).
+	yodleRoomScriptFor(spot.obj, verb, item);
+
 	const bool libraryHandled = runLibraryBody(spot.obj, item != Inventory::kNoItem);
 
 	// Room 11's television is answered the same way: the remote control's
@@ -4448,6 +4480,9 @@ void AlienEngine::redraw() {
 	// The animation slots come first: they are the room's own furniture, and the
 	// character walks in front of them.
 	_anims.draw(_screen, _scrollX, _clipBottom);
+
+	// Room 21's puddle, which its tick draws by hand over the slots (yodle.cpp).
+	drawYodleWater(_screen);
 
 	// A cutscene is the record's plate and its own slots and nothing else: the
 	// character is not in it, and the original hides the bar for its duration.

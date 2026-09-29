@@ -93,6 +93,26 @@ bool DL1Sprite::longStripAt(uint32 pos) const {
 	return words > 0 && x2 > x1 && (x2 - x1) == words * 2;
 }
 
+/**
+ * Where the first strip of the frame opening at `pos` starts: past the
+ * full-screen sentinel and every repeat of the start address, the walk
+ * parseFrames() makes. YODLE1 repeats the address twice, so testing one word
+ * in landed on a repeat and read the file as short-form -- one frame of junk
+ * instead of Yodle's thirty-nine, and no talking (manual playthrough #33).
+ */
+uint32 DL1Sprite::firstStripAt(uint32 pos) const {
+	if (pos + 2 > _size)
+		return pos;
+	uint16 startAddr = READ_LE_UINT16(_data + pos);
+	if (startAddr >= kScreenPixels && pos + 8 <= _size) {
+		pos += 2;
+		startAddr = READ_LE_UINT16(_data + pos);
+	}
+	while (pos + 4 <= _size && READ_LE_UINT16(_data + pos + 2) == startAddr)
+		pos += 2;
+	return pos;
+}
+
 bool DL1Sprite::parseFrames(uint32 bboxAt, uint nframes, bool longForm, ParseResult &out) const {
 	out.frames.clear();
 
@@ -250,7 +270,7 @@ bool DL1Sprite::parse() {
 		if (bboxAt + nframes * 8 > _size)
 			continue;
 
-		bool longForm = longStripAt(bboxAt + nframes * 8 + 2);
+		bool longForm = longStripAt(firstStripAt(bboxAt + nframes * 8));
 		bool order[2];
 		order[0] = longForm;
 		order[1] = !longForm;

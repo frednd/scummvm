@@ -223,6 +223,17 @@ public:
 	void setIdleAllowed(bool allowed) { _idleAllowed = allowed; }
 
 	/**
+	 * [0xa958]: the turn to face the player is off. LOGIC's click dispatch
+	 * sets it every time a click plots him a route (11f3:0x02ea, 0x0377,
+	 * 0x03ee, 0x0484) and the idle machine sets it while the bar is up
+	 * (OBJ:0x745c); the next click's walk geometry clears it first
+	 * (1021:sub_105fa), and so does leaving the room (OBJ:0x6300). So a
+	 * character who walked to where he stands keeps the facing he arrived
+	 * with -- he only turns round when he got there some other way.
+	 */
+	void setTurnBlocked(bool blocked) { _turnBlocked = blocked; }
+
+	/**
 	 * Whether a line is being spoken, the original's [0x2938].
 	 *
 	 * BENANI's top twelve frames are a mouth cycle, four lists of them, one per
@@ -342,6 +353,7 @@ private:
 	/// long enough for the mouth to open [0x293a], how far into the facing's
 	/// frame list it is [0x2939], and the toggle that halves its rate [0x2937].
 	bool _idleAllowed;			///< [0xa94d] == 1 and [0xa4a1] == 0
+	bool _turnBlocked;			///< [0xa958]
 
 	bool _talking;
 	bool _talkReady;

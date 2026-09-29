@@ -385,7 +385,7 @@ Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY
 		_arrivalFacing(kFacingKeep), _phase(0),
 		_frame(kIdleFrame[3]), _turnLeft(0), _idleCount(0), _idleCycle(0),
 		_idleStream(nullptr), _idleIndex(0), _idleLeft(0), _idleFrame(0),
-		_idleAllowed(true),
+		_idleAllowed(true), _turnBlocked(false),
 		_talking(false), _talkReady(false), _talkPhase(0), _talkHalf(false),
 		_placements(0) {
 	memset(_turn, 0, sizeof(_turn));
@@ -600,6 +600,11 @@ void Walker::stepTalk() {
 }
 
 void Walker::stepIdle(bool inventoryOpen) {
+	// OBJ:0x7455: the bar being up is one of the two things that keep him
+	// from turning round (setTurnBlocked).
+	if (inventoryOpen)
+		_turnBlocked = true;
+
 	if (++_idleCount >= kIdleWrap) {
 		_idleCount = 0;
 		_idleCycle++;
@@ -638,7 +643,7 @@ void Walker::stepIdle(bool inventoryOpen) {
 		// from the facing: a quarter turn from the back or from screen left is
 		// a shorter wait than the one from screen right.
 		const bool quick = _facing == 1 || _facing == 4;
-		if (_facing != 3 && _idleCount == (quick ? 5 : 0x28) &&
+		if (_facing != 3 && !_turnBlocked && _idleCount == (quick ? 5 : 0x28) &&
 				_idleCycle == (quick ? 1 : 2)) {
 			_idleIndex = 0;
 			_idleLeft = 0;

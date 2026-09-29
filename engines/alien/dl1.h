@@ -148,6 +148,7 @@ private:
 	void clear();
 	bool parse();
 	bool parseFrames(uint32 bboxAt, uint nframes, bool longForm, ParseResult &out) const;
+	uint32 firstStripAt(uint32 pos) const;
 	bool longStripAt(uint32 pos) const;
 	int32 score(const ParseResult &result) const;
 

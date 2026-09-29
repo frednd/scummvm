@@ -261,6 +261,18 @@ void AnimSlots::stepLoops() {
 	}
 }
 
+void AnimSlots::drawBankFrame(uint slot, int frame, Graphics::Surface &dest, int scrollX,
+							   int clipBottom) const {
+	if (slot >= kSlotCount)
+		return;
+
+	const Slot &s = _slots[slot];
+	if (frame < 1 || frame > (int)s.bank.frameCount())
+		return;
+
+	s.bank.drawFrame((uint)(frame - 1), dest, scrollX, clipBottom);
+}
+
 bool AnimSlots::stamp(uint slot, int frame, Graphics::Surface &background, int clipBottom,
 					  int pageX) {
 	if (slot >= kSlotCount)

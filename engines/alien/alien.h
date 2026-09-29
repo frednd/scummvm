@@ -365,7 +365,15 @@ private:
 	void yodleSpeak();
 	void yodlePick();
 	bool yodleRunDone() const;
+	void yodlePose(byte pose);
+	void yodleSounds(byte which);
+	void loadYodleRoomScript();
+	void yodleRoomScriptFor(int obj, byte verb, byte item);
 	void stepYodle();
+	void stepYodleWater();
+	void yodleStoryWait();
+	void drawYodleWater(Graphics::Surface &dest) const;
+	bool dlgreqRunning() const;
 
 	/// The valve between rooms 49 and 50, and the steam it lets through
 	/// (steam.cpp).
@@ -957,6 +965,9 @@ private:
 	TalFile::Entry _yodleReplyEntry;
 	int _yodleReplyTicks;
 	bool _yodleAnswer;
+	bool _yodleTalking;			///< his talk loop is up until the line comes down
+	byte _yodleWater;			///< [0xa5eb], the puddle's frame, 1..30
+	bool _yodleWaterDue;		///< [0xa5f9], the tick pair it waits out between frames
 
 	/// Room 22's [0xa49f] machine for the phone, ticks left of its current
 	/// wait, and room 56's simplified return, clicks taken so far

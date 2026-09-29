@@ -305,6 +305,17 @@ public:
 	bool stamp(uint slot, int frame, Graphics::Surface &background,
 			   int clipBottom = DL1Sprite::kNoClipBottom, int pageX = kNoPage);
 
+	/**
+	 * Draws one frame of a slot's bank onto a surface, leaving the slot alone.
+	 *
+	 * MIDAS:sub_180d4 called by a room itself rather than by the slot drawer:
+	 * room 21 steps its puddle through bank 0 by hand, one frame per two tick
+	 * pairs, and never starts a play on that slot (yodle.cpp). `frame` is
+	 * numbered from one; anything outside the bank draws nothing.
+	 */
+	void drawBankFrame(uint slot, int frame, Graphics::Surface &dest, int scrollX = 0,
+					   int clipBottom = DL1Sprite::kNoClipBottom) const;
+
 	/** The bank a slot holds, for the debug console. */
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }
 	int frame(uint slot) const { return _slots[slot].frame; }
