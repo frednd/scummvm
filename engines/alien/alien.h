@@ -264,6 +264,9 @@ private:
 	void armObservatoryLook(int obj, byte verb);
 	void armObservatoryBreaker(int obj, byte verb);
 	void stepObservatoryBreaker();
+	void startObservatory();
+	void stepObservatoryStairs();
+	bool hijackObservatoryStairs(byte submode);
 	void stepObservatoryPanel();
 	void openObservatoryPanel();
 	void closeObservatoryPanel();
@@ -312,6 +315,8 @@ private:
 	/// (cemetery.cpp).
 	void armCemeteryStatue(int obj, byte verb);
 	void cemeteryArrival();
+	void setCemeteryState(byte state);
+	void cemeteryZap();
 	void cemeteryStatuePick();
 	void stepCemetery();
 
@@ -846,6 +851,8 @@ private:
 	/// cover comes off when the line comes down (observatory.cpp).
 	bool _observatoryLook;
 	bool _observatoryBreaker;	///< room 19's [0xa49f] 0x14, the walker away
+	byte _observatoryStep;		///< room 19's [0xa49f]: 1-4 the slip, 0x64 the stairs
+	uint16 _observatoryPos;		///< and its [0xa49c]
 
 	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
 	/// every tick pair, which two of that room's steps time themselves off.
@@ -914,7 +921,9 @@ private:
 
 	/// Room 32's statue: waiting for the look's own line to come down before
 	/// the topic-0 conversation reopens (cemetery.cpp).
-	bool _cemeteryLookWait;
+	uint16 _cemeteryPos;		///< room 32's [0xa49c]
+	int _cemeteryZapPos;		///< [bp-4] after a zap, -1 when none is pending
+	bool _cemeteryCursorOwed;	///< the phrase took the cursor; its line gives it back
 	byte _cemeteryStep;	///< [0xa49f] while the cave is being walked into
 
 	/// The two mazes: the step of the crystal-door scene, and the submode the

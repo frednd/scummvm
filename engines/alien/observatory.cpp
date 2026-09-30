@@ -25,6 +25,8 @@
 #include "alien/play.h"
 #include "alien/sfx.h"
 
+#include "graphics/cursorman.h"
+
 namespace Alien {
 
 // Room 19's fuse panel: the cover over the fuse box, and the only way into it.
@@ -246,6 +248,160 @@ void AlienEngine::stepObservatoryBreaker() {
 	characterAnchor(anchorX, anchorY);
 	queueOutcome(_tal, _script.flag(kPowerOn) ? kPowerOnEvent : kPowerOffEvent,
 				 anchorX, anchorY);
+}
+
+// The stairs, both ways. Up is the room's own exit: the walk geometry arms
+// submode 1 on the stairs, and the loop answers the arrival at 0x0b0e by
+// clearing it, so the shared exit test never sees it, and starting [0xa49f]
+// 0x64. Fifteen counts of [0xa49c] later Ben is taken away and OBSGOUP climbs
+// on slot 4 (0x0b3e); its seventeenth frame is what writes game_submode 1
+// (0x0b63). The lift has the play but not the arrival that starts it, so the
+// port cut straight to the telescope room (manual playthrough #50).
+//
+// Down is the slip, BENSLIP on slot 3: entry 2 at 0x07b8, coming back from
+// room 28 while [0xa75c] is clear and the fuse cover is still shut. That is
+// why a normal game never shows it -- the cover has to be open to fit the fuse
+// that powers the telescope, and nothing makes a player close it again
+// (manual playthrough #56). It happens once: [0xa75c] is set as it starts.
+
+/// The room the stairs lead to, and the submode the geometry arms for them.
+static const int kTelescopeRoom = 28;
+static const byte kStairsSubmode = 1;
+
+/// [0xa75c]: the slip has played.
+static const uint16 kSlipped = 0xa75c;
+
+/// The slots: BENSLIP on 3, OBSGOUP on 4.
+static const uint kSlipSlot = 3;
+static const uint kClimbSlot = 4;
+
+/// [0xa49f] as the loop writes it.
+static const byte kStepSlipFall = 1;		///< 0x07c6, frames 1-19 playing
+static const byte kStepSlipLie = 2;			///< 0x0a65, down on the floor
+static const byte kStepSlipLine = 3;		///< 0x0a89, the line said
+static const byte kStepSlipUp = 4;			///< 0x0aae, frames 19-37 playing
+static const byte kStepStairs = 0x64;		///< 0x0b39, at the foot of the stairs
+
+/// The waits, in [0xa49c].
+static const uint16 kSlipLineAt = 0x28;
+static const uint16 kSlipUpAt = 0x50;
+static const uint16 kClimbAt = 0x0f;
+
+/// The plays: slot 3 once in two halves of 19, slot 4 kept, 17 frames.
+static const int kSlipFrames = 0x13;
+static const int kSlipRate = 3;
+static const int kSlipMode = 4;
+static const int kClimbFrames = 0x11;
+static const int kClimbRate = 2;
+static const int kClimbMode = 1;
+
+/// DIALOG:sub_0b63a(0x0f, 0xcc, 0x5b): "Oh man, oh man... Game over?"
+static const byte kSlipLine = 0x0f;
+static const int kSlipLineX = 0xcc, kSlipLineY = 0x5b;
+
+/// INPUT:sfx_play_delayed at 0x07f2 and 0x0804: the thump, twice.
+static const uint kSlipSample = 1;
+static const uint32 kSlipRateA = 0x1770, kSlipRateB = 0x0fa0;
+static const byte kSlipVolumeA = 0x40, kSlipVolumeB = 0x19;
+static const uint16 kSlipDelayA = 0x20, kSlipDelayB = 0x36;
+
+/// Entry 2 at 0x0799. The placement at 193,40 facing front and the first half
+/// of the play are lifted rows (roominit.cpp); the rest is the walker taken
+/// away, the cursor, the sounds and the latch.
+void AlienEngine::startObservatory() {
+	_observatoryStep = 0;
+	_observatoryPos = 0;
+
+	if (_room != kObservatoryRoom || _mode != kTelescopeRoom)
+		return;
+	if (_script.flag(kSlipped) != 0 || _script.flag(kPanelShut) != 1)
+		return;
+
+	// A port addition (setHold()): mode 4 takes its last frame away, and he
+	// lies on the floor between the two halves for the whole of the line.
+	hideCharacter(kSlipSlot);
+	_anims.setHold(kSlipSlot, true);
+	CursorMan.showMouse(false);
+	_sound.queue(kSlipSample, kSlipRateA, kSlipVolumeA, 0, kSlipDelayA);
+	_sound.queue(kSlipSample, kSlipRateB, kSlipVolumeB, 0, kSlipDelayB);
+	_script.setFlag(kSlipped, 1);
+	_observatoryStep = kStepSlipFall;
+	debugC(1, kDebugRooms, "observatory: down the stairs the fast way");
+}
+
+/// 0x0b0e: the arrival at the stairs, taken before the shared exit sees it.
+bool AlienEngine::hijackObservatoryStairs(byte submode) {
+	if (_room != kObservatoryRoom || submode != kStairsSubmode)
+		return false;
+
+	CursorMan.showMouse(false);
+	_observatoryStep = kStepStairs;
+	_observatoryPos = 0;
+	debugC(1, kDebugRooms, "observatory: at the stairs");
+	return true;
+}
+
+/// The loop's [0xa49f] states for both, 0x0a57 to 0x0b6f.
+void AlienEngine::stepObservatoryStairs() {
+	if (_room != kObservatoryRoom || !_observatoryStep)
+		return;
+
+	// [0xa49c] moves on the animation gate ([0xa5f8], 0x088d), every other
+	// tick pair.
+	if ((_tick & 3) == 0)
+		_observatoryPos++;
+
+	switch (_observatoryStep) {
+	case kStepSlipFall:
+		if (_anims.isBusy(kSlipSlot))
+			return;
+		_observatoryStep = kStepSlipLie;
+		_observatoryPos = 0;
+		return;
+
+	case kStepSlipLie:
+		if (_observatoryPos < kSlipLineAt)
+			return;
+		queueOutcome(_tal, kSlipLine, kSlipLineX, kSlipLineY);
+		_observatoryStep = kStepSlipLine;
+		_observatoryPos = 0;
+		return;
+
+	case kStepSlipLine:
+		if (_observatoryPos < kSlipUpAt)
+			return;
+		playCharacterAnim(kSlipSlot, kSlipFrames, kSlipFrames, kSlipRate, kSlipMode);
+		_observatoryStep = kStepSlipUp;
+		return;
+
+	case kStepSlipUp:
+		if (_anims.isBusy(kSlipSlot))
+			return;
+		_anims.setHold(kSlipSlot, false);
+		showCharacter();
+		CursorMan.showMouse(true);
+		_observatoryStep = 0;
+		debugC(1, kDebugRooms, "observatory: back on his feet");
+		return;
+
+	case kStepStairs:
+		if (_observatoryPos < kClimbAt)
+			return;
+		if (_observatoryPos == kClimbAt) {
+			playCharacterAnim(kClimbSlot, 1, kClimbFrames, kClimbRate, kClimbMode);
+			_observatoryPos++;
+			debugC(1, kDebugRooms, "observatory: up the stairs");
+			return;
+		}
+		if (_anims.isBusy(kClimbSlot))
+			return;
+		_observatoryStep = 0;
+		takeExit(kStairsSubmode);
+		return;
+
+	default:
+		return;
+	}
 }
 
 } // End of namespace Alien

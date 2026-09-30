@@ -230,6 +230,15 @@ void AlienEngine::loadHippieScript(byte which) {
  * into the handler's own dispatcher rather than plays.
  */
 void AlienEngine::startHippie() {
+	// LOGIC:sub_13346: once the gameson has changed hands, he is gone from the
+	// tree the next time Ben walks into one of these. Rooms 14, 21 and 32 call
+	// it from their openings and room 31 has it inline; the lift carried only
+	// room 31's copy, so he was still there after Yodle's (manual playthrough
+	// #52).
+	if ((_room == 14 || _room == 21 || _room == 31 || _room == 32) &&
+		_script.flag(kGiven) == 1)
+		_script.setFlag(kHippieHere, 0);
+
 	if (_room != kHippieRoom)
 		return;
 

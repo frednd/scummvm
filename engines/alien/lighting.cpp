@@ -149,6 +149,12 @@ static const struct LightMapEntry {
 	{ 59, "NOFADE.PCX", nullptr,      nullptr       },
 };
 
+// Room 23, the crossroads: no plate, a ramp of its own (OBJ:sub_06e20). The
+// level is 0x46 left of sprite x 0x4c and climbs 8 a pixel from there, to 0xfa.
+static const int kCrossroadsRoom = 23;
+static const int kCrossroadsEdge = 0x4c;
+static const int kCrossroadsDim = 0x46;
+
 // Room 31, the cliff: the sampler runs and the room then throws its answer away
 // (ovr_1f_0e87:0x0511). The level is full unless [0xa737] is set, and 0x96 while
 // it is -- the cliff after dark.
@@ -266,13 +272,32 @@ void AlienEngine::uploadCharPalette(bool alt) {
  * OBJ:sub_069fd and the upload gate that follows it, once a tick.
  */
 void AlienEngine::stepLighting() {
-	// Rooms 23 and 25 never call the sampler, so they keep the level the room
-	// before them left -- and, with it, that room's brightness on the character.
-	if (!lightMapFile(_room, false))
+	// Room 23 has no plate but a ramp of its own, OBJ:sub_06e20 from its loop:
+	// dim under the trees, brightening over the eight pixels a step past sprite
+	// x 0x4c until it tops out. Leaving it out kept whatever level the room
+	// before had left (manual playthrough #53).
+	const bool crossroads = _room == kCrossroadsRoom;
+
+	// Room 25 never calls the sampler, so it keeps the level the room before it
+	// left -- and, with it, that room's brightness on the character.
+	if (!crossroads && !lightMapFile(_room, false))
 		return;
 
 	_lightPrev = _lightLevel;
 	_lightLevel = 0xff;
+
+	if (crossroads) {
+		const int past = _ben.spriteX() - kCrossroadsEdge;
+		_lightLevel = past < 0 ? kCrossroadsDim
+			: (byte)MIN(kCrossroadsDim + MIN(past * 8, 0xfa), 0xfa);
+		if (!_lightArmed) {
+			_lightArmed = true;
+			return;
+		}
+		if (_lightLevel != _lightPrev)
+			uploadCharPalette(false);
+		return;
+	}
 
 	int x = _ben.spriteX() + Walker::kWalkPointX;
 	int y = _ben.spriteY() + Walker::kWalkPointY - kLightSkipRows;

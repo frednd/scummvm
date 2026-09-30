@@ -211,11 +211,11 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
 		_dialogId(1), _lastEvent(0), _speechCustom(false), _liftPending(false),
 		_observatoryLook(false),
-		_observatoryBreaker(false),
+		_observatoryBreaker(false), _observatoryStep(0), _observatoryPos(0),
 		_libraryStep(0), _libraryPos(0),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
-		_cemeteryLookWait(false), _cemeteryStep(0),
+		_cemeteryPos(0), _cemeteryZapPos(-1), _cemeteryCursorOwed(false), _cemeteryStep(0),
 		_mazeStep(0), _mazePose(0),
 		_crystalStep(0), _crystalWait(0), _crystalSpeaker(0), _crystalLine(0),
 		_crystalLeft(0), _crystalSpeaking(false),
@@ -1264,6 +1264,17 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		queueOutcome(_tal, code, anchorX, anchorY);
 	}
 
+	// HOTSPOT:sub_13605's latch, the object the last left click was on, is
+	// written by every click in the game, so the exit click that brought him
+	// here is still in it. The rooms that read it back (cemetery.cpp,
+	// shore.cpp, corridor.cpp) only do so on the pass a route runs out
+	// ([0x9908]), which a placement never is; the port tests "not walking",
+	// which he already is on entry. With the cliff's object 1 still latched,
+	// the cemetery said "I can't walk through the beams" the moment he
+	// arrived (manual playthrough #54). Any walk in the new room starts with a
+	// click that writes it again, so clearing it here loses nothing.
+	_script.setFlag(0xa644, 0);
+
 	// The escape pod runs its own sequence as it opens, once the pod is ready
 	// to leave; every other room, and the pod before then, does nothing here.
 	startEnding();
@@ -1304,6 +1315,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startPark();
 	startYodle();
 	startForest();
+	startObservatory();
 
 	// And the ship's four elevator floors (corridor.cpp), the scanner's
 	// robot (scanner.cpp), then the number board, the boss fight and the
@@ -1723,6 +1735,7 @@ void AlienEngine::stepClock() {
 		// two and the cover would otherwise stay shut.
 		stepObservatoryPanel();
 		stepObservatoryBreaker();
+		stepObservatoryStairs();
 		stepSewer();
 		stepBasement();
 
@@ -3398,6 +3411,11 @@ void AlienEngine::checkExit() {
 	// And room 7's closet answers its arrival with a line and a walk of its
 	// own before the exit is written (bedroom.cpp).
 	if (hijackBedroomLift(submode))
+		return;
+
+	// And room 19's stairs, which play the climb before the room is left
+	// (observatory.cpp).
+	if (hijackObservatoryStairs(submode))
 		return;
 
 	takeExit(submode);

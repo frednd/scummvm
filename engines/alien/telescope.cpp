@@ -365,6 +365,13 @@ void AlienEngine::playObservatoryScreen() {
 
 	ScreenMode mode = _script.flag(kDiskIn) == 0 ? kModeNoDisk : kModeMenu;
 
+	// The room's own slots go: 15f3:sub_165d3 draws only the five it loads,
+	// and the room reloads on the way out. Left running, slot 7 -- OBU_SCRE,
+	// the little monitor in the room, at 62,83 -- drew over the screen's text
+	// as a blue-edged green block (manual playthrough #41/#51).
+	for (uint i = 0; i < AnimSlots::kSlotCount; i++)
+		_anims.takeDown(i);
+
 	_anims.loadBank(kSlotMenu, mode == kModeNoDisk ? kNoDiskBank : kMenuBank);
 	_anims.loadBank(kSlotCursor, kCursorBank);
 	_anims.loadBank(kSlotSaveOk, kSaveOkBank);

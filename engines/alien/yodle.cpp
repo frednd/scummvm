@@ -93,6 +93,8 @@ static const byte kPicklock = 37;
 
 /// The thirteen immediates every call site pushes: his anchor and ink, then Ben's.
 static const int kYodleX = 0xa5, kYodleY = 0x4e;
+// Sprite x under which the loop holds the camera on the room's left edge.
+static const int kHoldBelowX = 0xf8;
 static const byte kYodleInk[3] = { 0x2d, 0x2d, 0x3f };
 static const int kBenX = 0xc1, kBenY = 0x4e;
 static const byte kBenInk[3] = { 0x3f, 0x3f, 0x3f };
@@ -613,6 +615,11 @@ void AlienEngine::yodlePick() {
 void AlienEngine::stepYodle() {
 	if (_room != kYodleRoom)
 		return;
+
+	// 0x14dc: west of the stairs the camera makes for the room's left edge
+	// rather than for the character, so it pans all the way out (manual
+	// playthrough #49). The x is the sprite's, [0xa8ec].
+	_scrollHold = _ben.spriteX() < kHoldBelowX ? 0 : -1;
 
 	// [0xad1b], the frame a line comes down: he stops talking with it (0x14f3).
 	// The port has no such pulse, so the flag the line was started with stands
