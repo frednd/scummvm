@@ -517,16 +517,18 @@ void AlienEngine::playObservatoryScreen() {
 
 			_anims.tick();
 
-			// 0x0499: the monitor's glow, swept 0..40 palette entries 25%
-			// toward a dark red and back. Approximate -- UTIL:sub_0232c reads
-			// an indexed colour table this port has not decoded -- but it is
-			// cosmetic and does not gate anything.
+			// 0x0499, sub_163cc: the monitor's flicker. UTIL:sub_0232c(amount,
+			// 0, 0, 0, 0x50, 0x40) blends the sixty-four entries from 0x50
+			// toward black by amount/256, amount stepping 0, 10 .. 40. The
+			// port used to tint entries 0..40 toward red instead, which is
+			// where the pointer lives (33-37) -- the odd-coloured glyph on the
+			// screen (manual playthrough #41).
+			static const uint kSweepFirst = 0x50, kSweepCount = 0x40;
 			byte swept[256 * 3];
 			memcpy(swept, _palette, sizeof(swept));
-			for (uint16 i = 0; i < sweep && i < 256; i++) {
-				swept[i * 3 + 0] = (byte)((_palette[i * 3 + 0] * 0xc0 + 0x50 * 0x40) >> 8);
-				swept[i * 3 + 1] = (byte)((_palette[i * 3 + 1] * 0xc0) >> 8);
-				swept[i * 3 + 2] = (byte)((_palette[i * 3 + 2] * 0xc0) >> 8);
+			for (uint i = kSweepFirst; i < kSweepFirst + kSweepCount; i++) {
+				for (uint c = 0; c < 3; c++)
+					swept[i * 3 + c] = (byte)((_palette[i * 3 + c] * (256 - sweep)) >> 8);
 			}
 			g_system->getPaletteManager()->setPalette(swept, 0, 256);
 			sweep += 10;
@@ -546,13 +548,17 @@ void AlienEngine::playObservatoryScreen() {
 				_anims.remaining(kSlotSaveEr) == 1 || _anims.remaining(kSlotScan) == 1)
 				clicksOn = true;
 
-			// 0x078a-0x07a6: the two loops the menu keeps running.
-			if (mode == kModeNoDisk)
+			// 0x078a-0x07a6: the loops the screen keeps running. The code
+			// relaunches the cursor only in the menu, but OBS_CURS ships two
+			// frames and the play runs three, so each pass ends on the
+			// terminator with [0xa5da] set -- the frame is stamped into the
+			// page at one-left and the cursor never leaves the original's
+			// screen. The manual playthrough saw it blinking on the no-disk
+			// screen and through a scan (#40, #42); the port's full repaint
+			// has no page to stamp into, so it keeps the slot running instead.
+			if (mode == kModeNoDisk || mode == kModeMenu)
 				_anims.relaunch(kSlotMenu);
-			else if (mode == kModeMenu) {
-				_anims.relaunch(kSlotMenu);
-				_anims.relaunch(kSlotCursor);
-			}
+			_anims.relaunch(kSlotCursor);
 
 			// 0x07b0-0x07e5: the three payoffs, each one frame before its
 			// transition ends.
@@ -725,8 +731,11 @@ void AlienEngine::armTelescopeLever(int obj, byte verb) {
 	const bool raising = _script.flag(kLever) == 0;
 	_script.setFlag(0xa49f, raising ? kLeverRaisePull : kLeverLowerPull);
 	// 0x0286/0x028b and 0x02de/0x02e3: the cursor goes away for the length of
-	// the pull, and the machine's last state is what gives it back.
+	// the pull, and the machine's last state is what gives it back. The walker
+	// goes with it: the pull is Ben drawn into slots 1 and 2, and without the
+	// [0xa94d] write there were two of him (manual playthrough #39).
 	CursorMan.showMouse(false);
+	hideCharacter();
 	debugC(1, kDebugTelescope, "telescope: the lever is being %s",
 		   raising ? "raised" : "lowered");
 }
@@ -745,8 +754,10 @@ void AlienEngine::stepTelescopeLever() {
 		return;
 	}
 
-	// 0x09e4: the arm goes up, and the lever is up from here on.
+	// 0x09e4: Ben lets go ([0xa94d] = 1), the arm goes up, and the lever is up
+	// from here on.
 	if (state == kLeverRaiseMove) {
+		showCharacter();
 		_anims.play(kLeverArmSlot, kArmFirstUp, kArmFrames, kArmRate, kArmModeUp);
 		_script.setFlag(kLever, 1);
 		_sound.play(kServoSample, kServoRateUp, kServoVolume, kServoPan);
@@ -762,8 +773,9 @@ void AlienEngine::stepTelescopeLever() {
 		return;
 	}
 
-	// 0x0a21: mode 3, so the arm runs the same frames backward.
+	// 0x0a21: Ben lets go, and mode 3 runs the arm's frames backward.
 	if (state == kLeverLowerMove) {
+		showCharacter();
 		_anims.play(kLeverArmSlot, kArmFirstDown, kArmFrames, kArmRate, kArmModeDown);
 		_script.setFlag(kLever, 0);
 		_sound.play(kServoSample, kServoRateDown, kServoVolume, kServoPan);

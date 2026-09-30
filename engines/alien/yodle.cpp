@@ -82,6 +82,8 @@ static const uint16 kMet = 0xa74d;				///< the first meeting is over
 static const uint16 kMetAlt = 0xa74e;			///< and the blueprints know it
 static const uint16 kPlansGiven = 0xa74f;		///< the blueprints have arrived
 static const uint16 kKnown = 0xa751;			///< "old man" becomes "Yodle"
+static const uint16 kPipeTaken = 0xa745;		///< the pipe he dropped is in the bag
+static const uint16 kPipeDown = 0xa746;			///< and until then it is on the stairs
 static const uint16 kTeleporter = 0x33c2;		///< he is building it
 
 static const byte kBlueprints = 29;
@@ -113,8 +115,10 @@ static const byte kPoseInside = 0x1e;	///< YOD_GOIN, up the stairs and in
 
 /// The banks those poses play on (the overlay's load order, 0x0bd4-0x0c89).
 static const uint kWaterSlot = 0;		///< vesi.dl1
+static const uint kPipeSlot = 1;		///< yodlepip.dl1
 static const uint kYodleSlot = 3;		///< YODLE1.dl1
 static const uint kInsideSlot = 4;		///< YOD_GOIN.dl1
+static const uint kClearSlot = 5;		///< yod_cler.dl1
 static const uint kHandSlot = 6;		///< yod_thro.dl1
 
 /// The lists in the data segment, one-based frame numbers.
@@ -855,6 +859,25 @@ void AlienEngine::startYodle() {
 	_yodleWaterDue = false;
 	_script.setFlag(kRoomFileLoaded, 0);
 	loadYodleRoomScript();
+
+	// 0x0ceb-0x0d2c: the stairs as he left them, stamped over the plate that
+	// has him painted on it. The attack (CUTSCENE, 0x1921) puts the byte back
+	// to 0: the stairs cleared and the door open (yod_cler), and the pipe he
+	// dropped until Ben picks it up, which is also what registers it
+	// ([0xa746]). Gone inside is YOD_GOIN's last frame. Manual playthrough #43.
+	bool rebuild = false;
+	if (_script.flag(kStage) == 0) {
+		_anims.stamp(kClearSlot, 1, _background);
+		if (_script.flag(kPipeTaken) == 0) {
+			_script.setFlag(kPipeDown, 1);
+			_anims.stamp(kPipeSlot, 1, _background);
+			rebuild = true;
+		}
+	} else if (_script.flag(kStage) == 2) {
+		_anims.stamp(kInsideSlot, kInsideFrames, _background);
+	}
+	if (rebuild)
+		rebuildHotspots();
 }
 
 /**

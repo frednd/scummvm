@@ -262,6 +262,8 @@ private:
 	/// toggles it (observatory.cpp).
 	bool armObservatoryPanel(int obj, byte verb);
 	void armObservatoryLook(int obj, byte verb);
+	void armObservatoryBreaker(int obj, byte verb);
+	void stepObservatoryBreaker();
 	void stepObservatoryPanel();
 	void openObservatoryPanel();
 	void closeObservatoryPanel();
@@ -391,6 +393,12 @@ private:
 	/// (forest.cpp).
 	void armForestParrot(int obj, byte verb, int item);
 	void stepForestParrot();
+	void startForest();
+	bool runYodleNote(int obj, byte verb, byte submode);
+	void parrotSays(byte line);
+	void parrotQuiet();
+	void forestBenSays(byte line);
+	void forestArm(byte step);
 
 	/// Room 22's phone, which dials the teleporter, and room 56's simplified
 	/// return trip (teleport.cpp).
@@ -837,6 +845,7 @@ private:
 	/// Room 19: the cover has been looked at and its line is still up. The
 	/// cover comes off when the line comes down (observatory.cpp).
 	bool _observatoryLook;
+	bool _observatoryBreaker;	///< room 19's [0xa49f] 0x14, the walker away
 
 	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
 	/// every tick pair, which two of that room's steps time themselves off.
@@ -952,6 +961,7 @@ private:
 	/// Room 26's parrot machine (forest.cpp).
 	byte _forestStep;
 	uint _forestWait;
+	bool _forestTalk;		///< a plain verb on the parrot waits for its line
 
 	/// Room 21's Yodle: the step of his machine, [0xa49c] beside it, the run
 	/// standing in [0xa4a2] and the menu reply owed (yodle.cpp).

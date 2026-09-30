@@ -95,10 +95,10 @@ bool DL1Sprite::longStripAt(uint32 pos) const {
 
 /**
  * Where the first strip of the frame opening at `pos` starts: past the
- * full-screen sentinel and every repeat of the start address, the walk
- * parseFrames() makes. YODLE1 repeats the address twice, so testing one word
- * in landed on a repeat and read the file as short-form -- one frame of junk
- * instead of Yodle's thirty-nine, and no talking (manual playthrough #33).
+ * full-screen sentinel and every copy of the start address, the walk
+ * parseFrames() makes. YODLE1 opens on a blank frame, so its address is there
+ * three times, and testing one word in landed on a copy and read the file as
+ * short-form -- one frame of junk and no talking (manual playthrough #33).
  */
 uint32 DL1Sprite::firstStripAt(uint32 pos) const {
 	if (pos + 2 > _size)
@@ -134,10 +134,29 @@ bool DL1Sprite::parseFrames(uint32 bboxAt, uint nframes, bool longForm, ParseRes
 			startAddr = READ_LE_UINT16(_data + pos);
 		}
 
-		// A frame opens with its first strip's address repeated once, twice in
-		// a couple of files. Consume the copies.
-		while (pos + 4 <= _size && READ_LE_UINT16(_data + pos + 2) == startAddr)
+		// A frame opens with its first strip's address repeated once. A copy
+		// more than that is a *blank* frame: a start address with no strips,
+		// whose bbox the table gives as (0,0,2,2). YODLE1 opens on one,
+		// OBS_SCR1 and OBS_MENU have one in the middle; reading the extra copy
+		// as a repeat dropped the frame and shifted every later one a frame
+		// early -- the monitor's scatter and the disk showing too soon
+		// (manual playthrough #40, #41).
+		uint repeats = 0;
+		while (pos + 4 <= _size && READ_LE_UINT16(_data + pos + 2) == startAddr) {
 			pos += 2;
+			repeats++;
+		}
+		for (uint blank = 1; blank < repeats; blank++) {
+			Frame empty;
+			empty.startAddr = startAddr;
+			const uint index = out.frames.size();
+			empty.hasBbox = index < nframes;
+			for (int i = 0; i < 4; i++)
+				empty.bbox[i] = empty.hasBbox
+					? READ_LE_UINT16(_data + bboxAt + index * 8 + i * 2) : 0;
+			out.frames.push_back(empty);
+		}
+		frameIndex = out.frames.size();
 
 		bool longStrips = longForm && longStripAt(pos);
 		uint32 header = longStrips ? 8 : 4;

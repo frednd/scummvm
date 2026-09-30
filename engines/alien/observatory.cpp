@@ -21,6 +21,7 @@
 
 #include "alien/alien.h"
 #include "alien/anim.h"
+#include "alien/detection.h"
 #include "alien/play.h"
 #include "alien/sfx.h"
 
@@ -198,6 +199,53 @@ void AlienEngine::armObservatoryLook(int obj, byte verb) {
 		return;
 
 	_observatoryLook = true;
+}
+
+/// The circuit breaker, object 1, and the byte it toggles.
+static const byte kBreakerObject = 1;
+static const byte kVerbUse = 10;
+static const uint16 kPowerOn = 0xa75a;
+
+/// [0xa4ef]: the frames left on slot 5, the hand on the breaker.
+static const uint16 kBreakerLeft = 0xa4ef;
+
+/// The two lines the machine speaks as Ben comes back, by which way it went.
+static const byte kPowerOnEvent = 0x0b;		///< "There. The power is on."
+static const byte kPowerOffEvent = 0x0c;	///< "There. The power is switched off."
+
+/**
+ * Use on the breaker: the body both ways round (0x024d, 0x02b4) plays the hand
+ * on slot 5 with Ben drawn into it, so it takes the walker away ([0xa94d] = 0
+ * at 0x0285, 0x02c2) and arms [0xa49f] 0x14. The lifted rows have the plays
+ * and the flag, not the two byte writes -- which is Ben on screen twice and no
+ * line at the end of it (manual playthrough #38).
+ */
+void AlienEngine::armObservatoryBreaker(int obj, byte verb) {
+	if (_room != kObservatoryRoom || obj != kBreakerObject || verb != kVerbUse)
+		return;
+	if (!_anims.isBusy(5))
+		return;
+
+	hideCharacter();
+	_observatoryBreaker = true;
+	debugC(1, kDebugRooms, "observatory: the breaker, power %s",
+		   _script.flag(kPowerOn) ? "on" : "off");
+}
+
+/// 0x0ad0: one frame left on the hand, and Ben is back to say which way it went.
+void AlienEngine::stepObservatoryBreaker() {
+	if (!_observatoryBreaker || _room != kObservatoryRoom)
+		return;
+	if (_script.flag(kBreakerLeft) > 1)
+		return;
+
+	_observatoryBreaker = false;
+	showCharacter();
+
+	int anchorX, anchorY;
+	characterAnchor(anchorX, anchorY);
+	queueOutcome(_tal, _script.flag(kPowerOn) ? kPowerOnEvent : kPowerOffEvent,
+				 anchorX, anchorY);
 }
 
 } // End of namespace Alien

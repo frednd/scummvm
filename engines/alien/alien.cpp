@@ -211,6 +211,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
 		_dialogId(1), _lastEvent(0), _speechCustom(false), _liftPending(false),
 		_observatoryLook(false),
+		_observatoryBreaker(false),
 		_libraryStep(0), _libraryPos(0),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
@@ -223,7 +224,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_shoreStep(0),
 		_steamClicks(0), _steamStep(0),
 		_parkStep(0), _parkWait(0), _parkLock(false),
-		_forestStep(0), _forestWait(0),
+		_forestStep(0), _forestWait(0), _forestTalk(false),
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
@@ -1302,6 +1303,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// a lifted cutscene (park.cpp).
 	startPark();
 	startYodle();
+	startForest();
 
 	// And the ship's four elevator floors (corridor.cpp), the scanner's
 	// robot (scanner.cpp), then the number board, the boss fight and the
@@ -1312,6 +1314,13 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startWaiting();
 	startBoss();
 	startJail();
+
+	// OBJ:sub_08567 (0251:613a): the shared open clears [0xa6d3] once the
+	// room has placed Ben by it. Only room 3's clear was lifted, so the flag
+	// a scene's teardown raised stayed up until room 26, whose placement row
+	// reads it, stood him at the note on a first visit (manual playthrough
+	// #44). Last, so the hand-written opens above still see it.
+	_script.setFlag(0xa6d3, 0);
 
 	// And the scenes the room raises on entry, which the loop plays once the
 	// room's first frame is up: the original reaches them from entry 2, which
@@ -1713,6 +1722,7 @@ void AlienEngine::stepClock() {
 		// coming down, because a line dismissed by a click ends between the
 		// two and the cover would otherwise stay shut.
 		stepObservatoryPanel();
+		stepObservatoryBreaker();
 		stepSewer();
 		stepBasement();
 
@@ -3794,6 +3804,22 @@ void AlienEngine::finishAction() {
 	// which the lifted row would otherwise read out of a Yodle file (yodle.cpp).
 	yodleRoomScriptFor(spot.obj, verb, item);
 
+	// And room 21's Yodle, whose talk hands over the picklock the diving
+	// area's chest needs, and who builds the teleporter out of the three
+	// things carried to him (yodle.cpp). A click he takes is not offered to
+	// the table: its row for anything on him is `handled` with the body
+	// dropped, and the item path's shared refusal spoke over his first line
+	// (manual playthrough #37).
+	if (armYodle(spot.obj, verb, item)) {
+		if (item)
+			holdItem(Inventory::kNoItem);
+		rebuildHotspots();
+		_hover = -1;
+		const Common::Point hut = g_system->getEventManager()->getMousePos();
+		updateHover(hut.x, hut.y);
+		return;
+	}
+
 	const bool libraryHandled = runLibraryBody(spot.obj, item != Inventory::kNoItem);
 
 	// Room 11's television is answered the same way: the remote control's
@@ -3829,10 +3855,10 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armTelescopeLever(spot.obj, verb);
 
-	// And room 21's Yodle, whose talk hands over the picklock the diving
-	// area's chest needs, and who builds the teleporter out of the three
-	// things carried to him (yodle.cpp).
-	armYodle(spot.obj, verb, item);
+	// And room 19's circuit breaker, whose hand on slot 5 draws Ben himself
+	// and whose line waits for it (observatory.cpp).
+	if (!item)
+		armObservatoryBreaker(spot.obj, verb);
 
 	// And room 26's parrot, whose reaction to anything but the moldy bread it
 	// wants is a brush-off and whose reaction to that is a machine of its own,
@@ -3917,7 +3943,9 @@ void AlienEngine::finishAction() {
 		// nothing but this submode: the real bodies are calls the lift cannot
 		// carry, and this is the arrival test they run under
 		// (ovr_1c_0eb7:0x0128, telescope.cpp).
-		if (!runTelescopeScreen(spot.obj, verb, _script.submodeRequest()))
+		// And room 26's note, the same way (forest.cpp).
+		if (!runTelescopeScreen(spot.obj, verb, _script.submodeRequest()) &&
+			!runYodleNote(spot.obj, verb, _script.submodeRequest()))
 			takeExit(_script.submodeRequest());
 	}
 }
