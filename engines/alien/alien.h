@@ -853,6 +853,9 @@ private:
 	bool _observatoryBreaker;	///< room 19's [0xa49f] 0x14, the walker away
 	byte _observatoryStep;		///< room 19's [0xa49f]: 1-4 the slip, 0x64 the stairs
 	uint16 _observatoryPos;		///< and its [0xa49c]
+	bool _observatoryEncore;	///< the slip under way is the port's own
+	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
+	bool _restoring;			///< syncGame is reloading the room, not an entry through a door
 
 	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
 	/// every tick pair, which two of that room's steps time themselves off.

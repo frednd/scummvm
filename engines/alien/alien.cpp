@@ -212,6 +212,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_dialogId(1), _lastEvent(0), _speechCustom(false), _liftPending(false),
 		_observatoryLook(false),
 		_observatoryBreaker(false), _observatoryStep(0), _observatoryPos(0),
+		_observatoryEncore(false), _stairsDescents(0), _restoring(false),
 		_libraryStep(0), _libraryPos(0),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),

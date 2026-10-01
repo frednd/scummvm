@@ -99,9 +99,9 @@ static const uint16 kDosSubmode = 0xA87E;
 static const uint16 kDosMode = 0xA880;			///< game_mode: the room
 static const uint16 kDosOutcomeCounter = 0xAC26;	///< per object, the rotation
 
-// The current save version. Bumping it invalidates nothing yet: version 1 is the
-// first, and older saves do not exist.
-static const byte kSaveVersion = 1;
+// The current save version. Version 2 adds the port's own stairs count
+// (observatory.cpp); a version 1 save loads with it at zero.
+static const byte kSaveVersion = 2;
 
 bool AlienEngine::hasFeature(EngineFeature f) const {
 	return f == kSupportsReturnToLauncher ||
@@ -120,6 +120,7 @@ bool AlienEngine::hasFeature(EngineFeature f) const {
 void AlienEngine::syncGame(Common::Serializer &s) {
 	byte version = kSaveVersion;
 	s.syncAsByte(version);
+	s.setVersion(version);
 
 	int16 room = (int16)_room;
 	s.syncAsSint16LE(room);
@@ -139,6 +140,10 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 	_script.syncGame(s);
 	s.syncBytes(_outcomeCounter, kObjectCount);
 
+	if (s.isLoading())
+		_stairsDescents = 0;
+	s.syncAsByte(_stairsDescents, 2);
+
 	if (s.isLoading()) {
 		// MAIN clears [0x7dc4] on the branch that has just restored a save, so a
 		// loaded game never opens with the monologue -- and never hides the
@@ -147,8 +152,10 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 
 		// The room is reloaded from scratch, which is what puts its script,
 		// its hotspots and its banks back the way the state says they are.
+		_restoring = true;
 		if (!loadRoom(room, _secondPlate != 0))
 			loadRoom(room);
+		_restoring = false;
 		_ben.place(x, y, facing);
 		_ben.stop();
 

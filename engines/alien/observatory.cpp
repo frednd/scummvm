@@ -295,8 +295,21 @@ static const int kClimbFrames = 0x11;
 static const int kClimbRate = 2;
 static const int kClimbMode = 1;
 
-/// DIALOG:sub_0b63a(0x0f, 0xcc, 0x5b): "Oh man, oh man... Game over?"
+/// DIALOG:sub_0b63a(0x0f, 0xcc, 0x5b): "Doh." and "Oh man, oh man... Game over?"
 static const byte kSlipLine = 0x0f;
+
+/// The port's own fall (manual playthrough #60, not in the original): every
+/// seventh trip down from room 28 he takes the stairs the fast way again, and
+/// says a line of his own. The line is outcome 20, which ROOM19.TAL ships
+/// pointing at nothing; data/edits aims it at entry 20, empty in the shipped
+/// file, and fills that in. A pack without the edit has him fall and say
+/// nothing, which is the most that can go wrong.
+static const byte kEveryFall = 7;
+static const byte kEncoreLine = 20;
+
+/// CHARANIM:sub_13bce at 0x07d6: where he lands, facing front.
+static const int kSlipX = 0xc1, kSlipY = 0x28;
+static const int kFacingFront = 3;
 static const int kSlipLineX = 0xcc, kSlipLineY = 0x5b;
 
 /// INPUT:sfx_play_delayed at 0x07f2 and 0x0804: the thump, twice.
@@ -312,10 +325,24 @@ void AlienEngine::startObservatory() {
 	_observatoryStep = 0;
 	_observatoryPos = 0;
 
-	if (_room != kObservatoryRoom || _mode != kTelescopeRoom)
+	if (_room != kObservatoryRoom || _mode != kTelescopeRoom || _restoring)
 		return;
-	if (_script.flag(kSlipped) != 0 || _script.flag(kPanelShut) != 1)
+
+	const bool original = _script.flag(kSlipped) == 0 && _script.flag(kPanelShut) == 1;
+
+	// The count runs on every trip down, the original's slip included.
+	_stairsDescents = (byte)((_stairsDescents + 1) % kEveryFall);
+	const bool encore = !original && _stairsDescents == 0;
+	if (!original && !encore)
 		return;
+
+	if (encore) {
+		// The lifted rows only place him and start the play under the
+		// original's own guard, so the encore does both itself.
+		_ben.placeSprite(kSlipX, kSlipY, kFacingFront);
+		_anims.play(kSlipSlot, 1, kSlipFrames, kSlipRate, kSlipMode);
+		updateScroll(true);
+	}
 
 	// A port addition (setHold()): mode 4 takes its last frame away, and he
 	// lies on the floor between the two halves for the whole of the line.
@@ -324,9 +351,12 @@ void AlienEngine::startObservatory() {
 	CursorMan.showMouse(false);
 	_sound.queue(kSlipSample, kSlipRateA, kSlipVolumeA, 0, kSlipDelayA);
 	_sound.queue(kSlipSample, kSlipRateB, kSlipVolumeB, 0, kSlipDelayB);
-	_script.setFlag(kSlipped, 1);
+	if (original)
+		_script.setFlag(kSlipped, 1);
+	_observatoryEncore = encore;
 	_observatoryStep = kStepSlipFall;
-	debugC(1, kDebugRooms, "observatory: down the stairs the fast way");
+	debugC(1, kDebugRooms, "observatory: down the stairs the fast way%s",
+		   encore ? " (the port's seventh trip)" : "");
 }
 
 /// 0x0b0e: the arrival at the stairs, taken before the shared exit sees it.
@@ -362,13 +392,17 @@ void AlienEngine::stepObservatoryStairs() {
 	case kStepSlipLie:
 		if (_observatoryPos < kSlipLineAt)
 			return;
-		queueOutcome(_tal, kSlipLine, kSlipLineX, kSlipLineY);
+		queueOutcome(_tal, _observatoryEncore ? kEncoreLine : kSlipLine, kSlipLineX, kSlipLineY);
 		_observatoryStep = kStepSlipLine;
 		_observatoryPos = 0;
 		return;
 
 	case kStepSlipLine:
 		if (_observatoryPos < kSlipUpAt)
+			return;
+		// The encore's line is longer than the original's, and he stays down
+		// until he has said it.
+		if (_observatoryEncore && !speechDone())
 			return;
 		playCharacterAnim(kSlipSlot, kSlipFrames, kSlipFrames, kSlipRate, kSlipMode);
 		_observatoryStep = kStepSlipUp;
