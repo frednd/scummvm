@@ -246,8 +246,8 @@ bool AlienEngine::liftWipe(const Graphics::Surface &to) {
 				continue;
 
 			// OBJ:obj_set_active, a wait for the next master tick.
-			g_system->updateScreen();
-			g_system->delayMillis(kTickMillis);
+			present();
+			sleep(kTickMillis);
 
 			Common::Event event;
 			while (g_system->getEventManager()->pollEvent(event)) {
@@ -309,7 +309,7 @@ void AlienEngine::playLiftPanel() {
 	debugC(1, kDebugLift, "lift: the console opens, the car is %s",
 		   _script.flag(kCarFloor) == 0 ? "at the bedroom" : "in the basement");
 
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 	uint32 tick = 0;
 
 	bool booting = true;
@@ -408,7 +408,7 @@ void AlienEngine::playLiftPanel() {
 			}
 		}
 
-		const uint32 now = g_system->getMillis();
+		const uint32 now = millis();
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
@@ -556,8 +556,8 @@ void AlienEngine::playLiftPanel() {
 			shot = 0;
 		}
 
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+		present();
+		sleep(10);
 	}
 
 	// 0x0486: the panel hands the input back, and room 3's entry 3 marks it seen

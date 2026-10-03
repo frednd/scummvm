@@ -196,7 +196,7 @@ void AlienEngine::playScannerScan(bool mask) {
 	debugC(1, kDebugCutscene, "scanner: %s over %s, %u frames", clip, plateName, count);
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 	uint32 tick = 0;
 	uint frame = 0;
 	bool skipped = false;
@@ -212,10 +212,11 @@ void AlienEngine::playScannerScan(bool mask) {
 				skipped = true;
 		}
 
-		// A scripted run steps the frames as fast as they can be painted, the
-		// way the cutscene sweep does; it has nothing to click here.
-		const uint32 now = g_system->getMillis();
-		bool due = _playActive || _cutsceneFast;
+		// The cutscene sweep steps the frames as fast as they can be painted;
+		// a scripted run takes them at the game's own pace, and turbo is what
+		// makes that quick (clock.cpp).
+		const uint32 now = millis();
+		bool due = _cutsceneFast;
 		if (!due && now - last >= kTickMillis) {
 			last += kTickMillis;
 			due = (++tick & 1) == 0;	// [0xa5fc], the animation tick pair
@@ -249,9 +250,9 @@ void AlienEngine::playScannerScan(bool mask) {
 
 		if (_dirty)
 			redraw();
-		g_system->updateScreen();
-		if (!_playActive && !_cutsceneFast)
-			g_system->delayMillis(5);
+		present();
+		if (!_cutsceneFast)
+			sleep(5);
 	}
 
 	stopMusic();

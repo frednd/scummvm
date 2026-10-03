@@ -273,6 +273,26 @@ byte Inventory::itemOn(uint page, uint slot) const {
 	return index < kListSize ? _list[index] : kNoItem;
 }
 
+uint Inventory::pageOf(byte item) const {
+	if (item == kNoItem)
+		return 0;
+	for (uint i = 1; i < kListSize; i++) {
+		if (_list[i] == item)
+			return (i - 1) / kSlotCount + 1;
+	}
+	return 0;
+}
+
+Common::Point Inventory::slotPoint(uint slot) {
+	return Common::Point(kSlotX[slot] + kSlotWidth / 2, kSlotY + kSlotHeight / 2);
+}
+
+Common::Point Inventory::arrowPoint(Arrow arrow) {
+	const int top = arrow == kArrowUp ? kClickUpTop : kClickDownTop;
+	const int bottom = arrow == kArrowUp ? kClickUpBottom : kClickDownBottom;
+	return Common::Point((kClickLeft + kClickRight) / 2, (top + bottom) / 2);
+}
+
 int Inventory::slotAt(int x, int y) const {
 	// The bounds are exclusive in the original, so a click on the border line
 	// belongs to neither slot; and a slot with nothing in it is not there at all.

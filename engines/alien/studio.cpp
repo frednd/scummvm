@@ -344,7 +344,7 @@ void AlienEngine::playStudio() {
 	uint dumped = kStudioEnd;
 
 	uint32 iteration = 0;
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 
 	while (!shouldQuit() && !_quit && !skipped && pos != kStudioEnd) {
 		// Both buttons at once end it (CUTSCENE:sub_0c550 and 0c55:0994); a
@@ -410,9 +410,9 @@ void AlienEngine::playStudio() {
 
 		// OBJ:obj_set_active: the pass waits for the master tick here.
 		if (!_cutsceneFast) {
-			while (!shouldQuit() && g_system->getMillis() - last < kMasterTickMillis)
-				g_system->delayMillis(1);
-			last = g_system->getMillis();
+			while (!shouldQuit() && millis() - last < kMasterTickMillis)
+				sleep(1);
+			last = millis();
 		}
 
 		if (fade != kFadeIdle)
@@ -559,7 +559,7 @@ void AlienEngine::playStudio() {
 		}
 
 		g_system->copyRectToScreen(_screen.getPixels(), _screen.pitch, 0, 0, _screen.w, _screen.h);
-		g_system->updateScreen();
+		present();
 
 		// Level 3 writes the screen as each line goes up and at each step of
 		// the wall screen's machine, which is how a headless run sees it.

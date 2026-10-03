@@ -23,6 +23,7 @@
 #define ALIEN_INVENTORY_H
 
 #include "common/scummsys.h"
+#include "common/rect.h"
 #include "common/serializer.h"
 #include "common/str.h"
 #include "graphics/surface.h"
@@ -110,6 +111,14 @@ public:
 
 	/** The item a given page would show in a given slot. */
 	byte itemOn(uint page, uint slot) const;
+
+	/** The page an item is shown on, 1..6, or 0 when it is not carried. */
+	uint pageOf(byte item) const;
+
+	/// The middle of a slot and of an arrow's click box: where a scripted run
+	/// clicks to work the bar the way a player does.
+	static Common::Point slotPoint(uint slot);
+	static Common::Point arrowPoint(Arrow arrow);
 
 	/** Which slot a point is in, or -1. Empty slots do not answer. */
 	int slotAt(int x, int y) const;

@@ -44,6 +44,7 @@ bool PlayScript::load(const Common::String &path) {
 	}
 
 	_commands.clear();
+	_strict = false;
 	uint lineNo = 0;
 
 	while (!stream->eos()) {
@@ -62,10 +63,19 @@ bool PlayScript::load(const Common::String &path) {
 		PlayCommand cmd;
 		cmd.sourceLine = lineNo;
 
-		if (verb == "click" || verb == "rclick") {
+		if (verb == "strict") {
+			_strict = true;
+			continue;
+		} else if (verb == "click" || verb == "rclick") {
 			cmd.type = verb == "click" ? PlayCommand::kClick : PlayCommand::kRightClick;
 			cmd.a = parseInt(tok.nextToken());
 			cmd.b = parseInt(tok.nextToken());
+			// The label the status line has to read under the cursor first, in
+			// quotes, so it can have spaces in it.
+			const size_t open = line.findFirstOf('"');
+			const size_t close = line.findLastOf('"');
+			if (open != Common::String::npos && close > open)
+				cmd.s = Common::String(line.c_str() + open + 1, close - open - 1);
 		} else if (verb == "hover") {
 			cmd.type = PlayCommand::kHover;
 			cmd.a = parseInt(tok.nextToken());
@@ -127,6 +137,22 @@ bool PlayScript::load(const Common::String &path) {
 		} else if (verb == "give") {
 			cmd.type = PlayCommand::kGive;
 			cmd.a = parseInt(tok.nextToken());
+		} else if (verb == "checkpoint") {
+			// A checkpoint is taken at rest, between clicks, the way the
+			// original's own save is: a settle first, then the write.
+			PlayCommand settle;
+			settle.type = PlayCommand::kSettle;
+			settle.a = 700;
+			settle.sourceLine = lineNo;
+			_commands.push_back(settle);
+			cmd.type = PlayCommand::kCheckpoint;
+			cmd.s = tok.nextToken();
+			if (cmd.s.empty()) {
+				warning("play: %s:%u: checkpoint needs a name", path.c_str(), lineNo);
+				continue;
+			}
+		} else if (verb == "skip") {
+			cmd.type = PlayCommand::kSkip;
 		} else if (verb == "spots") {
 			cmd.type = PlayCommand::kSpots;
 		} else if (verb == "quit") {
@@ -142,6 +168,12 @@ bool PlayScript::load(const Common::String &path) {
 	delete stream;
 	debug(1, "play: loaded %s: %u commands", path.c_str(), _commands.size());
 	return true;
+}
+
+bool PlayCommand::isCheat() const {
+	// What no player can do: write the state, conjure an item, raise a scene,
+	// or jump to a saved game from inside a run that has to be played through.
+	return type == kFlag || type == kGive || type == kCutscene || type == kLoad;
 }
 
 } // End of namespace Alien

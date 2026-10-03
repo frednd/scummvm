@@ -270,7 +270,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	_dirty = true;
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 	uint32 tick = 0;
 
 	uint cursor = 0;
@@ -281,6 +281,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	bool tailRun = false;	// and whether that tail has run
 	int speaker = 0;		// which of the two the line on screen belongs to
 	bool skipped = false;
+	offerSkip();
 
 	while (!shouldQuit() && !_quit && !skipped) {
 		Common::Event event;
@@ -302,7 +303,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 
 		// The sweep runs the same loop with the clock out of it: one tick per
 		// pass, so holds and lines expire as fast as the steps can be walked.
-		const uint32 now = g_system->getMillis();
+		const uint32 now = millis();
 		if (_cutsceneFast || now - last >= kTickMillis) {
 			last = now;
 			tick++;
@@ -485,9 +486,9 @@ void AlienEngine::playCutsceneRecord(uint number) {
 			dumpScreen(Common::String::format("cutscene-%u-step-%u.png", number,
 											  cursor ? cursor - 1 : 0));
 
-		g_system->updateScreen();
+		present();
 		if (!_cutsceneFast)
-			g_system->delayMillis(10);
+			sleep(10);
 	}
 
 	// The closing procedure, then the room the scene interrupted takes the

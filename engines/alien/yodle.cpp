@@ -892,13 +892,13 @@ void AlienEngine::startYodle() {
  * black. Events are drained so the window keeps answering.
  */
 void AlienEngine::yodleStoryWait() {
-	const uint32 until = g_system->getMillis() + kStoryMillis;
-	while (!shouldQuit() && g_system->getMillis() < until) {
+	const uint32 until = millis() + kStoryMillis;
+	while (!shouldQuit() && millis() < until) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 		}
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+		present();
+		sleep(10);
 	}
 }
 

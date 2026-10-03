@@ -500,8 +500,8 @@ bool AlienEngine::runYodleNote(int obj, byte verb, byte submode) {
 				quit = true;
 		}
 
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+		present();
+		sleep(10);
 	}
 
 	// CUTSCENE:sub_0c5c9, the teardown every scene shares.

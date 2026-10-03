@@ -440,8 +440,8 @@ static const uint32 kSlideTickMillis = AlienEngine::kMasterTickMillis;
 
 /// One master tick of a slide: OBJ:sub_02ea1 opens on OBJ:obj_set_active.
 static bool slideTick(AlienEngine *vm) {
-	g_system->updateScreen();
-	g_system->delayMillis(kSlideTickMillis);
+	vm->present();
+	vm->sleep(kSlideTickMillis);
 	Common::Event event;
 	while (g_system->getEventManager()->pollEvent(event)) {
 	}

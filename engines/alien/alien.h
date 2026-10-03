@@ -22,6 +22,7 @@
 #ifndef ALIEN_ALIEN_H
 #define ALIEN_ALIEN_H
 
+#include "common/keyboard.h"
 #include "common/language.h"
 #include "common/serializer.h"
 #include "common/random.h"
@@ -93,6 +94,23 @@ public:
 
 	/// The one room whose left click reads "Swim to", 1021:0x9be.
 	static const int kSwimRoom = 46;
+
+	/**
+	 * The engine's clock, in place of the backend's (clock.cpp).
+	 *
+	 * Every loop in the port reads the time and sleeps through these two, so
+	 * one setting decides how fast the game runs: `timescale=1` is real time,
+	 * N > 1 runs N times faster in a window, and 0 is turbo -- a sleep advances
+	 * a virtual clock instead of waiting, so a scripted run goes as fast as the
+	 * machine composes frames and takes the same ticks it would at 1x.
+	 */
+	uint32 millis() const;
+	void sleep(uint32 ms);
+	void setTimescale(uint scale);
+	bool turbo() const { return _timescale == 0; }
+
+	/// Hands the composed frame to the backend: every frame, but in turbo.
+	void present();
 
 	AlienEngine(OSystem *syst, const ADGameDescription *gameDesc);
 	~AlienEngine() override;
@@ -195,6 +213,7 @@ private:
 	void sweepWalkGeometry();
 	void dumpHotspots();
 	void stepClock();
+
 	void drawWalkOverlay();
 	void drawSpotOverlay();
 
@@ -216,6 +235,7 @@ private:
 	bool importDosSave(const Common::String &file, bool apply);
 	void dumpSaves();
 	void checkSaveRoundTrip();
+	uint32 stateHash();
 	void checkDosItemImport();
 	void stopMusic();
 	void dumpCutscenes();
@@ -692,6 +712,12 @@ private:
 	Walker _ben;					///< the player character walking that route
 	uint32 _lastTick;				///< when the master clock last advanced
 	uint32 _tick;					///< master ticks since the engine started
+
+	uint _timescale;				///< 0 turbo, 1 real time, N times real time
+	uint32 _virtualMillis;			///< turbo's clock, advanced by sleep()
+	uint32 _clockRealBase;			///< backend time when the scale last changed
+	uint32 _clockVirtualBase;		///< engine time at that moment
+	uint32 _presentLast;			///< turbo: engine time of the last frame shown
 
 	/// The room's registered rectangles as its overlay's entry 1 last built
 	/// them, and which one the cursor is over.
@@ -1229,6 +1255,32 @@ private:
 	int _playSettleTimeout;		///< ticks left before a "settle" gives up
 	bool _playSettling;
 	uint _playFails;				///< number of failed "expect" assertions so far
+	bool _playPaused;				///< P: the script holds before its next command
+	bool _playStep;				///< N: let one command through while paused
+	bool _playSkippable;			///< `skippable`: Escape each cutscene as it starts
+	void offerSkip();
+
+	/// Strict mode (playrun.cpp): no cheats, the bar by its clicks, fail fast.
+	bool _playStrict;
+	PlayCommand _playBar;			///< the bar command being clicked through
+	bool _playBarBusy;
+	uint _playBarClicks;			///< clicks spent on it, against a runaway
+
+	bool startPlayRun();
+	bool playClickAllowed(const PlayCommand &cmd);
+	void stepPlayBar();
+	void playBarClick(Common::Point at, bool right);
+	static const char *playBarVerb(PlayCommand::Type type);
+	void runBarShortcut(const PlayCommand &cmd);
+	void playFailed(uint line);
+	void playLeftOpen(const char *what);
+	void writeCheckpoint(const PlayCommand &cmd);
+	bool resumePlayRun();
+	void writeFailureState(uint line);
+
+	/// The keys a watched run answers to; false for any other key.
+	bool playHotkey(const Common::KeyState &key);
+	void playMessage(const Common::String &text);
 };
 
 } // End of namespace Alien

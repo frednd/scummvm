@@ -100,8 +100,11 @@ static const uint16 kDosMode = 0xA880;			///< game_mode: the room
 static const uint16 kDosOutcomeCounter = 0xAC26;	///< per object, the rotation
 
 // The current save version. Version 2 adds the port's own stairs count
-// (observatory.cpp); a version 1 save loads with it at zero.
-static const byte kSaveVersion = 2;
+// (observatory.cpp); a version 1 save loads with it at zero. Version 3 adds
+// the master tick and the random state, which a scripted run resumed from a
+// save needs to go on exactly as the run that wrote it would have: three rooms
+// step their machines on a quarter of the tick (docs/timing_model.md).
+static const byte kSaveVersion = 3;
 
 bool AlienEngine::hasFeature(EngineFeature f) const {
 	return f == kSupportsReturnToLauncher ||
@@ -144,11 +147,28 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 		_stairsDescents = 0;
 	s.syncAsByte(_stairsDescents, 2);
 
+	uint32 tick = _tick;
+	uint32 seed = _rnd.getSeed();
+	s.syncAsUint32LE(tick, 3);
+	s.syncAsUint32LE(seed, 3);
+	if (s.isLoading() && s.getVersion() >= 3) {
+		_tick = tick;
+		_playLastTick = tick;
+		_rnd.setSeed(seed);
+	}
+
 	if (s.isLoading()) {
 		// MAIN clears [0x7dc4] on the branch that has just restored a save, so a
 		// loaded game never opens with the monologue -- and never hides the
 		// cursor for it either.
 		cancelOpening();
+
+		// LOGIC:sub_12b08 zeroes game_mode [0xa880] before it writes the
+		// block, so a restored game comes into its room from nowhere: no way
+		// in matches, and no arrival -- the climb out of the manhole, the
+		// ladder down into the basement -- plays a second time over a
+		// character the save has already put down (docs/save_state.md).
+		_mode = 0;
 
 		// The room is reloaded from scratch, which is what puts its script,
 		// its hotspots and its banks back the way the state says they are.
@@ -172,6 +192,22 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 		_armed = 0;
 		_dirty = true;
 	}
+}
+
+/**
+ * A fingerprint of what a save keeps, for telling two runs apart without
+ * writing a file: the same bytes saveGameStream() would write, hashed.
+ */
+uint32 AlienEngine::stateHash() {
+	Common::MemoryWriteStreamDynamic stream(DisposeAfterUse::YES);
+	Common::Serializer s(nullptr, &stream);
+	syncGame(s);
+
+	uint32 hash = 2166136261u;
+	const byte *data = stream.getData();
+	for (uint32 i = 0; i < stream.size(); i++)
+		hash = (hash ^ data[i]) * 16777619u;
+	return hash;
 }
 
 Common::Error AlienEngine::saveGameStream(Common::WriteStream *stream, bool isAutosave) {

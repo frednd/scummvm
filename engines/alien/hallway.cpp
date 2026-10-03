@@ -192,7 +192,7 @@ void AlienEngine::playPeephole() {
 		   kPeepholeMusic);
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 	uint32 tick = 0;
 
 	int idle = 0;			// [0xad16], the counter the whole scene is paced by
@@ -218,7 +218,7 @@ void AlienEngine::playPeephole() {
 				skipped = true;
 		}
 
-		const uint32 now = g_system->getMillis();
+		const uint32 now = millis();
 		if (_cutsceneFast || now - last >= kTickMillis) {
 			last = now;
 			tick++;
@@ -320,9 +320,9 @@ void AlienEngine::playPeephole() {
 		if (_dirty)
 			redraw();
 
-		g_system->updateScreen();
+		present();
 		if (!_cutsceneFast)
-			g_system->delayMillis(10);
+			sleep(10);
 	}
 
 	debugC(1, kDebugCutscene,

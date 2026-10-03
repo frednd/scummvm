@@ -33,10 +33,12 @@ namespace Alien {
  * is driven from a text command file instead of an event queue: one command
  * per line, blank lines and '#' comments skipped.
  *
- *   click X Y            left click at a playfield point -- walks, and arms
+ *   click X Y ["LABEL"]  left click at a playfield point -- walks, and arms
  *                        an exit; it performs no verb
- *   rclick X Y           right click: performs the hovered object's verb, and
- *                        does nothing at all over bare floor
+ *   rclick X Y ["LABEL"] right click: performs the hovered object's verb, and
+ *                        does nothing at all over bare floor. With a label, the
+ *                        status line has to contain it once the cursor is there
+ *                        (any case), or the click is a FAIL
  *
  * Both take **room** coordinates, the ones check_hotspots.py prints, not screen
  * ones: a wide room's camera moves with the character, and the engine puts the
@@ -72,7 +74,21 @@ namespace Alien {
  *   spots                   log the room's current hotspot list on the play
  *                           channel (independent of --debugflags=hotspots),
  *                           for checking what a state change revealed
+ *   skip                    click through the line on screen, the player's way
+ *                           of cutting it short; logged and ignored when no line
+ *                           is up (cutscenes are skipped by the `skippable` key)
  *   quit                    stop the script early
+ *   checkpoint NAME         settle, then write the state to NAME.sav in the
+ *                           `playstates` directory and log a CHECKPOINT line;
+ *                           a run can start from it again with `playfrom`
+ *                           and `playline` (tools/playtest.py does both)
+ *   strict                  this script is a playthrough with no cheating
+ *                           (docs/autoplaytest_plan.md, phase 2): flag, give,
+ *                           cutscene and load are refused, the bar is worked
+ *                           by clicking its arrows and slots, a click the
+ *                           cursor is not there for fails, and the first
+ *                           failure ends the run. `playstrict=true` in the
+ *                           config does the same for any script.
  */
 struct PlayCommand {
 	enum Type {
@@ -92,6 +108,8 @@ struct PlayCommand {
 		kCutscene,
 		kSnap,
 		kSpots,
+		kSkip,
+		kCheckpoint,
 		kGive,
 		kSave,
 		kLoad,
@@ -105,6 +123,9 @@ struct PlayCommand {
 	int c = 0;
 	Common::String s;
 	uint sourceLine = 0;
+
+	/// Whether a strict run refuses this command.
+	bool isCheat() const;
 };
 
 /// Parses a playthrough command file into a list of PlayCommands.
@@ -112,9 +133,12 @@ class PlayScript {
 public:
 	bool load(const Common::String &path);
 	const Common::Array<PlayCommand> &commands() const { return _commands; }
+	/// The script asked for strict mode itself, with a `strict` line.
+	bool strict() const { return _strict; }
 
 private:
 	Common::Array<PlayCommand> _commands;
+	bool _strict = false;
 };
 
 } // End of namespace Alien

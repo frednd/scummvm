@@ -160,7 +160,7 @@ void AlienEngine::playTelescopeView() {
 		   lowered ? "down" : "up");
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 	uint32 tick = 0;
 	bool quit = false;
 	uint scripted = 0;
@@ -199,11 +199,12 @@ void AlienEngine::playTelescopeView() {
 
 			if (++scripted > kScriptedGiveUp) {
 				warning("telescope: the script left the view open; closing it");
+				playLeftOpen("the telescope view");
 				quit = true;
 			}
 		}
 
-		const uint32 now = g_system->getMillis();
+		const uint32 now = millis();
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
@@ -230,8 +231,8 @@ void AlienEngine::playTelescopeView() {
 			shot = 0;
 		}
 
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+		present();
+		sleep(10);
 	}
 
 	// 0c55:0e11-0e26: the tail every CUTSCENE teardown shares.
@@ -395,7 +396,7 @@ void AlienEngine::playObservatoryScreen() {
 		   mode == kModeNoDisk ? "no disk" : "the menu");
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 	uint32 tick = 0;
 
 	bool clicksOn = true;		// [0xa949]
@@ -481,7 +482,7 @@ void AlienEngine::playObservatoryScreen() {
 				handleClick(event.mouse.x, event.mouse.y);
 		}
 
-		if (_playActive && !quit && playWaitUntil != 0 && g_system->getMillis() >= playWaitUntil)
+		if (_playActive && !quit && playWaitUntil != 0 && millis() >= playWaitUntil)
 			playWaitUntil = 0;
 
 		if (_playActive && !quit && playWaitUntil == 0) {
@@ -494,7 +495,7 @@ void AlienEngine::playObservatoryScreen() {
 					// even started.
 					_playIndex++;
 					scripted = 0;
-					playWaitUntil = g_system->getMillis() + (uint32)MAX(cmd.a, 0);
+					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0);
 					break;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
@@ -510,11 +511,12 @@ void AlienEngine::playObservatoryScreen() {
 
 			if (++scripted > kScriptedGiveUp) {
 				warning("telescope: the script left the computer open; closing it");
+				playLeftOpen("the telescope computer");
 				quit = true;
 			}
 		}
 
-		const uint32 now = g_system->getMillis();
+		const uint32 now = millis();
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
@@ -627,8 +629,8 @@ void AlienEngine::playObservatoryScreen() {
 			shot = 0;
 		}
 
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+		present();
+		sleep(10);
 	}
 
 	stopMusic();

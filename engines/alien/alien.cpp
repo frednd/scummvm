@@ -198,6 +198,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0),
 		_scrollPos(0), _scrollVel(0), _scrollState(0xff), _scrollFocus(0), _scrollPlacements(0),
 		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _lightArmed(false), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
+		_timescale(1), _virtualMillis(0), _clockRealBase(0), _clockVirtualBase(0), _presentLast(0),
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false),
 		_storeStep(0), _storePos(0), _storeLine(1), _storeSpeaker(0), _storeOffer(0),
 		_storeWalked(false), _storeTalking(false), _rnd("alien"),
@@ -255,7 +256,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_basementStep(0), _basementClimbing(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
-		_playIndex(0), _playActive(false), _playLastTick(0), _playWaitTicks(0),
+		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false),
+		_playStrict(false), _playBarBusy(false), _playBarClicks(0), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
 	memset(_charPalette, 0, sizeof(_charPalette));
@@ -284,6 +286,14 @@ AlienEngine::~AlienEngine() {
 Common::Error AlienEngine::run() {
 	initGraphics(kScreenWidth, kScreenHeight);
 	_sound.init(_mixer);
+
+	// How fast the game runs (clock.cpp): 1 by default, 0 for turbo, N for N
+	// times real time. The seed is fixed whenever one is given, which a
+	// scripted run needs for a replay to take the same branches.
+	setTimescale(ConfMan.hasKey("timescale") ? (uint)MAX(ConfMan.getInt("timescale"), 0) : 1);
+	_playSkippable = ConfMan.hasKey("skippable") && ConfMan.getBool("skippable");
+	if (ConfMan.hasKey("seed"))
+		_rnd.setSeed((uint32)ConfMan.getInt("seed"));
 
 	// The text and label trees are subdirectories, so they need registering
 	// before Common::File can reach into them by name.
@@ -357,10 +367,18 @@ Common::Error AlienEngine::run() {
 	// It plays before the first room for the same reason it did there.
 	// A run that names a room or turns a channel on skips the opening monologue
 	// for the same reason it skips the intro: it is a check, not a playthrough.
-	if (ConfMan.hasKey("boot_param") || gDebugLevel > 0)
+	// A scripted run that names no room is the exception: it is a playthrough,
+	// and starts the way a new game does, intro, monologue and all
+	// (docs/autoplaytest_plan.md, phase 1).
+	const bool playRun = debugChannelSet(-1, kDebugPlay) && ConfMan.hasKey("playscript");
+	// One resuming from a checkpoint is not a new game either: the state it
+	// loads is past all of that.
+	const bool newGame = !ConfMan.hasKey("boot_param") && !(playRun && ConfMan.hasKey("playfrom")) &&
+						 (gDebugLevel <= 0 || playRun);
+	if (!newGame)
 		cancelOpening();
 
-	if (!ConfMan.hasKey("boot_param") && gDebugLevel <= 0 && !playCutscene(kCutscenes[0]))
+	if (newGame && !playCutscene(kCutscenes[0]))
 		warning("%s is not in the search path, so the intro is being skipped: it ships "
 				"on the CD rather than in the installed game, and reaching it needs "
 				"--extrapath pointed at the CDA directory", kCutscenes[0]);
@@ -506,7 +524,7 @@ Common::Error AlienEngine::run() {
 		if (!ConfMan.hasKey("playscript"))
 			warning("play: no 'playscript' key in the config; nothing to run");
 		else if (loadPlayScript(ConfMan.get("playscript")))
-			_playActive = true;
+			_playActive = startPlayRun() && resumePlayRun();
 	}
 
 	while (!shouldQuit() && !_quit) {
@@ -518,6 +536,9 @@ Common::Error AlienEngine::run() {
 		if (_menuRequest) {
 			_menuRequest = false;
 			debugC(1, kDebugSave, "save: menu requested from room %d", _room);
+			// LOGIC:sub_12b08 opens the menu with game_mode [0xa880] zeroed,
+			// whether or not anything is saved: the way in is forgotten.
+			_mode = 0;
 
 			// A scripted run drives the game, not the GUI, and the dialog would
 			// sit waiting for a click that the script has no way to send.
@@ -551,7 +572,7 @@ Common::Error AlienEngine::run() {
 			stepPlayScript();
 		if (_dirty)
 			redraw();
-		g_system->updateScreen();
+		present();
 
 		// The scenes the room raises as it opens. The original reaches them from
 		// inside entry 2 -- the room's tick, whose first run is the room's init
@@ -575,7 +596,7 @@ Common::Error AlienEngine::run() {
 		if (_fadePending)
 			fadeIn();
 
-		g_system->delayMillis(kLoopSleepMillis);
+		sleep(kLoopSleepMillis);
 	}
 
 	// AI.COM plays the ending clip when GAME.EXE leaves with 0x7b, so the port
@@ -655,9 +676,20 @@ void AlienEngine::stepPlayScript() {
 			_playSettling = false;
 			debugC(1, kDebugPlay, "play: %u: STUCK, gave up waiting to settle",
 				   _play.commands()[_playIndex - 1].sourceLine);
+			playFailed(_play.commands()[_playIndex - 1].sourceLine);
 		} else {
 			return;
 		}
+		// Where the run stands once it has come to rest: the tick it got there
+		// on and a hash of everything a save would keep. Two runs of one script
+		// at different speeds have to print the same lines (clock.cpp).
+		debugC(1, kDebugPlay, "play: %u: state tick %u room %d hash %08x",
+			   _play.commands()[_playIndex - 1].sourceLine, _tick, _room, stateHash());
+	}
+
+	if (_playBarBusy) {
+		stepPlayBar();
+		return;
 	}
 
 	if (_playIndex >= _play.commands().size()) {
@@ -667,44 +699,105 @@ void AlienEngine::stepPlayScript() {
 		return;
 	}
 
+	if (_playPaused) {
+		if (!_playStep)
+			return;
+		_playStep = false;
+		playMessage(Common::String::format("line %u", _play.commands()[_playIndex].sourceLine));
+	}
+
 	runPlayCommand(_play.commands()[_playIndex++]);
 }
 
-void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
+/**
+ * A scripted run in a window is also a way to get somewhere and look around
+ * (docs/autoplaytest_plan.md, phase 3): P holds the script before its next
+ * command and N lets one through, + and - change the speed, and T hands the
+ * game over to the mouse for good. The keys answer only while a script runs,
+ * so the debug keys they share letters with are untouched otherwise.
+ */
+bool AlienEngine::playHotkey(const Common::KeyState &key) {
+	static const uint kSpeeds[] = { 1, 2, 4, 8, 16, 32 };
+
+	if (!_playActive)
+		return false;
+
+	switch (key.keycode) {
+	case Common::KEYCODE_p:
+		_playPaused = !_playPaused;
+		_playStep = false;
+		playMessage(_playPaused ? Common::String::format("paused before line %u",
+						_playIndex < _play.commands().size() ? _play.commands()[_playIndex].sourceLine : 0)
+								: Common::String("running"));
+		return true;
+
+	case Common::KEYCODE_n:
+		if (_playPaused)
+			_playStep = true;
+		return true;
+
+	case Common::KEYCODE_t:
+		_playActive = false;
+		playMessage(Common::String::format("taken over at line %u",
+			_playIndex ? _play.commands()[_playIndex - 1].sourceLine : 0));
+		return true;
+
+	case Common::KEYCODE_PLUS:
+	case Common::KEYCODE_EQUALS:
+	case Common::KEYCODE_KP_PLUS:
+	case Common::KEYCODE_MINUS:
+	case Common::KEYCODE_KP_MINUS: {
+		// Turbo has no speed to change; it is set from the start or not at all.
+		if (turbo())
+			return true;
+		const bool up = key.keycode != Common::KEYCODE_MINUS && key.keycode != Common::KEYCODE_KP_MINUS;
+		uint i = 0;
+		while (i + 1 < ARRAYSIZE(kSpeeds) && kSpeeds[i] < _timescale)
+			i++;
+		if (up && i + 1 < ARRAYSIZE(kSpeeds))
+			i++;
+		else if (!up && i > 0)
+			i--;
+		setTimescale(kSpeeds[i]);
+		playMessage(Common::String::format("speed %ux", _timescale));
+		return true;
+	}
+
+	default:
+		return false;
+	}
+}
+
+/**
+ * A run with `skippable` set skips each cutscene the way a player in a hurry
+ * does: by pressing Escape as it starts, through the same event queue, so a
+ * scene that would not take the key plays on regardless.
+ */
+void AlienEngine::offerSkip() {
+	if (!_playSkippable)
+		return;
+	Common::Event event;
+	event.type = Common::EVENT_KEYDOWN;
+	event.kbd = Common::KeyState(Common::KEYCODE_ESCAPE, Common::ASCII_ESCAPE);
+	g_system->getEventManager()->pushEvent(event);
+}
+
+void AlienEngine::playMessage(const Common::String &text) {
+	debugC(1, kDebugPlay, "play: %s", text.c_str());
+	g_system->displayMessageOnOSD(Common::U32String(text));
+}
+
+/// The bar commands without the bar: what a click on the slot would do, done.
+void AlienEngine::runBarShortcut(const PlayCommand &cmd) {
 	switch (cmd.type) {
-	// Both click commands are written in *room* coordinates, which is what
-	// check_hotspots.py prints and what the boxes in the script's own comments
-	// are. A wide room's camera moves with the character, so a screen-space
-	// script has to redo the arithmetic after every walk -- and gets it wrong
-	// the moment a click walks somewhere it did not last time. The scroll goes
-	// back in here instead. (The bar is never panned, but the bar is reached
-	// through `use`/`unuse`, not through a click.)
-	case PlayCommand::kClick:
-		debugC(1, kDebugPlay, "play: %u: click %d,%d (scroll %d)", cmd.sourceLine,
-			   cmd.a, cmd.b, _scrollX);
-		clickAt(cmd.a - _scrollX, cmd.b, false);
-		break;
-
-	case PlayCommand::kRightClick:
-		debugC(1, kDebugPlay, "play: %u: rclick %d,%d (scroll %d)", cmd.sourceLine,
-			   cmd.a, cmd.b, _scrollX);
-		clickAt(cmd.a - _scrollX, cmd.b, true);
-		break;
-
-	case PlayCommand::kHover:
-		debugC(1, kDebugPlay, "play: %u: hover %d,%d", cmd.sourceLine, cmd.a, cmd.b);
-		updateHover(cmd.a, cmd.b);
-		break;
-
 	case PlayCommand::kUse:
 		debugC(1, kDebugPlay, "play: %u: use %d (%s)", cmd.sourceLine, cmd.a,
 			   _inventory.name((byte)cmd.a).c_str());
 		holdItem((byte)cmd.a);
 		break;
 
-	// The bar's own click path, minus the geometry: a script cannot put the
-	// cursor on the square an item happens to sit on, and which square that is
-	// says nothing about the combine.
+	// The bar's own click path, minus the geometry -- which square the item
+	// sits on says nothing about the combine; a strict run clicks it anyway.
 	case PlayCommand::kCombine:
 		debugC(1, kDebugPlay, "play: %u: combine %d (%s) with held item %d (%s)",
 			   cmd.sourceLine, cmd.a, _inventory.name((byte)cmd.a).c_str(), _heldItem,
@@ -727,6 +820,57 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		holdItem(Inventory::kNoItem);
 		break;
 
+	default:
+		break;
+	}
+}
+
+void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
+	switch (cmd.type) {
+	// Both click commands are written in *room* coordinates, which is what
+	// check_hotspots.py prints and what the boxes in the script's own comments
+	// are. A wide room's camera moves with the character, so a screen-space
+	// script has to redo the arithmetic after every walk -- and gets it wrong
+	// the moment a click walks somewhere it did not last time. The scroll goes
+	// back in here instead. (The bar is never panned, but the bar is reached
+	// through `use`/`unuse`, not through a click.)
+	case PlayCommand::kClick:
+	case PlayCommand::kRightClick: {
+		const bool right = cmd.type == PlayCommand::kRightClick;
+		debugC(1, kDebugPlay, "play: %u: %s %d,%d (scroll %d)", cmd.sourceLine,
+			   right ? "rclick" : "click", cmd.a, cmd.b, _scrollX);
+		if (!playClickAllowed(cmd))
+			break;
+		clickAt(cmd.a - _scrollX, cmd.b, right);
+		break;
+	}
+
+	case PlayCommand::kHover:
+		debugC(1, kDebugPlay, "play: %u: hover %d,%d", cmd.sourceLine, cmd.a, cmd.b);
+		updateHover(cmd.a, cmd.b);
+		break;
+
+	// A strict run works the bar the way the player does, a click at a time
+	// (stepPlayBar); any other run goes straight to what the click would do.
+	case PlayCommand::kUse:
+	case PlayCommand::kCombine:
+	case PlayCommand::kLook:
+	case PlayCommand::kUnuse:
+		if (_playStrict) {
+			if (cmd.type == PlayCommand::kUnuse)
+				debugC(1, kDebugPlay, "play: %u: bar: unuse, held %d", cmd.sourceLine, _heldItem);
+			else
+				debugC(1, kDebugPlay, "play: %u: bar: %s %d (%s), held %d", cmd.sourceLine,
+					   playBarVerb(cmd.type), cmd.a, _inventory.name((byte)cmd.a).c_str(),
+					   _heldItem);
+			_playBar = cmd;
+			_playBarBusy = true;
+			_playBarClicks = 0;
+		} else {
+			runBarShortcut(cmd);
+		}
+		break;
+
 	case PlayCommand::kWait:
 		debugC(1, kDebugPlay, "play: %u: wait %d", cmd.sourceLine, cmd.a);
 		_playWaitTicks = cmd.a;
@@ -744,7 +888,7 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		} else {
 			debugC(1, kDebugPlay, "play: %u: FAIL room: expected %d, got %d", cmd.sourceLine,
 				   cmd.a, _room);
-			_playFails++;
+			playFailed(cmd.sourceLine);
 		}
 		break;
 
@@ -753,7 +897,7 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 			debugC(1, kDebugPlay, "play: %u: PASS item %d held", cmd.sourceLine, cmd.a);
 		} else {
 			debugC(1, kDebugPlay, "play: %u: FAIL item: expected %d held", cmd.sourceLine, cmd.a);
-			_playFails++;
+			playFailed(cmd.sourceLine);
 		}
 		break;
 
@@ -763,7 +907,7 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		} else {
 			debugC(1, kDebugPlay, "play: %u: FAIL noitem: %d unexpectedly held", cmd.sourceLine,
 				   cmd.a);
-			_playFails++;
+			playFailed(cmd.sourceLine);
 		}
 		break;
 
@@ -792,7 +936,7 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		} else {
 			debugC(1, kDebugPlay, "play: %u: FAIL flag 0x%04x: expected %d, got %d",
 				   cmd.sourceLine, cmd.a, cmd.b, got);
-			_playFails++;
+			playFailed(cmd.sourceLine);
 		}
 		break;
 	}
@@ -823,6 +967,22 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		loadGameState(cmd.a);
 		debugC(1, kDebugPlay, "play: %u: loaded room %d, scroll %d", cmd.sourceLine, _room,
 			   _scrollX);
+		break;
+
+	case PlayCommand::kCheckpoint:
+		writeCheckpoint(cmd);
+		break;
+
+	case PlayCommand::kSkip:
+		// Only a line on screen takes the click as "read": anywhere else a
+		// click is a walk, which is not what the script asked for.
+		if (_speech) {
+			debugC(1, kDebugPlay, "play: %u: skip", cmd.sourceLine);
+			const Common::Point mouse = g_system->getEventManager()->getMousePos();
+			clickAt(mouse.x, mouse.y, false);
+		} else {
+			debugC(1, kDebugPlay, "play: %u: skip: no line to skip", cmd.sourceLine);
+		}
 		break;
 
 	case PlayCommand::kSpots:
@@ -1692,7 +1852,7 @@ bool AlienEngine::dlgreqRunning() const {
 }
 
 void AlienEngine::stepClock() {
-	const uint32 now = g_system->getMillis();
+	const uint32 now = millis();
 	if (now - _lastTick < kTickMillis)
 		return;
 	_lastTick = now;
@@ -2896,10 +3056,18 @@ void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) 
 	// [0xa948] before one plays.
 	CursorMan.showMouse(false);
 	video.start();
+	offerSkip();
 
+	// A clip keeps time by the audio the mixer has played, which turbo has no
+	// way to hurry, so there it goes a frame per pass instead: every frame is
+	// still decoded and drawn, only the waiting between them is gone.
 	bool skipped = false;
-	while (!shouldQuit() && !skipped && !video.endOfVideo()) {
-		if (video.needsUpdate()) {
+	// And the clip is over at its last frame rather than when the mixer has
+	// played the last of its sound, which turbo would otherwise wait out in
+	// real time.
+	while (!shouldQuit() && !skipped && !video.endOfVideo() &&
+		   !(turbo() && video.getCurFrame() + 1 >= (int)video.getFrameCount())) {
+		if (turbo() || video.needsUpdate()) {
 			const Graphics::Surface *frame = video.decodeNextFrame();
 			if (frame) {
 				const int w = MIN<int>(frame->w, _screen.w);
@@ -2920,7 +3088,7 @@ void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) 
 				g_system->copyRectToScreen(_screen.getPixels(), _screen.pitch, 0, 0,
 										   _screen.w, _screen.h);
 			}
-			g_system->updateScreen();
+			present();
 		}
 
 		Common::Event event;
@@ -2930,7 +3098,7 @@ void AlienEngine::playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles) 
 				skipped = true;
 		}
 
-		g_system->delayMillis(10);
+		sleep(10);
 	}
 
 	video.stop();
@@ -4669,7 +4837,9 @@ void AlienEngine::handleEvents() {
 		case Common::EVENT_KEYDOWN:
 			// Frame stepping, so the DL1 decoder can be eyeballed against the
 			// reference renders while the rest of the engine is missing.
-			if (event.kbd.keycode == Common::KEYCODE_ESCAPE) {
+			if (playHotkey(event.kbd)) {
+				break;
+			} else if (event.kbd.keycode == Common::KEYCODE_ESCAPE) {
 				_quit = true;
 			} else if (event.kbd.keycode == Common::KEYCODE_SPACE ||
 					   event.kbd.keycode == Common::KEYCODE_RIGHT) {

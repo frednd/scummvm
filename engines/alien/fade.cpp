@@ -97,13 +97,13 @@ void AlienEngine::uploadPalette(const byte *source, int level) {
  * than stepping its own clock. Events are still drained, or the window would
  * stop answering for the length of the fade.
  */
-static void fadeWait() {
+static void fadeWait(AlienEngine *vm) {
 	Common::Event event;
 	while (g_system->getEventManager()->pollEvent(event)) {
 	}
 
-	g_system->updateScreen();
-	g_system->delayMillis(AlienEngine::kMasterTickMillis);
+	vm->present();
+	vm->sleep(AlienEngine::kMasterTickMillis);
 }
 
 void AlienEngine::fadeOut() {
@@ -118,7 +118,7 @@ void AlienEngine::fadeOut() {
 	int level = 0xff;
 	for (int step = 0; step < kFadeOutSteps && !shouldQuit(); step++) {
 		uploadPalette(_palette, level);
-		fadeWait();
+		fadeWait(this);
 		level -= kFadeStep;
 	}
 
@@ -137,7 +137,7 @@ void AlienEngine::fadeIn() {
 	int level = 0;
 	for (int step = 0; step < kFadeInSteps && !shouldQuit(); step++) {
 		uploadPalette(_palette, level);
-		fadeWait();
+		fadeWait(this);
 		level += kFadeStep;
 	}
 
@@ -172,19 +172,20 @@ void AlienEngine::showStill(const char *name, uint holdTicks) {
 	int level = 0;
 	for (int step = 0; step < kFadeInSteps && !shouldQuit(); step++) {
 		uploadPalette(palette, level);
-		fadeWait();
+		fadeWait(this);
 		level += kFadeStep;
 	}
 	uploadPalette(palette, 0x100);
 
-	// A scripted run has nothing to read on it.
-	for (uint i = 0; i < holdTicks && !shouldQuit() && !_cutsceneFast && !_playActive; i++)
-		fadeWait();
+	// The cutscene sweep has nothing to read on it; a scripted run waits it out
+	// like a player, in turbo time.
+	for (uint i = 0; i < holdTicks && !shouldQuit() && !_cutsceneFast; i++)
+		fadeWait(this);
 
 	level = 0xff;
 	for (int step = 0; step < kFadeOutSteps && !shouldQuit(); step++) {
 		uploadPalette(palette, level);
-		fadeWait();
+		fadeWait(this);
 		level -= kFadeStep;
 	}
 	uploadPalette(palette, 0);

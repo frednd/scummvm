@@ -247,7 +247,7 @@ void AlienEngine::playElevatorPanel() {
 	};
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = g_system->getMillis();
+	uint32 last = millis();
 	uint32 tick = 0;
 	uint scripted = 0;
 	uint32 playWaitUntil = 0;
@@ -262,7 +262,7 @@ void AlienEngine::playElevatorPanel() {
 
 		// The same scripted reader as the observatory computer's: waits are
 		// held for real, a click of either kind is a click on the panel.
-		if (_playActive && playWaitUntil != 0 && g_system->getMillis() >= playWaitUntil)
+		if (_playActive && playWaitUntil != 0 && millis() >= playWaitUntil)
 			playWaitUntil = 0;
 
 		if (_playActive && playWaitUntil == 0) {
@@ -271,7 +271,7 @@ void AlienEngine::playElevatorPanel() {
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
 					_playIndex++;
 					scripted = 0;
-					playWaitUntil = g_system->getMillis() + (uint32)MAX(cmd.a, 0);
+					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0);
 					break;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
@@ -290,6 +290,7 @@ void AlienEngine::playElevatorPanel() {
 				// A port-only guard, as the observatory computer has one: the
 				// original panel has no way out but a floor.
 				warning("elevator: the script left the panel open; taking the first floor a card allows");
+				playLeftOpen("the elevator panel");
 				for (uint i = 0; i < 3 && !card; i++)
 					if (held[i])
 						card = i + 1;
@@ -300,7 +301,7 @@ void AlienEngine::playElevatorPanel() {
 			}
 		}
 
-		const uint32 now = g_system->getMillis();
+		const uint32 now = millis();
 		while (now - last >= kTickMillis && !done) {
 			last += kTickMillis;
 			tick++;
@@ -375,8 +376,8 @@ void AlienEngine::playElevatorPanel() {
 		if (debugChannelSet(3, kDebugTelescope) && (tick & 0x3f) == 0)
 			dumpScreen(Common::String::format("elevator-%u.png", tick));
 
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+		present();
+		sleep(10);
 	}
 
 	// 0x0d5e: CUTSCENE:sub_0c5c9, the shared teardown, then [0xa7a1].
