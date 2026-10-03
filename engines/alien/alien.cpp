@@ -232,7 +232,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
 		_teleportStep(0), _teleportWait(0), _shipStep(0), _shipWait(0),
 		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false),
-		_corridorStep(0),
+		_terminalStep(0),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
 		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
 		_bossSpeaking(false), _bossTalking(false),
@@ -946,6 +946,13 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		break;
 	}
 
+	case PlayCommand::kExpectWon:
+		// A win ends the loop where it stands and answers this line itself
+		// (playGameWon), so reaching it to run means the game was not won.
+		debugC(1, kDebugPlay, "play: %u: FAIL won: the game has not been won", cmd.sourceLine);
+		playFailed(cmd.sourceLine);
+		break;
+
 	case PlayCommand::kCutscene:
 		debugC(1, kDebugPlay, "play: %u: cutscene %d", cmd.sourceLine, cmd.a);
 		triggerCutscene((byte)cmd.a);
@@ -1110,6 +1117,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// room coming back to itself, not an entry through the door.
 	if (!keepPosition)
 		room = scannerGate(room);
+
+	// And room 57's alarm, which its own entry plays in front of the room the
+	// first time it is entered with the force field down (corridor.cpp).
+	if (!keepPosition)
+		hallwayScene(room);
 
 	// Before anything is read: the two mazes take their position from the way
 	// in, and their plate and their rectangles are both read from it
@@ -1380,7 +1392,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// The hover names live in a file of their own, laid out like the script but
 	// with only the text zone filled in. Rooms whose objects were never given
 	// names have no file at all.
-	const Common::Path labels(Common::String::format("R%d.TAL", room));
+	// Room 53's are room 57's: both of the hallways' entries load R57 (the
+	// overlay's 0x0509 and 0x0b7f).
+	const Common::Path labels(Common::String::format("R%d.TAL", room == 53 ? 57 : room));
 	if (Common::File::exists(labels))
 		_labels.load(labels, &_pack);
 	else
@@ -1853,7 +1867,7 @@ void AlienEngine::sweepWalkGeometry() {
  */
 bool AlienEngine::dlgreqRunning() const {
 	return _sluggsSpeaking || _crystalSpeaking || _yodleSpeaking || _bossSpeaking ||
-		   _jailSpeaking;
+		   _jailSpeaking || _endingStep;
 }
 
 void AlienEngine::stepClock() {
@@ -1988,9 +2002,8 @@ void AlienEngine::stepClock() {
 		stepTeleport();
 		stepShip();
 
-		// And the ship's elevator door, and the delay standing in for the
-		// walk to room 53's own exit hotspot once the maintenance man has
-		// cleared the way (corridor.cpp, elevator.cpp).
+		// And the ship's elevator door, room 53's maintenance man and room
+		// 57's terminal (corridor.cpp, elevator.cpp, terminal.cpp).
 		stepCorridor();
 
 		// And room 52's robot, once the scan has found no mask (scanner.cpp).
@@ -4007,6 +4020,19 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
+	// And room 53's maintenance man and room 57's loudspeaker, whose lifted
+	// rows keep the guards but write their counters flat and drop the calls
+	// that are the bodies: the conversation menu and the line (corridor.cpp).
+	if (armHallway(spot.obj, verb, item)) {
+		if (item)
+			holdItem(Inventory::kNoItem);
+		rebuildHotspots();
+		_hover = -1;
+		const Common::Point hall = g_system->getEventManager()->getMousePos();
+		updateHover(hall.x, hall.y);
+		return;
+	}
+
 	// Four of room 8's bodies pick their animation slot from a scratch byte the
 	// lift could not follow, and two of them it dropped altogether: the safe's
 	// door and the two things on its shelf are run by the room instead
@@ -4076,10 +4102,9 @@ void AlienEngine::finishAction() {
 	// neither of them an opcode the lift has (forest.cpp).
 	armForestParrot(spot.obj, verb, item);
 
-	// And room 53/57's maintenance man, whose talk clears the way to the
-	// ending (corridor.cpp).
-	if (!item)
-		armCorridorMan(spot.obj, verb);
+	// And room 57's terminal, whose card line the table speaks and whose
+	// screen opens once it is down (corridor.cpp).
+	armHallwayCard(spot.obj, item);
 
 	// And room 58's prisoners, whose talk is the conversation the corridor
 	// runs on its own when Ben comes in with the force field down (jail.cpp).

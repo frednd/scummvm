@@ -64,6 +64,9 @@ namespace Alien {
  *   expect noitem N         assert the item is not held
  *   expect flag ADDR VAL    assert a state-block byte (hex address, e.g.
  *                           0xa650) equals VAL
+ *   expect won              assert the game has been won; the win ends the
+ *                           loop where the script stands, so this has to be
+ *                           the last line, after the settle that reaches it
  *   flag ADDR VAL           write a state-block byte, to put the game in a
  *                           state a script would otherwise have to play its
  *                           way to (the bedroom needs the lab's fuse in)
@@ -105,6 +108,7 @@ struct PlayCommand {
 		kExpectItem,
 		kExpectNoItem,
 		kExpectFlag,
+		kExpectWon,
 		kCutscene,
 		kSnap,
 		kSpots,

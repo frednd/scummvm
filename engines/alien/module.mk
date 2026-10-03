@@ -22,6 +22,7 @@ MODULE_OBJS = \
 	steam.o \
 	studio.o \
 	telescope.o \
+	terminal.o \
 	teleport.o \
 	park.o \
 	forest.o \

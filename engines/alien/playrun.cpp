@@ -217,6 +217,33 @@ void AlienEngine::playFailed(uint line) {
 }
 
 /**
+ * The win ends the game loop wherever the script stands -- usually inside the
+ * settle it waits for the pod with -- so the one line that can follow it is
+ * `expect won`, answered here. Anything else after it is a line the run never
+ * reached.
+ */
+void AlienEngine::playGameWon() {
+	if (!_playActive)
+		return;
+
+	const Common::Array<PlayCommand> &cmds = _play.commands();
+	if (_playIndex < cmds.size() && cmds[_playIndex].type == PlayCommand::kExpectWon) {
+		debugC(1, kDebugPlay, "play: %u: PASS won", cmds[_playIndex].sourceLine);
+		_playIndex++;
+	}
+
+	if (_playIndex < cmds.size()) {
+		debugC(1, kDebugPlay, "play: %u: FAIL won: the game was won before this line",
+			   cmds[_playIndex].sourceLine);
+		playFailed(cmds[_playIndex].sourceLine);
+		return;
+	}
+
+	debugC(1, kDebugPlay, "play: script complete, %u assertion failure(s)", _playFails);
+	_playActive = false;
+}
+
+/**
  * A checkpoint: the state, at rest, in NAME.sav under `playstates`. The file
  * is the engine's save stream and nothing else -- no date, no thumbnail -- so
  * a checkpoint rebuilt from an unchanged route is the same file byte for byte

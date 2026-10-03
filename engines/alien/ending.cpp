@@ -19,6 +19,8 @@
  *
  */
 
+#include "graphics/cursorman.h"
+
 #include "alien/alien.h"
 #include "alien/charanim.h"
 #include "alien/detection.h"
@@ -63,11 +65,18 @@ static const byte kEndingLine4 = 0x17;
  * The opening subroutine's other business -- the extra bank, the slot-4 frame
  * and the pan to x = 0xc1 -- is either already in the room's lifted opening
  * effects (roominit.cpp guards a slot-4 play on the same [0xa7d2]) or is the
- * camera, which the port drives from the character instead.
+ * camera, which the port drives from the character instead. What it does to
+ * the player is here: the cursor goes and the bar slides away (0x051a,
+ * OBJ:sub_02f27), and [0xa4a1] says a conversation is running, so he stands
+ * still for it (dlgreqRunning).
  */
 void AlienEngine::startEnding() {
 	if (_room != kEndingRoom || _script.flag(kEndingFlag) != 1)
 		return;
+
+	CursorMan.showMouse(false);
+	if (!_barHidden)
+		hideBar();
 
 	_endingStep = 0x32;
 	_endingPos = 0;
@@ -179,6 +188,7 @@ void AlienEngine::winGame() {
 	_endingStep = 0;
 	_won = true;
 	_quit = true;
+	playGameWon();
 	debugC(1, kDebugEnding, "ending: won -- GAME.EXE exits with 0x7b here, and "
 						   "AI.COM runs ANIMPLAY on the ending clip");
 }

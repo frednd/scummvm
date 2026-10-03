@@ -523,7 +523,7 @@ void AlienEngine::showBar() {
  * its reply to topic 10's "Ok. Never mind." that way (playtest issue #28).
  */
 bool AlienEngine::chatReplyOwed() const {
-	if (jailGuardHoldsChat())
+	if (jailGuardHoldsChat() || hallwayOwesReply())
 		return true;
 	if (_chatPickNew && _chatPickReply)
 		return true;

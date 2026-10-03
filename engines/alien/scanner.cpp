@@ -131,21 +131,31 @@ int AlienEngine::scannerGate(int room) {
  * there is nothing to put back afterwards: loadRoom() goes on to load the room.
  */
 void AlienEngine::playScannerScan(bool mask) {
-	const char *const clip = mask ? "SEC_SCR2.DL2" : "SEC_SCR1.DL2";
-	const char *const plateName = mask ? "SEC_SCA2.PCX" : "SEC_SCAN.PCX";
+	playDl2Clip(mask ? "SEC_SCR2.DL2" : "SEC_SCR1.DL2", mask ? "SEC_SCA2.PCX" : "SEC_SCAN.PCX",
+				kScanMusic, mask ? "scan-2" : "scan-1");
+	_script.setFlag(kScanPlayed, 1);
+}
 
+/**
+ * The body CUTSCENE:sub_0e2a0 and sub_0e458 share: a DL2 over its plate, one
+ * frame every animation tick pair, with a music slot of its own.
+ *
+ * Called in front of a room's load, so it leaves the plate, palette and banks
+ * holding its own and lets the load put the room's back. `tag` names the
+ * frames the cutscene debug channel dumps.
+ */
+void AlienEngine::playDl2Clip(const char *clip, const char *plateName, uint music,
+							  const char *tag) {
 	Common::File f;
 	if (!f.open(Common::Path(clip))) {
-		warning("scanner: cannot open %s", clip);
-		_script.setFlag(kScanPlayed, 1);
+		warning("dl2: cannot open %s", clip);
 		return;
 	}
 	const uint32 size = (uint32)f.size();
 	Common::Array<byte> data;
 	data.resize(size);
 	if (size < 3 || f.read(data.data(), size) != size) {
-		warning("scanner: short read on %s", clip);
-		_script.setFlag(kScanPlayed, 1);
+		warning("dl2: short read on %s", clip);
 		return;
 	}
 
@@ -161,8 +171,7 @@ void AlienEngine::playScannerScan(bool mask) {
 		payload += frameSize;
 	}
 	if (payload > size) {
-		warning("scanner: %s overruns its payload", clip);
-		_script.setFlag(kScanPlayed, 1);
+		warning("dl2: %s overruns its payload", clip);
 		return;
 	}
 
@@ -170,8 +179,7 @@ void AlienEngine::playScannerScan(bool mask) {
 	byte palette[256 * 3];
 	if (!loadGamePCX(Common::Path(plateName), plate, palette)) {
 		plate.free();
-		warning("scanner: could not load %s", plateName);
-		_script.setFlag(kScanPlayed, 1);
+		warning("dl2: could not load %s", plateName);
 		return;
 	}
 
@@ -189,11 +197,11 @@ void AlienEngine::playScannerScan(bool mask) {
 	const char *none[] = { nullptr };
 	_anims.loadBanks(none, ARRAYSIZE(none));
 
-	playMusicSlot(kScanMusic);
+	playMusicSlot(music);
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 	_dirty = true;
 
-	debugC(1, kDebugCutscene, "scanner: %s over %s, %u frames", clip, plateName, count);
+	debugC(1, kDebugCutscene, "dl2: %s over %s, %u frames", clip, plateName, count);
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 	uint32 last = millis();
@@ -244,7 +252,7 @@ void AlienEngine::playScannerScan(bool mask) {
 
 			if (debugChannelSet(3, kDebugCutscene) && (frame & 63) == 0) {
 				redraw();
-				dumpScreen(Common::String::format("scan-%u-%03u.png", mask ? 2 : 1, frame));
+				dumpScreen(Common::String::format("%s-%03u.png", tag, frame));
 			}
 		}
 
@@ -258,8 +266,7 @@ void AlienEngine::playScannerScan(bool mask) {
 	stopMusic();
 	_cutscene = false;
 	_clipBottom = clipBottom;
-	_script.setFlag(kScanPlayed, 1);
-	debugC(1, kDebugCutscene, "scanner: the scan ends at frame %u of %u%s", frame, count,
+	debugC(1, kDebugCutscene, "dl2: %s ends at frame %u of %u%s", clip, frame, count,
 		   skipped ? ", skipped" : "");
 }
 

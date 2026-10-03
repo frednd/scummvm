@@ -113,6 +113,8 @@ bool PlayScript::load(const Common::String &path) {
 				cmd.type = PlayCommand::kExpectFlag;
 				cmd.a = parseInt(tok.nextToken());
 				cmd.b = parseInt(tok.nextToken());
+			} else if (what == "won") {
+				cmd.type = PlayCommand::kExpectWon;
 			} else {
 				warning("play: %s:%u: unknown expect '%s'", path.c_str(), lineNo, what.c_str());
 				continue;

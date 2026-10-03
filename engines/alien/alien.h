@@ -455,13 +455,20 @@ private:
 	void stepShipFlash();
 	void shipFromJail();
 
-	/// Rooms 51/53/55/57, the four-way junction, and room 53's maintenance
-	/// man, the only way out of it toward the ending (corridor.cpp).
+	/// Rooms 51/53/55/57, the ship's four elevator floors: room 53's
+	/// maintenance man and his badge, room 57's loudspeaker and the network
+	/// terminal behind its card slot (corridor.cpp, terminal.cpp).
 	void startCorridor();
+	void hallwayScene(int room);
 	void corridorArrival();
 	void playElevatorPanel();
-	bool armCorridorMan(int obj, byte verb);
+	bool armHallway(int obj, byte verb, int item);
+	void armHallwayCard(int obj, int item);
+	bool hallwayOwesReply() const;
 	void stepCorridor();
+	void stepHallMan();
+	void hallManPose(byte pose);
+	void playNetTerminal();
 	bool hallwayWalkTo(int x, int y, int arrivalFacing);
 	bool jailWalkTo(int x, int y, int arrivalFacing);
 
@@ -469,6 +476,7 @@ private:
 	/// its DL2 scan, and the robot's arrest (scanner.cpp).
 	int scannerGate(int room);
 	void playScannerScan(bool mask);
+	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
 	void startScanner();
 	void stepScanner();
 
@@ -1084,10 +1092,28 @@ private:
 	bool _shipFlashDue;
 	byte _shipFlashSource[256 * 3];
 
-	/// Rooms 51/53/55/57's simplified four-way cycle: clicks taken toward the
-	/// next room, and room 53's own delay before leaving for the ending
-	/// (corridor.cpp).
-	uint _corridorStep;
+	/// Room 53's maintenance man: the room's [0xa49f] machine, his pose byte
+	/// [0xa52c], and the answer owed to the conversation's last pick, which
+	/// waits for the pick's own line to come down (corridor.cpp).
+	struct HallMan {
+		byte step;
+		byte pose;
+		byte reply;
+		TalFile::Entry replyEntry;
+		int replyTicks;
+		uint replyTopic;
+		bool answer;
+		bool ended;				///< [0xa60f]: the pick ended the conversation
+		bool speaking;			///< a line was up last tick, for [0xad1a]
+
+		HallMan() : step(0), pose(0), reply(0), replyTicks(0), replyTopic(0),
+					answer(false), ended(false), speaking(false) {}
+	};
+	HallMan _hallMan;
+
+	/// Room 57's [0xa49f]: the card has gone into the terminal's slot and its
+	/// line is up; the terminal opens once it is down (corridor.cpp).
+	byte _terminalStep;
 
 	/// Room 52: the gate sent him in without the mask, and the room's
 	/// [0xa49f] machine step that arrests him (scanner.cpp).
@@ -1278,6 +1304,7 @@ private:
 	static const char *playBarVerb(PlayCommand::Type type);
 	void runBarShortcut(const PlayCommand &cmd);
 	void playFailed(uint line);
+	void playGameWon();
 	void playLeftOpen(const char *what);
 	void writeCheckpoint(const PlayCommand &cmd);
 	bool resumePlayRun();

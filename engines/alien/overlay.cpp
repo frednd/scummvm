@@ -223,6 +223,12 @@ bool OverlayIndex::readRoom(int room, RoomAssets &assets) const {
 
 	free(blob);
 
+	// Rooms 53 and 57 share overlay 0x0f9e, whose pool names room 57's script
+	// and then room 53's (ovr_35_0f9e:0x0509 and 0x0b7f); which entry reads
+	// which is only in the code, so the last one found would serve both.
+	if (room == 57)
+		assets.script = "room57.tal";
+
 	debugC(1, kDebugResource, "room %d overlay 0x%04x: %u sprite banks, walk %s, script %s",
 		   room, stub, assets.spriteCount,
 		   assets.walkData.empty() ? "-" : assets.walkData.c_str(),
