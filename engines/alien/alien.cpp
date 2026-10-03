@@ -677,6 +677,8 @@ void AlienEngine::stepPlayScript() {
 			debugC(1, kDebugPlay, "play: %u: STUCK, gave up waiting to settle",
 				   _play.commands()[_playIndex - 1].sourceLine);
 			playFailed(_play.commands()[_playIndex - 1].sourceLine);
+			if (!_playActive)
+				return;
 		} else {
 			return;
 		}

@@ -404,6 +404,7 @@ void AlienEngine::playLiftPanel() {
 
 			if (++scripted > kScriptedGiveUp) {
 				warning("lift: the script left the panel open; closing it");
+				playLeftOpen("the lab computer");
 				quit = true;
 			}
 		}

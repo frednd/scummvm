@@ -190,10 +190,12 @@ void AlienEngine::stepPlayBar() {
 	for (uint slot = 0; slot < Inventory::kSlotCount; slot++) {
 		if (_inventory.slotItem(slot) != item)
 			continue;
+		// The click on the slot is the command done. Not "the hand holds it"
+		// for a use: in the store an item out of the bar is the offer, and
+		// the hand is emptied the moment it is taken (store.cpp). What the
+		// click led to is for the script's own expects to check.
 		playBarClick(Inventory::slotPoint(slot), cmd.type == PlayCommand::kLook);
-		// A use is done once the hand holds the item, which the next tick sees.
-		if (cmd.type != PlayCommand::kUse)
-			_playBarBusy = false;
+		_playBarBusy = false;
 		return;
 	}
 }
@@ -222,8 +224,8 @@ void AlienEngine::playFailed(uint line) {
  * runner puts in the sidecar beside it.
  */
 void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
-	const Common::String dir = ConfMan.hasKey("playstates") ? ConfMan.get("playstates") + "/"
-															: Common::String();
+	const Common::String dir = (ConfMan.hasKey("playstates") ? ConfMan.get("playstates")
+															 : Common::String(".")) + "/";
 	const Common::String file = dir + cmd.s + ".sav";
 
 	Common::DumpFile out;
@@ -302,8 +304,10 @@ void AlienEngine::playLeftOpen(const char *what) {
  * (phase 4) without touching the player's saves.
  */
 void AlienEngine::writeFailureState(uint line) {
-	const Common::String dir = ConfMan.hasKey("playout") ? ConfMan.get("playout") + "/"
-														 : Common::String();
+	// A bare file name has no parent the filesystem layer can resolve, so the
+	// working directory is spelled out.
+	const Common::String dir = (ConfMan.hasKey("playout") ? ConfMan.get("playout")
+														  : Common::String(".")) + "/";
 	const Common::String base = dir + Common::String::format("FAIL-%u", line);
 
 	Common::DumpFile save;
