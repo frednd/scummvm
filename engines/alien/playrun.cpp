@@ -241,6 +241,22 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 	_mode = 0;
 	saveGameStream(&out);
 	out.finalize();
+	out.close();
+
+	// And the run goes on from the file, not from the engine as it stands: a
+	// resumed run can only see what the file holds, so the unbroken run has to
+	// see the same, or anything the save leaves out -- how long he has been
+	// standing, the pose he is in -- would make the two part company a few
+	// ticks down the route. It also puts a restore under every checkpoint.
+	Common::File in;
+	if (!in.open(Common::FSNode(Common::Path(file)))) {
+		debugC(1, kDebugPlay, "play: %u: FAIL checkpoint: could not read back %s", cmd.sourceLine,
+			   file.c_str());
+		playFailed(cmd.sourceLine);
+		return;
+	}
+	// On the pass that ran a tick; the loop's own sleep follows.
+	restorePlayState(&in, 0);
 	debugC(1, kDebugPlay, "play: %u: CHECKPOINT %s tick %u room %d hash %08x seed %u file %s",
 		   cmd.sourceLine, cmd.s.c_str(), _tick, _room, stateHash(), _rnd.getSeed(), file.c_str());
 
@@ -251,6 +267,24 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 		_playActive = false;
 		_quit = true;
 	}
+}
+
+/**
+ * Load a play state the same way for a checkpoint and for a resume. The room's
+ * fade in, which the loop would otherwise run under the first command, is
+ * done here, and the clock is left standing `sinceTick` milliseconds after a
+ * tick with no command due until the next one -- the panels and scenes that
+ * wait in milliseconds rather than ticks read the clock between ticks, so the
+ * phase has to match as well as the count.
+ */
+void AlienEngine::restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick) {
+	loadGameStream(in);
+	if (_fadePending) {
+		redraw();
+		fadeIn();
+	}
+	_lastTick = millis() - sinceTick;
+	_playLastTick = _tick;
 }
 
 /**
@@ -271,7 +305,8 @@ bool AlienEngine::resumePlayRun() {
 		playFailed(0);
 		return false;
 	}
-	loadGameStream(in);
+	// Before the loop's first pass, which has no sleep in front of it.
+	restorePlayState(in, kLoopSleepMillis);
 	delete in;
 
 	const uint line = ConfMan.hasKey("playline") ? (uint)ConfMan.getInt("playline") : 0;

@@ -74,7 +74,7 @@ static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
 // What the game loop sleeps between passes. It has to stay under the tick or it
 // becomes the clock: at ten milliseconds a nine millisecond tick can only ever
 // fire once per pass, which caps the game below the rate above.
-static const uint kLoopSleepMillis = kTickMillis / 2;
+static const uint kLoopSleepMillis = AlienEngine::kLoopSleepMillis;
 
 // One install ships all four text languages side by side. Picking the set is a
 // launcher option the engine does not have yet, so the English tree is wired up
@@ -650,10 +650,13 @@ bool AlienEngine::playIdle() const {
 	// And a conversation between a pick and the next topic's options: the
 	// room's reply to the pick goes up a tick after the pick's own line comes
 	// down, and a click scripted into that tick lands on no option at all.
+	// Room 46's swims are the same: the edge a click armed only fires once
+	// the stroke is over, and the room's own steps hide the cursor between.
 	const bool chatWaiting = _chat.isActive() && (!_chat.isListed() || chatReplyOwed());
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
-		   !_armed && !_cliffClimb && !_cliffStep && _scrollVel == 0 &&
+		   !_armed && !_cliffClimb && !_cliffStep && !_divingExit && !_divingStep &&
+		   _scrollVel == 0 &&
 		   !chatWaiting && CursorMan.isVisible();
 }
 

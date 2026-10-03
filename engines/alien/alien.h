@@ -86,6 +86,11 @@ public:
 	/// rather than through the game loop (fade.cpp).
 	static const uint32 kMasterTickMillis = 1000 * 2 / (70 * 3);
 
+	/// What the game loop sleeps between passes (alien.cpp). Here because a
+	/// resumed play run sets the clock up as if it had just slept one
+	/// (playrun.cpp).
+	static const uint32 kLoopSleepMillis = kMasterTickMillis / 2;
+
 	/// [0xac1e], how long a click's own line stands before the hover answers
 	/// again: 0x8c frames for a verb (1021:0x897) and, for a walk, 0xbb8 --
 	/// long enough that in practice the arrival is what ends it (1021:0xa16).
@@ -1276,6 +1281,7 @@ private:
 	void playLeftOpen(const char *what);
 	void writeCheckpoint(const PlayCommand &cmd);
 	bool resumePlayRun();
+	void restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick);
 	void writeFailureState(uint line);
 
 	/// The keys a watched run answers to; false for any other key.
