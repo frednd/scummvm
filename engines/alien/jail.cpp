@@ -69,13 +69,30 @@ namespace Alien {
 // The guard, his conversation in the corridor, the force field and the red
 // card he leaves in the slot are jailguard.cpp's.
 //
-// What is still simplified: the cell view's own machine (job 13c), and the way
-// back to room 56 below, which is a plain click in the cell with nothing held
-// and no hotspot under it, standing in for whatever the original actually
-// gates it on.
+// **The way out of the cell.** [0xa7b2] is the air shaft's cover, 1 -- shut --
+// from the new game (seg_main:0x0b29) until the loose shackle is pulled. The
+// shackle is object 3, registered only while the cover is on; its line (4,
+// "This one seems to be a bit loose...") is the click's own outcome, and entry
+// 3 arms [0xa49f] = 0x32 behind it (0x022d):
+//
+//   0x32   the line is down ([0xad1c])
+//   0x33   JAIL_WAL's one frame held on slot 2 -- the cover off, the shaft
+//          open -- sample 3, [0xa7b2] := 0
+//   0x34   0x14 later: line 6, "How convenient...!", and the cursor back
+//
+// The open shaft is object 7, and the plate (10c9's room 58 routine) holds the
+// same frame up on every later entry. A walk that ends on it with the click
+// still latched on it ([0xa644] == 7, CHARANIM:sub_1514b) is the escape:
+//
+//   0x46   the cursor gone
+//   0x47   Ben handed to slot 4, JAI_BESH's fifteen frames of the crawl
+//   0x48   the slot has run out ([0xa4ee])
+//   0x49   submode 0x64 -- transitions.cpp's room 58, submode 100 -> room 56
+//
+// The steps that wait on [0xa49c] wait on the animation frame it is counted
+// on ([0xa5f8], 0x09c7), every second tick pair.
 static const int kJailRoom = 58;
 
-static const byte kEscapeClicks = 3;
 static const byte kShipExitSubmode = 100;	///< transitions.cpp: room 58, submode 100 -> room 56
 
 static const uint16 kView = 0xa7b1;			///< 1 = the cell, 2 = the corridor
@@ -84,16 +101,28 @@ static const uint16 kTalked = 0xa7c2;
 static const uint16 kTalkedAgain = 0xa7c3;
 static const uint16 kHasCard = 0xa7c4;
 static const uint16 kPodReady = 0xa7d2;		///< ending.cpp's guard on room 59's machine
+static const uint16 kShaftShut = 0xa7b2;		///< 1 = the air shaft's cover is still on
+static const uint16 kClickedObj = 0xa644;		///< the object the last left click was on
+static const byte kCell = 1;
 static const byte kCorridor = 2;
 
 static const byte kCard = 43;				///< OBJ:sprite_find_slot(0x2b)
 static const char *const kCorridorTal = "ROOM58_2.TAL";
 
 static const byte kVerbTalkTo = 6;
+static const byte kVerbShackle = 5;			///< [0xa824], the shackle's rectangle verb
 static const byte kYodleObj = 5, kUncleObj = 6;
+static const byte kShackleObj = 3, kShaftObj = 7;
 
 /// The steps of [0xa49f] this file runs, and the waits on [0xa49c].
 static const byte kStepIdle = 0;
+static const byte kStepShackle = 0x32;
+static const byte kStepCoverOff = 0x33;
+static const byte kStepShaftOpen = 0x34;
+static const byte kStepShaft = 0x46;
+static const byte kStepCrawl = 0x47;
+static const byte kStepCrawling = 0x48;
+static const byte kStepCrawled = 0x49;
 static const byte kStepTalk = 0x6e;
 static const byte kStepTalking = 0x82;
 static const byte kStepArrive = 0x83;
@@ -104,6 +133,23 @@ static const byte kStepPod = 0x8c;
 static const uint16 kArriveWait = 0xf;
 static const uint16 kLeaveWait = 0x19;
 static const uint16 kSettleWait = 0x5a;
+static const uint16 kShaftLineWait = 0x14;
+
+/// 0x0e03: anim_play_mode2(2, 1, 1, 0), JAIL_WAL's frame held.
+static const uint kCoverSlot = 2;
+/// 0x0e68: anim_play_mode1(4, 1, 0x10, 3), the crawl; frame 0x10 is the
+/// terminator that takes the last one down.
+static const uint kCrawlSlot = 4;
+static const int kCrawlFrames = 0x10, kCrawlRate = 3;
+
+/// The cover coming off, sfx_play_delayed(3, 0, 0x3a98, 0x37, -0x32, 1).
+static const uint kCoverSample = 3;
+static const uint32 kCoverRateHz = 0x3a98;
+static const byte kCoverVolume = 0x37;
+static const int8 kCoverPanning = -0x32;
+static const uint16 kCoverDelay = 1;
+
+static const byte kOutcomeShaftOpen = 6;	///< "How convenient...!"
 
 /// [0xa7bd] = 3, the clock the tick settles the uncle back to idle on.
 static const byte kClockSettle = 3;
@@ -159,7 +205,6 @@ void AlienEngine::startJail() {
 	if (_room != kJailRoom)
 		return;
 
-	_jailClicks = 0;
 	_jailStep = kStepIdle;
 	_jailPos = 0;
 	_jailLeft = 0;
@@ -327,10 +372,40 @@ bool AlienEngine::armJailTalk(int obj, byte verb) {
 	return true;
 }
 
+/// Entry 3, 0x021a: the loose shackle. Its line is the click's own outcome;
+/// the machine waits for it to come down.
+bool AlienEngine::armJailShackle(int obj, byte verb) {
+	if (_room != kJailRoom || obj != kShackleObj || verb != kVerbShackle)
+		return false;
+
+	_jailStep = kStepShackle;
+	CursorMan.showMouse(false);
+	return true;
+}
+
+/// CHARANIM:sub_1514b's last test: a walk in the cell that ended with the click
+/// that started it still latched on the open shaft.
+void AlienEngine::jailShaftArrival() {
+	if (_jailStep != kStepIdle || _script.flag(kView) != kCell)
+		return;
+	if (_script.flag(kClickedObj) != kShaftObj)
+		return;
+	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+		return;
+
+	_script.setFlag(kClickedObj, 0);
+	CursorMan.showMouse(false);
+	_jailStep = kStepShaft;
+	debugC(1, kDebugRooms, "jail: into the air shaft");
+}
+
 /// Entry 2's loop: the pose settles and [0xa49f].
 void AlienEngine::stepJail() {
 	if (_room != kJailRoom)
 		return;
+
+	// [0xa49c] and [0xa7be] both move on the animation frame (0x09c0).
+	const bool frame = (_tick & 3) == 0;
 
 	// The guard, his machine and the field, which run before the room's own
 	// [0xa49f] in the tick (jailguard.cpp).
@@ -345,7 +420,9 @@ void AlienEngine::stepJail() {
 	}
 
 	// 0x1037: [0xa7be], counted by LOGIC alongside [0xa49c].
-	if (_jailClock == kClockSettle && ++_jailClockPos > kSettleWait) {
+	if (frame)
+		_jailClockPos++;
+	if (_jailClock == kClockSettle && _jailClockPos > kSettleWait) {
 		jailUnclePose(kPoseIdle);
 		_jailClock = 0;
 	}
@@ -353,12 +430,63 @@ void AlienEngine::stepJail() {
 	if (_jailSpeaking && speechDone())
 		jailSpeak();
 
+	jailShaftArrival();
+
 	if (_jailStep == kStepIdle)
 		return;
 
-	_jailPos++;
+	if (frame)
+		_jailPos++;
 
 	switch (_jailStep) {
+	case kStepShackle:
+		if (!speechDone())
+			break;
+		_jailStep = kStepCoverOff;
+		break;
+
+	case kStepCoverOff:
+		_anims.play(kCoverSlot, 1, 1, 0, 2);
+		_sound.queue(kCoverSample, kCoverRateHz, kCoverVolume, kCoverPanning, kCoverDelay);
+		_script.setFlag(kShaftShut, 0);
+		rebuildHotspots();
+		_jailStep = kStepShaftOpen;
+		_jailPos = 0;
+		debugC(1, kDebugRooms, "jail: the shackle pulls the shaft's cover off");
+		break;
+
+	case kStepShaftOpen:
+		if (_jailPos <= kShaftLineWait)
+			break;
+		{
+			int anchorX, anchorY;
+			characterAnchor(anchorX, anchorY);
+			queueOutcome(_tal, kOutcomeShaftOpen, anchorX, anchorY);
+		}
+		CursorMan.showMouse(true);
+		_jailStep = kStepIdle;
+		break;
+
+	case kStepShaft:
+		_jailStep = kStepCrawl;
+		break;
+
+	case kStepCrawl:
+		playCharacterAnim(kCrawlSlot, 1, kCrawlFrames, kCrawlRate, 1);
+		_jailStep = kStepCrawling;
+		break;
+
+	case kStepCrawling:
+		if (_anims.remaining(kCrawlSlot) != 0)
+			break;
+		_jailStep = kStepCrawled;
+		break;
+
+	case kStepCrawled:
+		_jailStep = kStepIdle;
+		debugC(1, kDebugRooms, "jail: through the shaft, back to the ship");
+		takeExit(kShipExitSubmode);
+		break;
 	case kStepTalk:
 		if (_anims.shownFrame(kUncleSlot) < kTalkFrame)
 			break;
@@ -424,26 +552,6 @@ bool AlienEngine::jailWalkTo(int x, int y, int arrivalFacing) {
 		return false;
 
 	straightWalkTo(x, y, arrivalFacing);
-	return true;
-}
-
-/// A plain click in the cell, standing in for the real exit machine: see this
-/// file's header. The corridor has real ways out (object 10 to room 51, and
-/// the pod), so this stays out of it.
-bool AlienEngine::armJailExit() {
-	if (_room != kJailRoom || _script.flag(kView) == kCorridor ||
-		_heldItem != Inventory::kNoItem || _hover >= 0)
-		return false;
-
-	_jailClicks++;
-	debugC(1, kDebugRooms, "jail: step %u of %u back to the ship", _jailClicks, kEscapeClicks);
-
-	if (_jailClicks >= kEscapeClicks) {
-		_jailClicks = 0;
-		CursorMan.showMouse(false);
-		takeExit(kShipExitSubmode);
-	}
-
 	return true;
 }
 

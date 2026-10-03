@@ -19,7 +19,9 @@
  *
  */
 
+#include "common/system.h"
 #include "graphics/cursorman.h"
+#include "graphics/paletteman.h"
 
 #include "alien/alien.h"
 #include "alien/detection.h"
@@ -90,9 +92,25 @@ namespace Alien {
 // the trip back runs: 0x64 takes the cursor, 0x65 waits 0x14 and hums, 0x69
 // takes him away and 0x6b, 0x37 later, writes submode 100 -- the park.
 //
-// What is not here is the arrival from the jail escape ([0xa49f] 9..0xb,
-// CHARANIM:sub_14b1a), which jail.cpp still stands in for, and the wipe
-// OBJ:sub_02f27 runs over the park arrival.
+// Both hums (INPUT:sub_01e2e) also flash the room: [0x33ea] = 5 starts four
+// pulses of every palette entry but 0 mixed toward a pale blue (0x2d, 0x2d,
+// 0x3f) by UTIL:sub_023f4, each starting at 0x100 and falling 0x46 a tick, a
+// new one every second tick pair (0x07cc).
+//
+// From the jail (game mode 58) the room opens through CHARANIM:sub_14b1a:
+// [0xa7b1] := 2, so the next arrest opens on the corridor, and Ben stood at
+// (0xc6, 0x3b). The first time ([0x33e4] == 0) that is behind FROMJAIL.PCX,
+// "Much, much later...", faded up, held 0x8c ticks and faded away, with him out
+// of sight and the cursor gone for the room's machine:
+//
+//   9      [0xa49c] > 0x46: slot 6, TRA_SHAF's 0x74 frames of him climbing
+//          out of the vent, and samples 3 and 4
+//   0xa    the slot has run out ([0xa4f0]): he is himself again
+//   0xb    [0xa49c] > 0xa: line 7 and the cursor
+//
+// After that he is simply there.
+//
+// What is not here is the wipe OBJ:sub_02f27 runs over the park arrival.
 static const int kParkRoom = 22;
 static const int kShipRoom = 56;
 
@@ -208,6 +226,32 @@ static const uint kHumCount = 3;
 
 static const byte kLineAboard = 0x0b;		///< ROOM56.TAL, the first arrival
 
+/// The hum's flashes: UTIL:sub_023f4(level, 0x2d, 0x2d, 0x3f, 1, 0xff).
+static const byte kFlashCount = 5;
+static const int kFlashFull = 0x100, kFlashFall = 0x46;
+static const byte kFlashInk[3] = { 0x2d, 0x2d, 0x3f };
+static const int kFlashFirst = 1, kFlashEntries = 0xff;
+
+/// CHARANIM:sub_14b1a and the jail arrival's steps.
+static const uint16 kJailView = 0xa7b1;
+static const byte kJailCorridor = 2;
+static const uint16 kOutOfJail = 0x33e4;		///< the vent has been climbed out of once
+static const char *const kJailCard = "FROMJAIL.PCX";
+static const uint kJailCardTicks = 0x8c;
+static const int16 kVentX = 0xc6, kVentY = 0x3b;
+static const byte kVentFacing = 4;
+static const int kVentFrames = 0x74, kVentRate = 3;
+static const TeleportSample kVentSamples[] = {
+	{ 3, 0x2af8, 0x37, 1 }, { 4, 0x2af8, 0x37, 0x13b }
+};
+static const int8 kVentPanning = 0x14;
+static const byte kLineOutOfJail = 7;
+
+static const byte kShipVent = 9;
+static const byte kShipVentOut = 0xa;
+static const byte kShipVentDone = 0xb;
+static const uint kVentWait = 0x46, kVentLineWait = 0x0a;
+
 static const byte kShipBeamIn = 0x3c;
 static const byte kShipAppear = 0x3e;
 static const byte kShipStepOff = 0x3f;
@@ -267,10 +311,12 @@ void AlienEngine::startTeleport() {
 
 	_script.setFlag(kPadOff, 0);
 
-	// The shaft is the jail escape's own beam ([0xa49f] 9, 0x093c), which
-	// roominit.cpp lifts as an opening play on every way in.
-	if (_mode != kFromJail)
-		_anims.takeDown(kShaftSlot);
+	// The vent is the jail arrival's own play ([0xa49f] 9, 0x093c), which
+	// roominit.cpp lifts as an opening play on every way in; the machine
+	// below plays it when it is due.
+	_anims.takeDown(kShaftSlot);
+	_shipFlashes = 0;
+	_shipFlashDue = false;
 
 	// 0x0591: the chamber stands open for an arrival through it.
 	const bool fromPark = _mode == kFromPark;
@@ -280,6 +326,9 @@ void AlienEngine::startTeleport() {
 		_script.setFlag(kPadOff, 1);
 	}
 	shipChamber(fromPark);
+
+	if (_mode == kFromJail)
+		shipFromJail();
 
 	if (!fromPark)
 		return;
@@ -292,6 +341,68 @@ void AlienEngine::startTeleport() {
 	CursorMan.showMouse(false);
 	_shipStep = kShipBeamIn;
 	debugC(1, kDebugRooms, "ship: beamed in from the park");
+}
+
+/// CHARANIM:sub_14b1a, room 56's opening after the climb through the shaft.
+void AlienEngine::shipFromJail() {
+	_script.setFlag(kJailView, kJailCorridor);
+	_ben.placeSprite(kVentX, kVentY, kVentFacing);
+
+	if (_script.flag(kOutOfJail) == 1)
+		return;
+
+	showStill(kJailCard, kJailCardTicks);
+	hideCharacter();
+	CursorMan.showMouse(false);
+	_shipStep = kShipVent;
+	_shipWait = 0;
+	_script.setFlag(kOutOfJail, 1);
+	debugC(1, kDebugRooms, "ship: much, much later, out of the vent");
+}
+
+/// INPUT:sub_01e2e's half of the flash: [0x33ea] = 5 and the rest cleared.
+void AlienEngine::startShipFlash() {
+	memcpy(_shipFlashSource, _palette, sizeof(_shipFlashSource));
+	_shipFlashes = kFlashCount;
+	_shipFlashCount = 0;
+	_shipFlashLevel = 0;
+	_shipFlashDue = false;
+}
+
+/// The room's tick, 0x07cc: every master tick, a mix is pushed if one is due,
+/// and while flashes are left the level falls and a new pulse starts every
+/// second tick pair. The last mix is at the level the last pulse fell to,
+/// which the source puts back.
+void AlienEngine::stepShipFlash() {
+	if (_room != kShipRoom || (!_shipFlashes && !_shipFlashDue))
+		return;
+
+	if (_shipFlashDue) {
+		const int level = _shipFlashLevel;
+		for (int i = kFlashFirst * 3; i < (kFlashFirst + kFlashEntries) * 3; i++) {
+			const int ink = kFlashInk[i % 3] * 255 / 63;
+			_palette[i] = (byte)((_shipFlashSource[i] * (0x100 - level) + ink * level) >> 8);
+		}
+		g_system->getPaletteManager()->setPalette(_palette + kFlashFirst * 3, kFlashFirst,
+												  kFlashEntries);
+		_shipFlashDue = false;
+	}
+
+	if (!_shipFlashes)
+		return;
+
+	_shipFlashDue = true;
+	if (_shipFlashLevel > 0)
+		_shipFlashLevel = MAX(_shipFlashLevel - kFlashFall, 0);
+	if ((_tick & 1) == 0)
+		_shipFlashCount++;
+	if (_shipFlashCount == 2) {
+		_shipFlashes--;
+		if (_shipFlashes) {
+			_shipFlashLevel = kFlashFull;
+			_shipFlashCount = 0;
+		}
+	}
 }
 
 /// LOGIC:sub_123f1 and sub_123d0: the chamber open, or shut and pulsing.
@@ -475,9 +586,43 @@ void AlienEngine::stepShip() {
 	if (_room != kShipRoom)
 		return;
 
-	_shipWait++;
+	// [0xa49c] moves on the animation frame (0x0715), every second tick pair.
+	if ((_tick & 3) == 0)
+		_shipWait++;
 
 	switch (_shipStep) {
+	case kShipVent:
+		CursorMan.showMouse(false);
+		if (_shipWait <= kVentWait)
+			break;
+		_anims.play(kShaftSlot, 1, kVentFrames, kVentRate, 1);
+		for (uint i = 0; i < ARRAYSIZE(kVentSamples); i++)
+			_sound.queue(kVentSamples[i].sample, kVentSamples[i].rate, kVentSamples[i].volume,
+						 kVentPanning, kVentSamples[i].delay);
+		_shipStep = kShipVentOut;
+		debugC(1, kDebugRooms, "ship: out of the vent, %d frames", kVentFrames);
+		break;
+
+	case kShipVentOut:
+		if (_anims.remaining(kShaftSlot) != 0)
+			break;
+		showCharacter();
+		debugC(1, kDebugRooms, "ship: standing by the vent at %d,%d", _ben.walkX(), _ben.walkY());
+		_shipStep = kShipVentDone;
+		_shipWait = 0;
+		break;
+
+	case kShipVentDone: {
+		if (_shipWait <= kVentLineWait)
+			break;
+		CursorMan.showMouse(true);
+		_shipStep = 0;
+		int anchorX, anchorY;
+		characterAnchor(anchorX, anchorY);
+		queueOutcome(_tal, kLineOutOfJail, anchorX, anchorY);
+		break;
+	}
+
 	case kShipBeamIn:
 		// A scene handing the room back gives the cursor back with it.
 		CursorMan.showMouse(false);
@@ -486,6 +631,7 @@ void AlienEngine::stepShip() {
 		for (uint i = 0; i < kHumCount; i++)
 			_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
 						 kHumSample.delay);
+		startShipFlash();
 		_shipStep = kShipAppear;
 		_shipWait = 0;
 		break;
@@ -540,6 +686,7 @@ void AlienEngine::stepShip() {
 		for (uint i = 0; i < kHumCount; i++)
 			_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
 						 kHumSample.delay);
+		startShipFlash();
 		_shipStep = kShipVanish;
 		_shipWait = 0;
 		break;

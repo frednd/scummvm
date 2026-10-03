@@ -61,6 +61,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/resources.h"
 
 namespace Alien {
 
@@ -143,6 +144,51 @@ void AlienEngine::fadeIn() {
 	// However far the loop got -- a quit can cut it short -- the room owns its
 	// palette from here.
 	uploadPalette(_palette, 0x100);
+}
+
+/**
+ * A full-screen picture faded up, held and faded away again, with the game
+ * stopped: UI:ui_func_69e onto the screen, UTIL:util_func_2aa, a wait of
+ * `holdTicks` master ticks and UTIL:sub_021f9 -- the "Much, much later..."
+ * card in front of room 56 (CHARANIM:sub_14b1a). The room's own fade in
+ * follows as it would after any room change.
+ */
+void AlienEngine::showStill(const char *name, uint holdTicks) {
+	Graphics::Surface still;
+	byte palette[256 * 3];
+	if (!loadGamePCX(Common::Path(name), still, palette)) {
+		still.free();
+		warning("still: cannot load %s", name);
+		return;
+	}
+
+	debugC(1, kDebugRooms, "still: %s for %u ticks", name, holdTicks);
+
+	uploadPalette(palette, 0);
+	g_system->copyRectToScreen(still.getPixels(), still.pitch, 0, 0,
+							   MIN<int>(still.w, kScreenWidth), MIN<int>(still.h, _screen.h));
+	still.free();
+
+	int level = 0;
+	for (int step = 0; step < kFadeInSteps && !shouldQuit(); step++) {
+		uploadPalette(palette, level);
+		fadeWait();
+		level += kFadeStep;
+	}
+	uploadPalette(palette, 0x100);
+
+	// A scripted run has nothing to read on it.
+	for (uint i = 0; i < holdTicks && !shouldQuit() && !_cutsceneFast && !_playActive; i++)
+		fadeWait();
+
+	level = 0xff;
+	for (int step = 0; step < kFadeOutSteps && !shouldQuit(); step++) {
+		uploadPalette(palette, level);
+		fadeWait();
+		level -= kFadeStep;
+	}
+	uploadPalette(palette, 0);
+	_dirty = true;
 }
 
 } // End of namespace Alien

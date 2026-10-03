@@ -53,7 +53,9 @@ namespace Alien {
 // The scan itself is SEC_SCR1.DL2 or SEC_SCR2.DL2 over SEC_SCAN.PCX or
 // SEC_SCA2.PCX, music slot 12: one frame every animation tick pair
 // (CUTSCENE:sub_0e253 with [0xa4fa] = 0), each painted over what the last one
-// left -- the frames are deltas, not cels -- until the file's frame count is
+// left -- the frames are deltas, not cels, and MIDAS:snd_play copies their
+// spans with rep movsw, colour 0 included: a zero is black that clears the
+// last frame's pixels, not a hole -- until the file's frame count is
 // reached ([0x8cd6], which the DL2 loader leaves) or both joystick buttons are
 // held ([0xa900]/[0xa901], CUTSCENE:sub_0c550). Either way it leaves
 // [0x33e2] := 1, which the room's init reads to put Ben at the scanner's far
@@ -231,7 +233,7 @@ void AlienEngine::playScannerScan(bool mask) {
 					break;
 				for (uint32 i = 0; i < n; i++) {
 					const uint32 at = addr + i;
-					if (d[off + i] && at < (uint32)(kScreenWidth * _background.h))
+					if (at < (uint32)(kScreenWidth * _background.h))
 						*(byte *)_background.getBasePtr(at % kScreenWidth, at / kScreenWidth) = d[off + i];
 				}
 				off += n;

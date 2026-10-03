@@ -155,6 +155,7 @@ private:
 	void uploadPalette(const byte *source, int level);
 	void fadeOut();
 	void fadeIn();
+	void showStill(const char *name, uint holdTicks);
 	bool loadCursor();
 	void handleEvents();
 	void dumpScreen(const Common::String &name = Common::String());
@@ -425,6 +426,9 @@ private:
 	void shipWalkTarget(byte obj, bool action, WalkTarget &target);
 	void shipChamber(bool open);
 	void stepShip();
+	void startShipFlash();
+	void stepShipFlash();
+	void shipFromJail();
 
 	/// Rooms 51/53/55/57, the four-way junction, and room 53's maintenance
 	/// man, the only way out of it toward the ending (corridor.cpp).
@@ -467,8 +471,9 @@ private:
 	/// ways out, and the escape back to the ship, still simplified
 	/// (jail.cpp).
 	void startJail();
-	bool armJailExit();
 	bool armJailTalk(int obj, byte verb);
+	bool armJailShackle(int obj, byte verb);
+	void jailShaftArrival();
 	void stepJail();
 	void jailConversation();
 	void jailSpeak();
@@ -1039,6 +1044,14 @@ private:
 	/// Room 56's [0xa49f] machine and its [0xa49c] wait (teleport.cpp).
 	byte _shipStep;
 	uint _shipWait;
+	/// The hum's flashes (the room's tick, 0x07cc): [0x33ea] flashes left,
+	/// [0x33e8] the level, [0x33ec] the tick-pair count, [0x33ee] a mix due,
+	/// and the palette they mix from.
+	byte _shipFlashes;
+	int _shipFlashLevel;
+	uint _shipFlashCount;
+	bool _shipFlashDue;
+	byte _shipFlashSource[256 * 3];
 
 	/// Rooms 51/53/55/57's simplified four-way cycle: clicks taken toward the
 	/// next room, and room 53's own delay before leaving for the ending
@@ -1068,9 +1081,6 @@ private:
 	byte _bossLeft;
 	bool _bossSpeaking;
 	bool _bossTalking;
-
-	/// Room 58's simplified escape: clicks taken so far (jail.cpp).
-	uint _jailClicks;
 
 	/// Room 58's [0xa49f] and [0xa49c], the DLGREQ run the conversation is
 	/// working through (the same runner boss.cpp has), where Ben's lines are

@@ -230,10 +230,11 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
 		_teleportStep(0), _teleportWait(0), _shipStep(0), _shipWait(0),
+		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false),
 		_corridorStep(0),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
 		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
-		_bossSpeaking(false), _bossTalking(false), _jailClicks(0),
+		_bossSpeaking(false), _bossTalking(false),
 		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
 		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
 		_jailClock(0), _jailClockPos(0), _jailRedLoaded(false), _jailFieldPhase(0),
@@ -1705,6 +1706,8 @@ void AlienEngine::stepClock() {
 	// light fades and flickers at the same pace (steam.cpp).
 	stepDivingWave();
 	stepSteamLight();
+	// And room 56's flashes as the beam hums (teleport.cpp).
+	stepShipFlash();
 
 	if ((_tick & 1) == 0) {
 		// The elapsed-time counters the timed scenes run off, which the original
@@ -3577,10 +3580,6 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (clickBar(x, y, rightButton))
 		return;
 
-	// The jail's escape, standing in for its own missing exit (jail.cpp).
-	if (!rightButton && armJailExit())
-		return;
-
 	// The two buttons do different jobs, which is the whole of playtest report
 	// 19. The **left** button only ever walks: the room's own loop calls the
 	// overlay's entry 0 with the click point when [0x8d0e] is set
@@ -3913,6 +3912,10 @@ void AlienEngine::finishAction() {
 	// runs on its own when Ben comes in with the force field down (jail.cpp).
 	if (!item)
 		armJailTalk(spot.obj, verb);
+
+	// And the loose shackle in the cell, which opens the shaft out (jail.cpp).
+	if (!item)
+		armJailShackle(spot.obj, verb);
 
 	// And the red card the guard leaves in the corridor's slot (jailguard.cpp).
 	if (!item)
