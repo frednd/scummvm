@@ -37,6 +37,10 @@ namespace Alien {
 // as its refusal alone -- so the two click hooks and the [0xa49f] machine they
 // start are the room's own, here:
 //
+//   0x0134  Pick up on obj 9, the handset on its hook: [0xa729] = 0 and
+//           MIDAS:sub_19d5a(1), which plays PAR_BENP -- Ben lifting it, slot 2,
+//           the list at ds:0x7008 in mode 8 -- with him out of sight; 0x64
+//           gives him and the cursor back two frames before it ends
 //   0x0043  item 40 on obj 5 or obj 1, handset off ([0xa729] == 0): 0x14
 //   0x00e5  Use on obj 5 (the phone, only registered with the handset off):
 //           item 40 carried -> 0x14; otherwise the first use is state 5, the
@@ -60,12 +64,35 @@ namespace Alien {
 // The [0xa49c] waits are counted in ticks of this hook, as park.cpp counts its
 // own.
 //
-// Room 56's own return trip is the mirror image: entry2's arrival cutscene
-// (from the jail escape, `CHARANIM:sub_14b1a`) ends by planting Ben in the
-// right spot and counting [0x33f0] up to 0x64 before writing `game_submode`
-// to 100 directly (0x0a9f) -- position-driven, not a click on any object.
-// That end stays simplified: three plain clicks in room 56 send him back, the
-// same substitution shore.cpp makes for its door.
+// Room 56, the chamber the booth lands in (ovr_38_0f92), is one more machine
+// in the same [0xa49f] byte, entry 2's:
+//
+//   on entry  [0x33e6] is the chamber's state, 1 shut and 2 open, and the
+//             opening draws it either way: LOGIC:sub_123d0 runs the shut
+//             chamber's pulse (slot 3, TRA_CHAM, the 29-frame list at
+//             ds:0x6d84), LOGIC:sub_123f1 the open one (slot 4, TRA_CHA2,
+//             seven frames). Arriving from the park it is open, [0x33f2]
+//             keeps the pad from reacting, and -- the first time only,
+//             [0x33e0] == 0 -- the record loader is called directly with 15,
+//             the ship in space (ALIESHP1.PCX), bypassing the scene dispatch.
+//             Then he is put on the pad out of sight and the cursor goes
+//             (0x0662).
+//   0x3c      [0xa49c] > 0x50: the beam's hum, INPUT:sub_01e2e
+//   0x3e      a tick later he is there ([0xa94d] = 1)
+//   0x3f      [0xa49c] > 0xa: he walks off the pad to (0xb2, 0x74)
+//   0x46      [0xa49c] > 0x2d: the pad is live again, everything from Earth
+//             is taken off him (the list at ds:0x4438), the cursor comes
+//             back, and the first time he says outcome 0xb
+//
+// The pad itself runs every tick (0x0aae): while [0x33f2] is clear, standing
+// on it (sprite x 0xb9..0xc1, y under 0x13) counts [0x33f0] up to 0x64. At
+// 0x28 the chamber opens; stepping off resets the count and shuts it. At 0x64
+// the trip back runs: 0x64 takes the cursor, 0x65 waits 0x14 and hums, 0x69
+// takes him away and 0x6b, 0x37 later, writes submode 100 -- the park.
+//
+// What is not here is the arrival from the jail escape ([0xa49f] 9..0xb,
+// CHARANIM:sub_14b1a), which jail.cpp still stands in for, and the wipe
+// OBJ:sub_02f27 runs over the park arrival.
 static const int kParkRoom = 22;
 static const int kShipRoom = 56;
 
@@ -78,7 +105,15 @@ static const uint16 kHandsetDown = 0xa729;		///< 1 while the handset is on its h
 static const byte kNumberItem = 40;		///< "phone number"
 static const byte kPhoneObj = 5;
 static const byte kBoothObj = 1;
+static const byte kHandsetObj = 9;
 static const byte kVerbUse = 10;
+static const byte kVerbPickUp = 1;
+
+/// MIDAS:sub_19d5a(1): PAR_BENP, Ben lifting the handset (ds:0x7008).
+static const uint kLiftSlot = 2;
+static const byte kLiftFrames[] = { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 31 };
+static const int kLiftRate = 4;
+static const int kLiftMode = 8;
 
 static const byte kDestShip = 2;
 
@@ -94,6 +129,7 @@ static const byte kLineNumberAgain = 0x3b;	///< the number alone
 
 /// [0xa49f]'s steps in this room, by the original's own numbers.
 static const byte kStepMumble = 8;			///< 5..7 collapse into the line itself
+static const byte kStepLifted = 0x64;
 static const byte kStepDial = 0x14;
 static const byte kStepDialDone = 0x16;
 static const byte kStepSpark = 0x96;
@@ -127,7 +163,62 @@ static const TeleportSample kBeamSamples[] = {
 	{ 1, 0x3a98, 0x40, 3 },
 };
 
-static const uint kReturnClicks = 3;
+/// Room 56.
+static const uint16 kShipVisited = 0x33e0;		///< counted up as the first arrival ends
+static const uint16 kShipBeenHere = 0x33df;	///< set by every arrival from the park
+static const uint16 kChamberState = 0x33e6;	///< 1 shut, 2 open
+static const uint16 kPadCount = 0x33f0;		///< ticks stood on the pad
+static const uint16 kPadOff = 0x33f2;			///< the pad ignores him while set
+
+static const uint kShipRecord = 15;			///< ALIESHP1.PCX, the ship in space
+static const byte kFromPark = kParkRoom;
+static const byte kFromJail = 58;
+
+static const uint kShutSlot = 3, kOpenSlot = 4, kShaftSlot = 6;
+/// LOGIC:sub_123d0's list, ds:0x6d84: the shut chamber's pulse.
+static const byte kShutFrames[] = {
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+	14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 10
+};
+static const int kShutRate = 2;
+static const int kOpenFirst = 1, kOpenCount = 7, kOpenRate = 1;
+
+/// Where the beam puts him, char_place(0, 0xbd, 0, 0x10, 3) at 0x066e, and
+/// the walk off the pad that follows (0x09f7).
+static const int16 kPadX = 0xbd, kPadY = 0x10;
+static const int16 kOffPadX = 0xb2, kOffPadY = 0x74;
+/// And the chamber's own approach point for a plain walk, which is the pad.
+static const byte kChamberObj = 1;
+static const int16 kPadWalkX = 0xc7, kPadWalkY = 0x50;
+static const byte kOffPadFacing = 3;
+
+/// The pad, as the tick at 0x0ab5 tests the sprite origin.
+static const int16 kPadMinX = 0xb8, kPadMaxX = 0xc2, kPadMaxY = 0x13;
+static const uint kPadOpen = 0x28, kPadGo = 0x64;
+
+/// ds:0x4438: what cannot come aboard, OBJ:sprite_remove'd one by one.
+static const byte kEarthItems[] = {
+	1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 17, 18, 19, 20, 24, 25, 26,
+	27, 28, 29, 31, 32, 33, 37, 38, 39
+};
+
+/// INPUT:sub_01e2e, the hum: three of sample 6.
+static const TeleportSample kHumSample = { 6, 0x34bc, 0x40, 1 };
+static const uint kHumCount = 3;
+
+static const byte kLineAboard = 0x0b;		///< ROOM56.TAL, the first arrival
+
+static const byte kShipBeamIn = 0x3c;
+static const byte kShipAppear = 0x3e;
+static const byte kShipStepOff = 0x3f;
+static const byte kShipSettle = 0x46;
+static const byte kShipLeave = 0x64;
+static const byte kShipHum = 0x65;
+static const byte kShipVanish = 0x69;
+static const byte kShipGone = 0x6b;
+
+static const uint kBeamInTicks = 0x50, kStepOffTicks = 0x0a, kSettleTicks = 0x2d;
+static const uint kHumTicks = 0x14, kGoneShipTicks = 0x37;
 
 static const int kCorridorRoom = 55;
 static const uint16 kChamberView = 0xa7a6;		///< room 56's view, 1..3; 2 shows the card
@@ -164,17 +255,99 @@ void AlienEngine::advanceChamberView(int room) {
 	debugC(1, kDebugRooms, "teleport: room 56 in view %u", _script.flag(kChamberView));
 }
 
-/// Every arrival puts room 22's machine down and resets room 56's click count.
+/// Every arrival puts room 22's machine down, and opens room 56 (0x0462).
 void AlienEngine::startTeleport() {
 	_teleportStep = 0;
 	_teleportWait = 0;
-	_teleportReturnClicks = 0;
+	_shipStep = 0;
+	_shipWait = 0;
+
+	if (_room != kShipRoom)
+		return;
+
+	_script.setFlag(kPadOff, 0);
+
+	// The shaft is the jail escape's own beam ([0xa49f] 9, 0x093c), which
+	// roominit.cpp lifts as an opening play on every way in.
+	if (_mode != kFromJail)
+		_anims.takeDown(kShaftSlot);
+
+	// 0x0591: the chamber stands open for an arrival through it.
+	const bool fromPark = _mode == kFromPark;
+	_script.setFlag(kChamberState, 1);
+	if (fromPark) {
+		_script.setFlag(kChamberState, 2);
+		_script.setFlag(kPadOff, 1);
+	}
+	shipChamber(fromPark);
+
+	if (!fromPark)
+		return;
+
+	// 0x0669: on the pad, out of sight, and no cursor until he is off it.
+	// roominit.cpp has already stood him there.
+	_script.setFlag(kShipBeenHere, 1);
+	_ben.placeSprite(kPadX, kPadY, kOffPadFacing);
+	hideCharacter();
+	CursorMan.showMouse(false);
+	_shipStep = kShipBeamIn;
+	debugC(1, kDebugRooms, "ship: beamed in from the park");
+}
+
+/// LOGIC:sub_123f1 and sub_123d0: the chamber open, or shut and pulsing.
+void AlienEngine::shipChamber(bool open) {
+	if (open) {
+		_script.setFlag(kChamberState, 2);
+		_anims.stop(kShutSlot);
+		_anims.play(kOpenSlot, kOpenFirst, kOpenCount, kOpenRate, kPlayMode);
+	} else {
+		_script.setFlag(kChamberState, 1);
+		_anims.stop(kOpenSlot);
+		_anims.play(kShutSlot, 0, ARRAYSIZE(kShutFrames), kShutRate, 6, kShutFrames);
+	}
+	_dirty = true;
+}
+
+/**
+ * Entry 0's two approach points for the chamber (0x01d7-0x021b): a plain walk
+ * goes onto the pad, and a right click or an item in hand ([0x8d0f], or
+ * [0xa825] with [0x8d0e]) stops in front of it. The lift keeps both rows and
+ * the second always wins, so the switch on the button is put back here.
+ */
+void AlienEngine::shipWalkTarget(byte obj, bool action, WalkTarget &target) {
+	if (_room != kShipRoom || obj != kChamberObj || action)
+		return;
+
+	target.x = kPadWalkX;
+	target.y = kPadWalkY;
+	target.facing = kOffPadFacing;
+}
+
+/// 0x046b: the first arrival from the park opens on the ship itself.
+void AlienEngine::shipArrivalScene(int room) {
+	if (room != kShipRoom || _mode != kFromPark || _script.flag(kShipVisited) != 0)
+		return;
+
+	debugC(1, kDebugCutscene, "ship: record %u, the ship in space", kShipRecord);
+	playCutsceneRecord(kShipRecord);
 }
 
 /// The two click hooks at 0x0043 and 0x00e5: the phone, and the number on it.
 bool AlienEngine::armTeleportPhone(int obj, byte verb, byte item) {
 	if (_room != kParkRoom || _teleportStep)
 		return false;
+
+	// 0x0134: the handset off its hook.
+	if (!item && obj == kHandsetObj && verb == kVerbPickUp &&
+		_script.flag(kHandsetDown) == 1) {
+		_script.setFlag(kHandsetDown, 0);
+		hideCharacter();
+		_anims.play(kLiftSlot, 0, ARRAYSIZE(kLiftFrames), kLiftRate, kLiftMode, kLiftFrames);
+		CursorMan.showMouse(false);
+		_teleportStep = kStepLifted;
+		debugC(1, kDebugRooms, "teleport: the handset comes off its hook");
+		return true;
+	}
 
 	int anchorX, anchorY;
 	characterAnchor(anchorX, anchorY);
@@ -216,32 +389,21 @@ bool AlienEngine::armTeleportPhone(int obj, byte verb, byte item) {
 	return true;
 }
 
-/**
- * The return trip out of room 56, standing in for the position-driven
- * arrival cutscene the same way room 41's door does for its own machine.
- */
-bool AlienEngine::armTeleportReturn() {
-	if (_room != kShipRoom || _heldItem != Inventory::kNoItem || _hover >= 0)
-		return false;
-
-	_teleportReturnClicks++;
-	debugC(1, kDebugRooms, "teleport: step %u of %u back to the park", _teleportReturnClicks, kReturnClicks);
-
-	if (_teleportReturnClicks >= kReturnClicks) {
-		_teleportReturnClicks = 0;
-		CursorMan.showMouse(false);
-		takeExit(kToParkSubmode);
-	}
-
-	return true;
-}
-
 /// Room 22's [0xa49f] machine from 0x0a04, the phone's half of it.
 void AlienEngine::stepTeleport() {
 	if (_room != kParkRoom || !_teleportStep)
 		return;
 
 	switch (_teleportStep) {
+	case kStepLifted:
+		// 0x0bf5: [0xa4ec], two frames of the lift still to go.
+		if (_anims.remaining(kLiftSlot) > 2)
+			break;
+		_teleportStep = 0;
+		showCharacter();
+		CursorMan.showMouse(true);
+		break;
+
 	case kStepMumble:
 		// 0x0a36
 		if (!speechDone())
@@ -305,6 +467,124 @@ void AlienEngine::stepTeleport() {
 
 	default:
 		break;
+	}
+}
+
+/// Room 56's machine (0x092e) and the pad under it (0x0aae).
+void AlienEngine::stepShip() {
+	if (_room != kShipRoom)
+		return;
+
+	_shipWait++;
+
+	switch (_shipStep) {
+	case kShipBeamIn:
+		// A scene handing the room back gives the cursor back with it.
+		CursorMan.showMouse(false);
+		if (_shipWait <= kBeamInTicks)
+			break;
+		for (uint i = 0; i < kHumCount; i++)
+			_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
+						 kHumSample.delay);
+		_shipStep = kShipAppear;
+		_shipWait = 0;
+		break;
+
+	case kShipAppear:
+		if (_shipWait <= 0)
+			break;
+		showCharacter();
+		_shipStep = kShipStepOff;
+		_shipWait = 0;
+		break;
+
+	case kShipStepOff:
+		if (_shipWait <= kStepOffTicks)
+			break;
+		walkTo(kOffPadX, kOffPadY, kOffPadFacing);
+		debugC(1, kDebugRooms, "ship: off the pad from %d,%d, walking %d", _ben.walkX(),
+			   _ben.walkY(), _ben.isWalking());
+		_shipStep = kShipSettle;
+		_shipWait = 0;
+		break;
+
+	case kShipSettle: {
+		if (_shipWait <= kSettleTicks)
+			break;
+		_script.setFlag(kPadOff, 0);
+		for (uint i = 0; i < ARRAYSIZE(kEarthItems); i++)
+			if (_inventory.has(kEarthItems[i]))
+				_inventory.remove(kEarthItems[i]);
+		CursorMan.showMouse(true);
+		_shipStep = 0;
+		if (_script.flag(kShipVisited) == 0) {
+			int anchorX, anchorY;
+			characterAnchor(anchorX, anchorY);
+			queueOutcome(_tal, kLineAboard, anchorX, anchorY);
+		}
+		_script.setFlag(kShipVisited, _script.flag(kShipVisited) + 1);
+		debugC(1, kDebugRooms, "ship: aboard at %d,%d, the Earth things left behind",
+			   _ben.walkX(), _ben.walkY());
+		break;
+	}
+
+	case kShipLeave:
+		CursorMan.showMouse(false);
+		_shipStep = kShipHum;
+		_shipWait = 0;
+		break;
+
+	case kShipHum:
+		if (_shipWait <= kHumTicks)
+			break;
+		for (uint i = 0; i < kHumCount; i++)
+			_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
+						 kHumSample.delay);
+		_shipStep = kShipVanish;
+		_shipWait = 0;
+		break;
+
+	case kShipVanish:
+		if (_shipWait <= 0)
+			break;
+		hideCharacter();
+		_shipStep = kShipGone;
+		_shipWait = 0;
+		break;
+
+	case kShipGone:
+		if (_shipWait <= kGoneShipTicks)
+			break;
+		_shipStep = 0;
+		CursorMan.showMouse(true);
+		showCharacter();
+		takeExit(kToParkSubmode);
+		return;
+
+	default:
+		break;
+	}
+
+	// 0x0aae: the pad, whenever the arrival is not holding it off.
+	if (_script.flag(kPadOff) == 0) {
+		const int x = _ben.spriteX(), y = _ben.spriteY();
+		if (x > kPadMinX && x < kPadMaxX && y < kPadMaxY) {
+			if (_script.flag(kPadCount) < kPadGo)
+				_script.setFlag(kPadCount, _script.flag(kPadCount) + 1);
+		} else {
+			_script.setFlag(kPadCount, 0);
+			if (_script.flag(kChamberState) == 2)
+				shipChamber(false);
+		}
+	}
+	if (_script.flag(kPadCount) == kPadOpen) {
+		_script.setFlag(kPadCount, kPadOpen + 1);
+		shipChamber(true);
+	}
+	if (_script.flag(kPadCount) == kPadGo) {
+		_script.setFlag(kPadCount, kPadGo + 1);
+		_shipStep = kShipLeave;
+		debugC(1, kDebugRooms, "ship: on the pad long enough, back to the park");
 	}
 }
 

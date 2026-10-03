@@ -18,6 +18,7 @@ MODULE_OBJS = \
 	shore.o \
 	yodle.o \
 	steam.o \
+	studio.o \
 	telescope.o \
 	teleport.o \
 	park.o \

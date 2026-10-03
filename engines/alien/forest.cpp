@@ -131,7 +131,7 @@ static const char *const kNotePicture = "YOD_NOTE.PCX";
 
 /// DIALOG:sub_0b63a: the parrot speaks, and its beak moves while it does.
 void AlienEngine::parrotSays(byte line) {
-	queueOutcome(_tal, line, kParrotX, kParrotY);
+	queueOutcome(_tal, line, kParrotX, kParrotY, false);
 	_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotBeak), kIdleRate, kListMode, kParrotBeak);
 	debugC(1, kDebugRooms, "forest: the parrot says outcome 0x%02x", line);
 }
@@ -257,7 +257,7 @@ void AlienEngine::stepForestParrot() {
 		if (_forestWait <= 0x1e)
 			break;
 		_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat2), 3, kReturnMode, kParrotEat2);
-		queueOutcome(_tal, kLineSmell, kParrotX, kParrotY);
+		queueOutcome(_tal, kLineSmell, kParrotX, kParrotY, false);
 		_forestStep = kStepBread;
 		break;
 
@@ -272,7 +272,7 @@ void AlienEngine::stepForestParrot() {
 		if (!speechDone())
 			break;
 		_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat2), 3, kReturnMode, kParrotEat2);
-		queueOutcome(_tal, kLineLove, kParrotX, kParrotY);
+		queueOutcome(_tal, kLineLove, kParrotX, kParrotY, false);
 		_forestStep = kStepSwallow;
 		_forestWait = 0;
 		break;

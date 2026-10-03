@@ -283,7 +283,7 @@ void AlienEngine::stepScanner() {
 	case kStepArrest:
 		if (_anims.remaining(kRobotSlot) != 0)
 			break;
-		queueOutcome(_tal, kArrestLine, kArrestX, kArrestY);
+		queueOutcome(_tal, kArrestLine, kArrestX, kArrestY, false);
 		_scannerStep = kStepLine;
 		_script.setFlag(kMachine, kStepLine);
 		break;

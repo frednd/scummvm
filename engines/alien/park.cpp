@@ -214,7 +214,7 @@ void AlienEngine::stepPark() {
 		// 0x0aa1: the booth opens and whatever is in it shouts.
 		_anims.play(kBoothSlot, kOpenFirst, kOpenCount, kOpenRate, kOpenMode);
 		_anims.setLoopFlag(kBoothSlot, 1);
-		queueOutcome(_tal, kLineVoice, kVoiceX, kVoiceY);
+		queueOutcome(_tal, kLineVoice, kVoiceX, kVoiceY, false);
 		_parkStep = kStepVoiceDone;
 		_dirty = true;
 		break;

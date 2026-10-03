@@ -158,8 +158,27 @@ public:
 
 	Walker();
 
-	bool load(const Common::String &base) { return _anim.load(base); }
+	bool load(const Common::String &base) { _set = base; return _anim.load(base); }
 	void unload() { _anim.unload(); }
+
+	/**
+	 * Room 46, underwater. CHARANIM:sub_1446a swaps the character set for
+	 * DIVEANI as the room opens, and from then on segment 0x0ec7 drives him
+	 * instead of OBJ:sub_098d1: OBJ:sub_0585d plots a straight line from the
+	 * middle of the swimmer to the click (there is no walk mask, and the room
+	 * zeroes the node count), and sub_0f560 steps it with a frame cycle, turns
+	 * and a treading loop of its own. Leaving the room puts the set this walker
+	 * was loaded with back.
+	 */
+	void setSwimming(bool swimming);
+	bool isSwimming() const { return _swimming; }
+
+	/**
+	 * OBJ:sub_0585d, then the turn OBJ:sub_07890 queues after it. (`walkX`,
+	 * `walkY`) is walk_pos, the point the room's walk geometry chose; it is the
+	 * middle of the swimmer that heads for it, not the feet.
+	 */
+	void swimTo(int walkX, int walkY, int arrivalFacing = kFacingKeep);
 	bool isLoaded() const { return _anim.isLoaded(); }
 
 	/** Put the character down with its feet at a walk point, facing forward. */
@@ -194,7 +213,7 @@ public:
 	/// him (sewer.cpp); 1 = back, 2 = right, 3 = front, 4 = left.
 	void faceTo(int facing) { turnTo(facing); }
 
-	bool isWalking() const { return _waypoint < _route.count; }
+	bool isWalking() const { return _swimming ? _steps > 0 : _waypoint < _route.count; }
 	bool isTurning() const { return _turnLeft != 0; }
 
 	/// Bumped by every place(): the camera snaps on a placement, the way
@@ -313,8 +332,19 @@ private:
 	void updateFrame();
 	void stepIdle(bool inventoryOpen);
 	void stepTalk();
+	void stepSwim(bool gate);
+	void startSwimTurn(int from, int to);
 
 	CharAnim _anim;
+	Common::String _set;			///< the set load() was given, BENANI
+
+	/// The swim (see setSwimming). The turn reuses _turnLeft as the
+	/// original's [0xa959], counting down through _swimTurn from the top;
+	/// [0xa945], the facing the last pass saw, is what starts one.
+	enum { kMaxSwimTurn = 22 };
+	bool _swimming;
+	int _swimFacing;
+	byte _swimTurn[kMaxSwimTurn + 1];
 
 	WalkRoute _route;
 	uint _waypoint;					///< the point being walked to, 0 when idle

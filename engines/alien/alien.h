@@ -238,6 +238,8 @@ private:
 	void tickCutsceneTimers();
 	uint32 cutsceneTimer(uint16 addr) const;
 	void playCutsceneRecord(uint number);
+	void endCutscene(int room, int benX, int benY, int benFacing);
+	void playStudio();
 	void runCutsceneProc(uint proc, bool quiet = false);
 	void speakCutsceneLine(uint code, int anchorX, int anchorY);
 	bool nextCutsceneLine();
@@ -318,6 +320,7 @@ private:
 	void setCemeteryState(byte state);
 	void cemeteryZap();
 	void cemeteryStatuePick();
+	void startCemetery();
 	void stepCemetery();
 
 	/// The room's hotspot table, rebuilt from the puzzle state -- and from the
@@ -348,16 +351,22 @@ private:
 	bool armPool(int obj, byte item);
 	void stepPool();
 
-	/// Room 46's chest, its key, and the swim across to the shore
-	/// (diving.cpp).
+	/// Room 46, underwater: its two views, the swim, the chest and its key,
+	/// the propeller's bubbles and the water over all of it (diving.cpp).
+	void loadDivingBanks(int room);
 	void startDiving();
 	bool armDiving(int obj, byte item);
-	bool armDivingSwim();
+	bool divingSwimTo(int x, int y, int arrivalFacing);
 	void stepDiving();
+	void stepDivingWater();
+	void stepDivingWave();
+	void drawDivingWater(Graphics::Surface &dest) const;
+	bool divingTakeExit(byte submode);
 
 	/// Room 41's door to the maze, simplified the same way (shore.cpp).
 	void startShore();
 	bool armShoreAxe(int obj, byte item);
+	bool armShoreSuit(int obj, byte item);
 	void shoreArrival();
 	void stepShore();
 
@@ -382,12 +391,13 @@ private:
 	void drawYodleWater(Graphics::Surface &dest) const;
 	bool dlgreqRunning() const;
 
-	/// The valve between rooms 49 and 50, and the steam it lets through
-	/// (steam.cpp).
+	/// The ladder between rooms 49 and 50, and the steam over room 50's
+	/// right half (steam.cpp).
 	void startSteam();
-	bool armSteamValve();
-	bool armSteamDoor();
+	void steamClick(int roomX, int y);
+	void armSteam(int obj, byte verb);
 	void stepSteam();
+	void stepSteamLight();
 
 	/// Room 22's arrival scene: the voice in the booth, and the wreck it
 	/// leaves behind (park.cpp).
@@ -405,13 +415,16 @@ private:
 	void forestBenSays(byte line);
 	void forestArm(byte step);
 
-	/// Room 22's phone, which dials the teleporter, and room 56's simplified
-	/// return trip (teleport.cpp).
+	/// Room 22's phone, which dials the teleporter, and room 56's chamber at
+	/// the other end: the arrival, the pad and the trip back (teleport.cpp).
 	void startTeleport();
 	void advanceChamberView(int room);
 	bool armTeleportPhone(int obj, byte verb, byte item);
-	bool armTeleportReturn();
 	void stepTeleport();
+	void shipArrivalScene(int room);
+	void shipWalkTarget(byte obj, bool action, WalkTarget &target);
+	void shipChamber(bool open);
+	void stepShip();
 
 	/// Rooms 51/53/55/57, the four-way junction, and room 53's maintenance
 	/// man, the only way out of it toward the ending (corridor.cpp).
@@ -545,7 +558,16 @@ private:
 	void clickAt(int x, int y, bool rightButton = false);
 	byte rotateOutcome(const Hotspot &spot);
 	void finishAction();
-	void queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY);
+	/**
+	 * queue_event: speak an outcome's chain of lines at an anchor.
+	 *
+	 * `benSpeaks` is false for a line another character speaks, which the
+	 * original sends through DIALOG:sub_0b63a with an anchor of its own: that
+	 * path raises [0x293b] rather than the talk flag [0x2938], so his mouth
+	 * stays shut while someone else talks.
+	 */
+	void queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY,
+					  bool benSpeaks = true);
 	void speakEntry(const TalFile::Entry &entry, int anchorX, int anchorY, int ticks);
 	bool speechDone() const { return !_speech && _queueNext >= _queueCount; }
 
@@ -779,6 +801,8 @@ private:
 	/// text comes from _speechEntry rather than from _dialogId.
 	TalFile::Entry _speechEntry;
 	bool _speechCustom;
+	/// Whether the line up is Ben's own, and so moves his mouth (queueOutcome).
+	bool _speechBen;
 
 	/// The conversation menu, and the room machine that is the port's first
 	/// caller of it (chat.cpp, library.cpp).
@@ -948,21 +972,37 @@ private:
 	/// Room 48's pool: the step of the dive machine (pool.cpp).
 	byte _poolStep;
 
-	/// Room 46's chest and its swim: the machine step, the wait counter, and
-	/// the strokes taken so far (diving.cpp).
+	/// Room 46: the [0xa49f] machine step, the submode a click armed
+	/// ([0xa87d]), the two bubble pools at ds:0xb06a and ds:0xb51e, and the
+	/// water's row table ([0xae28]) with its phase ([0xb066]) (diving.cpp).
+	struct DivingBubble {
+		uint16 x;		///< 8.8
+		uint16 y;		///< 9.7, dead past 0xf0 rows
+		uint16 vy;
+		int16 drift;
+	};
+	enum { kDivingBubbles = 100, kDivingWaveRows = 0x11e };
 	byte _divingStep;
-	uint16 _divingPos;
-	uint _divingClicks;
+	byte _divingExit;
+	DivingBubble _divingBubbles[2][kDivingBubbles];
+	int16 _divingWave[kDivingWaveRows];
+	uint16 _divingWavePhase;
 
 	/// Room 41's own machines: the step of the pick-axe swing, or of whichever
 	/// climb between the two cave mouths is running (shore.cpp).
 	byte _shoreStep;
 
-	/// The valve machine between rooms 49 and 50: clicks taken so far, and
-	/// ticks left of the delay standing in for either room's cutscene
-	/// (steam.cpp).
-	uint _steamClicks;
-	uint _steamStep;
+	/// Rooms 49 and 50's [0xa49f] step, their [0xa49c] count, and the steam
+	/// flag as the last tick saw it (steam.cpp).
+	byte _steamStep;
+	uint _steamPos;
+	byte _steamWas;
+	/// A ladder arrival still owes the character his new room's light.
+	bool _steamRelight;
+	/// Room 49's light: passes left of a flicker burst, and the palette entries
+	/// the level darkens, as the room loaded them (steam.cpp).
+	uint _steamBurst;
+	byte _steamLight[0x1a * 3];
 
 	/// Room 22's arrival scene: the step of its machine, and ticks left of
 	/// whichever of its two waits is running (park.cpp).
@@ -996,7 +1036,9 @@ private:
 	/// (teleport.cpp).
 	byte _teleportStep;
 	uint _teleportWait;
-	uint _teleportReturnClicks;
+	/// Room 56's [0xa49f] machine and its [0xa49c] wait (teleport.cpp).
+	byte _shipStep;
+	uint _shipWait;
 
 	/// Rooms 51/53/55/57's simplified four-way cycle: clicks taken toward the
 	/// next room, and room 53's own delay before leaving for the ending

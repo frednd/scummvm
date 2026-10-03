@@ -379,6 +379,44 @@ static const IdlePlay kIdlePlays[] = {
 /// The count wraps here and carries into the cycle, as the original's 0xc8.
 static const int kIdleWrap = 200;
 
+// The swim, segment 0x0ec7 and OBJ:sub_0585d (setSwimming). DIVEANI has no
+// back or front walk: facing 1 is the stroke to screen right, frames
+// 0x00..0x10, and 4 the stroke to screen left, 0x12..0x22. 3 is upright, the
+// way he comes down through the hole, and nothing swims facing 2.
+static const uint kSwimRight = 0x00;
+static const uint kSwimLeft = 0x12;
+static const uint kSwimUpright = 0x24;
+static const uint kSwimFrames = 0x11;		///< [0xa9a1] wraps here (0ec7:0x933)
+
+/// The point that swims to the click, (0x28, 0x1e) into the sprite: the middle
+/// of a frame lying flat, where the walker uses his feet (OBJ:0x335d).
+static const int kSwimAnchorX = 0x28;
+static const int kSwimAnchorY = 0x1e;
+
+/// In 1/64 pixel per pass: a pixel across when the leg is mostly sideways,
+/// three quarters of one down or up when it is not (OBJ:0x33fb, 0x34bc).
+static const int kSwimSpeedX = 0x40;
+static const int kSwimSpeedY = 0x30;
+
+/// [0xa959] at or above this holds him still, so the last frames of a turn
+/// already move (0ec7:0xb08).
+static const uint kSwimTurnMoves = 3;
+
+// The treading loops at ds:0x4418 (facing 1) and ds:0x4428 (facing 4), one
+// based like every frame list OBJ:sub_09773 is handed.
+static const byte kTreadRight[] = { 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 2, 2, 2 };
+static const byte kTreadLeft[] = { 19, 19, 19, 19, 19, 20, 20, 20, 21, 21, 21, 21, 21, 20, 20, 20 };
+
+/// Trunc of the original's six-byte reals: toward zero.
+static int swimTrunc(double v) {
+	return (int)v;
+}
+
+/// And Round (0x2567:0x13bf): half away from zero.
+static int swimRound(double v) {
+	return v < 0 ? -(int)(-v + 0.5) : (int)(v + 0.5);
+}
+
 
 Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY(0),
 		_steps(0), _scale(CharAnim::kUnitScale), _facing(3),
@@ -389,6 +427,9 @@ Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY
 		_talking(false), _talkReady(false), _talkPhase(0), _talkHalf(false),
 		_placements(0) {
 	memset(_turn, 0, sizeof(_turn));
+	_swimming = false;
+	_swimFacing = 3;
+	memset(_swimTurn, 0, sizeof(_swimTurn));
 }
 
 void Walker::place(int walkX, int walkY, int facing) {
@@ -405,6 +446,14 @@ void Walker::place(int walkX, int walkY, int facing) {
 	_waypoint = 0;
 	_placements++;
 	resetIdle();
+	if (_swimming) {
+		// CHARANIM:sub_13bce sets [0xa945] with [0xa944], so a placement owes
+		// no turn; the frame is the facing's first stroke until the treading
+		// loop takes over on the next pass.
+		_swimFacing = facing;
+		_frame = facing == 4 ? kSwimLeft : facing == 3 ? kSwimUpright : kSwimRight;
+		return;
+	}
 	updateFrame();
 }
 
@@ -472,6 +521,13 @@ int Walker::facingToward(int targetX, int targetY) const {
 }
 
 void Walker::turnTo(int facing) {
+	// Under water the facing is written straight into [0xa944]: the next pass
+	// sees it differ from [0xa945] and plays the turn itself (stepSwim).
+	if (_swimming) {
+		_facing = facing;
+		return;
+	}
+
 	_turnLeft = 0;
 	if (facing == _facing) {
 		_facing = facing;
@@ -543,6 +599,10 @@ void Walker::startSegment() {
 }
 
 void Walker::updateFrame() {
+	// The swim picks its own frames, pass by pass (stepSwim).
+	if (_swimming)
+		return;
+
 	if (_turnLeft) {
 		_frame = kTurnFrameBase + _turn[0];
 		return;
@@ -665,6 +725,11 @@ void Walker::stepIdle(bool inventoryOpen) {
 }
 
 void Walker::tick(bool inventoryOpen) {
+	if (_swimming) {
+		stepSwim(true);
+		return;
+	}
+
 	// A queued turn plays out before anything moves, the way the original
 	// blocks the mover while its countdown is running.
 	if (_turnLeft) {
@@ -696,6 +761,11 @@ void Walker::tick(bool inventoryOpen) {
 }
 
 bool Walker::stepMove() {
+	if (_swimming) {
+		stepSwim(false);
+		return true;
+	}
+
 	if (_turnLeft || !isWalking())
 		return false;
 
@@ -753,6 +823,191 @@ bool Walker::bounds(Common::Rect &box) const {
 
 	box = Common::Rect(g.left, g.top, g.left + g.width, g.top + g.height);
 	return true;
+}
+
+void Walker::setSwimming(bool swimming) {
+	if (swimming == _swimming)
+		return;
+
+	_swimming = swimming;
+	_turnLeft = 0;
+	_steps = 0;
+	_route.count = 0;
+	_waypoint = 0;
+	resetIdle();
+
+	const Common::String set = swimming ? Common::String("DIVEANI") : _set;
+	if (!set.empty() && !_anim.load(set))
+		warning("Alien::Walker: cannot load %s", set.c_str());
+}
+
+void Walker::swimTo(int walkX, int walkY, int arrivalFacing) {
+	// OBJ:0x3350: the treading loop and whatever leg was running are dropped.
+	_idleLeft = 0;
+	_idleIndex = 0;
+	_steps = 0;
+	_stepX = 0;
+	_stepY = 0;
+	resetIdle();
+
+	// The leg is plotted from the middle of the swimmer, and in four
+	// quadrants: the target left or right of it picks the facing outright,
+	// and within each the wider span leads. A tie goes to the horizontal, the
+	// way the walker's own splitter breaks one. A leg that is under twice as
+	// wide as it is high is then plotted again as a vertical one -- the second
+	// test runs whatever the first decided (0x348e, 0x3641, ...).
+	const int ax = _x + kSwimAnchorX;
+	const int ay = _y + kSwimAnchorY;
+	const bool left = walkX < ax;
+	const bool up = walkY < ay;
+
+	int adx = ABS(walkX - ax);
+	const int ady = ABS(walkY - ay);
+	if (adx == ady)
+		adx++;
+
+	_facing = left ? 4 : 1;
+	const int signX = left ? -1 : 1;
+	const int signY = up ? -1 : 1;
+
+	if (adx > ady) {
+		_steps = adx;
+		_stepX = signX * kSwimSpeedX;
+		if (_steps > 0)
+			_stepY = swimRound((double)ady / _steps * 64.0 * signY);
+	}
+
+	if ((double)ady > (double)adx / 2.0) {
+		_steps = swimTrunc(ady / 0.75);
+		_stepY = signY * kSwimSpeedY;
+		if (_steps > 0)
+			_stepX = swimRound((double)adx / _steps * 64.0 * signX);
+	}
+
+	// OBJ:sub_07890 queues the room's facing for the end of the leg, in
+	// [0xa803]/[0xa804], when it names one.
+	_arrivalFacing = arrivalFacing >= 1 && arrivalFacing <= 4 ? arrivalFacing : kFacingKeep;
+}
+
+void Walker::startSwimTurn(int from, int to) {
+	// 0ec7:sub_0f35b. The lists are played from the top down, so they are
+	// filled here back to front: a quarter turn is eleven frames through the
+	// upright ones, a reversal is two of those back to back. Anything with a
+	// facing of 2 in it has no list and turns at once.
+	uint count = 0;
+	byte first = 0;
+	int step = 0;
+
+	if (from == 4 && to == 1) {
+		// 0x39 down to 0x2f, then 0x24 up to 0x2e.
+		for (uint i = 1; i <= 11; i++)
+			_swimTurn[i] = (byte)(0x2e - (i - 1));
+		for (uint i = 12; i <= 22; i++)
+			_swimTurn[i] = (byte)(0x2f + (i - 12));
+		_turnLeft = 22;
+		return;
+	}
+
+	if (from == 1 && to == 4) {
+		for (uint i = 1; i <= 11; i++)
+			_swimTurn[i] = (byte)(0x39 - (i - 1));
+		for (uint i = 12; i <= 22; i++)
+			_swimTurn[i] = (byte)(0x24 + (i - 12));
+		_turnLeft = 22;
+		return;
+	}
+
+	if (from == 3 && to == 4) {
+		first = 0x39; step = -1; count = 11;
+	} else if (from == 3 && to == 1) {
+		first = 0x2e; step = -1; count = 11;
+	} else if (from == 1 && to == 3) {
+		first = 0x24; step = 1; count = 11;
+	} else if (from == 4 && to == 3) {
+		first = 0x2f; step = 1; count = 11;
+	}
+
+	for (uint i = 1; i <= count; i++)
+		_swimTurn[i] = (byte)(first + step * (int)(i - 1));
+	_turnLeft = count;
+}
+
+void Walker::stepSwim(bool gate) {
+	// 0ec7:sub_0f560, once a tick pair; `gate` is [0xa5f9] == 1, the half of
+	// the pairs the animation runs on.
+	const bool moving = _steps > 0;
+
+	// The stroke cycle, and its frame, only while nothing is turning him.
+	if (moving && !_turnLeft) {
+		if (gate)
+			_phase = (_phase + 1) % kSwimFrames;
+		if (_facing == 4)
+			_frame = kSwimLeft + _phase;
+		else if (_facing == 1)
+			_frame = kSwimRight + _phase;
+	}
+
+	// Standing: the idle count, and the treading loop, restarted the moment it
+	// runs out unless a turn is still owed. It steps on every pass, not only
+	// on the gate.
+	bool streamed = false;
+	if (!moving && !_turnLeft) {
+		if (gate && ++_idleCount > kIdleWrap) {
+			_idleCount = 0;
+			_idleCycle++;
+		}
+
+		if (!_idleLeft && _arrivalFacing == kFacingKeep) {
+			if (_facing == 1) {
+				_idleStream = kTreadRight;
+				_idleLeft = ARRAYSIZE(kTreadRight);
+				_idleIndex = 0;
+			} else if (_facing == 4) {
+				_idleStream = kTreadLeft;
+				_idleLeft = ARRAYSIZE(kTreadLeft);
+				_idleIndex = 0;
+			}
+		}
+
+		if (_idleLeft > 0) {
+			_idleLeft--;
+			streamed = true;
+		}
+	}
+
+	// The turn the leg owed, once it is over.
+	if (_arrivalFacing != kFacingKeep && !moving && !_turnLeft) {
+		_facing = _arrivalFacing;
+		_arrivalFacing = kFacingKeep;
+	}
+
+	if (_facing != _swimFacing)
+		startSwimTurn(_swimFacing, _facing);
+
+	if (!_turnLeft) {
+		if (!moving && streamed) {
+			_frame = (uint)(_idleStream[_idleIndex] - 1);
+			if (_idleLeft > 0)
+				_idleIndex++;
+		}
+	} else {
+		_frame = _swimTurn[_turnLeft];
+		if (gate)
+			_turnLeft--;
+	}
+
+	_swimFacing = _facing;
+
+	// The step, which the last frames of a turn do not hold up. The position
+	// is the fixed point one divided down (GFX:gfx_div32, toward zero), and the
+	// leg simply runs out where it ends: nothing snaps him onto the target.
+	if (_steps > 0 && _turnLeft < kSwimTurnMoves) {
+		_steps--;
+		_fx += _stepX;
+		_fy += _stepY;
+		_x = _fx / 64;
+		_y = _fy / 64;
+	}
 }
 
 } // End of namespace Alien

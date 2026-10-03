@@ -397,7 +397,7 @@ void AlienEngine::jailGuardSpeak(byte code) {
 	jailGuardAnchor(x, y);
 	setTextColor(kGuardInk[0], kGuardInk[1], kGuardInk[2]);
 	uploadTextColor();
-	queueOutcome(_tal, code, x, y);
+	queueOutcome(_tal, code, x, y, false);
 	jailGuardPose(kPoseTalk);
 	_guard.talking = true;
 	debugC(1, kDebugRooms, "jail: the guard says outcome 0x%02x", code);

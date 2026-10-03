@@ -142,7 +142,6 @@ public:
 	bool load(int room, const RoomAssets &assets);
 	void unload();
 
-	bool loadMaskPage(uint page, const Common::Path &path) { return _mask.loadPage(page, path); }
 	const WalkMask &mask() const { return _mask; }
 	const WalkNodes &nodes() const { return _nodes; }
 

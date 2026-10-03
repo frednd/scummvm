@@ -397,7 +397,7 @@ void AlienEngine::yodleSpeak() {
 	setTextColor(ink[0], ink[1], ink[2]);
 	uploadTextColor();
 	queueOutcome(_tal, _yodleLine, yodle ? kYodleX : kBenX,
-				 yodle ? kYodleY : kBenY);
+				 yodle ? kYodleY : kBenY, !yodle);
 
 	// DLGREQ:sub_0c384's handler 0x15 arm: every line he takes while he is out
 	// on the stairs starts the talking loop, and the room stops it again as

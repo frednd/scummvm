@@ -115,8 +115,7 @@ enum MazeSpotGuard {
 	kSpotOpen = 0,		///< the piece is an opening
 	kSpotNotWall,		///< the piece is an opening or a decor block
 	kSpotDecor,			///< the piece is a decor block
-	kSpotAxe,			///< [0xa77e]: the pick-axe is still there
-	kSpotAlways
+	kSpotAxe			///< a decor block, and [0xa77e]: the pick-axe is still there
 };
 
 /**
@@ -149,12 +148,13 @@ static const MazeSpot kMazeSpots[] = {
 	{ kSpotOpen,    2, 147,  55, 164,  91, 4, 3,  1, 5, 3, {  2, 3, 4, 0 }, false },
 	{ kSpotOpen,    3, 200,  27, 254, 110, 3, 1,  4, 5, 1, {  1, 0, 0, 0 }, false },
 	{ kSpotOpen,    4, 274,  35, 319, 122, 3, 1,  5, 5, 1, {  1, 0, 0, 0 }, false },
-	// Maze B's alcove: the skeleton, the pick-axe on it, and the cap. The cap
-	// is registered in every cell of maze B, guard or not (0x050a) -- it is
-	// only ever on screen in the one cell that draws the alcove.
+	// Maze B's alcove: the skeleton, the pick-axe on it, and the cap. All three
+	// sit inside the one block guarded on the alcove's piece (0x04c8, whose
+	// `jne 0x51f` skips past the cap's registration at 0x050a too), so none of
+	// them can be picked up from any other cell.
 	{ kSpotDecor,   4, 251,  76, 304, 126, 0, 4, 10, 5, 4, { 14, 24, 25, 26 }, true },
-	{ kSpotAxe,     0, 259,  57, 291,  88, 0, 5, 11, 1, 1, {  0, 0, 0, 0 }, true },
-	{ kSpotAlways,  0, 262,  89, 273,  97, 0, 6, 20, 5, 1, { 20, 0, 0, 0 }, true },
+	{ kSpotAxe,     4, 259,  57, 291,  88, 0, 5, 11, 1, 1, {  0, 0, 0, 0 }, true },
+	{ kSpotDecor,   4, 262,  89, 273,  97, 0, 6, 20, 5, 1, { 20, 0, 0, 0 }, true },
 	// And the two ways back, which are drawn in the foreground rather than up
 	// the corridor, so they come last.
 	{ kSpotOpen,    5,  64, 134, 127, 159, 6, 7,  6, 5, 1, { 11, 0, 0, 0 }, false },
@@ -360,7 +360,7 @@ void AlienEngine::buildMazeHotspots(int room) {
 			wanted = tile == 2;
 			break;
 		case kSpotAxe:
-			wanted = _script.flag(kAxeThere) == 1;
+			wanted = tile == 2 && _script.flag(kAxeThere) == 1;
 			break;
 		default:
 			wanted = true;
@@ -462,10 +462,12 @@ void AlienEngine::startMaze() {
 	// The torch burns on the far wall, so it burns only where there is one to
 	// see: the original's play sits under the same guard the centre arrow does
 	// (0x066a for room 43, 0x0967 for room 44), and roominit.cpp has it
-	// unconditional because that guard is an indexed compare.
+	// unconditional because that guard is an indexed compare. Taken down
+	// rather than stopped: a mode 1 play cut short leaves its frame in the
+	// plate, a torch standing on a wall that has none.
 	const MazeCell *cell = mazeCell(_room);
 	if (cell && cell->tile[2] != 1)
-		_anims.stop(kTorchSlot);
+		_anims.takeDown(kTorchSlot);
 }
 
 /**
@@ -516,7 +518,9 @@ bool AlienEngine::mazeExit(byte &submode) {
 		_script.setFlag(kDoorOpen, 1);
 		_mazeStep = kStepDoorPlay;
 		CursorMan.showMouse(false);
-		playCharacterAnim(kDoorSlot, 1, kDoorFrames, kDoorRate, kDoorMode);
+		// CRY_DMOR is the door alone: he stands in front of it the whole time
+		// (nothing in 0x0722-0x07ec touches [0xa94d]).
+		_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, kDoorMode);
 		debugC(1, kDebugRooms, "maze: the crystal door opens");
 		return true;
 	}
@@ -673,7 +677,7 @@ void AlienEngine::crystalSpeak() {
 	setTextColor(ink[0], ink[1], ink[2]);
 	uploadTextColor();
 	queueOutcome(_tal, _crystalLine, awlox ? kAwloxX : kCryBenX,
-				 awlox ? kAwloxY : kCryBenY);
+				 awlox ? kAwloxY : kCryBenY, !awlox);
 
 	debugC(1, kDebugRooms, "crystal: %s says outcome 0x%02x",
 		   awlox ? "Awlox" : "Ben", _crystalLine);

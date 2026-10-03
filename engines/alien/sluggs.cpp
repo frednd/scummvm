@@ -205,7 +205,7 @@ void AlienEngine::sluggsSpeak() {
 	setTextColor(ink[0], ink[1], ink[2]);
 	uploadTextColor();
 	queueOutcome(_tal, _sluggsLine, sluggs ? kSluggsX : kBenX,
-				 sluggs ? kSluggsY : kBenY);
+				 sluggs ? kSluggsY : kBenY, !sluggs);
 
 	// DLGREQ:sub_0c384's own half of it: handler 0x22 starts the talking loop
 	// on every line Sluggs takes, and the room stops it again as the line comes

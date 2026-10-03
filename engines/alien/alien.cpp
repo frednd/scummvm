@@ -209,7 +209,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_cliffResumeFacing(Walker::kFacingKeep),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
-		_dialogId(1), _lastEvent(0), _speechCustom(false), _liftPending(false),
+		_dialogId(1), _lastEvent(0), _speechCustom(false), _speechBen(true), _liftPending(false),
 		_observatoryLook(false),
 		_observatoryBreaker(false), _observatoryStep(0), _observatoryPos(0),
 		_observatoryEncore(false), _stairsDescents(0), _restoring(false),
@@ -221,15 +221,15 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_crystalStep(0), _crystalWait(0), _crystalSpeaker(0), _crystalLine(0),
 		_crystalLeft(0), _crystalSpeaking(false),
 		_poolStep(0),
-		_divingStep(0), _divingPos(0), _divingClicks(0),
+		_divingStep(0), _divingExit(0), _divingWavePhase(0),
 		_shoreStep(0),
-		_steamClicks(0), _steamStep(0),
+		_steamStep(0), _steamPos(0), _steamWas(0), _steamRelight(false), _steamBurst(0),
 		_parkStep(0), _parkWait(0), _parkLock(false),
 		_forestStep(0), _forestWait(0), _forestTalk(false),
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
-		_teleportStep(0), _teleportWait(0), _teleportReturnClicks(0),
+		_teleportStep(0), _teleportWait(0), _shipStep(0), _shipWait(0),
 		_corridorStep(0),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
 		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
@@ -1038,12 +1038,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// The walk mask and the node ring, so a click can be routed. Rooms with no
 	// KIERRA files have no free movement at all, and those keep an empty mask.
 	_walk.load(room, _assets);
-	if (room == 32 && _script.flag(0xa72e) == 0) {
-		Common::Path pathB("KIER32B.Pic");
-		if (!Common::File::exists(pathB))
-			pathB = Common::Path("KIER32B.PIC");
-		_walk.loadMaskPage(0, pathB);
-	}
 	_route.count = 0;
 
 	_spots.clear();
@@ -1103,6 +1097,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// OBJ:0x6300, the room's teardown: he may turn round again in the next.
 	_ben.setTurnBlocked(false);
 
+	// Room 46 swims him, in a character set of its own (diving.cpp). Before
+	// the placement below, which picks his first frame out of that set.
+	_ben.setSwimming(room == kSwimRoom);
+
 	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
 	// does not carry the character's absence into the next one. The slots go
 	// with it: the room's banks are about to be dropped anyway, and a machine
@@ -1130,6 +1128,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	advanceChamberView(room);
 
 	_anims.loadRoom(room, _script);
+	loadDivingBanks(room);
 
 	// What the room does with a click on its own account, lifted out of its
 	// overlay by tools/gen_roomscripts.py, plus the opening frame of every slot
@@ -1303,10 +1302,12 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// And room 46's swim, the same way (diving.cpp).
 	startDiving();
 
-	// And room 41's machines (shore.cpp).
+	// And room 41's machines (shore.cpp), and room 32's way back from the
+	// crystal (cemetery.cpp).
 	startShore();
+	startCemetery();
 
-	// And the valve between rooms 49 and 50, and room 56's return trip
+	// And the ladder between rooms 49 and 50, and room 56's return trip
 	// (steam.cpp, teleport.cpp).
 	startSteam();
 	startTeleport();
@@ -1334,6 +1335,13 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// reads it, stood him at the note on a first visit (manual playthrough
 	// #44). Last, so the hand-written opens above still see it.
 	_script.setFlag(0xa6d3, 0);
+
+	// And his size for where he now stands. The original's entry reset puts
+	// 0x100 back and the room's own tick works the real value out before the
+	// first frame is drawn; left to the port's tick, the first frame showed
+	// him at the size of the room he left -- full height coming off the
+	// cemetery, then shrinking on the cliff's ledge (manual playthrough #70).
+	stepCharScale();
 
 	// And the scenes the room raises on entry, which the loop plays once the
 	// room's first frame is up: the original reaches them from entry 2, which
@@ -1578,6 +1586,11 @@ void AlienEngine::showCharacter() {
 }
 
 void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
+	// Room 46 has no mask and no nodes: every walk is a swim in a straight
+	// line (diving.cpp).
+	if (divingSwimTo(x, y, arrivalFacing))
+		return;
+
 	if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), x, y, _route)) {
 		// The two mazes have no mask to route through and move him anyway, the
 		// way the original's forced routes do (maze.cpp), and room 60's entry 0
@@ -1688,6 +1701,11 @@ void AlienEngine::stepClock() {
 	// tick pair -- INPUT:0x5D9 tests the same [0xa5fc] the slots do.
 	_sound.tick((_tick & 1) == 0);
 
+	// Room 46's water ripples a step every tick (diving.cpp), and room 49's
+	// light fades and flickers at the same pace (steam.cpp).
+	stepDivingWave();
+	stepSteamLight();
+
 	if ((_tick & 1) == 0) {
 		// The elapsed-time counters the timed scenes run off, which the original
 		// advances from the same tick pair (OBJ:sub_029ac).
@@ -1784,9 +1802,10 @@ void AlienEngine::stepClock() {
 
 		// And room 46's chest, its key, and the swim across (diving.cpp).
 		stepDiving();
+		stepDivingWater();
 
-		// And the delay standing in for the valve machine between rooms 49
-		// and 50 (steam.cpp).
+		// And rooms 49 and 50's: the ladder between them and what the valve
+		// and the lever leave running (steam.cpp).
 		stepSteam();
 
 		// And room 22's arrival scene: the voice in the booth, and the wreck
@@ -1796,8 +1815,10 @@ void AlienEngine::stepClock() {
 		stepYodleWater();
 		stepForestParrot();
 
-		// And room 22's phone, and the teleporter it dials (teleport.cpp).
+		// And room 22's phone, the teleporter it dials, and the chamber it
+		// lands in (teleport.cpp).
 		stepTeleport();
+		stepShip();
 
 		// And the ship's elevator door, and the delay standing in for the
 		// walk to room 53's own exit hotspot once the maintenance man has
@@ -1855,7 +1876,7 @@ void AlienEngine::stepClock() {
 
 		// OBJ:0x86df drops the talk flag once the line has under 25 half ticks
 		// left, so the mouth closes a moment before the text goes.
-		_ben.setTalking(_speech && (_speechTicks == 0 ||
+		_ben.setTalking(_speech && (_speechCustom || _speechBen) && (_speechTicks == 0 ||
 									_speechTicks >= tunable("speech.talkStopTicks",
 															kTalkStopTicks)));
 	}
@@ -2578,6 +2599,11 @@ Common::String AlienEngine::roomPlate(int room) const {
 	if (room == 7 && !_script.flag(0xa6fa))
 		return "GAME7X.PCX";
 
+	// Room 46's cave is loaded as room 47: the overlay writes handler code
+	// 0x2f while the plates are read (diving.cpp).
+	if (room == kSwimRoom && _script.flag(0xa785) == 1)
+		return _tables.background(47);
+
 	// Rooms 43 and 44, the two mazes: MAIN's own dispatch sends each to a
 	// resident helper rather than to the overlay directly (roommap.py:
 	// "MAIN:sub_00000" and "MAIN:sub_0008c"), which is why the table this reads
@@ -2607,6 +2633,10 @@ Common::String AlienEngine::roomPlate(int room) const {
 Common::String AlienEngine::occluderPlate(int room) const {
 	if (room == 7)
 		return _script.flag(0xa6fa) ? "MSCR7.PCX" : "MSCR7X.PCX";
+
+	// And its foreground sheet with it, the row for room 47.
+	if (room == kSwimRoom && _script.flag(0xa785) == 1)
+		return _tables.secondPlate(47);
 
 	const Common::String &second = _tables.secondPlate(room);
 	if (second.hasPrefixIgnoreCase("mscr"))
@@ -3547,23 +3577,6 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (clickBar(x, y, rightButton))
 		return;
 
-	// Room 46's swim across to the shore, standing in for the real
-	// walk-arrival latch the same way (diving.cpp).
-	if (!rightButton && armDivingSwim())
-		return;
-
-	// Room 56's return trip to the park, standing in for the position-driven
-	// arrival cutscene the same way (teleport.cpp).
-	if (!rightButton && armTeleportReturn())
-		return;
-
-	// The valve between rooms 49 and 50, standing in for the runtime hotspot
-	// neither room's static table carries (steam.cpp).
-	if (!rightButton && armSteamValve())
-		return;
-	if (!rightButton && armSteamDoor())
-		return;
-
 	// The jail's escape, standing in for its own missing exit (jail.cpp).
 	if (!rightButton && armJailExit())
 		return;
@@ -3612,6 +3625,10 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// read it back to find out what the walk was for -- the shore's two cave
 	// mouths (shore.cpp), the cemetery's statue, the sewer's ladder.
 	_script.setFlag(0xa644, asLeft ? obj : 0);
+	// Room 50 writes its own value over it for the side the steam blocks
+	// (steam.cpp).
+	if (asLeft)
+		steamClick(roomX, y);
 
 	WalkTarget target;
 	// Every click rearms from scratch, as the original rewrites walk_submode
@@ -3632,6 +3649,9 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		// and may send the walk to the rock rather than to the point the
 		// geometry named (cliff.cpp).
 		armCliff(roomX, y, target);
+		// And room 56's chamber has two approach points, chosen by the button
+		// rather than by a flag (teleport.cpp).
+		shipWalkTarget(obj, rightButton || _heldItem, target);
 
 		// And room 8's open safe, where the port stands him aside to take
 		// what is on its shelf (library.cpp).
@@ -3909,10 +3929,17 @@ void AlienEngine::finishAction() {
 	// into the second maze (shore.cpp).
 	armShoreAxe(spot.obj, item);
 
+	// And the diving suit on the water there, the way back down to room 46.
+	armShoreSuit(spot.obj, item);
+
 	// And three bodies carry state the lift does not: the sewer's ladder, its
 	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).
 	if (!item)
 		armSewer(spot.obj, verb);
+
+	// And room 50's lever, whose pull is Ben's own animation (steam.cpp).
+	if (!item)
+		armSteam(spot.obj, verb);
 
 	// And room 54's ticket machine button, for the same reason: the lifted body
 	// on it is only the refusal (waiting.cpp).
@@ -3969,11 +3996,13 @@ void AlienEngine::finishAction() {
 	}
 }
 
-void AlienEngine::queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY) {
+void AlienEngine::queueOutcome(const TalFile &tal, byte code, int anchorX, int anchorY,
+							   bool benSpeaks) {
 	// An outcome code does not name one line: it names a chain of up to ten
 	// dialog ids in zone 1 of the room's TAL, played one after another.
 	const TalFile::Outcome &chain = tal.outcome(code);
 	_speechTal = &tal;
+	_speechBen = benSpeaks;
 
 	// [0xacf6], which queue_event writes before it does anything else: the id,
 	// not any of the dialog ids it stands for. Room 15 is the one room that
@@ -4567,6 +4596,10 @@ void AlienEngine::redraw() {
 		if (jailFieldOverBen())
 			drawJailField(_screen);
 		drawJailGuard(_screen);
+
+		// Room 46's bubbles over all of that, and then the water, which moves
+		// the whole playfield (diving.cpp).
+		drawDivingWater(_screen);
 
 		if (_showWalk)
 			drawWalkOverlay();

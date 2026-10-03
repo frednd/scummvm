@@ -223,7 +223,7 @@ void AlienEngine::stepLibrary() {
 		_anims.play(kOwlSlot, 1, kOwlFrames, kOwlRate, 1);
 		setTextColor(kOwlInk[0], kOwlInk[1], kOwlInk[2]);
 		uploadTextColor();
-		queueOutcome(_tal, kOwlReply, kOwlAnchorX, kOwlAnchorY);
+		queueOutcome(_tal, kOwlReply, kOwlAnchorX, kOwlAnchorY, false);
 		CursorMan.showMouse(true);
 		_libraryStep = kStepColor;
 

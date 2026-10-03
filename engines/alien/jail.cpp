@@ -302,7 +302,8 @@ void AlienEngine::jailSpeak() {
 	const byte *ink = uncle ? kUncleInk : kBenInk;
 	setTextColor(ink[0], ink[1], ink[2]);
 	uploadTextColor();
-	queueOutcome(_tal, _jailLine, uncle ? kUncleX : _jailBenX, uncle ? kUncleY : _jailBenY);
+	queueOutcome(_tal, _jailLine, uncle ? kUncleX : _jailBenX, uncle ? kUncleY : _jailBenY,
+				 !uncle);
 
 	// DLGREQ:sub_0c384, handler 0x3a.
 	if (uncle)

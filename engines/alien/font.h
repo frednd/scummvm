@@ -64,8 +64,16 @@ public:
 	Font();
 	~Font();
 
-	/** Read the metric tables from the executable and the atlas from the PCX. */
-	bool load(Variant variant = kSpeech);
+	/**
+	 * Read the metric tables from the executable and the atlas from the PCX.
+	 *
+	 * `atlas` is the page the glyphs are cut from. Every face is cut from
+	 * OBJFILE.PCX but one: the TV news studio loads OBJSTUD.PCX over the font
+	 * page for the length of its scene (CUTSCENE:sub_0c6dd), the speech face
+	 * redrawn in the studio's caption colours at the same places, so the
+	 * metrics are the speech set's and only the bitmap changes (studio.cpp).
+	 */
+	bool load(Variant variant = kSpeech, const char *atlas = "OBJFILE.PCX");
 
 	int glyphHeight() const { return _variant == kLabel ? 8 : 10; }
 

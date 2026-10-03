@@ -85,8 +85,9 @@ bool AlienEngine::triggerCutscene(byte id) {
 		}
 	}
 
-	// The latch is the byte the arm tests against zero and then sets; the one arm
-	// without one (the TV news studio) is meant to be watched again and again.
+	// The latch is the byte the arm tests against zero and then sets. The TV news
+	// studio's ([0x33a2]) is set after its scene rather than before it
+	// (0c55:1a81), which comes to the same thing.
 	if (arm->latch) {
 		if (_script.flag(arm->latch)) {
 			debugC(1, kDebugCutscene, "scene %d: latch 0x%04x already set", id, arm->latch);
@@ -101,11 +102,9 @@ bool AlienEngine::triggerCutscene(byte id) {
 
 	if (arm->studio) {
 		// CUTSCENE:sub_0c6dd, which names its own files in code and drives itself
-		// off cutscene_pos rather than off a record's step stream: 709 lines of
-		// hand-written timeline calling OBJ:obj_action_a..d, none of which the
-		// port has lifted. It is a milestone of its own, not part of the tables.
-		warning("scene %d: the TV news studio is not ported yet", id);
-		return false;
+		// off cutscene_pos rather than off a record's step stream (studio.cpp).
+		playStudio();
+		return true;
 	}
 
 	for (uint r = 0; r < arm->recordCount; r++)
@@ -129,6 +128,10 @@ void AlienEngine::roomCutscenes(int room) {
 	// CUTSCENE:sub_0e042, which every enter routine calls first: the three
 	// elapsed-time scenes get their chance before the room's own.
 	stepCutsceneTimers();
+
+	// And the one room that plays a record without going through the
+	// dispatch at all (teleport.cpp).
+	shipArrivalScene(room);
 
 	uint count = 0;
 	const CutsceneTrigger *triggers = cutsceneTriggers(room, count);
@@ -492,6 +495,15 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	// script state back in place; the scene left all four holding its own.
 	runCutsceneProc(rec->subProcs[5]);
 
+	endCutscene(room, benX, benY, benFacing);
+}
+
+/**
+ * The end of every scene: the room it interrupted takes the screen back, with
+ * the character where he was standing. Shared by the records and by the
+ * scenes written out by hand that put the room back the same way (studio.cpp).
+ */
+void AlienEngine::endCutscene(int room, int benX, int benY, int benFacing) {
 	stopSpeech();
 	stopMusic();
 	_cutscene = false;

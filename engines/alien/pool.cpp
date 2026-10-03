@@ -122,6 +122,8 @@ void AlienEngine::stepPool() {
 		if (_anims.remaining(kDiveSlot) != 1)
 			break;
 		_poolStep = 0;
+		// 0x0599: and it lands him in room 46's shaft, view 0 (diving.cpp).
+		_script.setFlag(0xa785, 0);
 		takeExit(kPoolExitSubmode);
 		break;
 

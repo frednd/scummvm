@@ -316,6 +316,10 @@ public:
 	void drawBankFrame(uint slot, int frame, Graphics::Surface &dest, int scrollX = 0,
 					   int clipBottom = DL1Sprite::kNoClipBottom) const;
 
+	/// The bank itself, for a scene that draws and wipes its frames by hand
+	/// and needs their stored boxes to do it (studio.cpp).
+	const DL1Sprite &bank(uint slot) const { return _slots[slot].bank; }
+
 	/** The bank a slot holds, for the debug console. */
 	const Common::String &bankName(uint slot) const { return _slots[slot].name; }
 	int frame(uint slot) const { return _slots[slot].frame; }

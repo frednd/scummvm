@@ -283,7 +283,7 @@ void AlienEngine::storeSalesmanLine(byte code) {
 	storePose(pose);
 	setTextColor(kSalesInk[0], kSalesInk[1], kSalesInk[2]);
 	uploadTextColor();
-	queueOutcome(_tal, code, kSalesX, kSalesY);
+	queueOutcome(_tal, code, kSalesX, kSalesY, false);
 	_storeTalking = true;
 
 	debugC(1, kDebugRooms, "store: the salesman says outcome 0x%02x", code);

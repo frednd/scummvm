@@ -171,7 +171,7 @@ void AlienEngine::bossSpeak() {
 	const byte *ink = boss ? kBossInk : kBenInk;
 	setTextColor(ink[0], ink[1], ink[2]);
 	uploadTextColor();
-	queueOutcome(_tal, _bossLine, boss ? kBossX : kBenX, boss ? kBossY : kBenY);
+	queueOutcome(_tal, _bossLine, boss ? kBossX : kBenX, boss ? kBossY : kBenY, !boss);
 
 	if (boss) {
 		_anims.play(kBossSlot, 1, kTalkFrames, kTalkRate, 1);

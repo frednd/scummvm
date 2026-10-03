@@ -108,17 +108,17 @@ bool Font::readMetrics() {
 	return valid > 0;
 }
 
-bool Font::load(Variant variant) {
+bool Font::load(Variant variant, const char *atlas) {
 	_variant = variant;
 
 	if (!readMetrics())
 		return false;
 
-	if (!loadGamePCX(Common::Path("OBJFILE.PCX"), _atlas, _atlasPalette))
+	if (!loadGamePCX(Common::Path(atlas), _atlas, _atlasPalette))
 		return false;
 
 	if (_atlas.w < kAtlasWidth || _atlas.h < kAtlasHeight) {
-		warning("Alien::Font: OBJFILE.PCX is %dx%d, too small to be the atlas",
+		warning("Alien::Font: %s is %dx%d, too small to be the atlas", atlas,
 				_atlas.w, _atlas.h);
 		_atlas.free();
 		return false;

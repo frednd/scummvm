@@ -1,4 +1,3 @@
-#include "common/file.h"
 /* ScummVM - Graphic Adventure Engine
  *
  * ScummVM is the legal property of its developers, whose names
@@ -110,6 +109,9 @@ static const byte kOutcomeNotYet = 0x0e;	///< 0x0c4f, walking for the cave too s
 /// [0xa49f], as entry 3 and the tick (0x0962-0x0c0d) write it.
 enum {
 	kStateIdle = 0,
+	kStateBack = 3,			///< back from the crystal: a moment, then...
+	kStateBackLine = 4,		///< ...the empty line and "...Uh oh.."
+	kStateBackDown = 5,		///< ...and the bar back once it is down
 	kStateAsked = 0x14,		///< the menu is up, waiting for a pick
 	kStateClose = 0x16,		///< topic 2, wrong: wait for his line
 	kStateTalk = 0x19,		///< topic 0: wait for his line
@@ -169,6 +171,27 @@ static const byte kCaveSubmode = 3;
 void AlienEngine::setCemeteryState(byte state) {
 	_script.setFlag(0xa49f, state);
 	_cemeteryPos = 0;
+}
+
+/// The way back from the crystal entry (room 45).
+static const int kCrystalRoom = 45;
+static const uint16 kBackWait = 5;
+static const byte kOutcomeBackEmpty = 0x0a;	///< an empty entry
+static const byte kOutcomeBack = 3;			///< "...Uh oh.."
+
+/**
+ * Entry 2's arrival from room 45 (0x046b, 0x06b8): [0xa637] = 1 opens the room
+ * with the bar already off the screen, the cursor goes, and [0xa49f] 3 runs the
+ * rest.
+ */
+void AlienEngine::startCemetery() {
+	if (_room != kCemeteryRoom || _mode != kCrystalRoom)
+		return;
+
+	_barHidden = true;
+	CursorMan.showMouse(false);
+	setCemeteryState(kStateBack);
+	debugC(1, kDebugRooms, "cemetery: back from the crystal");
 }
 
 /**
@@ -312,6 +335,29 @@ void AlienEngine::stepCemetery() {
 	characterAnchor(anchorX, anchorY);
 
 	switch (_script.flag(0xa49f)) {
+	case kStateBack:
+		// 0x0969
+		if (_cemeteryPos <= kBackWait)
+			break;
+		queueOutcome(_tal, kOutcomeBackEmpty, anchorX, anchorY);
+		setCemeteryState(kStateBackLine);
+		break;
+
+	case kStateBackLine:
+		// 0x0988: queued straight after it, so it is the one that is said.
+		queueOutcome(_tal, kOutcomeBack, anchorX, anchorY);
+		setCemeteryState(kStateBackDown);
+		break;
+
+	case kStateBackDown:
+		// 0x099b: OBJ:sub_030f4 and sub_03c77 put the bar back.
+		if (!speechDone())
+			break;
+		setCemeteryState(kStateIdle);
+		showBar();
+		CursorMan.showMouse(true);
+		break;
+
 	case kStateLook:
 		if (!speechDone())
 			break;
@@ -391,12 +437,6 @@ void AlienEngine::stepCemetery() {
 		if (_anims.isBusy(kRewardSlot))
 			break;
 		_script.setFlag(kPhraseNeeded, 0);
-
-		// The open cave mouth is walkable: the room's second mask page.
-		Common::Path pathB("KIER32B.Pic");
-		if (!Common::File::exists(pathB))
-			pathB = Common::Path("KIER32B.PIC");
-		_walk.loadMaskPage(0, pathB);
 
 		queueOutcome(_tal, kOutcomeSolved, anchorX, anchorY);
 		_anims.setLoopFlag(kOpenSlot, 0);
