@@ -526,6 +526,7 @@ private:
 	void jailGuardWalk(int x, int y);
 	void jailGuardSpeak(byte code);
 	void jailGuardMachine();
+	bool jailGuardBusy() const;
 	void jailGuardTrigger();
 	void jailGuardAnchor(int &x, int &y) const;
 	void buildJailHotspots(int room);
@@ -1288,6 +1289,7 @@ private:
 	int _playWaitTicks;			///< ticks still to burn before the next command
 	int _playSettleTimeout;		///< ticks left before a "settle" gives up
 	int _playUntilTimer;			///< `until timer`: the scene waited on, -1 = none
+	int _playUntilRoom;				///< `until room`: the room waited on, -1 = none
 	bool _playSettling;
 	uint _playFails;				///< number of failed "expect" assertions so far
 	bool _playPaused;				///< P: the script holds before its next command

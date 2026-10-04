@@ -258,7 +258,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
 		_playStrict(false), _playBarBusy(false), _playBarClicks(0), _playLastTick(0), _playWaitTicks(0),
-		_playSettleTimeout(0), _playUntilTimer(-1), _playSettling(false), _playFails(0) {
+		_playSettleTimeout(0), _playUntilTimer(-1), _playUntilRoom(-1), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
 	memset(_charPalette, 0, sizeof(_charPalette));
 	memset(_charPaletteAlt, 0, sizeof(_charPaletteAlt));
@@ -653,11 +653,13 @@ bool AlienEngine::playIdle() const {
 	// down, and a click scripted into that tick lands on no option at all.
 	// Room 46's swims are the same: the edge a click armed only fires once
 	// the stroke is over, and the room's own steps hide the cursor between.
+	// Room 58's guard leaves the cursor up while he walks off to check the
+	// Boss's line and comes back, so his machine has to be asked directly.
 	const bool chatWaiting = _chat.isActive() && (!_chat.isListed() || chatReplyOwed());
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
 		   !_armed && !_cliffClimb && !_cliffStep && !_divingExit && !_divingStep &&
-		   _scrollVel == 0 &&
+		   _scrollVel == 0 && !jailGuardBusy() &&
 		   !chatWaiting && CursorMan.isVisible();
 }
 
@@ -691,6 +693,23 @@ void AlienEngine::stepPlayScript() {
 			_playUntilTimer = -1;
 			debugC(1, kDebugPlay, "play: %u: STUCK, the timer never came due",
 				   _play.commands()[_playIndex - 1].sourceLine);
+			playFailed(_play.commands()[_playIndex - 1].sourceLine);
+			if (!_playActive)
+				return;
+		} else {
+			return;
+		}
+	}
+
+	if (_playUntilRoom >= 0) {
+		if (_room == _playUntilRoom) {
+			debugC(1, kDebugPlay, "play: %u: room %d reached at tick %u",
+				   _play.commands()[_playIndex - 1].sourceLine, _playUntilRoom, _tick);
+			_playUntilRoom = -1;
+		} else if (--_playSettleTimeout <= 0) {
+			debugC(1, kDebugPlay, "play: %u: STUCK, room %d never came (in room %d)",
+				   _play.commands()[_playIndex - 1].sourceLine, _playUntilRoom, _room);
+			_playUntilRoom = -1;
 			playFailed(_play.commands()[_playIndex - 1].sourceLine);
 			if (!_playActive)
 				return;
@@ -918,6 +937,13 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		debugC(1, kDebugPlay, "play: %u: until timer %d (timeout %d)", cmd.sourceLine, cmd.a,
 			   cmd.b);
 		_playUntilTimer = cmd.a;
+		_playSettleTimeout = cmd.b;
+		break;
+
+	case PlayCommand::kUntilRoom:
+		debugC(1, kDebugPlay, "play: %u: until room %d (timeout %d)", cmd.sourceLine, cmd.a,
+			   cmd.b);
+		_playUntilRoom = cmd.a;
 		_playSettleTimeout = cmd.b;
 		break;
 

@@ -105,6 +105,7 @@ struct PlayCommand {
 		kWait,
 		kSettle,
 		kUntilTimer,
+		kUntilRoom,
 		kExpectRoom,
 		kExpectItem,
 		kExpectNoItem,

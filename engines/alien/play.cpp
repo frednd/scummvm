@@ -99,14 +99,20 @@ bool PlayScript::load(const Common::String &path) {
 			Common::String n = tok.nextToken();
 			cmd.a = n.empty() ? 700 : parseInt(n);
 		} else if (verb == "until") {
-			// Only the elapsed-time scenes so far: "until timer 1" holds the
-			// script until the attack's clock is due, which no fixed wait can
-			// promise when the run before it may go at another pace.
-			if (tok.nextToken() != "timer") {
-				warning("play: %s:%u: until needs 'timer <scene>'", path.c_str(), lineNo);
+			// "until timer 1" holds the script until the attack's clock is
+			// due, and "until room 32" until a room's own machine has moved
+			// Ben on: neither is a fixed wait, which no run can promise when
+			// the run before it may go at another pace.
+			const Common::String what = tok.nextToken();
+			if (what == "timer") {
+				cmd.type = PlayCommand::kUntilTimer;
+			} else if (what == "room") {
+				cmd.type = PlayCommand::kUntilRoom;
+			} else {
+				warning("play: %s:%u: until needs 'timer <scene>' or 'room <room>'",
+						path.c_str(), lineNo);
 				continue;
 			}
-			cmd.type = PlayCommand::kUntilTimer;
 			cmd.a = parseInt(tok.nextToken());
 			Common::String n = tok.nextToken();
 			cmd.b = n.empty() ? 30000 : parseInt(n);

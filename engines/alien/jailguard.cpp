@@ -574,6 +574,16 @@ void AlienEngine::jailGuardMachine() {
 	}
 }
 
+/// The guard's machine is mid-scene: walking, turning or talking, with the
+/// cursor still up. Only a menu waiting on a pick hands the turn back.
+bool AlienEngine::jailGuardBusy() const {
+	if (_room != kJailRoom || _guard.step == kStepIdle)
+		return false;
+	if ((_guard.step == kStepMenuUp || _guard.step == kStepLied) && _chat.isActive())
+		return false;
+	return true;
+}
+
 /// The room's tick as far as the guard and the field go.
 void AlienEngine::stepJailGuard() {
 	if (_room != kJailRoom)
