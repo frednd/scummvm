@@ -98,6 +98,18 @@ bool PlayScript::load(const Common::String &path) {
 			cmd.type = PlayCommand::kSettle;
 			Common::String n = tok.nextToken();
 			cmd.a = n.empty() ? 700 : parseInt(n);
+		} else if (verb == "until") {
+			// Only the elapsed-time scenes so far: "until timer 1" holds the
+			// script until the attack's clock is due, which no fixed wait can
+			// promise when the run before it may go at another pace.
+			if (tok.nextToken() != "timer") {
+				warning("play: %s:%u: until needs 'timer <scene>'", path.c_str(), lineNo);
+				continue;
+			}
+			cmd.type = PlayCommand::kUntilTimer;
+			cmd.a = parseInt(tok.nextToken());
+			Common::String n = tok.nextToken();
+			cmd.b = n.empty() ? 30000 : parseInt(n);
 		} else if (verb == "expect") {
 			const Common::String what = tok.nextToken();
 			if (what == "room") {

@@ -256,9 +256,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_basementStep(0), _basementClimbing(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
-		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false),
+		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
 		_playStrict(false), _playBarBusy(false), _playBarClicks(0), _playLastTick(0), _playWaitTicks(0),
-		_playSettleTimeout(0), _playSettling(false), _playFails(0) {
+		_playSettleTimeout(0), _playUntilTimer(-1), _playSettling(false), _playFails(0) {
 	memset(_palette, 0, sizeof(_palette));
 	memset(_charPalette, 0, sizeof(_charPalette));
 	memset(_charPaletteAlt, 0, sizeof(_charPaletteAlt));
@@ -292,6 +292,7 @@ Common::Error AlienEngine::run() {
 	// scripted run needs for a replay to take the same branches.
 	setTimescale(ConfMan.hasKey("timescale") ? (uint)MAX(ConfMan.getInt("timescale"), 0) : 1);
 	_playSkippable = ConfMan.hasKey("skippable") && ConfMan.getBool("skippable");
+	_playHurry = ConfMan.hasKey("hurry") && ConfMan.getBool("hurry");
 	if (ConfMan.hasKey("seed"))
 		_rnd.setSeed((uint32)ConfMan.getInt("seed"));
 
@@ -660,6 +661,8 @@ bool AlienEngine::playIdle() const {
 		   !chatWaiting && CursorMan.isVisible();
 }
 
+static const int kHurryTicks = 12;	///< how long a hurried line stands, in half ticks
+
 void AlienEngine::stepPlayScript() {
 	// Paced on the master tick, not the loop iteration -- the loop spins
 	// faster than 70Hz while it waits for stepClock()'s own gate.
@@ -667,9 +670,33 @@ void AlienEngine::stepPlayScript() {
 		return;
 	_playLastTick = _tick;
 
+	// A speedrun reads nothing: every line is clicked away a beat after it
+	// goes up. Shortening the countdown rather than calling nextSpeech() lets
+	// the line end down the ordinary path, so a machine waiting on it sees
+	// exactly what a player's click would have given it.
+	if (_playHurry && _speech && _speechTicks > kHurryTicks)
+		_speechTicks = kHurryTicks;
+
 	if (_playWaitTicks > 0) {
 		_playWaitTicks--;
 		return;
+	}
+
+	if (_playUntilTimer >= 0) {
+		if (cutsceneTimerDue((byte)_playUntilTimer)) {
+			debugC(1, kDebugPlay, "play: %u: timer for scene %d due at tick %u",
+				   _play.commands()[_playIndex - 1].sourceLine, _playUntilTimer, _tick);
+			_playUntilTimer = -1;
+		} else if (--_playSettleTimeout <= 0) {
+			_playUntilTimer = -1;
+			debugC(1, kDebugPlay, "play: %u: STUCK, the timer never came due",
+				   _play.commands()[_playIndex - 1].sourceLine);
+			playFailed(_play.commands()[_playIndex - 1].sourceLine);
+			if (!_playActive)
+				return;
+		} else {
+			return;
+		}
 	}
 
 	if (_playSettling) {
@@ -885,6 +912,13 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 		debugC(1, kDebugPlay, "play: %u: settle (timeout %d)", cmd.sourceLine, cmd.a);
 		_playSettling = true;
 		_playSettleTimeout = cmd.a;
+		break;
+
+	case PlayCommand::kUntilTimer:
+		debugC(1, kDebugPlay, "play: %u: until timer %d (timeout %d)", cmd.sourceLine, cmd.a,
+			   cmd.b);
+		_playUntilTimer = cmd.a;
+		_playSettleTimeout = cmd.b;
 		break;
 
 	case PlayCommand::kExpectRoom:

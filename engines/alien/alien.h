@@ -263,6 +263,7 @@ private:
 	void stepCutsceneTimers();
 	void tickCutsceneTimers();
 	uint32 cutsceneTimer(uint16 addr) const;
+	bool cutsceneTimerDue(byte scene) const;
 	void playCutsceneRecord(uint number);
 	void endCutscene(int room, int benX, int benY, int benFacing);
 	void playStudio();
@@ -1286,11 +1287,13 @@ private:
 	uint32 _playLastTick;			///< the master tick stepPlayScript last acted on
 	int _playWaitTicks;			///< ticks still to burn before the next command
 	int _playSettleTimeout;		///< ticks left before a "settle" gives up
+	int _playUntilTimer;			///< `until timer`: the scene waited on, -1 = none
 	bool _playSettling;
 	uint _playFails;				///< number of failed "expect" assertions so far
 	bool _playPaused;				///< P: the script holds before its next command
 	bool _playStep;				///< N: let one command through while paused
 	bool _playSkippable;			///< `skippable`: Escape each cutscene as it starts
+	bool _playHurry;				///< `hurry`: click each line away as it goes up
 	void offerSkip();
 
 	/// Strict mode (playrun.cpp): no cheats, the bar by its clicks, fail fast.

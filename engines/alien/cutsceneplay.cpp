@@ -173,6 +173,19 @@ void AlienEngine::stepCutsceneTimers() {
 	}
 }
 
+/**
+ * Whether an elapsed-time scene's clock has run out: the test
+ * stepCutsceneTimers() makes, without the room it is made in. A scene with no
+ * clock is never due.
+ */
+bool AlienEngine::cutsceneTimerDue(byte scene) const {
+	for (uint i = 0; i < ARRAYSIZE(kTimers); i++) {
+		if (kTimers[i].scene == scene)
+			return cutsceneTimer(kTimers[i].counter) > kTimers[i].limit;
+	}
+	return false;
+}
+
 /** One idle timer's count, the word pair the original compares as a long. */
 uint32 AlienEngine::cutsceneTimer(uint16 addr) const {
 	const uint32 low = _script.flag(addr) | ((uint32)_script.flag(addr + 1) << 8);
