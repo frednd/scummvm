@@ -89,6 +89,14 @@ namespace Alien {
 //   0x48   the slot has run out ([0xa4ee])
 //   0x49   submode 0x64 -- transitions.cpp's room 58, submode 100 -> room 56
 //
+// **The LCD.** The ring (item 48) on object 21 in the corridor, the first
+// time ([0xa7ab] == 0, 0x0103), is a lifted row: slot 5 plays the screen
+// lighting up, frames 1..6 at rate 4, [0xa7ab] goes up and event 0x57 is
+// spoken. The row's last write is the room's [0xa49f] = 0xc8, which the lift
+// leaves behind; the tick (0x101a) waits for slot 5 to be two frames from its
+// end ([0xa4ef] == 2) and runs the screen on as a loop over frames 4..6 at
+// rate 6 -- the loop the plate starts on every later way in.
+//
 // The steps that wait on [0xa49c] wait on the animation frame it is counted
 // on ([0xa5f8], 0x09c7), every second tick pair.
 static const int kJailRoom = 58;
@@ -130,6 +138,7 @@ static const byte kStepEscape = 0x84;
 static const byte kStepLeave = 0x87;
 static const byte kStepLeaving = 0x88;
 static const byte kStepPod = 0x8c;
+static const byte kStepLcd = 0xc8;
 static const uint16 kArriveWait = 0xf;
 static const uint16 kLeaveWait = 0x19;
 static const uint16 kSettleWait = 0x5a;
@@ -148,6 +157,13 @@ static const uint32 kCoverRateHz = 0x3a98;
 static const byte kCoverVolume = 0x37;
 static const int8 kCoverPanning = -0x32;
 static const uint16 kCoverDelay = 1;
+
+/// The LCD: the ring on object 21, and 0x1025's anim_play_mode1(5, 4, 3, 6).
+static const byte kItemRing = 48;
+static const byte kLcdObj = 21;
+static const uint16 kLcdLit = 0xa7ab;
+static const uint kLcdSlot = 5;
+static const int kLcdLoopFirst = 4, kLcdLoopCount = 3, kLcdLoopRate = 6;
 
 static const byte kOutcomeShaftOpen = 6;	///< "How convenient...!"
 
@@ -383,6 +399,18 @@ bool AlienEngine::armJailShackle(int obj, byte verb) {
 	return true;
 }
 
+/// Entry 3, 0x0103: the ring on the LCD the first time. The row lights the
+/// screen and raises [0xa7ab]; this is its last write, [0xa49f] = 0xc8, so it
+/// has to read the flag before the row runs.
+void AlienEngine::armJailLcd(int obj, byte item) {
+	if (_room != kJailRoom || obj != kLcdObj || item != kItemRing)
+		return;
+	if (_script.flag(kLcdLit) != 0)
+		return;
+
+	_jailStep = kStepLcd;
+}
+
 /// CHARANIM:sub_1514b's last test: a walk in the cell that ended with the click
 /// that started it still latched on the open shaft.
 void AlienEngine::jailShaftArrival() {
@@ -528,6 +556,15 @@ void AlienEngine::stepJail() {
 			break;
 		_jailStep = kStepIdle;
 		takeExit(kLobbySubmode);
+		break;
+
+	case kStepLcd:
+		// 0x101a: [0xa4ef] == 2, the lighting up two frames from its end.
+		if (_anims.remaining(kLcdSlot) != 2)
+			break;
+		_anims.play(kLcdSlot, kLcdLoopFirst, kLcdLoopCount, kLcdLoopRate, 1);
+		_jailStep = kStepIdle;
+		debugC(1, kDebugRooms, "jail: the LCD runs on");
 		break;
 
 	case kStepPod:

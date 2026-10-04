@@ -4057,6 +4057,9 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
+	// Room 58's LCD reads [0xa7ab] before the ring's row raises it (jail.cpp).
+	armJailLcd(spot.obj, item);
+
 	const bool libraryHandled = runLibraryBody(spot.obj, item != Inventory::kNoItem);
 
 	// Room 11's television is answered the same way: the remote control's

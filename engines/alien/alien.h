@@ -467,6 +467,7 @@ private:
 	bool hallwayOwesReply() const;
 	void stepCorridor();
 	void stepHallMan();
+	void stepHallwayDoors();
 	void hallManPose(byte pose);
 	void playNetTerminal();
 	bool hallwayWalkTo(int x, int y, int arrivalFacing);
@@ -506,6 +507,7 @@ private:
 	void startJail();
 	bool armJailTalk(int obj, byte verb);
 	bool armJailShackle(int obj, byte verb);
+	void armJailLcd(int obj, byte item);
 	void jailShaftArrival();
 	void stepJail();
 	void jailConversation();

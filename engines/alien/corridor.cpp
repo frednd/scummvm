@@ -74,6 +74,15 @@ namespace Alien {
 // itself. Its entry with the field down plays the HAL_MONS alarm once
 // (CUTSCENE:sub_0e458) before the room is loaded. Object 8 is the ship's
 // loudspeaker, eight announcements in turn ([0xa7d5], 0x32..0x39).
+//
+// **The doors.** Both rooms tick their elevator door from CHARANIM, called
+// every frame after the click dispatch: room 57 sub_14ed3 (0x0b24), room 53
+// sub_14f9e (0x0fe6). Ben's sprite position stepping into a rectangle in front
+// of the door plays it open, stepping out plays it shut, each with the shared
+// door sample; [0xa7a4]/[0xa7a5] keep the edge across frames, which is why the
+// elevator arrival raises both. Room 53's also shuts the pod door behind him
+// once the man is gone, and locks it again ([0xa7d9]) -- the card has to go
+// back in if he walks off before stepping through.
 static const int kLobbyRoom = 51;
 static const int kHallwayRoomA = 53;
 static const int kHallwayRoomB = 57;
@@ -197,6 +206,30 @@ static const uint kAlarmMusic = 11;
 
 /// [0xa7d4]: the terminal has just been left; room 57 puts Ben back at it.
 static const uint16 kTerminalReturn = 0xa7d4;
+
+/// CHARANIM:sub_14ed3 / sub_14f9e: the rectangle in front of the elevator
+/// door, exclusive bounds in sprite coordinates, and the door's sixteen frames,
+/// on slot 0 in room 57 and slot 3 in room 53.
+static const int kLiftDoorX1 = 0x27, kLiftDoorX2 = 0x6a, kLiftDoorY2 = 0x3b;
+static const uint kLiftDoorSlotA = 3, kLiftDoorSlotB = 0;
+static const int kLiftDoorFrames = 0x10, kLiftDoorRate = 1;
+
+/// sub_14f9e's second half: the rectangle in front of the pod door, and its
+/// ten frames on slot 4 played back shut.
+static const int kPodDoorX1 = 0x162, kPodDoorY2 = 0x43;
+static const uint kPodDoorSlot = 4;
+static const int kPodDoorFrames = 0xa, kPodDoorRate = 1;
+
+static const int kForward = 1, kBackward = 3;
+
+/// INPUT:sub_01d00 / sub_01d1c / sub_01d54: sfx_play_delayed of sample 1 at
+/// 0x2af8, volume 0x37, one tick late opening and two closing; the pod door's
+/// is panned the other way.
+static const uint kDoorSample = 1;
+static const uint32 kDoorSampleRate = 0x2af8;
+static const byte kDoorVolume = 0x37;
+static const int8 kDoorPanLeft = -0x32, kDoorPanRight = 0x32;
+static const uint16 kDoorOpenDelay = 1, kDoorShutDelay = 2;
 
 /// sub_15120: the pod door, walked up to while it is locked.
 static const byte kOutcomePodLocked = 5;
@@ -502,10 +535,53 @@ bool AlienEngine::hallwayWalkTo(int x, int y, int arrivalFacing) {
 }
 
 /**
+ * CHARANIM:sub_14ed3 (room 57) and sub_14f9e (room 53): the doors answering
+ * Ben's position, on the edge of each rectangle.
+ */
+void AlienEngine::stepHallwayDoors() {
+	if (_room != kHallwayRoomA && _room != kHallwayRoomB)
+		return;
+
+	const int x = _ben.spriteX(), y = _ben.spriteY();
+	const uint liftSlot = _room == kHallwayRoomA ? kLiftDoorSlotA : kLiftDoorSlotB;
+
+	_script.setFlag(kDoorBWas, _script.flag(kDoorB));
+	const bool atLift = x > kLiftDoorX1 && y < kLiftDoorY2 && x < kLiftDoorX2;
+	_script.setFlag(kDoorB, atLift ? 1 : 0);
+	if (_script.flag(kDoorB) != _script.flag(kDoorBWas)) {
+		if (atLift) {
+			_anims.play(liftSlot, 1, kLiftDoorFrames, kLiftDoorRate, kForward);
+			_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorOpenDelay);
+		} else {
+			_anims.play(liftSlot, kLiftDoorFrames, kLiftDoorFrames, kLiftDoorRate, kBackward);
+			_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorShutDelay);
+		}
+		debugC(1, kDebugRooms, "corridor: the elevator door %s at %d,%d", atLift ? "opens" : "shuts", x, y);
+	}
+
+	if (_room != kHallwayRoomA || _script.flag(kManThere) != 0)
+		return;
+
+	// 0x148c: only the way out of the rectangle does anything, and only once
+	// the slot has taken the card.
+	_script.setFlag(kDoorAWas, _script.flag(kDoorA));
+	const bool atPod = x > kPodDoorX1 && y < kPodDoorY2;
+	_script.setFlag(kDoorA, atPod ? 1 : 0);
+	if (atPod || _script.flag(kDoorA) == _script.flag(kDoorAWas) || _script.flag(kPodLocked) != 0)
+		return;
+
+	_anims.play(kPodDoorSlot, kPodDoorFrames, kPodDoorFrames, kPodDoorRate, kBackward);
+	_script.setFlag(kPodLocked, 1);
+	_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanRight, kDoorShutDelay);
+	debugC(1, kDebugRooms, "corridor: the pod door shuts and locks at %d,%d", x, y);
+}
+
+/**
  * The rooms' ticks: the elevator door and the pod door, room 53's man, and
  * room 57's card line opening the terminal (0x0b29).
  */
 void AlienEngine::stepCorridor() {
+	stepHallwayDoors();
 	corridorArrival();
 
 	if (_room == kHallwayRoomA)
