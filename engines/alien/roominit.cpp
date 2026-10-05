@@ -25,7 +25,7 @@
 // The frame every animation slot opens on, as the room's own enter routine sets
 // it: the effects it runs, with the puzzle-state guards they sit under.
 //
-//   244 plays over 42 rooms, and 454 bytes of frame list.
+//   247 plays over 43 rooms, and 454 bytes of frame list.
 
 #include "alien/roominit.h"
 
@@ -172,6 +172,9 @@ static const ScriptEffect kRoomInit[] = {
 	{ kOpCharPlace,      5, {     0,    82,     0,    73,     1,     0 }, 0x00,   0, 1, { { 0xa880, 27, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 82, 0, 73, 1)
 	{ kOpAnimPlay5,      4, {     1,    18,    18,     3,     0,     0 }, 0x00,   0, 1, { { 0xa880, 27, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode5(1, 18, 18, 3)
 	{ kOpSetFlag,        2, { 42707,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d3, 0)
+	{ kOpSetFlag,        2, { 42891,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa78b, 1)
+	{ kOpCharPlace,      5, {     0,   242,     0,    67,     3,     0 }, 0x00,   0, 1, { { 0xa880, 32, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 242, 0, 67, 3)
+	{ kOpCharPlace,      5, {     0,    69,     0,    72,     2,     0 }, 0x00,   0, 1, { { 0xa880, 48, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 69, 0, 72, 2)
 	{ kOpAnimPlay1,      4, {     0,     1,    11,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 4)
 	{ kOpAnimPlay1,      4, {     1,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 11, 3)
 	{ kOpAnimPlay1,      4, {     2,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 11, 3)
@@ -312,23 +315,24 @@ static const RoomInitRoom kRoomInitRooms[] = {
 	{ 33, 123,  6 },
 	{ 34, 129,  6 },
 	{ 35, 135,  5 },
-	{ 41, 140, 10 },
-	{ 43, 150,  1 },
-	{ 44, 151,  1 },
-	{ 45, 152,  2 },
-	{ 46, 154,  5 },
-	{ 48, 159,  6 },
-	{ 49, 165,  5 },
-	{ 50, 170,  4 },
-	{ 51, 174,  5 },
-	{ 52, 179, 16 },
-	{ 53, 195,  5 },
-	{ 54, 200,  9 },
-	{ 55, 209,  8 },
-	{ 56, 217,  7 },
-	{ 57, 224,  8 },
-	{ 58, 232,  4 },
-	{ 59, 236,  8 },
+	{ 40, 140,  3 },
+	{ 41, 143, 10 },
+	{ 43, 153,  1 },
+	{ 44, 154,  1 },
+	{ 45, 155,  2 },
+	{ 46, 157,  5 },
+	{ 48, 162,  6 },
+	{ 49, 168,  5 },
+	{ 50, 173,  4 },
+	{ 51, 177,  5 },
+	{ 52, 182, 16 },
+	{ 53, 198,  5 },
+	{ 54, 203,  9 },
+	{ 55, 212,  8 },
+	{ 56, 220,  7 },
+	{ 57, 227,  8 },
+	{ 58, 235,  4 },
+	{ 59, 239,  8 },
 };
 
 // Every frame list the openings play, end to end. Modes 6, 7 and 8 step a

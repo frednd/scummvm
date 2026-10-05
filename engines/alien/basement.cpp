@@ -108,6 +108,13 @@ static const byte kSubmodeHole = 10;
 
 static const byte kEnterFromBedroom = 7;
 
+// 0x0a62: once he is clear of the ladder the cursor comes back, and the first
+// time ever he says outcome 4; [0xa6f2] remembers that, and the bedroom's lift
+// reads it too (bedroom.cpp, kLiftLineFlag).
+static const int kWalkOffClearX = 0xc4;
+static const byte kFirstArrivalLine = 4;
+static const uint16 kFirstArrivalSaid = 0xa6f2;
+
 /// [0xa808]: how long he stands before each arm answers.
 static const int kLadderWait = 7;
 static const int kHoleWait = 0x19;
@@ -187,8 +194,21 @@ void AlienEngine::stepBasement() {
 		// for that frame with the walker already at the foot of it.
 		showCharacter();
 		walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
+		_basementWalkOff = true;
 		debugC(1, kDebugRooms, "basement: off the ladder, walking to %d,%d",
 			   kOffLadderX, kOffLadderY);
+	}
+
+	if (_basementWalkOff && _ben.spriteX() < kWalkOffClearX) {
+		_basementWalkOff = false;
+		CursorMan.showMouse(true);
+		if (_script.flag(kFirstArrivalSaid) == 0) {
+			int anchorX, anchorY;
+			characterAnchor(anchorX, anchorY);
+			queueOutcome(_tal, kFirstArrivalLine, anchorX, anchorY);
+		}
+		_script.setFlag(kFirstArrivalSaid, 1);
+		debugC(1, kDebugRooms, "basement: clear of the ladder");
 	}
 
 	switch (_basementStep) {
@@ -203,7 +223,6 @@ void AlienEngine::stepBasement() {
 		// 0x0b1e
 		_sound.play(kArrivalSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
 		_basementStep = 0;
-		CursorMan.showMouse(true);
 		break;
 
 	case kStepLadder:

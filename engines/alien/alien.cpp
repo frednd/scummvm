@@ -253,7 +253,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_openingStep(0), _openingPending(true), _roomClock(0),
 		_labStep(0), _bedroomLiftStep(0), _mansionStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true), _mailboxStep(0), _mailboxPos(0), _townStep(0), _sewerStep(0),
-		_basementStep(0), _basementClimbing(false),
+		_basementStep(0), _basementClimbing(false), _basementWalkOff(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
@@ -1318,6 +1318,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_sewerStep = 0;
 	_basementStep = 0;
 	_basementClimbing = false;
+	_basementWalkOff = false;
 	_livingStep = 0;
 	_cliffStep = 0;
 	_cliffClimb = 0;
@@ -1356,6 +1357,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	if (room == 22)
 		_script.setFlag(0xa79b, 0);
 	_ben.setPumpkin(_script.flag(0xa79b) == 1);
+
+	// MAIN sets [0xa636] for a new game and the first character placement
+	// (LOGIC:sub_132e4) clears it as it runs the opening fade; nothing in the
+	// port reads it, but the save carries it (dosbox state parity).
+	_script.setFlag(0xa636, 0);
 
 	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
 	// does not carry the character's absence into the next one. The slots go
@@ -3786,8 +3792,12 @@ bool AlienEngine::takeExit(byte submode) {
 byte AlienEngine::rotateOutcome(const Hotspot &spot) {
 	// LOGIC:sub_120d4: a per-object counter walks the hotspot's outcome codes
 	// and wraps at its arity, which is what makes clicking the same thing twice
-	// give a different line.
-	const byte arity = MAX<byte>(spot.outcomeCount, 1);
+	// give a different line. Only a hotspot with two to four codes (arity
+	// marker 0x20..0x22 in [0xa645]) touches the counter; a single-code one
+	// leaves it at zero, which guards read (dosbox state parity).
+	const byte arity = spot.outcomeCount;
+	if (arity < 2)
+		return spot.outcomes[0];
 	byte &counter = _outcomeCounter[spot.obj];
 	if (counter >= arity)
 		counter = 0;

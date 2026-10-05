@@ -1253,6 +1253,7 @@ private:
 	/// Whether slot 0 is running room 13's arrival climb, which is what the
 	/// original can read off the slot itself (basement.cpp).
 	bool _basementClimbing;
+	bool _basementWalkOff;		///< [0xa5fe]: walking off the ladder, cursor still away
 
 	/// The sewer's water, which the original keeps as four words of its own in
 	/// the data segment rather than in the state block: [0x4380] is the phase

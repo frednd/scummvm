@@ -242,8 +242,8 @@ void AlienEngine::playCutsceneRecord(uint number) {
 		return;
 	}
 
-	// Where the character was standing, so the room he is put back into does not
-	// also move him: loadRoom() places him on its first walk node.
+	// Where the character was standing, for a room whose reload places nobody:
+	// loadRoom() would put him on its first walk node (endCutscene).
 	const int room = _room;
 	const int benX = _ben.walkX();
 	const int benY = _ben.walkY();
@@ -530,7 +530,15 @@ void AlienEngine::endCutscene(int room, int benX, int benY, int benFacing) {
 
 	const bool handedBack = room > 0 && loadRoom(room);
 	if (handedBack) {
-		_ben.place(benX, benY, benFacing);
+		// The original plays every scene from inside the room's enter routine,
+		// before its char_place and whatever walk follows it (room 6 from the
+		// bedroom: the scene at ovr_06_0e5f:0x0713, the placement at 0x0838,
+		// the walk clear of the door at 0x084c), so the reload's own placement
+		// is what he ends up with. Only a room that places nobody keeps him
+		// where he stood (dosbox state parity, bedroom-done).
+		int placeX, placeY, placeFacing;
+		if (!_script.placeRequest(placeX, placeY, placeFacing))
+			_ben.place(benX, benY, benFacing);
 
 		// The room is being put back, not entered: the original reaches its
 		// triggers from the enter routine the scene was raised inside, and that
