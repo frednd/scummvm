@@ -106,6 +106,8 @@ static const uint16 kPanelReturn = 0xa6d2;	///< room 3's open: Ben is back from 
 static const byte kLineNoDisk = 0x1b;		///< the drive is empty
 static const byte kLineFirst = 0x23;		///< the computer answers, first time
 static const byte kLineAgain = 0x28;		///< and every time after
+static const byte kLineNoNote = 0x22;		///< the disk is in, the password is not
+static const byte kPasswordNote = 12;		///< the note out of the lab's trashcan
 
 static const char *const kBootPlate = "64SCR1.PCX";
 static const char *const kPanelPlate = "64SCR2.PCX";
@@ -187,13 +189,16 @@ bool AlienEngine::armLiftCall(int obj, int anchorX, int anchorY) {
 		return true;
 	}
 
-	// The original has one test more: 0x000a asks OBJ:sprite_find_slot(0xc)
-	// whether sprite 12 is on screen, and takes the 0x22 arm when it is not.
-	// Inside [0xa6e1] == 1 that sprite is the disk in the drive, so the arm is
-	// unreachable on the way in and only answers a drive that has been emptied
-	// again -- which nothing in the lifted data does. It is left out here rather
-	// than guessed at; the panel is otherwise open to anyone who has loaded the
-	// toaster, note or no note.
+	// 0x000a: OBJ:sprite_find_slot is the inventory test (it walks the list at
+	// 0x2f87), so the panel wants the password note in hand -- or to have run
+	// once before ([0xa701]). Without either the computer says its one line
+	// (0x003f) and nothing more: no panel, and the cursor stays.
+	if (!_inventory.has(kPasswordNote) && _script.flag(kPanelSeen) != 1) {
+		queueOutcome(_tal, kLineNoNote, anchorX, anchorY);
+		debugC(1, kDebugLift, "lift: no password, outcome 0x%02x", kLineNoNote);
+		return true;
+	}
+
 	const byte code = _script.flag(kPanelSeen) == 1 ? kLineAgain : kLineFirst;
 	queueOutcome(_tal, code, anchorX, anchorY);
 

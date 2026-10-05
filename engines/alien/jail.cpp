@@ -428,9 +428,42 @@ void AlienEngine::jailShaftArrival() {
 }
 
 /// Entry 2's loop: the pose settles and [0xa49f].
+/**
+ * CHARANIM:sub_1505d (0x0c0d), every tick of room 58: the corridor door shuts
+ * behind Ben. [0xa7a2] says whether his sprite is in the doorway (x past
+ * 0x233, y above 0x4f) and [0xa7a3] what it said last tick; walking out of it
+ * with the door open plays the door shut and sets [0xa7ba], which takes the
+ * way out (object 10, walkgeom) away until a card opens it again.
+ */
+void AlienEngine::stepJailDoor() {
+	static const uint16 kInDoorway = 0xa7a2, kWasInDoorway = 0xa7a3, kDoorShut = 0xa7ba;
+	static const int kDoorwayX = 0x233, kDoorwayY = 0x4f;
+	static const uint kDoorSlot = 3, kDoorFrames = 0x16, kDoorRate = 2;
+	static const uint kDoorSample = 1;
+	static const uint32 kDoorSampleRate = 0x2af8;
+	static const byte kDoorVolume = 0x37;
+	static const int8 kDoorPan = 0x32;
+	static const uint16 kDoorShutDelay = 2;
+	static const int kPlayBackward = 3;	///< anim_play_mode3
+
+	_script.setFlag(kWasInDoorway, _script.flag(kInDoorway));
+	const bool inDoorway = _ben.spriteX() > kDoorwayX && _ben.spriteY() < kDoorwayY;
+	_script.setFlag(kInDoorway, inDoorway ? 1 : 0);
+	if (inDoorway || _script.flag(kInDoorway) == _script.flag(kWasInDoorway)
+			|| _script.flag(kDoorShut) != 0)
+		return;
+
+	_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, kPlayBackward);
+	_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPan, kDoorShutDelay);
+	_script.setFlag(kDoorShut, 1);
+	debugC(1, kDebugRooms, "jail: the corridor door shuts behind him");
+}
+
 void AlienEngine::stepJail() {
 	if (_room != kJailRoom)
 		return;
+
+	stepJailDoor();
 
 	// [0xa49c] and [0xa7be] both move on the animation frame (0x09c0).
 	const bool frame = (_tick & 3) == 0;

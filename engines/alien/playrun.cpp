@@ -79,6 +79,27 @@ bool AlienEngine::startPlayRun() {
 bool AlienEngine::playClickAllowed(const PlayCommand &cmd) {
 	const int x = cmd.a - _scrollX;
 	const int y = cmd.b;
+
+	// The point has to be one the cursor can reach. Room coordinates are only
+	// a convenience of the script: the hotspot test would take an object a
+	// screen away, past the camera, which no player can click. OBJ:sub_08a39
+	// clamps the cursor to 0..0x134, 0..0xc7 (docs/dosbox_playtest_plan.md),
+	// and the original harness refuses the same clicks.
+	if (_playStrict && (x < 0 || x > kCursorMaxX || y < 0 || y > kCursorMaxY)) {
+		debugC(1, kDebugPlay, "play: %u: FAIL strict: %d,%d is screen %d,%d at scroll %d, "
+			   "out of the cursor's reach (0..%d, 0..%d)", cmd.sourceLine, cmd.a, cmd.b, x, y,
+			   _scrollX, kCursorMaxX, kCursorMaxY);
+		// What the script needs to walk the camera there first: where Ben
+		// stands and which boxes a click on the way would hit instead.
+		debugC(1, kDebugPlay, "play: %u: room %d, Ben at %d,%d", cmd.sourceLine, _room,
+			   _ben.walkX(), _ben.walkY());
+		for (uint i = 0; i < _spots.size(); i++)
+			debugC(1, kDebugPlay, "play: spot: %3d,%3d..%3d,%3d obj %3u", _spots[i].x1,
+				   _spots[i].y1, _spots[i].x2, _spots[i].y2, _spots[i].obj);
+		playFailed(cmd.sourceLine);
+		return false;
+	}
+
 	if (_playStrict || !cmd.s.empty())
 		updateHover(x, y);
 
@@ -267,6 +288,7 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 	// here is the one a resumed run sees.
 	_mode = 0;
 	saveGameStream(&out);
+	writePlayCamera(&out);
 	out.finalize();
 	out.close();
 
@@ -297,6 +319,39 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 }
 
 /**
+ * The camera, after the save stream of a checkpoint or failure state. A save
+ * has no scroll of its own -- loading one puts the camera on the character,
+ * as the original's does -- but a checkpoint is not a save the player made:
+ * a run that goes on from it has to see the camera a player who never saved
+ * would see, and so does the original's run of the same route
+ * (tools/alien_original.py), which keeps the whole machine across a
+ * checkpoint. An ordinary save has no block, and loads as before.
+ */
+static const uint32 kPlayCameraTag = MKTAG('C', 'A', 'M', '1');
+
+void AlienEngine::writePlayCamera(Common::WriteStream *out) const {
+	out->writeUint32BE(kPlayCameraTag);
+	out->writeSint32LE(_scrollX);
+	out->writeSint32LE(_scrollPos);
+	out->writeSint32LE(_scrollVel);
+	out->writeByte(_scrollState);
+	out->writeSint32LE(_scrollFocus);
+}
+
+void AlienEngine::readPlayCamera(Common::SeekableReadStream *in) {
+	if (in->size() - in->pos() < 21 || in->readUint32BE() != kPlayCameraTag)
+		return;
+	_scrollX = in->readSint32LE();
+	_scrollPos = in->readSint32LE();
+	_scrollVel = in->readSint32LE();
+	_scrollState = in->readByte();
+	_scrollFocus = in->readSint32LE();
+	// Placed, so the next pass pans on from here rather than snapping.
+	_scrollPlacements = _ben.placements();
+	_dirty = true;
+}
+
+/**
  * Load a play state the same way for a checkpoint and for a resume. The room's
  * fade in, which the loop would otherwise run under the first command, is
  * done here, and the clock is left standing `sinceTick` milliseconds after a
@@ -306,6 +361,7 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
  */
 void AlienEngine::restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick) {
 	loadGameStream(in);
+	readPlayCamera(in);
 	if (_fadePending) {
 		redraw();
 		fadeIn();
@@ -375,6 +431,7 @@ void AlienEngine::writeFailureState(uint line) {
 	Common::DumpFile save;
 	if (save.open(Common::Path(base + ".sav"), true)) {
 		saveGameStream(&save);
+		writePlayCamera(&save);
 		save.finalize();
 		debugC(1, kDebugPlay, "play: failure state written to %s.sav", base.c_str());
 	} else {

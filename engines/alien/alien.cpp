@@ -239,9 +239,9 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
 		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
 		_jailClock(0), _jailClockPos(0), _jailRedLoaded(false), _jailFieldPhase(0),
-		_scrollHold(-1),
+		_scrollHold(-1), _roomEnterTick(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
-		_hippieAnswer(false),
+		_hippieAnswer(false), _hippieHandOff(-1),
 		_hippieTalking(false),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
 		_chatPickNew(false),
@@ -655,12 +655,20 @@ bool AlienEngine::playIdle() const {
 	// the stroke is over, and the room's own steps hide the cursor between.
 	// Room 58's guard leaves the cursor up while he walks off to check the
 	// Boss's line and comes back, so his machine has to be asked directly.
-	const bool chatWaiting = _chat.isActive() && (!_chat.isListed() || chatReplyOwed());
+	// And the hippie's topic 6: the menu has gone when his reply is still owed
+	// and the next file's first topic is still to open (hippie.cpp).
+	// And the tick a room was entered on: on the original the room's loop has
+	// already made its first pass -- its machine started, the cursor taken
+	// away -- by the time anything can be asked of it (rooms 45 and 60, and
+	// the camera of #140).
+	if (_tick == _roomEnterTick)
+		return false;
+	const bool chatWaiting = _chat.isActive() && (!_chat.isLive() || chatReplyOwed());
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
 		   !_armed && !_cliffClimb && !_cliffStep && !_divingExit && !_divingStep &&
-		   _scrollVel == 0 && !jailGuardBusy() &&
-		   !chatWaiting && CursorMan.isVisible();
+		   _scrollVel == 0 && !scrollWouldPan() && !jailGuardBusy() &&
+		   !chatWaiting && !_hippieAnswer && _hippieHandOff < 0 && CursorMan.isVisible();
 }
 
 static const int kHurryTicks = 12;	///< how long a hurried line stands, in half ticks
@@ -1250,6 +1258,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_roomWidth = wide ? width : kScreenWidth;
 	_scrollX = 0;
 	_scrollHold = -1;
+	_roomEnterTick = _tick;
 	// Every wide room's init zeroes [0xa0c4]/[0xa0c6] and sets [0xa0ce] to
 	// 0xff; room 8 clears the speed too, and nothing else carries it over.
 	_scrollPos = 0;
@@ -1326,6 +1335,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_hippiePos = 0;
 	_hippieReply = 0;
 	_hippieAnswer = false;
+	_hippieHandOff = -1;
 	_hippieTalking = false;
 	_chatPickNew = false;
 	_chat.close();
@@ -1625,6 +1635,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	}
 
 	updateScroll(true);
+	// The rooms that hold the camera do it at the top of every pass of their
+	// loop, the first one included, so the hold is in place before anything
+	// asks whether the camera is still.
+	stepParkHold();
+	stepYodleHold();
 
 	return true;
 }
@@ -1649,6 +1664,26 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
  * The loop never sleeps, so "a pass" is whatever the machine managed; the port
  * takes one per master tick. Narrow rooms always resolve to zero.
  */
+/**
+ * Whether updateScroll's next pass would pan, which the original shows as
+ * [0xa0cc] going non-zero on the pass itself: the moment the camera has been
+ * placed (a room entered) it has not moved yet, but it is not at rest either.
+ * A camera at the right cap does not count, since nothing moves there.
+ */
+bool AlienEngine::scrollWouldPan() const {
+	if (_roomWidth <= kScreenWidth)
+		return false;
+	const int x = _ben.spriteX();
+	int focus = _scrollFocus;
+	if (x - _scrollX > 0xeb || x - _scrollX < 0x41)
+		focus = x;
+	if (_scrollHold >= 0)
+		focus = _scrollHold;
+	const int maxScroll = _roomWidth - kScreenWidth;
+	return (focus - _scrollX > 0xaa && _scrollX < _roomWidth / 2 && _scrollX < maxScroll)
+		|| (focus - _scrollX < 0x96 && _scrollX > 0);
+}
+
 void AlienEngine::updateScroll(bool snap) {
 	if (_roomWidth <= kScreenWidth) {
 		if (_scrollX != 0) {
@@ -3763,7 +3798,8 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// to answer a line the room or another party is still speaking under an
 	// open menu -- the greeting on first opening a topic, and the option's
 	// own line plus any reply the room adds after each pick, are exactly
-	// when this matters. isListed() covers kLive and kOpening; a menu that
+	// when this matters. isListed() covers kLive and kOpening (a click while
+	// the options arrive is swallowed, ChatMenu::click); a menu that
 	// is kPicked/kSettled/kFading has no option to land on and falls through
 	// to the ordinary gates below.
 	if (_chat.isListed()) {
@@ -3843,6 +3879,21 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	if (rightButton && !_heldItem && _hover < 0)
 		return;
 
+	// A click on nothing with an item in hand puts the item down, and that is
+	// all it does. Entry 0 still aims the walk, but 1021:0x902 clears the
+	// hand ([0xa6bb], [0xa825]) and sets [0xa601], and OBJ:0x558c starts a
+	// walk only while both [0xa825] and [0xa601] are clear -- so he stays
+	// where he is. The right button is a left one by then (1021:0x6f7).
+	if (_heldItem && _hover < 0) {
+		if (!rightButton) {
+			_pending = -1;
+			_pendingItem = Inventory::kNoItem;
+		}
+		_armed = 0;
+		holdItem(Inventory::kNoItem);
+		return;
+	}
+
 	// ... and the click counts as a left one -- which is what arms an exit --
 	// unless it is the plain right-button action (1021:sub_10210 tests both
 	// buttons before it writes walk_submode).
@@ -3869,7 +3920,11 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// cursor, a right one clears it, and rooms whose tick answers an arrival
 	// read it back to find out what the walk was for -- the shore's two cave
 	// mouths (shore.cpp), the cemetery's statue, the sewer's ladder.
-	_script.setFlag(0xa644, asLeft ? obj : 0);
+	// An item use leaves it alone: on the original the pick-axe thrown over
+	// the shore's fence kept the latch of the click before it, so the walk
+	// along the rope waits for a plain click on the fence (finding #141).
+	if (!_heldItem)
+		_script.setFlag(0xa644, asLeft ? obj : 0);
 	// Room 50 writes its own value over it for the side the steam blocks
 	// (steam.cpp).
 	if (asLeft)
@@ -3927,8 +3982,7 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 
 	_pending = _hover;
 	if (_pending < 0) {
-		// A click on the floor with something in hand is not an item use, and the
-		// original leaves the item in the hand for the next click.
+		// Not reached: both ways to act on nothing returned above.
 		return;
 	}
 

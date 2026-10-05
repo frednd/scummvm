@@ -58,6 +58,10 @@ public:
 	static const int kScreenWidth = 320;
 	static const int kScreenHeight = 200;
 
+	/// Where OBJ:sub_08a39 clamps the cursor's hot spot: the arrow is 11 wide,
+	/// so it never reaches the screen's last columns.
+	static const int kCursorMaxX = 0x134;
+	static const int kCursorMaxY = 0xc7;
 
 	/// The row the playfield ends on, and so the value OBJ:sub_08567 puts in
 	/// [0xa8e4] as every room opens: the DL1 blitter draws nothing at or below
@@ -703,6 +707,7 @@ private:
 	int _scrollVel;						///< [0xa0cc]: pan speed, 1/1024 px a tick
 	byte _scrollState;					///< [0xa0ce]: 1 coasting right, 0 left, 0xff neither
 	int _scrollFocus;					///< [0xa0c2]: the x the camera is making for
+	uint32 _roomEnterTick;				///< the master tick the room was loaded on
 	uint _scrollPlacements;				///< Walker::placements() last snapped to
 
 	RoomScript _script;			///< the room's own reaction to a click
@@ -1214,6 +1219,7 @@ private:
 	TalFile::Entry _hippieReplyEntry;
 	int _hippieReplyTicks;
 	bool _hippieAnswer;
+	int _hippieHandOff;		///< the file topic 6 swaps in once its reply is down, or -1
 	bool _hippieTalking;
 
 	/// What the conversation menu's last pick was, for the rooms that answer
@@ -1316,6 +1322,12 @@ private:
 	void writeCheckpoint(const PlayCommand &cmd);
 	bool resumePlayRun();
 	void restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick);
+	bool scrollWouldPan() const;
+	void stepJailDoor();
+	void stepParkHold();
+	void stepYodleHold();
+	void writePlayCamera(Common::WriteStream *out) const;
+	void readPlayCamera(Common::SeekableReadStream *in);
 	void writeFailureState(uint line);
 
 	/// The keys a watched run answers to; false for any other key.

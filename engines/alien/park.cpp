@@ -172,19 +172,20 @@ void AlienEngine::startPark() {
 	debugC(1, kDebugRooms, "park: the booth is whole, with its occupant in it");
 }
 
+/// 0x0d1a: the left half of the park holds the camera on itself, unless the
+/// scene already has it.
+void AlienEngine::stepParkHold() {
+	if (_room != kParkRoom || _parkLock)
+		return;
+	_scrollHold = _ben.spriteX() < kHoldBelowX ? 0 : -1;
+}
+
 /// The trigger at 0x0d47 and the machine at 0x0a8f, one step to a tick.
 void AlienEngine::stepPark() {
 	if (_room != kParkRoom)
 		return;
 
-	// 0x0d1a: the left half of the park holds the camera on itself, unless the
-	// scene already has it.
-	if (!_parkLock) {
-		if (_ben.spriteX() < kHoldBelowX)
-			_scrollHold = 0;
-		else
-			_scrollHold = -1;
-	}
+	stepParkHold();
 
 	if (!_parkStep) {
 		// 0x0d47: far enough west, no pan in flight, and the latch has not

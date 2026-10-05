@@ -246,6 +246,7 @@ void AlienEngine::startHippie() {
 	_hippiePos = 0;
 	_hippieReply = 0;
 	_hippieAnswer = false;
+	_hippieHandOff = -1;
 	_hippieTalking = false;
 
 	if (_script.flag(kHippieHere) != 1)
@@ -349,6 +350,17 @@ void AlienEngine::stepHippie() {
 		hippieAnswer();
 	}
 
+	// Topic 6's hand-off: the file that answers it, and its first topic, only
+	// once his reply ("Um... I want a key to the lock on this chain...") has
+	// come down. On the original topic 0 opens after the reply (finding #137);
+	// opened at the pick, its one option picked itself and its own reply took
+	// the place of this one, which was never said.
+	if (_hippieHandOff >= 0 && !_hippieAnswer && speechDone()) {
+		loadHippieScript((byte)_hippieHandOff);
+		_hippieHandOff = -1;
+		openChat(0);
+	}
+
 	// [0xa49c], which the room advances on the tick pair whether or not a state
 	// is reading it.
 	_hippiePos++;
@@ -437,8 +449,7 @@ void AlienEngine::hippiePick() {
 			&& file == kFileRoom) {
 		_script.setFlag(kAsked, 1);
 		const bool held = _inventory.has(kWalkman);
-		loadHippieScript(held ? kFileYes : kFileNo);
-		openChat(0);
+		_hippieHandOff = held ? kFileYes : kFileNo;
 		debugC(1, kDebugChat, "hippie: the cassette player, %s a walkman",
 			   held ? "with" : "without");
 	}

@@ -611,15 +611,23 @@ void AlienEngine::yodlePick() {
 	_yodleAnswer = true;
 }
 
+/**
+ * 0x14dc: west of the stairs the camera makes for the room's left edge rather
+ * than for the character, so it pans all the way out (manual playthrough #49).
+ * The x is the sprite's, [0xa8ec].
+ */
+void AlienEngine::stepYodleHold() {
+	if (_room != kYodleRoom)
+		return;
+	_scrollHold = _ben.spriteX() < kHoldBelowX ? 0 : -1;
+}
+
 /// The room's [0xa49f] machine, and the pass the conversation makes beside it.
 void AlienEngine::stepYodle() {
 	if (_room != kYodleRoom)
 		return;
 
-	// 0x14dc: west of the stairs the camera makes for the room's left edge
-	// rather than for the character, so it pans all the way out (manual
-	// playthrough #49). The x is the sprite's, [0xa8ec].
-	_scrollHold = _ben.spriteX() < kHoldBelowX ? 0 : -1;
+	stepYodleHold();
 
 	// [0xad1b], the frame a line comes down: he stops talking with it (0x14f3).
 	// The port has no such pulse, so the flag the line was started with stands
@@ -696,8 +704,13 @@ void AlienEngine::stepYodle() {
 		break;
 
 	case kStepMenuWait:
-		// 0x11ac: [0xa60f], the menu closing behind the option taken.
-		if (!_chat.isFinished() || _yodleAnswer || !speechDone())
+		// 0x11ac: [0xa60f], the menu closing behind the option taken. The pick
+		// took the cursor away (OBJ:0x8801) and nothing gives it back before
+		// YODCON2's last line (0x1211): there is no gap a click could land in.
+		if (!_chat.isFinished())
+			break;
+		CursorMan.showMouse(false);
+		if (_yodleAnswer || !speechDone())
 			break;
 		_yodleStep = kStepTheory;
 		break;
