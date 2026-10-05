@@ -25,7 +25,7 @@
 // The frame every animation slot opens on, as the room's own enter routine sets
 // it: the effects it runs, with the puzzle-state guards they sit under.
 //
-//   255 plays over 42 rooms, and 466 bytes of frame list.
+//   244 plays over 42 rooms, and 454 bytes of frame list.
 
 #include "alien/roominit.h"
 
@@ -241,11 +241,7 @@ static const ScriptEffect kRoomInit[] = {
 	{ kOpCharPlace,      5, {     0,   273,     0,    47,     4,     0 }, 0x00,   0, 1, { { 0xa880, 60, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 273, 0, 47, 4)
 	{ kOpAnimPlay3,      4, {     6,    11,    11,     2,     0,     0 }, 0x00,   0, 1, { { 0xa880, 60, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode3(6, 11, 11, 2)
 	{ kOpCharPlace,      5, {     0,    72,     0,    49,     4,     0 }, 0x00,   0, 1, { { 0xa7e2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 72, 0, 49, 4)
-	{ kOpAnimPlay1,      4, {     2,    17,     5,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 17, 5, 4)
-	{ kOpAnimPlay6,      5, {     9,     0,    12,     5,   363,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(9, 0, 12, 5, 363)
-	{ kOpAnimPlay1,      4, {     6,     1,    11,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 11, 2)
-	{ kOpAnimPlay1,      4, {    10,     4,    15,     3,     0,     0 }, 0x00,   0, 1, { { 0xa4f4, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(10, 4, 15, 3)
-	{ kOpAnimPlay6,      5, {     2,     0,    46,     2,   375,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(2, 0, 46, 2, 375)
+	{ kOpAnimPlay6,      5, {     2,     0,    46,     2,   363,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(2, 0, 46, 2, 363)
 	{ kOpAnimPlay1,      4, {     3,     1,     3,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 3, 2)
 	{ kOpAnimPlay1,      4, {     4,     1,     3,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 3, 2)
 	{ kOpAnimPlay1,      4, {     5,     1,     3,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 3, 2)
@@ -253,20 +249,13 @@ static const ScriptEffect kRoomInit[] = {
 	{ kOpCharPlace,      5, {     0,    89,     0,    68,     2,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 89, 0, 68, 2)
 	{ kOpCharPlace,      5, {     0,   271,     0,    67,     4,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 271, 0, 67, 4)
 	{ kOpAnimPlay1,      4, {     0,    11,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 11, 1, 0)
-	{ kOpAnimPlay1,      4, {     0,     1,    11,     1,     0,     0 }, 0x00,   0, 1, { { 0xa7a2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 1)
-	{ kOpAnimPlay3,      4, {     0,    11,    11,     1,     0,     0 }, 0x00,   0, 1, { { 0xa7a2, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode3(0, 11, 11, 1)
-	{ kOpAnimPlay1,      4, {     1,     1,    11,     1,     0,     0 }, 0x00,   0, 1, { { 0xa7a4, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 11, 1)
-	{ kOpAnimPlay3,      4, {     1,    11,    11,     1,     0,     0 }, 0x00,   0, 1, { { 0xa7a4, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode3(1, 11, 11, 1)
 	{ kOpAnimPlay1,      4, {     5,     1,     6,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 6, 3)
-	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   421,     0 }, 0x00,   0, 1, { { 0xa7a6, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 421)
-	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   436,     0 }, 0x00,   0, 1, { { 0xa7a6, 2, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 436)
-	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   451,     0 }, 0x00,   0, 1, { { 0xa7a6, 3, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 451)
+	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   409,     0 }, 0x00,   0, 1, { { 0xa7a6, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 409)
+	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   424,     0 }, 0x00,   0, 1, { { 0xa7a6, 2, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 424)
+	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   439,     0 }, 0x00,   0, 1, { { 0xa7a6, 3, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 439)
 	{ kOpCharPlace,      5, {     0,    66,     0,    29,     2,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 66, 0, 29, 2)
 	{ kOpAnimPlay1,      4, {     1,    10,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 10, 1, 0)
 	{ kOpCharPlace,      5, {     0,   189,     0,    16,     3,     0 }, 0x00,   0, 1, { { 0xa880, 22, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 189, 0, 16, 3)
-	{ kOpAnimPlay1,      4, {     1,     1,    10,     1,     0,     0 }, 0x00,   0, 1, { { 0xa7a4, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 10, 1)
-	{ kOpAnimPlay3,      4, {     1,    10,    10,     1,     0,     0 }, 0x00,   0, 1, { { 0xa7a4, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode3(1, 10, 10, 1)
-	{ kOpAnimPlay1,      4, {     6,     1,   116,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 116, 3)
 	{ kOpAnimPlay1,      4, {    10,     1,    53,     4,     0,     0 }, 0x00,   0, 1, { { 0x33f4, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(10, 1, 53, 4)
 	{ kOpAnimPlay1,      4, {     1,     1,    29,     5,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 29, 5)
 	{ kOpAnimPlay1,      4, {     2,     1,     5,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 5, 4)
@@ -334,12 +323,12 @@ static const RoomInitRoom kRoomInitRooms[] = {
 	{ 51, 174,  5 },
 	{ 52, 179, 16 },
 	{ 53, 195,  5 },
-	{ 54, 200, 13 },
-	{ 55, 213, 12 },
-	{ 56, 225, 10 },
-	{ 57, 235,  8 },
-	{ 58, 243,  4 },
-	{ 59, 247,  8 },
+	{ 54, 200,  9 },
+	{ 55, 209,  8 },
+	{ 56, 217,  7 },
+	{ 57, 224,  8 },
+	{ 58, 232,  4 },
+	{ 59, 236,  8 },
 };
 
 // Every frame list the openings play, end to end. Modes 6, 7 and 8 step a
@@ -369,14 +358,13 @@ static const byte kRoomInitFrames[] = {
 	  2,   1,   2,   3,   2,   1,   2,   3,   2,   1,   2,   1,   2,   1,   2,   2,
 	  2,   1,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,
 	  2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   1,   2,   3,   4,   2,   1,
-	  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   1,   2,   1,
-	  3,   1,   3,   1,   3,   1,   3,   1,   1,   1,   1,   1,   1,   2,   3,   4,
-	  5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,
-	 21,  20,  19,  18,  17,  16,  15,  14,  13,  12,  11,  10,   9,   8,   7,   6,
-	  5,   4,   3,   2,   0,   1,   1,   1,   1,   2,   3,   4,   5,   5,   5,   5,
-	  4,   3,   2,   6,   6,   6,   6,   6,   7,   8,   9,  10,  10,  10,  10,   9,
-	  8,   7,  11,  11,  11,  11,  11,  12,  13,  14,  15,  15,  15,  15,  14,  13,
-	 12,   1,
+	  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+	  1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16,
+	 17,  18,  19,  20,  21,  20,  19,  18,  17,  16,  15,  14,  13,  12,  11,  10,
+	  9,   8,   7,   6,   5,   4,   3,   2,   0,   1,   1,   1,   1,   2,   3,   4,
+	  5,   5,   5,   5,   4,   3,   2,   6,   6,   6,   6,   6,   7,   8,   9,  10,
+	 10,  10,  10,   9,   8,   7,  11,  11,  11,  11,  11,  12,  13,  14,  15,  15,
+	 15,  15,  14,  13,  12,   1,
 };
 
 const byte *roomInitFrameList(uint first, uint count) {

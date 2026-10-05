@@ -1349,6 +1349,14 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// the placement below, which picks his first frame out of that set.
 	_ben.setSwimming(room == kSwimRoom);
 
+	// And the pumpkin mask (manual playthrough #81): PUMPWALK while [0xa79b]
+	// stands, which the ship rooms load as they open and a restore reloads
+	// (CHARANIM:sub_14679, sub_14612). Room 22 takes it off on every way in
+	// (ovr_16_0ea3:0x0594), the teleporter's way back to Earth included.
+	if (room == 22)
+		_script.setFlag(0xa79b, 0);
+	_ben.setPumpkin(_script.flag(0xa79b) == 1);
+
 	// [0xa94d] is put back by the shared room open, so a room left mid-sequence
 	// does not carry the character's absence into the next one. The slots go
 	// with it: the room's banks are about to be dropped anyway, and a machine

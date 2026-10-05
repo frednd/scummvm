@@ -146,11 +146,13 @@ public:
 		kWalkPointY = 64,
 		/// The character is not blitted at his own position: OBJ:sub_06466
 		/// passes [0xa8ec] - 10 and [0xa8ee] + 5 to the blitter, so the frame
-		/// sits ten pixels left of the origin and five below it. Two rooms
-		/// shift it further (climbing, [0xa73a]; the teleport costume,
-		/// [0xa79b]), which is not modelled.
+		/// sits ten pixels left of the origin and five below it. Climbing
+		/// ([0xa73a]) shifts it further, which is not modelled; the pumpkin
+		/// mask ([0xa79b]) moves it by kPumpkinOffset (see setPumpkin).
 		kDrawOffsetX = -10,
 		kDrawOffsetY = 5,
+		kPumpkinOffsetX = -2,
+		kPumpkinOffsetY = -5,
 		kWalkFrames = 16,		///< per facing, phases 0..15
 		kMaxTurnFrames = 7,
 		kFacingKeep = 10		///< arrive without turning, the original's default
@@ -172,6 +174,16 @@ public:
 	 */
 	void setSwimming(bool swimming);
 	bool isSwimming() const { return _swimming; }
+
+	/**
+	 * The pumpkin mask, [0xa79b]. CHARANIM:sub_14294 swaps the set for
+	 * PUMPWALK (from sub_14679 as each ship room opens, sub_14612 on a
+	 * restore), OBJ:sub_09d22 drives him instead of sub_098d1 -- its own talk
+	 * lists, and no canned idles -- and OBJ:0x3fd3 blits him two pixels left
+	 * and five up. Same walk, turn and standing frames as BENANI.
+	 */
+	void setPumpkin(bool on);
+	bool isPumpkin() const { return _pumpkin; }
 
 	/**
 	 * OBJ:sub_0585d, then the turn OBJ:sub_07890 queues after it. (`walkX`,
@@ -335,8 +347,14 @@ private:
 	void stepSwim(bool gate);
 	void startSwimTurn(int from, int to);
 
+	/// The set the walker should be wearing: DIVEANI, PUMPWALK or _set.
+	Common::String currentSet() const;
+	int drawX() const { return _x + kDrawOffsetX + (_pumpkin ? kPumpkinOffsetX : 0); }
+	int drawY() const { return _y + kDrawOffsetY + (_pumpkin ? kPumpkinOffsetY : 0); }
+
 	CharAnim _anim;
 	Common::String _set;			///< the set load() was given, BENANI
+	bool _pumpkin;					///< [0xa79b], the set is PUMPWALK
 
 	/// The swim (see setSwimming). The turn reuses _turnLeft as the
 	/// original's [0xa959], counting down through _swimTurn from the top;

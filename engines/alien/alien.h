@@ -471,6 +471,7 @@ private:
 	void armHallwayCard(int obj, int item);
 	bool hallwayOwesReply() const;
 	void stepCorridor();
+	void stepShipDoors();
 	void stepHallMan();
 	void stepHallwayDoors();
 	void hallManPose(byte pose);

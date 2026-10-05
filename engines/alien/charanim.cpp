@@ -358,6 +358,26 @@ static const byte kTalkFrames[5][7] = {
 /// How much of each list is used, the counts OBJ:0x9a05 picks per facing.
 static const uint kTalkCount[5] = { 0, 5, 7, 4, 7 };
 
+// The pumpkin mask's talk cycle, OBJ:sub_09d22's lists at ds:0x28f6, 0x2902,
+// 0x2914 and 0x2928, with the counts it picks per facing (0x9e5b..). They are
+// longer than BENANI's -- the mask's mouth is a whole head bobbing -- and sit
+// at PUMPWALK's top, 0x56..0x69, already zero based here.
+static const byte kPumpkinTalk1[] = { 0x56, 0x57, 0x56, 0x56, 0x57, 0x58, 0x59, 0x58, 0x57, 0x56, 0x58, 0x59 };
+static const byte kPumpkinTalk2[] = { 0x5a, 0x5b, 0x5c, 0x5b, 0x5c, 0x5b, 0x5a, 0x5b, 0x5c, 0x5b, 0x5c, 0x5b,
+									  0x5a, 0x5b, 0x5c, 0x5b, 0x5d, 0x5d };
+static const byte kPumpkinTalk3[] = { 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x5e, 0x5f,
+									  0x60, 0x61, 0x62, 0x62, 0x63, 0x64, 0x65, 0x5e };
+static const byte kPumpkinTalk4[] = { 0x66, 0x67, 0x68, 0x67, 0x68, 0x67, 0x66, 0x67, 0x68, 0x67, 0x68, 0x67,
+									  0x69, 0x69 };
+static const byte *const kPumpkinTalk[5] = { nullptr, kPumpkinTalk1, kPumpkinTalk2, kPumpkinTalk3, kPumpkinTalk4 };
+static const uint kPumpkinTalkCount[5] = { 0, ARRAYSIZE(kPumpkinTalk1), ARRAYSIZE(kPumpkinTalk2),
+										   ARRAYSIZE(kPumpkinTalk3), ARRAYSIZE(kPumpkinTalk4) };
+
+/// sub_09d22's turn to the front: one moment for every facing, the one
+/// sub_098d1 keeps for screen right, and none of its gates on [0xa94d] and
+/// [0xa4a1].
+static const int kPumpkinTurnAt = 0x28, kPumpkinTurnCycle = 2;
+
 /// [0xa808] has to be past this before the mouth opens, which is what keeps the
 /// cycle out of the tick a walk ends on (OBJ:0x9995).
 static const int kTalkSettle = 3;
@@ -428,6 +448,7 @@ Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY
 		_placements(0) {
 	memset(_turn, 0, sizeof(_turn));
 	_swimming = false;
+	_pumpkin = false;
 	_swimFacing = 3;
 	memset(_swimTurn, 0, sizeof(_swimTurn));
 }
@@ -616,7 +637,7 @@ void Walker::updateFrame() {
 	// Talking wins over the idle machine: the original reads the mouth frame
 	// after the idle stream has already put one in [0xa8e6] (OBJ:0x9be6).
 	if (_talking && _talkReady) {
-		_frame = kTalkFrames[_facing][_talkPhase];
+		_frame = _pumpkin ? kPumpkinTalk[_facing][_talkPhase] : kTalkFrames[_facing][_talkPhase];
 		return;
 	}
 
@@ -655,7 +676,7 @@ void Walker::stepTalk() {
 		_talkPhase++;
 	_talkHalf = !_talkHalf;
 
-	if (_talkPhase >= kTalkCount[_facing])
+	if (_talkPhase >= (_pumpkin ? kPumpkinTalkCount[_facing] : kTalkCount[_facing]))
 		_talkPhase = 0;
 }
 
@@ -680,12 +701,12 @@ void Walker::stepIdle(bool inventoryOpen) {
 	// above them runs either way, so a scene that ends leaves him as far into
 	// the count as he really has been standing, and so does the stream below:
 	// a list already playing is stepped to its end rather than frozen.
-	if (_idleAllowed && !_talking) {
+	if ((_idleAllowed || _pumpkin) && !_talking) {
 		// A canned animation starts only from a standing frame, and only while
 		// the inventory bar is down. Nothing stops the count while one plays,
 		// so the two that share a starting point never collide: they want
 		// different facings.
-		if (!inventoryOpen) {
+		if (!inventoryOpen && !_pumpkin) {
 			for (uint i = 0; i < ARRAYSIZE(kIdlePlays); i++) {
 				const IdlePlay &play = kIdlePlays[i];
 				if (_idleCount != play.at || _facing != play.facing)
@@ -702,9 +723,10 @@ void Walker::stepIdle(bool inventoryOpen) {
 		// original keeps the moment in [0x98fc] and [0x98fe], which it fills
 		// from the facing: a quarter turn from the back or from screen left is
 		// a shorter wait than the one from screen right.
-		const bool quick = _facing == 1 || _facing == 4;
-		if (_facing != 3 && !_turnBlocked && _idleCount == (quick ? 5 : 0x28) &&
-				_idleCycle == (quick ? 1 : 2)) {
+		const bool quick = !_pumpkin && (_facing == 1 || _facing == 4);
+		const int turnAt = _pumpkin ? kPumpkinTurnAt : quick ? 5 : 0x28;
+		const int turnCycle = _pumpkin ? kPumpkinTurnCycle : quick ? 1 : 2;
+		if (_facing != 3 && !_turnBlocked && _idleCount == turnAt && _idleCycle == turnCycle) {
 			_idleIndex = 0;
 			_idleLeft = 0;
 			debugC(1, kDebugAnim, "idle: turn to face front after %d cycles",
@@ -805,7 +827,7 @@ void Walker::advance() {
 
 void Walker::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const {
 	if (_anim.isLoaded())
-		_anim.drawFrame(_frame, dest, _x + kDrawOffsetX - scrollX, _y + kDrawOffsetY,
+		_anim.drawFrame(_frame, dest, drawX() - scrollX, drawY(),
 						clipBottom, _scale);
 }
 
@@ -818,7 +840,7 @@ bool Walker::bounds(Common::Rect &box) const {
 	// position plus the frame's own hotspot -- an offset into his box rather
 	// than a pivot -- both of them through the scale.
 	CharAnim::Geometry g;
-	if (!_anim.geometry(_frame, _x + kDrawOffsetX, _y + kDrawOffsetY, _scale, g))
+	if (!_anim.geometry(_frame, drawX(), drawY(), _scale, g))
 		return false;
 
 	box = Common::Rect(g.left, g.top, g.left + g.width, g.top + g.height);
@@ -836,9 +858,31 @@ void Walker::setSwimming(bool swimming) {
 	_waypoint = 0;
 	resetIdle();
 
-	const Common::String set = swimming ? Common::String("DIVEANI") : _set;
+	const Common::String set = currentSet();
 	if (!set.empty() && !_anim.load(set))
 		warning("Alien::Walker: cannot load %s", set.c_str());
+}
+
+Common::String Walker::currentSet() const {
+	if (_swimming)
+		return "DIVEANI";
+	if (_pumpkin)
+		return "PUMPWALK";
+	return _set;
+}
+
+void Walker::setPumpkin(bool on) {
+	if (on == _pumpkin)
+		return;
+
+	_pumpkin = on;
+	_talkPhase = 0;
+	resetIdle();
+
+	const Common::String set = currentSet();
+	if (!set.empty() && !_anim.load(set))
+		warning("Alien::Walker: cannot load %s", set.c_str());
+	debugC(1, kDebugAnim, "walker: %s", set.c_str());
 }
 
 void Walker::swimTo(int walkX, int walkY, int arrivalFacing) {

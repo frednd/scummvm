@@ -130,8 +130,10 @@ static const uint kButtonSlot = 4;		///< WAI_BUTT, looped by [0xa53e]
 /// the button: both are shared code rather than anything room 54 owns.
 static const byte kButtonDownFrame = 3, kButtonUpFrame = 1;
 
-/// The print itself, the one real play in the sequence (0x0bf6).
-static const byte kPrintFirst = 5, kPrintCount = 0x11, kPrintRate = 2;
+/// The print itself, the one real play in the sequence (0x0bf6): MIDAS's
+/// arguments go slot, first frame, count, rate in push order, so this is five
+/// frames of the machine from its seventeenth, not the button's.
+static const byte kPrintFirst = 0x11, kPrintCount = 5, kPrintRate = 4;
 
 // [0xa49c] waits, as the machine's own thresholds have them.
 static const uint16 kAnnounceWait = 0x64;
@@ -182,10 +184,26 @@ static const uint16 kToBoardWait = 0x1e;
 static const uint16 kFigureWait = 0x46;
 static const uint16 kDoorWait = 0x37;
 
-/// MIDAS:sub_18962(5, 0, 0xc, 9, ds:0x6fb8): the board, mode 6 over this list.
-static const uint kBoardSlot = 5;
+/// MIDAS:sub_18962(9, 0, 0xc, 5, ds:0x6fb8): the board, WAI_NUMB, mode 6 over
+/// this list. Slot 5 is the fan, which the board had been playing over.
+static const uint kBoardSlot = 9;
 static const byte kBoardFrames[] = { 1, 2, 1, 2, 1, 3, 1, 3, 1, 3, 1, 3 };
-static const int kBoardRate = 9, kBoardMode = 6;
+static const int kBoardRate = 5, kBoardMode = 6;
+
+// The alarm's aftermath (states 0xc8..0xd2): the first time the room comes up
+// after room 57's alarm ([0x33f6], corridor.cpp) the aliens in it scatter
+// (slot 10, WAI_MONS, a lifted opening row under the same flag), and Ben is
+// walked out of their way in two legs once each play has run out.
+static const uint16 kAlarmPlayed = 0x33f6;
+static const uint kAlarmSlot = 10;
+static const byte kAlarmFirst = 4, kAlarmCount = 0xf, kAlarmRate = 3;
+static const int kAlarmX1 = 0x5a, kAlarmY1 = 0x88, kAlarmFacing1 = 1;
+static const int kAlarmX2 = 0x50, kAlarmY2 = 0x7e, kAlarmFacing2 = 4;
+static const uint16 kAlarmWait = 0x28;
+
+static const byte kStepAlarm = 0xc8;
+static const byte kStepAlarmLeg = 0xcd;
+static const byte kStepAlarmDone = 0xd2;
 
 /// sfx_play_delayed(3, 0, 0x4650, 0x40, 0, 1), the chime that goes with it.
 static const uint kChimeSample = 3;
@@ -227,6 +245,15 @@ void AlienEngine::startWaiting() {
 		CursorMan.showMouse(false);
 
 		debugC(1, kDebugRooms, "waiting: his number was called, step 0x%02x", kStepDesk);
+	}
+
+	// 0x0986: the alarm's once, cleared as it is answered.
+	if (_script.flag(kAlarmPlayed) == 1) {
+		_script.setFlag(kAlarmPlayed, 0);
+		_waitingStep = kStepAlarm;
+		CursorMan.showMouse(false);
+
+		debugC(1, kDebugRooms, "waiting: after the alarm, step 0x%02x", kStepAlarm);
 	}
 }
 
@@ -323,7 +350,7 @@ void AlienEngine::stepWaitingMachine() {
 	case kStepPrint:
 		if (_waitingPos <= kPrintWait)
 			break;
-		_anims.play(kButtonSlot, kPrintFirst, kPrintCount, kPrintRate, 1);
+		_anims.play(kMachineSlot, kPrintFirst, kPrintCount, kPrintRate, 1);
 		_waitingPos = 0;
 		_waitingStep = kStepTicket;
 		break;
@@ -384,6 +411,31 @@ void AlienEngine::stepWaitingMachine() {
 			break;
 		CursorMan.showMouse(true);
 		_waitingStep = kStepIdle;
+		break;
+
+	case kStepAlarm:
+		// [0xa4f4]: slot 10's frames left.
+		if (_anims.remaining(kAlarmSlot) != 0)
+			break;
+		walkTo(kAlarmX1, kAlarmY1, kAlarmFacing1);
+		_anims.play(kAlarmSlot, kAlarmFirst, kAlarmCount, kAlarmRate, 1);
+		_waitingStep = kStepAlarmLeg;
+		break;
+
+	case kStepAlarmLeg:
+		if (_anims.remaining(kAlarmSlot) != 0)
+			break;
+		walkTo(kAlarmX2, kAlarmY2, kAlarmFacing2);
+		_waitingPos = 0;
+		_waitingStep = kStepAlarmDone;
+		break;
+
+	case kStepAlarmDone:
+		if (_waitingPos <= kAlarmWait)
+			break;
+		CursorMan.showMouse(true);
+		_waitingStep = kStepIdle;
+		debugC(1, kDebugRooms, "waiting: the alarm's aftermath is over at %d,%d", _ben.walkX(), _ben.walkY());
 		break;
 
 	case kStepNotice:

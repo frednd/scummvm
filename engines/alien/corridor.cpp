@@ -111,6 +111,13 @@ static const uint16 kNoCardLine = 0xa7a0;
 static const byte kOutcomeNoCard = 5;
 
 static const int kPodRoom = 59;
+static const int kScannerRoom = 52;
+static const int kChamberRoom = 56;
+
+/// [0x33f4]: room 57's HAL_PUMP play (slot 10) has run. Its prologue plays it
+/// under this guard and sets it in the same body (ovr_35_0f9e:0x0764), so the
+/// play is once a game; the lift takes the play and leaves the write here.
+static const uint16 kPumpPlayed = 0x33f4;
 
 static const uint16 kManThere = 0xa7d6;		///< ships 1: he is at the pod door
 static const uint16 kBadge = 0xa7d7;		///< he has handed his badge over
@@ -207,6 +214,24 @@ static const uint kAlarmMusic = 11;
 /// [0xa7d4]: the terminal has just been left; room 57 puts Ben back at it.
 static const uint16 kTerminalReturn = 0xa7d4;
 
+/// Rooms 55 and 56's own door ticks (ovr_37_0f9a:0x04e5, ovr_38_0f92:0x089a):
+/// the same edge test as the elevator's, inline in each room's loop, over a
+/// rectangle in sprite coordinates. Bounds are exclusive; -1 leaves a side open.
+struct ShipDoor {
+	byte room;
+	uint16 flag, was;		///< this frame's answer and last frame's
+	int x1, y1, x2, y2;
+	uint slot;
+	int frames;
+	int8 pan;				///< sub_01d38/01d54 pan right, sub_01d00/01d1c left
+};
+
+static const ShipDoor kShipDoors[] = {
+	{ 55, kDoorA, kDoorAWas, 0xfc, 0x3c, -1, 0x4d, 0, 0xb, 0x32 },
+	{ 55, kDoorB, kDoorBWas, 0x31, -1, 0x72, 0x50, 1, 0xb, -0x32 },
+	{ 56, kDoorB, kDoorBWas, -1, -1, 0x58, 0x26, 1, 0xa, -0x32 }
+};
+
 /// CHARANIM:sub_14ed3 / sub_14f9e: the rectangle in front of the elevator
 /// door, exclusive bounds in sprite coordinates, and the door's sixteen frames,
 /// on slot 0 in room 57 and slot 3 in room 53.
@@ -244,8 +269,33 @@ static bool isElevatorRoom(int room) {
 void AlienEngine::startCorridor() {
 	_hallMan = HallMan();
 	_terminalStep = 0;
+
+	// ovr_38_0f92:0x0499: room 56 drops its door's edge on every way in, and
+	// the way in from the scanner (0x0634) is through the door, drawn open by
+	// a lifted row.
+	if (_room == kChamberRoom) {
+		_script.setFlag(kDoorB, 0);
+		_script.setFlag(kDoorBWas, 0);
+		if (_script.flag(kCameFrom) == kScannerRoom)
+			_script.setFlag(kDoorB, 1);
+	}
+
 	if (!isElevatorRoom(_room))
 		return;
+
+	// ovr_37_0f9a:0x0284: room 55 drops both its doors' edges, and the way in
+	// from the scanner (0x0401) is through door A, drawn open by a lifted row.
+	if (_room == kCorridorRoom) {
+		_script.setFlag(kDoorA, 0);
+		_script.setFlag(kDoorAWas, 0);
+		_script.setFlag(kDoorB, 0);
+		_script.setFlag(kDoorBWas, 0);
+		if (_script.flag(kCameFrom) == kScannerRoom)
+			_script.setFlag(kDoorA, 1);
+	}
+
+	if (_room == kHallwayRoomB)
+		_script.setFlag(kPumpPlayed, 1);
 
 	// 0x0270 / 0x0258 / 0x05f2: with the badge handed over, the man is gone
 	// the next time any other floor is entered.
@@ -577,11 +627,39 @@ void AlienEngine::stepHallwayDoors() {
 }
 
 /**
+ * Rooms 55 and 56's doors: open as Ben's sprite steps into the rectangle in
+ * front of one, shut as it steps out, each with the shared door sample.
+ */
+void AlienEngine::stepShipDoors() {
+	const int x = _ben.spriteX(), y = _ben.spriteY();
+	for (uint i = 0; i < ARRAYSIZE(kShipDoors); i++) {
+		const ShipDoor &d = kShipDoors[i];
+		if (d.room != _room)
+			continue;
+
+		_script.setFlag(d.was, _script.flag(d.flag));
+		const bool in = (d.x1 < 0 || x > d.x1) && (d.y1 < 0 || y > d.y1) &&
+						(d.x2 < 0 || x < d.x2) && (d.y2 < 0 || y < d.y2);
+		_script.setFlag(d.flag, in ? 1 : 0);
+		if (_script.flag(d.flag) == _script.flag(d.was))
+			continue;
+
+		if (in)
+			_anims.play(d.slot, 1, d.frames, kLiftDoorRate, kForward);
+		else
+			_anims.play(d.slot, d.frames, d.frames, kLiftDoorRate, kBackward);
+		_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, d.pan, in ? kDoorOpenDelay : kDoorShutDelay);
+		debugC(1, kDebugRooms, "corridor: room %d door %u %s at %d,%d", _room, d.slot, in ? "opens" : "shuts", x, y);
+	}
+}
+
+/**
  * The rooms' ticks: the elevator door and the pod door, room 53's man, and
  * room 57's card line opening the terminal (0x0b29).
  */
 void AlienEngine::stepCorridor() {
 	stepHallwayDoors();
+	stepShipDoors();
 	corridorArrival();
 
 	if (_room == kHallwayRoomA)
