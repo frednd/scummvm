@@ -331,9 +331,14 @@ void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest, int scrollX, int 
 		const byte *src = _data + strip.pixelOffset;
 
 		// A long-form strip carries its own column, so it says where it goes
-		// and never runs off the end of its row.
+		// and never runs off the end of its row. Its address is the row times
+		// 320 plus that room column -- not plus the column within a 320-wide
+		// page -- so a strip right of x 320 has its row one lower in the
+		// address than on the screen: every frame's strips span exactly its
+		// bounding box only read this way (dosbox graphics parity, finding
+		// #167: room 58's door and room 32's beams sat a row low).
 		if (strip.roomX != kNoRoomX) {
-			const int y = strip.addr / kScreenWidth;
+			const int y = ((int)strip.addr - (int)strip.roomX) / kScreenWidth;
 			if (y < 0 || y >= dest.h || y >= clipBottom)
 				continue;
 			byte *dst = (byte *)dest.getBasePtr(0, y);

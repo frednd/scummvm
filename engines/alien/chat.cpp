@@ -469,6 +469,7 @@ void AlienEngine::hideBar() {
 	bar.free();
 
 	_barHidden = true;
+	_inventory.setBarAway(true);
 	_dirty = true;
 	debugC(1, kDebugChat, "bar: slid off the screen");
 }
@@ -481,6 +482,7 @@ void AlienEngine::showBar() {
 	if (!_barHidden)
 		return;
 	_barHidden = false;
+	_inventory.setBarAway(false);
 
 	// The frame the bar ends in. redraw() puts it on the screen as well, but
 	// nothing is shown before the first step has overwritten its bottom rows.

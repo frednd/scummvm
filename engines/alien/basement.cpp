@@ -189,14 +189,21 @@ void AlienEngine::stepBasement() {
 	// state machine, which ends two frames earlier.
 	if (_basementClimbing && _anims.remaining(kClimbSlot) == kArrivalRelease) {
 		_basementClimbing = false;
-		// The slot goes down with him: the climb has one frame left here, and
-		// leaving it to finish would put the drawn-on Ben back on the ladder
-		// for that frame with the walker already at the foot of it.
+		// 0x0a47 only gives the character back ([0xa94d]); slot 0 is left to
+		// run its last frame and stand there, the lift door the other entry
+		// stamps (dosbox graphics parity, finding #160).
+		_characterAnimSlots &= ~(1 << kClimbSlot);
 		showCharacter();
 		walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
 		_basementWalkOff = true;
 		debugC(1, kDebugRooms, "basement: off the ladder, walking to %d,%d",
 			   kOffLadderX, kOffLadderY);
+	} else if (_basementWalkOff && _anims.remaining(kClimbSlot) == kArrivalRelease) {
+		// The test at 0x0a40 holds for as long as the last frame stands, and the
+		// walk is started again on every pass it does: from wherever the first
+		// steps have got him, which rounds the rest differently (dosbox state
+		// parity, basement).
+		walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
 	}
 
 	if (_basementWalkOff && _ben.spriteX() < kWalkOffClearX) {

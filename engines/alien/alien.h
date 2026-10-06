@@ -56,6 +56,9 @@ namespace Alien {
 class AlienEngine : public Engine {
 public:
 	static const int kScreenWidth = 320;
+
+	/// [0x7926], for the behaviour trace.
+	uint32 masterTick() const { return _tick; }
 	static const int kScreenHeight = 200;
 
 	/// Where OBJ:sub_08a39 clamps the cursor's hot spot: the arrow is 11 wide,
@@ -165,6 +168,7 @@ private:
 	void freeLightMap();
 	void keepCharPalette(int room, const byte *palette);
 	void uploadCharPalette(bool alt);
+	void relightCharPalette();
 	void stepLighting();
 	void dumpLighting();
 	void sweepLighting();
@@ -175,6 +179,7 @@ private:
 	void dumpScale();
 	void sweepScale();
 
+	void stepCameraHold();
 	void updateScroll(bool snap = false);
 	void loadSpriteBank(uint bank);
 	void stepSpriteBank(int delta);
@@ -402,6 +407,7 @@ private:
 	bool armShoreAxe(int obj, byte item);
 	bool armShoreSuit(int obj, byte item);
 	void shoreArrival();
+	bool shoreArrivalPending() const;
 	void stepShore();
 
 	/// Room 21's Yodle: the picklock, the menu, and the teleporter he builds
@@ -494,6 +500,9 @@ private:
 	/// Room 54's call in to Jack's room: the way out through object 1, taken
 	/// over once his number is up, and the door's own refusal (waiting.cpp).
 	void startWaiting();
+	void playWaitingPose(uint slot, byte pose);
+	void waitingCustomerSays(byte code);
+	bool armWaitingCustomers(int obj, byte verb, byte item);
 	bool hijackWaitingExit(byte submode);
 	void waitingArrival();
 
@@ -1208,6 +1217,8 @@ private:
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
 	int _scrollHold;
+	int _cameraLastX;				///< [0xa8f0], the x room 50 tests a crossing against
+	uint _cameraPlacements;
 
 	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
 	/// its counter, the dialog id owed to the pick that was just made, whether
@@ -1325,6 +1336,7 @@ private:
 	void playGameWon();
 	void playLeftOpen(const char *what);
 	void writeCheckpoint(const PlayCommand &cmd);
+	void writeCheckpointScreen(const Common::String &name);
 	bool resumePlayRun();
 	void restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick);
 	bool scrollWouldPan() const;

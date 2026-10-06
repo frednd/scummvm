@@ -133,6 +133,8 @@ void AlienEngine::fadeIn() {
 
 	debugC(1, kDebugRooms, "fade: room %d in", _room);
 
+	relightCharPalette();
+
 	// Seventeen steps of 0x10 from zero, so the last of them is a full 0x100.
 	int level = 0;
 	for (int step = 0; step < kFadeInSteps && !shouldQuit(); step++) {

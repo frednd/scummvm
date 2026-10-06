@@ -220,6 +220,7 @@ void AlienEngine::tickCutsceneTimers() {
  * scene interrupted.
  */
 void AlienEngine::playCutsceneRecord(uint number) {
+	traceEvent("record %u", number);
 	const CutsceneRecord *rec = cutsceneRecord(number);
 	if (!rec) {
 		warning("cutscene: no record %u", number);
@@ -254,6 +255,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 	// cursor_visible [0xa948] for the length of one.
 	CursorMan.showMouse(false);
 	_cutscene = true;
+	_inventory.setBarAway(true);	// [0xa604], 0c55:004f
 	_background.free();
 	_background = plate;
 	_roomWidth = kScreenWidth;
@@ -521,6 +523,7 @@ void AlienEngine::endCutscene(int room, int benX, int benY, int benFacing) {
 	stopSpeech();
 	stopMusic();
 	_cutscene = false;
+	_inventory.setBarAway(_barHidden);
 
 	// Every teardown in CUTSCENE raises [0xa6d3] -- 0c55:0086, 0x09df, 0x0c6f,
 	// 0x0e1b and 0x18f8 all end with it -- and room 26's own code is the one
@@ -558,9 +561,16 @@ void AlienEngine::endCutscene(int room, int benX, int benY, int benFacing) {
 	// main loop to raise once its first frame is up. Pushing the room's palette
 	// here showed it at full brightness straight away and then dropped it to
 	// black for the fade in -- a cut, not a fade (playtest issue #30).
-	if (!handedBack)
+	//
+	// The cursor likewise: loadRoom() gives it back before the room's own
+	// arrivals run, and they may take it away again -- room 32 back from the
+	// crystal does, for its "...Uh oh.." and the bar. Showing it here as well
+	// let a settle end with that machine still running and the bar off the
+	// screen (dosbox graphics parity, finding #165).
+	if (!handedBack) {
 		g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	CursorMan.showMouse(true);
+		CursorMan.showMouse(true);
+	}
 	_dirty = true;
 }
 

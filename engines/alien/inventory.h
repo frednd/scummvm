@@ -88,9 +88,16 @@ public:
 	uint pageCount() const;
 	uint page() const { return _page; }
 
-	/// Show the page the newest item is on, which every change to the list does
-	/// -- the original's [0xa7ec], read by the bar rebuild OBJ:sub_03c77.
+	/// The bar rebuild, OBJ:sub_03c77: the page clamped down to the page count
+	/// and, if a change to the list has asked for it ([0xa7ec]), moved to the
+	/// last page, which is the page a new item is on.
 	void showNewest();
+
+	/// [0xa604]: the bar is away -- a conversation or a scene has it. An item
+	/// picked up then does not ask for the last page (OBJ:sprite_add raises
+	/// [0xa7ec] only while the bar is up); a swap or a removal still does, and
+	/// the bar coming back is the rebuild that answers it.
+	void setBarAway(bool away);
 
 	/// True when the page changed, so the caller knows to redraw.
 	bool pageUp();
@@ -193,6 +200,8 @@ private:
 	byte _list[kListSize];
 	byte _counter[kListSize];	///< per item, the click counter at DS:0x99D7
 	uint _page;
+	bool _newest;		///< [0xa7ec]
+	bool _barAway;		///< [0xa604]
 	int _scroll;				///< [0xa63c], in pixels down the list
 
 	Graphics::Surface _icons;	///< KAMAT.PCX, the icon grid

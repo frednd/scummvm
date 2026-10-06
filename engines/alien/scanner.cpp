@@ -278,6 +278,9 @@ void AlienEngine::startScanner() {
 		return;
 
 	_scannerArrest = false;
+	// 0x05e4: and the camera held at the room's left edge for the rest of
+	// the visit (finding #163).
+	_scrollHold = 0;
 	_scannerStep = kStepArrest;
 	_script.setFlag(kMachine, kStepArrest);
 	CursorMan.showMouse(false);

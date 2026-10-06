@@ -459,6 +459,8 @@ void Walker::place(int walkX, int walkY, int facing) {
 	_fx = _x * 64;
 	_fy = _y * 64;
 	_facing = facing;
+	// CHARANIM:sub_13bce's arguments: the sprite origin and the facing.
+	traceEvent("place %d %d %d", _x, _y, facing);
 	_arrivalFacing = kFacingKeep;
 	_phase = 0;
 	_steps = 0;
@@ -501,8 +503,13 @@ void Walker::follow(const WalkRoute &route, int targetX, int targetY,
 	resetIdle();
 
 	// Slot 0 is where the walk starts, and the nodes follow; the clicked point
-	// is not in the route at all, so it goes on the end.
-	if (_route.count < WalkRoute::kMaxPoints) {
+	// is not in the route at all, so it goes on the end -- unless the last node
+	// is the point itself, which the original walks once. With the mover no
+	// longer snapping, a second leg to it from where the first one stopped
+	// short took one step more (dosbox state parity, finding #158).
+	const bool endsThere = _route.count > 1 &&
+		_route.points[_route.count - 1].x == targetX && _route.points[_route.count - 1].y == targetY;
+	if (!endsThere && _route.count < WalkRoute::kMaxPoints) {
 		_route.points[_route.count].x = (int16)targetX;
 		_route.points[_route.count].y = (int16)targetY;
 		_route.count++;
@@ -521,24 +528,61 @@ void Walker::follow(const WalkRoute &route, int targetX, int targetY,
 	updateFrame();
 }
 
-int Walker::facingToward(int targetX, int targetY) const {
-	// OBJ:sub_050c3 splits the plane at the character's feet and then compares
-	// the two spans: the wider one decides whether this is a sideways walk or
-	// one into or out of the screen. A tie is broken toward the horizontal,
-	// which the original does by bumping the horizontal span by one.
-	int dx = targetX - walkX();
-	int dy = targetY - walkY();
-	const bool left = dx < 0;
-	const bool up = dy < 0;
-
-	dx = ABS(dx);
-	dy = ABS(dy);
+/**
+ * OBJ:sub_050c3, the setup of one straight segment, in the original's Real48
+ * arithmetic. It splits the plane at the feet, bumps the horizontal span by one
+ * on a tie, and then has two branches that run in turn: a sideways walk while
+ * the horizontal span is the wider -- 1.5 px a step, Trunc(span / 1.5) steps,
+ * the other axis Round(span / steps * 64) sixty-fourths a step -- and, whenever
+ * the vertical span is more than half the horizontal one, a walk into or out of
+ * the screen over the first: 0.625 px a step the same way round. The branch
+ * that runs last sets the facing. Nothing is snapped: the position the mover
+ * keeps is in 1/64 px from the last placement on, and the next segment starts
+ * from wherever this one ended (dosbox state parity, finding #158).
+ */
+void Walker::planSegment(int targetX, int targetY, Segment &seg) const {
+	// The Real48 constants at [bp-6] and [bp-0xc], and the steps they go with:
+	// 1.5 and 0.625 px, 0x60 and 0x28 sixty-fourths -- or, on room 31's ledge
+	// ([0xa73a]), 1.0 and 0.33 (Real48 7f 5c8f c2f5 28 -> 0.32999999999992724),
+	// 0x40 and 0x15.
+	const double kDivX = _ledgePace ? 1.0 : 1.5;
+	const double kDivY = _ledgePace ? 0.32999999999992724 : 0.625;
+	const int speedX = _ledgePace ? 0x40 : kSpeedX;
+	const int speedY = _ledgePace ? 0x15 : kSpeedY;
+	const int fx = walkX(), fy = walkY();
+	const int signX = targetX < fx ? -1 : 1;
+	const int signY = targetY < fy ? -1 : 1;
+	int dx = ABS(targetX - fx);
+	const int dy = ABS(targetY - fy);
 	if (dx == dy)
 		dx++;
 
-	if (dx > dy)
-		return left ? 4 : 2;
-	return up ? 1 : 3;
+	// TP's Round: to nearest, halves away from zero.
+	struct R { static int round(double v) { return v < 0 ? -(int)(-v + 0.5) : (int)(v + 0.5); } };
+
+	seg.facing = 0;
+	seg.steps = 0;
+	seg.stepX = seg.stepY = 0;
+	if (dx > dy) {
+		seg.facing = signX < 0 ? 4 : 2;
+		seg.steps = (int)(dx / kDivX);
+		seg.stepX = signX * speedX;
+		if (seg.steps > 0)
+			seg.stepY = R::round((double)dy / seg.steps * 64.0 * signY);
+	}
+	if (dy > dx / 2.0) {
+		seg.facing = signY < 0 ? 1 : 3;
+		seg.steps = (int)(dy / kDivY);
+		seg.stepY = signY * speedY;
+		if (seg.steps > 0)
+			seg.stepX = R::round((double)dx / seg.steps * 64.0 * signX);
+	}
+}
+
+int Walker::facingToward(int targetX, int targetY) const {
+	Segment seg;
+	planSegment(targetX, targetY, seg);
+	return seg.facing;
 }
 
 void Walker::turnTo(int facing) {
@@ -580,14 +624,21 @@ void Walker::arrive() {
 
 void Walker::startSegment() {
 	// A route that starts where the character stands, or one whose last node is
-	// the clicked point itself, carries waypoints with nothing to walk; those
-	// are stepped over rather than costing a tick each.
-	int dx = 0, dy = 0;
+	// the clicked point itself, carries waypoints with nothing to walk; so does
+	// one too short for a single step. Those are stepped over rather than
+	// costing a tick each. (The original sets each of them up on a tick pair
+	// of its own, standing; the port's arrival path is not ready for that.)
+	Segment seg;
 	while (isWalking()) {
-		dx = _route.points[_waypoint].x - walkX();
-		dy = _route.points[_waypoint].y - walkY();
-		if (dx || dy)
-			break;
+		const WalkRoute::Point &target = _route.points[_waypoint];
+		if (target.x != walkX() || target.y != walkY()) {
+			planSegment(target.x, target.y, seg);
+			// OBJ:sub_050c3's arguments and the position it starts from.
+			traceEvent("seg %d %d from %d %d at %d %d", target.x, target.y, walkX(), walkY(),
+					   (int)_fx, (int)_fy);
+			if (seg.steps > 0)
+				break;
+		}
 		_waypoint++;
 	}
 
@@ -598,25 +649,10 @@ void Walker::startSegment() {
 		return;
 	}
 
-	const WalkRoute::Point &target = _route.points[_waypoint];
-	turnTo(facingToward(target.x, target.y));
-
-	// The axis that leads runs at its own speed and fixes the tick count; the
-	// other is divided out over those ticks, which is how the original gets a
-	// straight line without ever holding a slope.
-	if (ABS(dx) * kSpeedY > ABS(dy) * kSpeedX) {
-		_steps = ABS(dx) * 64 / kSpeedX;
-		if (_steps < 1)
-			_steps = 1;
-		_stepX = dx > 0 ? kSpeedX : -kSpeedX;
-		_stepY = dy * 64 / _steps;
-	} else {
-		_steps = ABS(dy) * 64 / kSpeedY;
-		if (_steps < 1)
-			_steps = 1;
-		_stepY = dy > 0 ? kSpeedY : -kSpeedY;
-		_stepX = dx * 64 / _steps;
-	}
+	turnTo(seg.facing);
+	_steps = seg.steps;
+	_stepX = seg.stepX;
+	_stepY = seg.stepY;
 }
 
 void Walker::updateFrame() {
@@ -809,12 +845,8 @@ void Walker::advance() {
 	}
 
 	if (_steps <= 0) {
-		const WalkRoute::Point &target = _route.points[_waypoint];
-		_x = target.x - kWalkPointX;
-		_y = target.y - kWalkPointY;
-		_fx = _x * 64;
-		_fy = _y * 64;
-
+		// No snap to the waypoint: the original goes on from where the steps
+		// ran out (finding #158).
 		_waypoint++;
 		if (isWalking()) {
 			startSegment();

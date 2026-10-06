@@ -185,6 +185,9 @@ public:
 	void setPumpkin(bool on);
 	bool isPumpkin() const { return _pumpkin; }
 
+	/// Room 31's ledge walk ([0xa73a]), set by the engine before a walk.
+	void setLedgePace(bool ledge) { _ledgePace = ledge; }
+
 	/**
 	 * OBJ:sub_0585d, then the turn OBJ:sub_07890 queues after it. (`walkX`,
 	 * `walkY`) is walk_pos, the point the room's walk geometry chose; it is the
@@ -338,6 +341,12 @@ public:
 private:
 	void startSegment();
 	void advance();
+	struct Segment {
+		int facing;
+		int steps;
+		int stepX, stepY;		///< 1/64 px a step, [0xa926] and [0xa928]
+	};
+	void planSegment(int targetX, int targetY, Segment &seg) const;
 	int facingToward(int targetX, int targetY) const;
 	void turnTo(int facing);
 	void arrive();
@@ -370,6 +379,7 @@ private:
 	int _x;							///< character origin, whole pixels
 	int _y;
 	int _fx;						///< and the same in 1/64 pixel, as the original
+	bool _ledgePace = false;
 	int _fy;
 	int _stepX;						///< 1/64 pixel per tick
 	int _stepY;

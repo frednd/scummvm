@@ -191,6 +191,9 @@ bool SoundFX::enterRoom(const StaticTables &tables, int room) {
 }
 
 void SoundFX::play(uint sample, uint32 rate, byte volume, int8 panning) {
+	// INPUT:sound_trigger; the queue's own service was traced as it was queued.
+	if (!_servicing)
+		traceEvent("sfx %u", sample);
 	if (!_mixer)
 		return;
 
@@ -236,6 +239,7 @@ void SoundFX::queue(uint sample, uint32 rate, byte volume, int8 panning, uint16 
 	slot.panning = panning;
 	slot.delay = delay;
 	_write = (_write + 1) % kQueueSize;
+	traceEvent("sfx %u delay %u", sample, delay);
 
 	debugC(2, kDebugSound, "sfx: queued sample %u in %u ticks, %u Hz vol %u pan %d",
 		   sample, delay, rate, volume, panning);
@@ -257,7 +261,9 @@ void SoundFX::tick(bool pairTick) {
 			continue;
 
 		slot.busy = false;
+		_servicing = true;
 		play(slot.sample, slot.rate, slot.volume, slot.panning);
+		_servicing = false;
 	}
 }
 

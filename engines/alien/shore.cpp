@@ -185,6 +185,23 @@ bool AlienEngine::armShoreSuit(int obj, byte item) {
  * rather than after, so the rectangles and the armed submode belong to the new
  * ledge from that frame on -- which is why the table is rebuilt here too.
  */
+/**
+ * Whether a ledge has a click it will answer once the walk is done, for a
+ * scripted settle: a walk that ends a pixel short takes a step, and the settle
+ * would otherwise end on the tick between the step and the room's own test.
+ */
+bool AlienEngine::shoreArrivalPending() const {
+	if (_room != kShoreRoom || _shoreStep)
+		return false;
+	const byte view = _script.flag(kView);
+	const byte obj = _script.flag(kClickedObj);
+	if (view == kFirstMouth)
+		return _script.flag(kRockOpen) == 1 && (obj == 6 || obj == 8 || obj == 9);
+	if (view == kSecondMouth)
+		return obj == 5 || obj == 7 || obj == 9;
+	return false;
+}
+
 void AlienEngine::shoreArrival() {
 	const byte view = _script.flag(kView);
 	if (view == kBeach || _shoreStep)

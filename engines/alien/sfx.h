@@ -168,6 +168,7 @@ private:
 
 	Trigger _queue[kQueueSize];
 	uint _write;			///< the queue is a ring with one cursor, as in the original
+	bool _servicing = false;	///< play() called by the queue's service, already traced
 };
 
 } // End of namespace Alien

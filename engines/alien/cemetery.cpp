@@ -189,6 +189,7 @@ void AlienEngine::startCemetery() {
 		return;
 
 	_barHidden = true;
+	_inventory.setBarAway(true);
 	CursorMan.showMouse(false);
 	setCemeteryState(kStateBack);
 	debugC(1, kDebugRooms, "cemetery: back from the crystal");

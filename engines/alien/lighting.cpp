@@ -66,12 +66,14 @@ namespace Alien {
 // The [0xa884] half of that gate is cleared by room init and set again by the
 // fade-in at the tail of the first composed frame (1021:sub_10c33, fade.cpp),
 // and the sampler runs before that tail. So the change the first tick sees --
-// the old room's level against the new room's first sample -- is never pushed:
-// a room opens on the full palette sub_073bf left in the scaled buffer, and only
-// a later change of level starts scaling it. A room whose map is flat never has
-// one. FADE34, the road outside Sluggs' house, is 64000 bytes of 32, and the
-// original keeps Ben at full brightness there for good; uploading that first
-// change is what held him at half in the port (playtest issue #25).
+// the old room's level against the new room's first sample -- is never pushed
+// by the gate. It does not need to be: the fade in that sets [0xa884] opens with
+// UTIL:sub_02091, which scales the block by that same first sample and writes it
+// into the live palette the fade then raises (relightCharPalette below). So a
+// room opens with him lit by its first sample, and a room whose map is flat --
+// FADE34, the road outside Sluggs' house, 64000 bytes of 32 -- keeps him at that
+// level for good: the original shows him at 0x80 there (dosbox graphics parity,
+// finding #164; playtest issue #25 had read it as full brightness).
 
 /// The plate is copied from row 13 of the PCX, 320x150 of it.
 static const int kLightSkipRows = 13;
@@ -154,6 +156,12 @@ static const struct LightMapEntry {
 static const int kCrossroadsRoom = 23;
 static const int kCrossroadsEdge = 0x4c;
 static const int kCrossroadsDim = 0x46;
+
+// Room 25, the park by the mailbox: no plate either, OBJ:sub_06dd9.
+static const int kMailboxRoom = 25;
+static const int kMailboxTop = 0x38;
+static const int kMailboxEdge = 0x3c;
+static const int kMailboxDim = 0x78;
 
 // Room 31, the cliff: the sampler runs and the room then throws its answer away
 // (ovr_1f_0e87:0x0511). The level is full unless [0xa737] is set, and 0x96 while
@@ -255,17 +263,43 @@ void AlienEngine::loadLightMap(int room) {
  * `alt` is room 49's stash rather than the palette the room opened with; every
  * other room only ever has the one.
  */
+/**
+ * One component at a level, the way OBJ:sub_0a6f0 and UTIL:sub_02091 do it: on
+ * the DAC's six bits (sub_073bf shifts the PCX's bytes down by two first), the
+ * high byte of the product kept. Scaling the eight-bit value instead rounds a
+ * step or two brighter.
+ */
+static byte scaleCharComponent(byte value, byte level) {
+	const byte six = (byte)(((value >> 2) * level) >> 8);
+	return (byte)((six << 2) | (six >> 4));
+}
+
 void AlienEngine::uploadCharPalette(bool alt) {
 	const byte *source = (alt && _charPaletteAltLoaded) ? _charPaletteAlt : _charPalette;
 
 	for (int i = 0; i < kCharCount * 3; i++)
-		_palette[kCharFirst * 3 + i] = (byte)((source[i] * _lightLevel) >> 8);
+		_palette[kCharFirst * 3 + i] = scaleCharComponent(source[i], _lightLevel);
 
 	g_system->getPaletteManager()->setPalette(_palette + kCharFirst * 3, kCharFirst, kCharCount);
 	_dirty = true;
 
 	debugC(2, kDebugLight, "light: char palette at level %d%s", _lightLevel,
 		   (alt && _charPaletteAltLoaded) ? " (stash)" : "");
+}
+
+/**
+ * UTIL:sub_02091, the first thing the room's fade in (sub_02163, from
+ * 1021:sub_10c33 or LOGIC:sub_132e4) does: the character's block scaled by the
+ * level now in force and written into the live palette, without a DAC upload
+ * of its own -- the fade that follows is the upload. So a room opens with him
+ * lit by the first sample its loop took, although the gate never pushes that
+ * first change (dosbox graphics parity, finding #164). A room that never
+ * samples opens at the level the room before it left.
+ */
+void AlienEngine::relightCharPalette() {
+	for (int i = 0; i < kCharCount * 3; i++)
+		_palette[kCharFirst * 3 + i] = scaleCharComponent(_charPalette[i], _lightLevel);
+	debugC(2, kDebugLight, "light: room %d opens at level %d", _room, _lightLevel);
 }
 
 /**
@@ -277,19 +311,32 @@ void AlienEngine::stepLighting() {
 	// x 0x4c until it tops out. Leaving it out kept whatever level the room
 	// before had left (manual playthrough #53).
 	const bool crossroads = _room == kCrossroadsRoom;
+	// Room 25 has one too, OBJ:sub_06dd9: full brightness below sprite y 0x38,
+	// and above it 0x78 left of x 0x3c, climbing six a pixel from there (dosbox
+	// graphics parity, finding #164).
+	const bool mailbox = _room == kMailboxRoom;
 
-	// Room 25 never calls the sampler, so it keeps the level the room before it
-	// left -- and, with it, that room's brightness on the character.
-	if (!crossroads && !lightMapFile(_room, false))
+	// A room with no map keeps the level the room before it left -- and, with
+	// it, that room's brightness on the character.
+	if (!crossroads && !mailbox && !lightMapFile(_room, false))
 		return;
 
 	_lightPrev = _lightLevel;
 	_lightLevel = 0xff;
 
-	if (crossroads) {
-		const int past = _ben.spriteX() - kCrossroadsEdge;
-		_lightLevel = past < 0 ? kCrossroadsDim
-			: (byte)MIN(kCrossroadsDim + MIN(past * 8, 0xfa), 0xfa);
+	if (crossroads || mailbox) {
+		if (crossroads) {
+			const int past = _ben.spriteX() - kCrossroadsEdge;
+			_lightLevel = past < 0 ? kCrossroadsDim
+				: (byte)MIN(kCrossroadsDim + MIN(past * 8, 0xfa), 0xfa);
+		} else if (_ben.spriteY() <= kMailboxTop) {
+			_lightLevel = kMailboxDim;
+			if (_ben.spriteX() >= kMailboxEdge) {
+				// `mul bl`: six times the low byte of the distance, held at 0xff.
+				const int step = MIN(((_ben.spriteX() - kMailboxEdge) & 0xff) * 6, 0xff);
+				_lightLevel = (byte)MIN(kMailboxDim + step, 0xff);
+			}
+		}
 		if (!_lightArmed) {
 			_lightArmed = true;
 			return;

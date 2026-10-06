@@ -102,9 +102,14 @@ static const uint16 kTicketOut = 0xa7e0;	///< a ticket is in the slot
 static const uint16 kPushCount = 0xa7e1;	///< how often the button was pushed
 static const uint16 kCalledReload = 0xa7e2;	///< the self-link is being taken
 static const uint16 kNumberCalled = 0xa7e3;	///< his number has been called
-static const uint16 kBoardLeft = 0xa7dc;	///< objects 9 and 10, the board
-static const uint16 kBoardRight = 0xa7dd;
-static const uint16 kDeskOpen = 0xa7de;	///< object 14, once he is called
+// The waiting room's two other customers, and what the first leaves behind.
+// Each flag is a hotspot set and a figure: [0xa7dc] the one on the bench
+// (object 9, WAIT_AL1 on slot 0), [0xa7dd] the one standing (object 10,
+// WAIT_AL2 on slot 1), and [0xa7de] the bench once his number has been called
+// and both have gone (object 14, WAIT_AL1's last frames).
+static const uint16 kBenchAlien = 0xa7dc;
+static const uint16 kStandingAlien = 0xa7dd;
+static const uint16 kBenchLeft = 0xa7de;
 
 static const int kButton = 12;			///< object 12, verb 12 -- "Push"
 static const byte kPushVerb = 12;
@@ -201,6 +206,37 @@ static const int kAlarmX1 = 0x5a, kAlarmY1 = 0x88, kAlarmFacing1 = 1;
 static const int kAlarmX2 = 0x50, kAlarmY2 = 0x7e, kAlarmFacing2 = 4;
 static const uint16 kAlarmWait = 0x28;
 
+// The two customers' conversations (ovr_0fa6:0x00e5 and 0x003e, the tick at
+// 0x0a63): talk to one, or hold an item out to him, and once Ben's own line is
+// down he answers through DLGREQ:sub_0c275 -- which in this room puts him in his
+// talking pose first, by [0xa7df] -- and goes back to waiting. The answers are
+// outcomes 0x11/0x12 to a word and 0x15/0x16 to an item, and an item gets
+// "0x17" from Ben after it (dosbox graphics parity, finding #161).
+static const byte kStepBenchTalk = 3;
+static const byte kStepBenchAnswer = 4;
+static const byte kStepBenchDone = 5;
+static const byte kStepStandingTalk = 0x0a;
+static const byte kStepStandingAnswer = 0x0b;
+static const byte kStepStandingDone = 0x0c;
+static const byte kStepBenchItem = 0x14;
+static const byte kStepBenchItemDone = 0x15;
+static const byte kStepStandingItem = 0x1e;
+static const byte kStepStandingItemDone = 0x1f;
+
+static const int kBenchObject = 9, kStandingObject = 10;
+static const byte kTalkVerb = 6;
+static const uint16 kSpeaker = 0xa7df;			///< 0 the one on the bench, 1 the one standing
+
+/// DLGREQ:sub_0c250 for each: anchor and ink.
+static const int kBenchX = 0x76, kBenchY = 0x46;
+static const byte kBenchInk[3] = { 0x3a, 0x3a, 0x3a };
+static const int kStandingX = 0xca, kStandingY = 0x28;
+static const byte kStandingInk[3] = { 0x3f, 0x28, 0x0f };
+
+static const byte kLineBenchWord = 0x11, kLineStandingWord = 0x12;
+static const byte kLineBenchItem = 0x15, kLineStandingItem = 0x16;
+static const byte kLineNoThanks = 0x17;
+
 static const byte kStepAlarm = 0xc8;
 static const byte kStepAlarmLeg = 0xcd;
 static const byte kStepAlarmDone = 0xd2;
@@ -228,10 +264,115 @@ static const int8 kDoorPanning = 0x32;
 
 static const byte kJackExitSubmode = 0x32;	///< transitions.cpp: room 54, submode 50 -> room 60
 
+/// MIDAS:sub_19ba0 and sub_19b64, the two figures' poses: a mode 8 play over
+/// a list in the data segment, slot 0 for the one on the bench and slot 1 for
+/// the one standing. The room's tick keeps both slots looping (anims.cpp), so a
+/// pose runs until another replaces it. (The pose numbers they keep at
+/// [0xa52a] and [0xa52b] are read by nothing in this room.)
+struct WaitingPose {
+	uint slot;
+	byte pose;
+	int rate;
+	const byte *frames;
+	int count;
+};
+
+static const byte kBenchIdle[] = {			// ds:0x6e7a
+	1, 6, 1, 6, 7, 6, 1, 6, 7, 6, 7, 1, 7, 6, 6
+};
+static const byte kBenchWait[] = {			// ds:0x6e8a
+	1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 3, 4, 5, 1, 3, 4, 5, 1, 3, 4, 5,
+	1, 3, 4, 5, 1, 2, 1, 1, 1, 1, 1, 1, 1
+};
+static const byte kBenchGone[] = {			// ds:0x6eb0
+	8, 9, 10, 10, 10, 10, 9, 8, 8, 8, 1
+};
+static const byte kStandingWait[] = {		// ds:0x6e38
+	1, 2, 3, 2, 1, 2, 3, 2, 1, 2, 3, 2, 1, 2, 3, 2, 1, 2, 3, 2, 7, 1, 1, 1, 1,
+	1, 1, 7, 1, 1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 1, 1, 7, 1, 1, 1, 0
+};
+static const byte kStandingTalk[] = {		// ds:0x6e66
+	4, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 5, 4, 5, 4, 7, 5, 6, 5, 0
+};
+
+static const WaitingPose kWaitingPoses[] = {
+	{ 0, 1, 3, kBenchIdle, ARRAYSIZE(kBenchIdle) },
+	{ 0, 2, 3, kBenchWait, ARRAYSIZE(kBenchWait) },
+	{ 0, 3, 4, kBenchGone, ARRAYSIZE(kBenchGone) },
+	{ 1, 1, 4, kStandingWait, ARRAYSIZE(kStandingWait) },
+	{ 1, 2, 3, kStandingTalk, ARRAYSIZE(kStandingTalk) },
+};
+
+static const int kPoseMode = 8;
+
+void AlienEngine::playWaitingPose(uint slot, byte pose) {
+	for (uint i = 0; i < ARRAYSIZE(kWaitingPoses); i++) {
+		const WaitingPose &p = kWaitingPoses[i];
+		if (p.slot == slot && p.pose == pose) {
+			_anims.play(slot, 0, p.count, p.rate, kPoseMode, p.frames);
+			return;
+		}
+	}
+}
+
+/// DLGREQ:sub_0c275 for room 54: the customer named by [0xa7df] takes his
+/// talking pose and says the line, in the colour and place sub_0c250 gave him.
+void AlienEngine::waitingCustomerSays(byte code) {
+	const bool standing = _script.flag(kSpeaker) == 1;
+	playWaitingPose(standing ? 1 : 0, standing ? 2 : 1);
+	const byte *ink = standing ? kStandingInk : kBenchInk;
+	setTextColor(ink[0], ink[1], ink[2]);
+	uploadTextColor();
+	queueOutcome(_tal, code, standing ? kStandingX : kBenchX, standing ? kStandingY : kBenchY,
+				 false);
+	debugC(1, kDebugRooms, "waiting: the %s customer says outcome 0x%02x",
+		   standing ? "standing" : "bench", code);
+}
+
+/**
+ * Entry 3's arms for the two customers (ovr_0fa6:0x003e, 0x00e5): a word or an
+ * item to either starts his conversation, with Ben's own line -- the table's --
+ * going first.
+ */
+bool AlienEngine::armWaitingCustomers(int obj, byte verb, byte item) {
+	if (_room != kWaitingRoom)
+		return false;
+
+	// Ben's own line -- 0x14 holding an item out, 0x33 for the bench he has
+	// left -- is the lifted table's (the same entry 3), so only the machine is
+	// started here.
+	if (obj != kBenchObject && obj != kStandingObject)
+		return false;
+	if (!item && verb != kTalkVerb)
+		return false;
+
+	const bool standing = obj == kStandingObject;
+	if (item) {
+		_waitingStep = standing ? kStepStandingItem : kStepBenchItem;
+	} else {
+		_waitingStep = standing ? kStepStandingTalk : kStepBenchTalk;
+	}
+	_waitingPos = 0;
+	CursorMan.showMouse(false);
+	debugC(1, kDebugRooms, "waiting: %s the %s customer, step 0x%02x", item ? "an item to" : "a word with",
+		   standing ? "standing" : "bench", _waitingStep);
+	return true;
+}
+
 /// Every arrival answers the self-link.
 void AlienEngine::startWaiting() {
 	if (_room != kWaitingRoom)
 		return;
+
+	// 10c9:sub_11855, from the room's open (ovr_36_0fa6:0x093d): whoever is
+	// still waiting takes up their pose. The port never drew either of them
+	// (dosbox graphics parity, finding #161).
+	if (_script.flag(kBenchAlien) == 1)
+		playWaitingPose(0, 2);
+	if (_script.flag(kStandingAlien) == 1)
+		playWaitingPose(1, 1);
+	if (_script.flag(kBenchLeft) == 1)
+		playWaitingPose(0, 3);
 
 	_waitingStep = kStepIdle;
 	_waitingPos = 0;
@@ -322,6 +463,39 @@ void AlienEngine::stepWaitingMachine() {
 	_waitingPos++;
 
 	switch (_waitingStep) {
+	case kStepBenchTalk:
+	case kStepStandingTalk:
+	case kStepBenchItem:
+	case kStepStandingItem: {
+		// 0x0a63..0x0b5b: Ben's line down, then the answer.
+		if (!waitingLineDone())
+			break;
+		const bool standing = _waitingStep == kStepStandingTalk || _waitingStep == kStepStandingItem;
+		const bool word = _waitingStep == kStepBenchTalk || _waitingStep == kStepStandingTalk;
+		_script.setFlag(kSpeaker, standing ? 1 : 0);
+		waitingCustomerSays(word ? (standing ? kLineStandingWord : kLineBenchWord)
+								 : (standing ? kLineStandingItem : kLineBenchItem));
+		_waitingStep = word ? (standing ? kStepStandingDone : kStepBenchDone)
+							: (standing ? kStepStandingItemDone : kStepBenchItemDone);
+		break;
+	}
+
+	case kStepBenchDone:
+	case kStepStandingDone:
+	case kStepBenchItemDone:
+	case kStepStandingItemDone: {
+		// Back to waiting: sub_19ba0(2) or sub_19b64(1), and the cursor.
+		if (!waitingLineDone())
+			break;
+		const bool standing = _waitingStep == kStepStandingDone || _waitingStep == kStepStandingItemDone;
+		playWaitingPose(standing ? 1 : 0, standing ? 1 : 2);
+		if (_waitingStep == kStepBenchItemDone || _waitingStep == kStepStandingItemDone)
+			speakWaiting(kLineNoThanks);
+		_waitingStep = kStepIdle;
+		CursorMan.showMouse(true);
+		break;
+	}
+
 	case kStepAnnounce:
 		if (_waitingPos <= kAnnounceWait)
 			break;
@@ -389,9 +563,9 @@ void AlienEngine::stepWaitingMachine() {
 		// its own, then CHARANIM:sub_14ba9) because it is about to reload the
 		// room under the player; the port's takeExit does that work itself.
 		_script.setFlag(kNumberCalled, 1);
-		_script.setFlag(kBoardLeft, 0);
-		_script.setFlag(kBoardRight, 0);
-		_script.setFlag(kDeskOpen, 1);
+		_script.setFlag(kBenchAlien, 0);
+		_script.setFlag(kStandingAlien, 0);
+		_script.setFlag(kBenchLeft, 1);
 		_script.setFlag(kCalledReload, 1);
 		_waitingStep = kStepIdle;
 		takeExit(kCallSubmode);

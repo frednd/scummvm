@@ -48,7 +48,15 @@ enum AlienDebugChannels {
 	kDebugDialog,
 	kDebugLift,
 	kDebugTelescope,
+	kDebugTrace,
 };
+
+/**
+ * One line of the behaviour trace (dosbox playtest plan, phase 8): the master
+ * tick, the event and its fields, on the `trace` channel. The original's runner
+ * writes the same lines from breakpoints on the matching resident routines.
+ */
+void traceEvent(const char *format, ...) GCC_PRINTF(1, 2);
 
 } // End of namespace Alien
 

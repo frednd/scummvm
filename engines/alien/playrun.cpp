@@ -283,6 +283,8 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 		playFailed(cmd.sourceLine);
 		return;
 	}
+	writeCheckpointScreen(cmd.s);
+
 	// A checkpoint stands in for a save from the menu, and the menu forgets
 	// the way into the room (LOGIC:sub_12b08), so the run that goes on from
 	// here is the one a resumed run sees.
@@ -316,6 +318,36 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 		_playActive = false;
 		_quit = true;
 	}
+}
+
+/**
+ * The screen at a checkpoint, as the player sees it before the reload from the
+ * file, in port/screens/NAME.png under `playout`, with what the graphics
+ * comparison needs to read it beside it (tools/parity_screens.py, dosbox
+ * playtest plan phase 7). The original's runner writes the same pair from its
+ * machine state.
+ */
+void AlienEngine::writeCheckpointScreen(const Common::String &name) {
+	if (!ConfMan.hasKey("playout"))
+		return;
+	const Common::String base = ConfMan.get("playout") + "/port/screens/" + name;
+
+	// The sidecar first: its open makes the directory the screen goes in.
+	Common::DumpFile out;
+	if (!out.open(Common::Path(base + ".json"), true)) {
+		warning("play: could not write %s.json", base.c_str());
+		return;
+	}
+	out.writeString(Common::String::format(
+		"{\"name\": \"%s\", \"room\": %d, \"tick\": %u, \"scroll\": %d, "
+		"\"ben\": [%d, %d, %d], \"frame\": %u, \"scale\": %u, \"light\": [%d, %d]}\n",
+		name.c_str(), _room, _tick, _scrollX, _ben.spriteX(), _ben.spriteY(), _ben.facing(),
+		_ben.frame(), _ben.scale(), _lightLevel, _lightPrev));
+	out.finalize();
+	out.close();
+
+	redraw();
+	dumpScreen(base + ".png");
 }
 
 /**

@@ -238,6 +238,7 @@ int scaledSize(int size, int scale) {
  * comments name the instruction each part comes from.
  */
 void AlienEngine::playStudio() {
+	traceEvent("record studio");
 	Graphics::Surface plate, page, screenPage;
 	byte palette[256 * 3];
 	byte unused[256 * 3];

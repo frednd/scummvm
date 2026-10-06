@@ -49,6 +49,10 @@ static const int kPanelHeight = 40;
 
 // The bar: six slots of 35 by 22, all on one row -- OBJ:sub_03c77.
 static const int kSlotWidth = 35;
+// What an icon blit actually covers: OBJ:sprite_frame_advance passes 35 (0x23)
+// to blit_ems_to_far, which halves it and moves words -- 34 columns (finding
+// #169).
+static const int kIconWidth = kSlotWidth & ~1;
 static const int kSlotHeight = 22;
 static const int kSlotY = 173;
 static const int kSlotX[Inventory::kSlotCount] = { 50, 87, 124, 161, 198, 235 };
@@ -67,7 +71,10 @@ static const byte kHighlightTo = 0x27;
 // OBJ:sub_06ac6's, and the two differ by a pixel at the edges; each is used for
 // what the original uses it for.
 static const int kArrowX = 6;
-static const int kArrowWidth = 27;
+// OBJ:0x1236 passes 27 (0x1b), but blit_rect_movsw halves the width and moves
+// words, so 26 columns are what reach the screen; the 27th, the bar's own
+// texture at x 32, is never overwritten (dosbox graphics parity, finding #169).
+static const int kArrowWidth = 26;
 static const int kArrowHeight = 15;
 static const int kArrowUpY = 165;
 static const int kArrowDownY = 181;
@@ -118,7 +125,7 @@ static const struct { byte height, top; } kThumb[7][7] = {
 	{ { 0, 0 }, {  5, 164 }, {  5, 169 }, {  5, 174 }, { 5, 179 }, { 6, 184 }, { 6, 190 } }
 };
 
-Inventory::Inventory() : _page(1), _scroll(0) {
+Inventory::Inventory() : _page(1), _newest(false), _barAway(false), _scroll(0) {
 	reset();
 }
 
@@ -159,6 +166,7 @@ void Inventory::reset() {
 	for (uint i = 0; i < kListSize; i++)
 		_counter[i] = 1;
 	_page = 1;
+	_newest = false;
 	_scroll = 0;
 }
 
@@ -170,6 +178,9 @@ void Inventory::add(byte item) {
 		if (_list[i])
 			continue;
 		_list[i] = item;
+		traceEvent("item+ %u", item);
+		if (!_barAway)
+			_newest = true;
 		showNewest();
 		debugC(1, kDebugItems, "item: %u (%s) picked up, list slot %u, page %u",
 			   item, name(item).c_str(), i, _page);
@@ -190,10 +201,13 @@ void Inventory::remove(byte item) {
 		// Removal closes the gap, which is what keeps the list dense enough for
 		// the bar to page through it.
 		memmove(&_list[i], &_list[i + 1], kListSize - i - 1);
+		traceEvent("item- %u", item);
 		_list[kListSize - 1] = kNoItem;
 		debugC(1, kDebugItems, "item: %u (%s) given up", item, name(item).c_str());
 
-		showNewest();
+		_newest = true;
+		if (!_barAway)
+			showNewest();
 		return;
 	}
 
@@ -211,7 +225,10 @@ void Inventory::replace(byte oldItem, byte newItem) {
 		// In place: the original overwrites the slot rather than closing the gap
 		// and appending, so the new item is drawn where the old one was.
 		_list[i] = newItem;
-		showNewest();
+		traceEvent("item= %u %u", oldItem, newItem);
+		_newest = true;
+		if (!_barAway)
+			showNewest();
 		debugC(1, kDebugItems, "item: %u (%s) became %u (%s), list slot %u",
 			   oldItem, name(oldItem).c_str(), newItem, name(newItem).c_str(), i);
 		return;
@@ -243,13 +260,25 @@ uint Inventory::pageCount() const {
 }
 
 void Inventory::showNewest() {
-	// The original's [0xa7ec]. All three routines that change the list -- the
-	// add and the swap at OBJ:sprite_add and OBJ:sub_08f38, and the removal that
-	// closes the gap behind it -- raise the flag and then rebuild the bar, and
-	// the rebuild OBJ:sub_03c77 opens by reading it: [0xa813] is first clamped
-	// down to the page count, then, if the flag is up, raised to it. Both ways
-	// round that lands on the last page, which is the page a new item is on.
-	_page = pageCount();
+	// sub_03c77 opens by clamping [0xa813] down to the page count, then, with
+	// [0xa7ec] up, raises it to it and drops the flag. An item picked up while
+	// the bar was away left the flag down, so the page stays (dosbox graphics
+	// parity, finding #166).
+	const uint pages = pageCount();
+	if (_page > pages)
+		_page = pages;
+	if (_newest) {
+		_page = pages;
+		_newest = false;
+	}
+}
+
+void Inventory::setBarAway(bool away) {
+	if (_barAway == away)
+		return;
+	_barAway = away;
+	if (!away)
+		showNewest();
 }
 
 bool Inventory::pageUp() {
@@ -393,7 +422,7 @@ void Inventory::blit(Graphics::Surface &dest, const Graphics::Surface &src,
 void Inventory::drawIcon(const StaticTables &tables, Graphics::Surface &dest,
 						 byte item, uint slot, bool hover) const {
 	blit(dest, _icons, tables.itemIconX(item), tables.itemIconY(item),
-		 kSlotWidth, kSlotHeight, kSlotX[slot], kSlotY, true);
+		 kIconWidth, kSlotHeight, kSlotX[slot], kSlotY, true);
 
 	if (!hover)
 		return;
@@ -460,12 +489,12 @@ void Inventory::drawRolling(const StaticTables &tables, Graphics::Surface &dest)
 		const byte upper = itemOn(row + 1, slot);
 		if (upper && cut < kSlotHeight)
 			blit(dest, _icons, tables.itemIconX(upper), tables.itemIconY(upper) + cut,
-				 kSlotWidth, kSlotHeight - cut, kSlotX[slot], kSlotY, true);
+				 kIconWidth, kSlotHeight - cut, kSlotX[slot], kSlotY, true);
 
 		const byte lower = itemOn(row + 2, slot);
 		if (lower && cut > 0)
 			blit(dest, _icons, tables.itemIconX(lower), tables.itemIconY(lower),
-				 kSlotWidth, cut, kSlotX[slot], kSlotY + kSlotHeight - cut, true);
+				 kIconWidth, cut, kSlotX[slot], kSlotY + kSlotHeight - cut, true);
 	}
 }
 

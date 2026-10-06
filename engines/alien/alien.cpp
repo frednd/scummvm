@@ -239,7 +239,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
 		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
 		_jailClock(0), _jailRedLoaded(false), _jailFieldPhase(0),
-		_scrollHold(-1), _roomEnterTick(0),
+		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false), _hippieHandOff(-1),
 		_hippieTalking(false),
@@ -656,7 +656,8 @@ bool AlienEngine::playIdle() const {
 	// Room 58's guard leaves the cursor up while he walks off to check the
 	// Boss's line and comes back, so his machine has to be asked directly.
 	// And the hippie's topic 6: the menu has gone when his reply is still owed
-	// and the next file's first topic is still to open (hippie.cpp).
+	// and the next file's first topic is still to open (hippie.cpp). And a
+	// shore ledge with a click to answer once the walk is over (shore.cpp).
 	// And the tick a room was entered on: on the original the room's loop has
 	// already made its first pass -- its machine started, the cursor taken
 	// away -- by the time anything can be asked of it (rooms 45 and 60, and
@@ -668,7 +669,8 @@ bool AlienEngine::playIdle() const {
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
 		   !_armed && !_cliffClimb && !_cliffStep && !_divingExit && !_divingStep &&
 		   _scrollVel == 0 && !scrollWouldPan() && !jailGuardBusy() &&
-		   !chatWaiting && !_hippieAnswer && _hippieHandOff < 0 && CursorMan.isVisible();
+		   !chatWaiting && !_hippieAnswer && _hippieHandOff < 0 && !shoreArrivalPending() &&
+		   CursorMan.isVisible();
 }
 
 static const int kHurryTicks = 12;	///< how long a hurried line stands, in half ticks
@@ -1090,9 +1092,12 @@ void AlienEngine::runPlayCommand(const PlayCommand &cmd) {
 /**
  * Room's total pixel width, `[0xa0c0]` as set by that room's own overlay init
  * code (default 0x140 = 320, `seg_main.asm:544`). Found by grepping every
- * overlay for `[0xa0c0]`; see docs/playthrough_findings.md. 15 rooms are wider
- * than the 320px screen and pan with `_scrollX` (sub_13bce); the rest are a
- * no-op override (<= 320) and stay fixed.
+ * overlay for `[0xa0c0]`; see docs/playthrough_findings.md. Twelve rooms are
+ * wider than the 320px screen and pan with `_scrollX` (sub_13bce); the rest are
+ * a no-op override (<= 320) and stay fixed. Of the ship's rooms only the
+ * hallways (53 and 57, one overlay) are wide: 54, 55 and 56 have overlays of
+ * their own that never set `[0xa0c0]` or `[0x7924]`, and 320-wide plates
+ * (dosbox graphics parity, finding #162).
  */
 int AlienEngine::roomWidth(int room) {
 	switch (room) {
@@ -1106,9 +1111,6 @@ int AlienEngine::roomWidth(int room) {
 	case 50: return 0x190;
 	case 52: return 0x27e;
 	case 53:
-	case 54:
-	case 55:
-	case 56:
 	case 57: return 0x1b8;
 	case 58: return 0x27e;
 	default: return kScreenWidth;
@@ -1341,6 +1343,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_chatPickNew = false;
 	_chat.close();
 	_barHidden = false;
+	_inventory.setBarAway(false);
 	_chatOwnsBar = false;
 
 	// OBJ:0x6300, the room's teardown: he may turn round again in the next.
@@ -1538,6 +1541,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		   _sprite.frameCount(), _tal.usedEntries(), _labels.usedEntries(), _spots.size());
 
 	_room = room;
+	// OBJ:sub_08567, the shared open: the room, the way in ([0xa880], the room
+	// left), and whether a scene is handing it back.
+	traceEvent("room %d from %d%s", room, _mode, _sceneHandBack ? " again" : "");
 
 	// What the room says as it opens, if its opening effects queued an outcome:
 	// room 3's two-line monologue is how the game itself starts. It is spoken
@@ -1706,6 +1712,32 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
  * The loop never sleeps, so "a pass" is whatever the machine managed; the port
  * takes one per master tick. Narrow rooms always resolve to zero.
  */
+/**
+ * The rooms whose loop holds the camera every pass, just before the pan reads
+ * [0xa8e0]/[0xa8e2] (dosbox graphics parity, finding #163). Room 27's hold is
+ * never off: the mansion is two views, the left edge while the character is
+ * left of 0xf1 and the right edge past it (ovr_1b_0e7f:0x062a). Room 53's
+ * holds only past x 0xc8, to the right edge (ovr_35_0f9e:0x1055, in the
+ * overlay's entry 3, which is room 53's tick; room 57's has no hold).
+ */
+void AlienEngine::stepCameraHold() {
+	const int x = _ben.spriteX();
+	// A placement sets [0xa8f0] with [0xa8ec] (CHARANIM:sub_13bce): no crossing.
+	if (_ben.placements() != _cameraPlacements) {
+		_cameraPlacements = _ben.placements();
+		_cameraLastX = x;
+	}
+	if (_room == 27)
+		_scrollHold = x < 0xf1 ? 0 : 0x1f0;
+	else if (_room == 53)
+		_scrollHold = x > 0xc8 ? 0x1f4 : -1;
+	else if (_room == 50 && _cameraLastX < 0xcd && x > 0xcc)
+		// Room 50 does not hold; crossing x 0xcd to the right moves the x the
+		// pan makes for to 0xdc (ovr_32_0f81:0x0711, [0xa8f0] against [0xa8ec]).
+		_scrollFocus = 0xdc;
+	_cameraLastX = x;
+}
+
 /**
  * Whether updateScroll's next pass would pan, which the original shows as
  * [0xa0cc] going non-zero on the pass itself: the moment the camera has been
@@ -1926,6 +1958,7 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 		   _ben.walkX(), _ben.walkY(), x, y, _route.count,
 		   _walk.mask().blocked(x, y) ? "blocked" : "walkable", arrivalFacing);
 
+	_ben.setLedgePace(_script.flag(0xa73a) == 1);
 	_ben.follow(_route, x, y, arrivalFacing);
 	_dirty = true;
 }
@@ -1941,6 +1974,7 @@ void AlienEngine::straightWalkTo(int x, int y, int arrivalFacing) {
 
 	debugC(1, kDebugGraphics, "straight walk %d,%d -> %d,%d facing %d",
 		   _route.points[0].x, _route.points[0].y, x, y, arrivalFacing);
+	_ben.setLedgePace(_script.flag(0xa73a) == 1);
 	_ben.follow(_route, x, y, arrivalFacing);
 	_dirty = true;
 }
@@ -2011,6 +2045,14 @@ void AlienEngine::stepClock() {
 	const uint32 now = millis();
 	if (now - _lastTick < kTickMillis)
 		return;
+	// [0x7926] is the timer interrupt's (INPUT:psub_01820), not the loop's: it
+	// keeps counting through a fade, a scene or any other wait that holds the
+	// loop up. The port's blocking waits let the clock run on without coming
+	// back here, so the ticks they spent are counted now, without the work the
+	// loop does on a tick (finding #139).
+	const uint32 missed = (now - _lastTick) / kTickMillis - 1;
+	if (missed)
+		_tick += missed;
 	_lastTick = now;
 	_tick++;
 
@@ -2234,6 +2276,7 @@ void AlienEngine::stepClock() {
 		_dirty = true;
 
 	// The camera pans once a pass of the room loop, whatever else is gated.
+	stepCameraHold();
 	updateScroll();
 
 	if (_tick & 3)
@@ -2702,6 +2745,7 @@ void AlienEngine::playMusicSlot(uint slot) {
 		return;
 
 	stopMusic();
+	traceEvent("music %u", slot);
 
 	const byte module = _tables.musicSlotModule(slot);
 	const byte order = _tables.musicSlotOrder(slot);
@@ -3329,6 +3373,7 @@ bool AlienEngine::playLift() {
 
 	_liftPlayed = true;
 	debugC(1, kDebugVideo, "%s: %d frames", kLiftClip, video.getFrameCount());
+	traceEvent("video %s", kLiftClip);
 	playVideo(video);
 	return true;
 }
@@ -3389,6 +3434,7 @@ bool AlienEngine::playCutscene(const char *file) {
 		_videoFont.load();
 
 	video.setLanguage(subtitleLanguage());
+	traceEvent("video %s", file);
 	debugC(1, kDebugVideo, "%s: %u frames, %u Hz, %u languages, showing %u", file,
 		   video.frameCount(), video.sampleRate(), video.languageCount(), video.language());
 
@@ -4322,6 +4368,10 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armWaitingButton(spot.obj, verb);
 
+	// And the two customers waiting beside it, whose conversations are that
+	// room's machine as well (waiting.cpp).
+	armWaitingCustomers(spot.obj, verb, item);
+
 	// And room 13's battery, whose body stops two animation slots by writing
 	// into the slot arrays, which the lifted row cannot (basement.cpp).
 	if (!item)
@@ -4377,6 +4427,7 @@ void AlienEngine::queueOutcome(const TalFile &tal, byte code, int anchorX, int a
 	// An outcome code does not name one line: it names a chain of up to ten
 	// dialog ids in zone 1 of the room's TAL, played one after another.
 	const TalFile::Outcome &chain = tal.outcome(code);
+	traceEvent("say %s %u", tal.name().c_str(), code);
 	_speechTal = &tal;
 	_speechBen = benSpeaks;
 
@@ -5127,6 +5178,17 @@ void AlienEngine::handleEvents() {
 			break;
 		}
 	}
+}
+
+void traceEvent(const char *format, ...) {
+	if (!debugChannelSet(1, kDebugTrace))
+		return;
+	va_list args;
+	va_start(args, format);
+	const Common::String event = Common::String::vformat(format, args);
+	va_end(args);
+	const AlienEngine *vm = static_cast<const AlienEngine *>(g_engine);
+	debugC(1, kDebugTrace, "trace: %u %s", vm ? vm->masterTick() : 0, event.c_str());
 }
 
 } // End of namespace Alien
