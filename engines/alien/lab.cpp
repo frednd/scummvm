@@ -96,6 +96,7 @@ static const uint16 kTerminalWait = 0x46;
 // walks to, which is what playtest report 3 of 2026-09-06 was reading as the
 // character being in the wrong place: see docs/playthrough_findings.md #72.
 static const uint16 kHoleBoarded = 0xa6dc;
+static const uint16 kHoleNow = 0xa7a4, kHoleWas = 0xa7a5;
 static const int kHoleX1 = 103, kHoleY1 = 65, kHoleX2 = 125, kHoleY2 = 110;
 static const uint kHoleSample = 14;
 static const uint32 kHoleEnterRate = 0xfa0, kHoleLeaveRate = 0x125c;
@@ -213,6 +214,10 @@ void AlienEngine::stepLabHole() {
 
 	const int x = _ben.spriteX(), y = _ben.spriteY();
 	const bool inside = x > kHoleX1 && y > kHoleY1 && x < kHoleX2 && y < kHoleY2;
+	// The edge where the original keeps it, which a save holds (dosbox state
+	// parity, lab-tools).
+	_script.setFlag(kHoleWas, _labNearHole ? 1 : 0);
+	_script.setFlag(kHoleNow, inside ? 1 : 0);
 	if (inside == _labNearHole)
 		return;
 

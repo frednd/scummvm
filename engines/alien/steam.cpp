@@ -103,6 +103,7 @@ static const uint16 kBlowDelay = 1;
 /// level back to 0 -- the light catching and failing again.
 static const uint16 kLightOn = 0xa799;
 static const uint16 kLightLevel = 0xa792;
+static const uint16 kLightWas = 0xa794;
 static const int kLightFirst = 0xe5;
 static const int kLightCount = 0x1a;
 static const int kLightStep = 7;
@@ -190,6 +191,9 @@ void AlienEngine::stepSteamLight() {
 
 	const byte was = _script.flag(kLightLevel);
 	int level = was;
+	// [0xa794], the level the pass started from, which is what decides whether
+	// the palette is written (0x0511, 0x055b); a save carries it.
+	setStateWord(kLightWas, was);
 
 	if (_script.flag(kLightOn) == 1) {
 		if ((_rnd.getRandomNumber(0xffff) & kBurstMask) == 0)

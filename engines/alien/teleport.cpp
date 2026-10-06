@@ -403,6 +403,12 @@ void AlienEngine::stepShipFlash() {
 			_shipFlashCount = 0;
 		}
 	}
+
+	// Where the original keeps the three (0x07e7-0x083c), which a save holds
+	// (dosbox state parity, ship).
+	_script.setFlag(0x33ea, (byte)_shipFlashes);
+	setStateWord(0x33e8, (uint16)_shipFlashLevel);
+	setStateWord(0x33ec, (uint16)_shipFlashCount);
 }
 
 /// LOGIC:sub_123f1 and sub_123d0: the chamber open, or shut and pulsing.

@@ -152,7 +152,7 @@ public:
 	 * the animation frame each of its slots starts on, under the puzzle-state
 	 * guards the overlay puts it under. Rooms with no script bind nothing.
 	 */
-	void enterRoom(int room);
+	void enterRoom(int room, bool again = false);
 
 	/**
 	 * Runs the room's response to a click that resolved to (obj, verb), with
@@ -285,6 +285,7 @@ private:
 
 	/// The CHARANIM:0x4e call the room's opening effects last made, if any.
 	bool _placed;
+	bool _again;		///< enterRoom is putting the room back after a scene
 	int _placeX;
 	int _placeY;
 	int _placeFacing;

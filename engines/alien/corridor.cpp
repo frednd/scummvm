@@ -111,6 +111,7 @@ static const uint16 kNoCardLine = 0xa7a0;
 static const byte kOutcomeNoCard = 5;
 
 static const int kPodRoom = 59;
+static const int kJailRoom = 58;
 static const int kScannerRoom = 52;
 static const int kChamberRoom = 56;
 
@@ -214,7 +215,8 @@ static const uint kAlarmMusic = 11;
 /// [0xa7d4]: the terminal has just been left; room 57 puts Ben back at it.
 static const uint16 kTerminalReturn = 0xa7d4;
 
-/// Rooms 55 and 56's own door ticks (ovr_37_0f9a:0x04e5, ovr_38_0f92:0x089a):
+/// Rooms 51, 52, 55, 56 and 59's own door ticks (CHARANIM:sub_14d4c, sub_14e13
+/// and sub_14f3c, ovr_37_0f9a:0x04e5, ovr_38_0f92:0x089a):
 /// the same edge test as the elevator's, inline in each room's loop, over a
 /// rectangle in sprite coordinates. Bounds are exclusive; -1 leaves a side open.
 struct ShipDoor {
@@ -227,9 +229,23 @@ struct ShipDoor {
 };
 
 static const ShipDoor kShipDoors[] = {
+	// Room 51's two, CHARANIM:sub_14d4c from the lobby's loop (ovr_33_0faa:
+	// 0x04e8): the door to the jail corridor on slot 3, LOB_DOOR's 22 frames,
+	// and the elevator on slot 4, LOB_DOO2's ten. The port never opened either.
+	{ 51, kDoorB, kDoorBWas, 0x24, -1, 0x5f, 0x45, 3, 0x16, -0x32 },
+	{ 51, kDoorA, kDoorAWas, 0xf9, -1, -1, 0x42, 4, 0xa, 0x32 },
+	// Room 52's two, CHARANIM:sub_14e13 (ovr_34_0f96:0x0898): SEC_DOO1 to room
+	// 55 on slot 1, seven frames, and SEC_DOO2 to room 56 on slot 2, ten. The
+	// room's init draws the one he came through open; nothing shut it again.
+	{ 52, kDoorB, kDoorBWas, -1, -1, 0x3e, 0x4d, 1, 7, -0x32 },
+	{ 52, kDoorA, kDoorAWas, 0x228, -1, -1, 0x45, 2, 0xa, 0x32 },
 	{ 55, kDoorA, kDoorAWas, 0xfc, 0x3c, -1, 0x4d, 0, 0xb, 0x32 },
 	{ 55, kDoorB, kDoorBWas, 0x31, -1, 0x72, 0x50, 1, 0xb, -0x32 },
-	{ 56, kDoorB, kDoorBWas, -1, -1, 0x58, 0x26, 1, 0xa, -0x32 }
+	{ 56, kDoorB, kDoorBWas, -1, -1, 0x58, 0x26, 1, 0xa, -0x32 },
+	// Room 59's door back to room 53, CHARANIM:sub_14f3c (ovr_3b_0fa2's loop):
+	// ESC_DOOR on slot 0, ten frames. The room's init draws it open on the way
+	// in (the lifted [0xa7a4] = 1 when [0xa880] == 53).
+	{ 59, kDoorB, kDoorBWas, -1, -1, 0x33, 0x4b, 0, 0xa, -0x32 }
 };
 
 /// CHARANIM:sub_14ed3 / sub_14f9e: the rectangle in front of the elevator
@@ -280,6 +296,14 @@ void AlienEngine::startCorridor() {
 			_script.setFlag(kDoorB, 1);
 	}
 
+	// Room 59 the same, through the pod door from room 53.
+	if (_room == kPodRoom) {
+		_script.setFlag(kDoorB, 0);
+		_script.setFlag(kDoorBWas, 0);
+		if (_script.flag(kCameFrom) == kHallwayRoomA)
+			_script.setFlag(kDoorB, 1);
+	}
+
 	if (!isElevatorRoom(_room))
 		return;
 
@@ -292,6 +316,16 @@ void AlienEngine::startCorridor() {
 		_script.setFlag(kDoorBWas, 0);
 		if (_script.flag(kCameFrom) == kScannerRoom)
 			_script.setFlag(kDoorA, 1);
+	}
+
+	// ovr_33_0faa:0x0290: the lobby drops its corridor door's edge, and the way
+	// in from the jail (0x038f) is through that door, drawn open by a lifted
+	// row.
+	if (_room == kLobbyRoom) {
+		_script.setFlag(kDoorB, 0);
+		_script.setFlag(kDoorBWas, 0);
+		if (_script.flag(kCameFrom) == kJailRoom)
+			_script.setFlag(kDoorB, 1);
 	}
 
 	if (_room == kHallwayRoomB)
@@ -355,13 +389,16 @@ void AlienEngine::startCorridor() {
 }
 
 /**
- * Room 57's alarm, CUTSCENE:sub_0e458, which the room's entry plays before
- * anything of its own the first time it is entered with the field down
- * (0x05c6): HAL_MONS.DL2 over HAL_MONS.PCX, music slot 11.
+ * The hallways' alarm, CUTSCENE:sub_0e458, which the overlay's entry 2 plays
+ * the first frame either hallway is up with the field down (0x05c6):
+ * HAL_MONS.DL2 over HAL_MONS.PCX, music slot 11. Entry 2 is the per-frame
+ * body, so it also fires in room 57 the moment the terminal takes the field
+ * down, not only on the next way in (dosbox state parity, field-down).
  */
-void AlienEngine::hallwayScene(int room) {
-	if (room != kHallwayRoomB || _script.flag(kAlarmLatch) != 0 || _script.flag(kFieldUp) != 0)
-		return;
+bool AlienEngine::hallwayScene(int room) {
+	if ((room != kHallwayRoomA && room != kHallwayRoomB) || _script.flag(kAlarmLatch) != 0 ||
+		_script.flag(kFieldUp) != 0)
+		return false;
 
 	_script.setFlag(kAlarmLatch, 1);
 	debugC(1, kDebugRooms, "corridor: the alarm, with the force field down");
@@ -369,6 +406,7 @@ void AlienEngine::hallwayScene(int room) {
 	for (uint i = 0; i < ARRAYSIZE(kWaitingFlags); i++)
 		_script.setFlag(kWaitingFlags[i], 0);
 	_script.setFlag(kAlarmPlayed, 1);
+	return true;
 }
 
 /// CHARANIM:sub_150f4 / sub_151bc: a walk that ended at the elevator door; and
@@ -627,7 +665,7 @@ void AlienEngine::stepHallwayDoors() {
 }
 
 /**
- * Rooms 55 and 56's doors: open as Ben's sprite steps into the rectangle in
+ * Rooms 51, 52, 55, 56 and 59's doors: open as Ben's sprite steps into the rectangle in
  * front of one, shut as it steps out, each with the shared door sample.
  */
 void AlienEngine::stepShipDoors() {
@@ -654,16 +692,88 @@ void AlienEngine::stepShipDoors() {
 }
 
 /**
+ * Room 51's three security cameras, CHARANIM:sub_14c12 from the lobby's loop
+ * (ovr_33_0faa:0x04ed), which the port never ran. Each sweeps its 32 frames
+ * one way and then back: once its slot has run out a frame count climbs, and
+ * past the camera's limit the direction byte flips and the sweep plays --
+ * backwards on 1, forwards on 0, after which the count starts again. The
+ * first two creak as they go. MAIN starts the bytes at 1 and the counts part
+ * way in (seg_main:0x0b62-0x0b7b), so the three are out of step.
+ */
+struct LobbyCamera {
+	uint slot;
+	uint16 count;		///< word: frames since the slot ran out
+	uint16 dir;			///< byte: 1 = the backward sweep is the one playing
+	uint16 limit;
+	int rate;
+	uint sample;		///< 0 for the silent third
+	uint32 backRate, foreRate;
+	byte volume;
+	int8 pan;
+};
+
+static const LobbyCamera kLobbyCameras[] = {
+	{ 0, 0xa7c6, 0xa7c8, 0x46, 1, 5, 0x36b0, 0x32c8, 8, -0x37 },
+	{ 1, 0xa7ca, 0xa7cc, 0x64, 2, 4, 0x32c8, 0x3200, 0xa, 0 },
+	{ 2, 0xa7ce, 0xa7d0, 0x3c, 1, 0, 0, 0, 0, 0 }
+};
+
+static const int kCameraFrames = 0x20;
+static const uint16 kCameraDelay = 1;
+
+void AlienEngine::stepLobbyCameras() {
+	if (_room != kLobbyRoom)
+		return;
+
+	for (uint i = 0; i < ARRAYSIZE(kLobbyCameras); i++) {
+		const LobbyCamera &c = kLobbyCameras[i];
+		if (_anims.remaining(c.slot) != 0)
+			continue;
+		// The original counts every frame and this runs on the tick pair.
+		const uint16 count = stateWord(c.count) + 2;
+		setStateWord(c.count, count);
+		if (count <= c.limit)
+			continue;
+
+		byte dir = _script.flag(c.dir) + 1;
+		if (dir == 2) {
+			dir = 0;
+			setStateWord(c.count, 0);
+		}
+		_script.setFlag(c.dir, dir);
+
+		if (dir == 1)
+			_anims.play(c.slot, kCameraFrames, kCameraFrames, c.rate, kBackward);
+		else
+			_anims.play(c.slot, 1, kCameraFrames, c.rate, kForward);
+		if (c.sample)
+			_sound.queue(c.sample, dir == 1 ? c.backRate : c.foreRate, c.volume, c.pan,
+						 kCameraDelay);
+		_dirty = true;
+	}
+}
+
+/**
  * The rooms' ticks: the elevator door and the pod door, room 53's man, and
  * room 57's card line opening the terminal (0x0b29).
  */
 void AlienEngine::stepCorridor() {
 	stepHallwayDoors();
 	stepShipDoors();
+	stepLobbyCameras();
 	corridorArrival();
 
 	if (_room == kHallwayRoomA)
 		stepHallMan();
+
+	// The alarm over a hallway that is already up: the clip has taken the
+	// screen, so the room is put back where he stands.
+	if (hallwayScene(_room)) {
+		_sceneHandBack = true;
+		loadRoom(_room, _secondPlate, true);
+		_sceneHandBack = false;
+		return;
+	}
 
 	if (_room != kHallwayRoomB || _terminalStep != kStepCardLine || !speechDone())
 		return;

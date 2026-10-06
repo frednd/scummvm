@@ -87,6 +87,9 @@ static const int kCliffRoom = 31;
 
 static const uint16 kCliffTop = 0xa737;		///< he is on the ledge, not the path
 static const uint16 kCliffLedge = 0xa73a;	///< the same state, as the scale reads it
+static const uint16 kCliffResumeX = 0xa732;	///< the click kept for after the climb up
+static const uint16 kCliffResumeY = 0xa734;
+static const uint16 kCliffResumeFacing = 0xa736;
 
 static const uint kDownSlot = 0;	///< BEN_UP.DL1, the way off the ledge
 static const uint kUpSlot = 1;		///< BEN_DOWN.DL1, the way onto it
@@ -209,6 +212,10 @@ void AlienEngine::armCliff(int clickX, int clickY, WalkTarget &target) {
 	_cliffResumeX = target.x;
 	_cliffResumeY = target.y;
 	_cliffResumeFacing = target.facing;
+	// Where the original keeps the same three (0x0250), which a save holds.
+	setStateWord(kCliffResumeX, target.x);
+	setStateWord(kCliffResumeY, target.y);
+	_script.setFlag(kCliffResumeFacing, target.facing);
 	target.x = kClimbX;
 	target.y = kClimbY;
 	target.facing = kClimbFacing;

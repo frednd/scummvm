@@ -286,6 +286,9 @@ private:
 	void startOpening();
 	void stepOpening();
 	void stepRoomClock();
+	uint16 stateWord(uint16 addr) const;
+	void setStateWord(uint16 addr, uint16 value);
+	void resetRoomClock(int room);
 	void armLab(int obj, bool item);
 	void stepLab();
 	void stepLabHole();
@@ -464,7 +467,8 @@ private:
 	/// maintenance man and his badge, room 57's loudspeaker and the network
 	/// terminal behind its card slot (corridor.cpp, terminal.cpp).
 	void startCorridor();
-	void hallwayScene(int room);
+	bool hallwayScene(int room);
+	void stepLobbyCameras();
 	void corridorArrival();
 	void playElevatorPanel();
 	bool armHallway(int obj, byte verb, int item);
@@ -630,6 +634,7 @@ private:
 	void enterLibrary(int room);
 	bool runLibraryBody(int obj, bool item);
 	void standClearOfSafe(byte obj, WalkTarget &target) const;
+	void caveWalkTarget(byte obj, WalkTarget &target);
 	void stepLibrarySafe();
 	void nextSpeech();
 	void stopSpeech();
@@ -910,11 +915,6 @@ private:
 	byte _openingStep;
 	bool _openingPending;
 
-	/// The room clock (roomtick.cpp): how long the player has been standing in
-	/// the room this visit, in the units that room's own tick counts. Every
-	/// room that has one zeroes it as its overlay opens, so one counter serves
-	/// them all and loadRoom resets it.
-	uint16 _roomClock;
 
 	/// Room 3's [0xa49f] machine, less the opening the two steps in opening.cpp
 	/// carry (lab.cpp). Zero when nothing is running.
@@ -1163,7 +1163,6 @@ private:
 	byte _jailUncle;
 	byte _jailYodle;
 	byte _jailClock;
-	uint16 _jailClockPos;
 
 	/// Room 58's guard (jailguard.cpp): the second character CHARANIM keeps
 	/// for this one room. His sprite set, JAIL_GUA; where he stands, [0xa8c6]
@@ -1276,6 +1275,10 @@ private:
 	/// opens. Set by loadRoom and spent by the loop once the room's own frame
 	/// is on the screen, so a scene never plays over the room being left.
 	bool _pendingCutscenes;
+	/// endCutscene's reload: the room is put back, not entered (RoomScript::enterRoom).
+	bool _sceneHandBack;
+	/// Room 7's [0xa8f0]/[0xa8f2]: where the sprite stood last frame (roomtick.cpp).
+	int _darkLastX, _darkLastY;
 
 	uint _endingPos;
 	bool _endingLoop;

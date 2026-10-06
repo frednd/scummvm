@@ -83,6 +83,8 @@ namespace Alien {
 // added here after the table has run.
 static const int kJailRoom = 58;
 
+/// [0xa7af]: which of the field's two flicker maps is up (0x09e1).
+static const uint16 kFieldPhase = 0xa7af;
 static const uint16 kView = 0xa7b1;
 static const uint16 kForceField = 0xa7b0;
 static const uint16 kGuardHere = 0xa7b4;	///< the guard is in the corridor
@@ -236,7 +238,9 @@ void AlienEngine::startJailGuard() {
 	// 0x06d3 and 0x06d8.
 	_script.setFlag(kGuardMet, 0);
 	_script.setFlag(kSentAwayNow, 0);
-	_jailFieldPhase = 0;
+	// Nothing zeroes [0xa7af] on the way in: the flicker carries on from where
+	// the last visit left it.
+	_jailFieldPhase = _script.flag(kFieldPhase) & 1;
 
 	if (!_jailRedLoaded) {
 		Common::File table;
@@ -592,6 +596,7 @@ void AlienEngine::stepJailGuard() {
 	// 0x09da: [0xa7af] flips every tick the field is up.
 	if (_script.flag(kForceField) == 1) {
 		_jailFieldPhase ^= 1;
+		_script.setFlag(kFieldPhase, _jailFieldPhase);
 		_dirty = true;
 	}
 

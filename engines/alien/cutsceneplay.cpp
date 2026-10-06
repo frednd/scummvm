@@ -528,7 +528,9 @@ void AlienEngine::endCutscene(int room, int benX, int benY, int benFacing) {
 	// and clearing it again (ovr_1a_0eaf:0x069f).
 	_script.setFlag(kScenePlayed, 1);
 
+	_sceneHandBack = true;
 	const bool handedBack = room > 0 && loadRoom(room);
+	_sceneHandBack = false;
 	if (handedBack) {
 		// The original plays every scene from inside the room's enter routine,
 		// before its char_place and whatever walk follows it (room 6 from the

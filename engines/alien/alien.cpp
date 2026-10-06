@@ -238,7 +238,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_bossSpeaking(false), _bossTalking(false),
 		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
 		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
-		_jailClock(0), _jailClockPos(0), _jailRedLoaded(false), _jailFieldPhase(0),
+		_jailClock(0), _jailRedLoaded(false), _jailFieldPhase(0),
 		_scrollHold(-1), _roomEnterTick(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false), _hippieHandOff(-1),
@@ -250,12 +250,12 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true), _roomClock(0),
+		_openingStep(0), _openingPending(true),
 		_labStep(0), _bedroomLiftStep(0), _mansionStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true), _mailboxStep(0), _mailboxPos(0), _townStep(0), _sewerStep(0),
 		_basementStep(0), _basementClimbing(false), _basementWalkOff(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
-		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _won(false),
+		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
 		_playStrict(false), _playBarBusy(false), _playBarClicks(0), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playUntilTimer(-1), _playUntilRoom(-1), _playSettling(false), _playFails(0) {
@@ -1307,9 +1307,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// The banks the room's animation slots play, from the overlay's own load
 	// calls. Loaded before the script is entered, because entering it runs the
 	// room's opening plays against these slots.
-	// Every room that runs a clock zeroes its counter as its overlay opens, so
-	// a room re-entered starts counting again (roomtick.cpp).
-	_roomClock = 0;
+	// Rooms 8, 14 and 18 zero their clock as the overlay opens, so a room
+	// re-entered starts counting again (roomtick.cpp).
+	resetRoomClock(room);
 	_labStep = 0;
 	_bedroomLiftStep = 0;
 	_mansionStep = 0;
@@ -1386,6 +1386,18 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// the sewer ever moves it, and it moves it every frame it is flooded.
 	_clipBottom = kPlayfieldBottom;
 
+	// It also takes room 31's ledge flag down everywhere but room 31 itself
+	// (0251:60d3), so the half-size depth the chimney's init sets ([0xa73a],
+	// ovr_0e_0e83:0x052f, after this call) lasts only as long as the visit
+	// (dosbox state parity, mailbox).
+	if (room != 31)
+		_script.setFlag(0xa73a, 0);
+	// Room 41 raises it again straight after (ovr_29_0f89:0x07e1), from an
+	// init that sits inline in entry 2 and so is not lifted: what OBJ:sub_06466
+	// reads to offset the character's frames on the shore's far ledges.
+	if (room == 41)
+		_script.setFlag(0xa73a, 1);
+
 	// Room 56's view, before anything that draws or registers by it.
 	advanceChamberView(room);
 
@@ -1396,7 +1408,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// overlay by tools/gen_roomscripts.py, plus the opening frame of every slot
 	// from tools/gen_roominit.py. The state block is not touched here: puzzle
 	// flags outlive the room they were set in.
-	_script.enterRoom(room);
+	_script.enterRoom(room, _sceneHandBack);
 
 	// And then the plate patch-up: the room's own routine in the resident 10c9
 	// unit, which stamps into the background page every frame the puzzle state
@@ -1467,11 +1479,23 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	Common::Path script(_assets.script);
 	if (_assets.script.empty())
 		script = Common::Path(Common::String::format("ROOM%d.TAL", room));
+	// Room 40's pool names no file and there is no ROOM40.TAL: its init takes
+	// one of LOGIC's ten shared files instead, LOGIC:sub_124a7(1) at
+	// ovr_28_0ebb:0x0399, which is MUMMY0.TAL, and [0x33db] remembers which.
+	if (room == 40) {
+		script = Common::Path("MUMMY0.TAL");
+		_script.setFlag(0x33db, 1);
+	}
 
 	if (Common::File::exists(script))
 		_tal.load(script, &_pack);
 	else
 		_tal.unload();
+
+	// Every OBJ file loader drops [0xa742] (0251:1e25 and its three siblings),
+	// the byte LOGIC:sub_12418 keeps for "ROOM21.TAL is the one in"; room 21's
+	// own arrival puts it back (yodle.cpp). Dosbox state parity, observatory-lit.
+	_script.setFlag(0xa742, 0);
 
 	// The hover names live in a file of their own, laid out like the script but
 	// with only the text zone filled in. Rooms whose objects were never given
@@ -1642,10 +1666,14 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// original plays it from the top of those rooms' overlay entry 2, which is
 	// the room's own opening code, so it runs after everything else is in place.
 	for (uint i = 0; i < ARRAYSIZE(kLiftRooms); i++) {
-		if (room == kLiftRooms[i] && gDebugLevel <= 0) {
+		if (room != kLiftRooms[i])
+			continue;
+		// A debug run skips the clip but not its latch.
+		if (gDebugLevel <= 0)
 			playLift();
-			break;
-		}
+		else
+			_script.setFlag(0x33de, 1);
+		break;
 	}
 
 	updateScroll(true);
@@ -2736,7 +2764,7 @@ static Common::String condText(const ScriptCond *conds, uint count) {
 			out += Common::String::format("item %d %s %d", conds[i].addr,
 										  conds[i].negate ? "!=" : "==", conds[i].value);
 		// The ordering guard, which reads its address as a word.
-		else if (conds[i].kind == kCondAbove)
+		else if (conds[i].kind == kCondAbove || conds[i].kind == kCondAboveByte)
 			out += Common::String::format("[0x%04x] %s %d", conds[i].addr,
 										  conds[i].negate ? "<=" : ">", conds[i].value);
 		else
@@ -3287,8 +3315,11 @@ void AlienEngine::drawSubtitle(const CDA2Decoder &video) {
  * often the player rides the lift afterwards.
  */
 bool AlienEngine::playLift() {
-	if (_liftPlayed)
+	if (_liftPlayed || _script.flag(0x33de))
 		return false;
+	// The latch goes up whether or not the clip can be played, as 0FAE:0x06d8
+	// sets it after the call; the save carries it (dosbox state parity).
+	_script.setFlag(0x33de, 1);
 
 	MA1Decoder video;
 	if (!video.loadFile(Common::Path(kLiftClip))) {
@@ -3763,6 +3794,13 @@ bool AlienEngine::takeExit(byte submode) {
 	_mode = (byte)_room;
 	_lastSubmode = submode;
 
+	// sub_0879a also drops the door edges every ship room keeps in [0xa7a2]-
+	// [0xa7a5] (0251:62ec), so a door left open behind him is not shut again
+	// by the next room's tick; the room's init raises the one he comes
+	// through (dosbox state parity, security-card).
+	for (uint16 addr = 0xa7a2; addr <= 0xa7a5; addr++)
+		_script.setFlag(addr, 0);
+
 	const int room = _script.nextRoom(_mode, submode);
 	if (!room) {
 		debugC(1, kDebugRooms, "exit: room %d submode %u has no link in the chain",
@@ -3974,6 +4012,8 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		// And room 8's open safe, where the port stands him aside to take
 		// what is on its shelf (library.cpp).
 		standClearOfSafe(obj, target);
+		// And room 40's hole, approached from whichever side he is on.
+		caveWalkTarget(obj, target);
 
 		walkTo(target.x, target.y, target.facing);
 	} else {

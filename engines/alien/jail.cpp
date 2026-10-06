@@ -213,6 +213,9 @@ static const int kListRate = 4, kListMode = 8;
 /// Cases 3 and 4 are mode 2 holds: frames 0x11..0x12 at 0x5a, and frame 0xe.
 static const int kSettleFirst = 0x11, kSettleCount = 2, kSettleRate = 0x5a;
 static const int kFaceFrame = 0xe;
+
+/// [0xa7be]: the room's own clock beside [0xa49c], kept where a save holds it.
+static const uint16 kJailClockPos = 0xa7be;
 static const int kHoldMode = 2;
 
 /// The prologue's arms: both prisoners' idle poses (0x0778, 0x079a), and the
@@ -226,6 +229,14 @@ void AlienEngine::startJail() {
 	_jailLeft = 0;
 	_jailSpeaking = false;
 	_jailClock = 0;
+
+	// The prologue's first writes (0x06bf-0x06ce): the next of the cell talk's
+	// lines, 0x78 on, and the two states the guard's patrol keeps. The port
+	// runs neither machine from these bytes yet, but a save carries them
+	// (dosbox state parity, guard-gone).
+	_script.setFlag(0xa7aa, 0x78);
+	_script.setFlag(0xa7bd, 0);
+	_script.setFlag(0xa7c0, 0);
 
 	jailYodlePose(kPoseIdle);
 	startJailGuard();
@@ -482,8 +493,8 @@ void AlienEngine::stepJail() {
 
 	// 0x1037: [0xa7be], counted by LOGIC alongside [0xa49c].
 	if (frame)
-		_jailClockPos++;
-	if (_jailClock == kClockSettle && _jailClockPos > kSettleWait) {
+		setStateWord(kJailClockPos, stateWord(kJailClockPos) + 1);
+	if (_jailClock == kClockSettle && stateWord(kJailClockPos) > kSettleWait) {
 		jailUnclePose(kPoseIdle);
 		_jailClock = 0;
 	}
@@ -563,7 +574,7 @@ void AlienEngine::stepJail() {
 		CursorMan.showMouse(true);
 		_jailStep = kStepIdle;
 		_jailClock = kClockSettle;
-		_jailClockPos = 0;
+		setStateWord(kJailClockPos, 0);
 		break;
 
 	case kStepArrive:

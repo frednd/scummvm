@@ -35,7 +35,7 @@ namespace Alien {
 
 RoomScript::RoomScript() : _vm(nullptr), _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
 		_room(0), _queued(kNoEvent), _submode(kNoSubmode), _machine(0),
-		_placed(false), _placeX(0), _placeY(0), _placeFacing(0), _frameList(cutsceneFrameList) {
+		_placed(false), _again(false), _placeX(0), _placeY(0), _placeFacing(0), _frameList(cutsceneFrameList) {
 	reset();
 }
 
@@ -69,7 +69,7 @@ void RoomScript::reset() {
 	debugC(1, kDebugGraphics, "script: %u state bytes set for a new game", count);
 }
 
-void RoomScript::enterRoom(int room) {
+void RoomScript::enterRoom(int room, bool again) {
 	_room = room;
 	_blocks = scriptForRoom(room, _blockCount);
 	_queued = kNoEvent;
@@ -88,7 +88,9 @@ void RoomScript::enterRoom(int room) {
 
 	// The openings' frame lists are their own table, not the pack's.
 	_frameList = roomInitFrameList;
+	_again = again;
 	runEffects(init, count);
+	_again = false;
 	_frameList = cutsceneFrameList;
 }
 
@@ -396,6 +398,11 @@ bool RoomScript::holds(const ScriptCond &cond) const {
 		return cond.negate ? !above : above;
 	}
 
+	if (cond.kind == kCondAboveByte) {
+		const bool above = flag(cond.addr) > cond.value;
+		return cond.negate ? !above : above;
+	}
+
 	if (cond.kind == kCondItem) {
 		// OBJ:0x6add returns 1 when the item is carried, and every guard lifted
 		// this way compares that answer against an immediate.
@@ -533,6 +540,12 @@ void RoomScript::runEffect(const ScriptEffect &original) {
 		break;
 
 	case kOpAddFlag:
+		// A count the enter routine keeps -- room 31's visits, room 3's
+		// monologue -- counts the visit once: the original raises a scene from
+		// inside that routine and does not run it again on the way back, which
+		// the port's hand-back reload does (dosbox state parity, booth-repaired).
+		if (_again)
+			break;
 		setFlag((uint16)effect.args[0],
 				(byte)(flag((uint16)effect.args[0]) + effect.args[1]));
 		break;

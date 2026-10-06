@@ -138,7 +138,7 @@ static const ScriptEffect kRoomInit[] = {
 	{ kOpAnimPlay1,      4, {     2,     1,    51,     3,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, true, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 51, 3)
 	{ kOpAnimPlay1,      4, {     3,     1,    51,     3,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 51, 3)
 	{ kOpAddFlag,        2, { 42800,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// add_flag(42800, 1)
-	{ kOpSetFlag,        2, { 42800,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa730, 0)
+	{ kOpSetFlag,        2, { 42800,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, false, 3 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa730, 0)
 	{ kOpCharPlace,      5, {     0,   179,     0,    87,     1,     0 }, 0x00,   0, 1, { { 0xa880, 23, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 179, 0, 87, 1)
 	{ kOpSetFlag,        2, { 42807,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 23, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa737, 0)
 	{ kOpSetFlag,        2, { 42810,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 23, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa73a, 0)
