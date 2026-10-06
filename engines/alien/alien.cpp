@@ -1788,6 +1788,8 @@ void AlienEngine::updateScroll(bool snap) {
 	// writes _scrollX alone; carry on from there rather than jump back.
 	if ((_scrollPos >> 10) != _scrollX)
 		_scrollPos = (int32)_scrollX << 10;
+	if (debugChannelSet(2, kDebugTrace))
+		traceEvent("cam %d %d %d %d %d %d", x, _scrollFocus, _scrollX, _scrollVel, _scrollPos, _scrollState);
 
 	if (x - _scrollX > 0xeb || x - _scrollX < 0x41)
 		_scrollFocus = x;
@@ -1862,6 +1864,7 @@ void AlienEngine::updateScroll(bool snap) {
 		_scrollState = 1;
 	else if (_scrollX < prev)
 		_scrollState = 0;
+
 
 	if (_scrollX != prev)
 		_dirty = true;
@@ -2275,12 +2278,13 @@ void AlienEngine::stepClock() {
 	if ((_tick & 3) == 2 && _ben.stepMove())
 		_dirty = true;
 
-	// The camera pans once a pass of the room loop, whatever else is gated.
-	stepCameraHold();
-	updateScroll();
-
-	if (_tick & 3)
+	// The camera pans once a pass of the room loop, whatever else is gated,
+	// and after the mover: LOGIC:sub_13015 comes late in every room's pass.
+	if (_tick & 3) {
+		stepCameraHold();
+		updateScroll();
 		return;
+	}
 
 	stepEnding();
 	stepOpening();
@@ -2301,6 +2305,12 @@ void AlienEngine::stepClock() {
 						!dlgreqRunning());
 
 	_ben.tick(_script.flag(0xa605) != 0);
+
+	// On the animation tick the mover steps here rather than in stepMove, so
+	// the camera follows it here too; panning before it saw this step a tick
+	// late, and the focus latched 2 px off (room 15, finding #170).
+	stepCameraHold();
+	updateScroll();
 
 	if (moving) {
 		_dirty = true;
