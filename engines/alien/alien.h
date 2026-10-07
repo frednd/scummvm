@@ -484,6 +484,7 @@ private:
 	void stepShipDoors();
 	void stepHallMan();
 	void stepHallwayDoors();
+	void stepHallAliens();
 	void hallManPose(byte pose);
 	void playNetTerminal();
 	bool hallwayWalkTo(int x, int y, int arrivalFacing);
@@ -589,7 +590,7 @@ private:
 	void storeSpeak(byte code);
 	void storeSalesmanLine(byte code);
 	void storePose(byte pose);
-	void storeWalk(int viaX, int viaY, int x, int y, int facing);
+	void walkHandRoute(int viaX, int viaY, int x, int y, int facing);
 	void loadStoreScript(const char *name);
 	bool roomHasSharedExit(int room) const;
 	void cancelOpening();
@@ -1156,6 +1157,12 @@ private:
 	/// Room 57's [0xa49f]: the card has gone into the terminal's slot and its
 	/// line is up; the terminal opens once it is down (corridor.cpp).
 	byte _terminalStep;
+
+	/// Room 57's passing aliens, locals of its tick (ovr_35_0f9e:0x08bc): the
+	/// tick pairs since the last one, the count the next waits for, and which
+	/// of the six went by last (corridor.cpp).
+	uint16 _hallAlienCount, _hallAlienWait;
+	byte _hallAlienLast;
 
 	/// Room 52: the gate sent him in without the mask, and the room's
 	/// [0xa49f] machine step that arrests him (scanner.cpp).

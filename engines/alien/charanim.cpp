@@ -453,14 +453,15 @@ Walker::Walker() : _waypoint(0), _x(0), _y(0), _fx(0), _fy(0), _stepX(0), _stepY
 	memset(_swimTurn, 0, sizeof(_swimTurn));
 }
 
-void Walker::place(int walkX, int walkY, int facing) {
+void Walker::place(int walkX, int walkY, int facing, bool traced) {
 	_x = walkX - kWalkPointX;
 	_y = walkY - kWalkPointY;
 	_fx = _x * 64;
 	_fy = _y * 64;
 	_facing = facing;
 	// CHARANIM:sub_13bce's arguments: the sprite origin and the facing.
-	traceEvent("place %d %d %d", _x, _y, facing);
+	if (traced)
+		traceEvent("place %d %d %d", _x, _y, facing);
 	_arrivalFacing = kFacingKeep;
 	_phase = 0;
 	_steps = 0;

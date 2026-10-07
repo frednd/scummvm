@@ -196,8 +196,12 @@ public:
 	void swimTo(int walkX, int walkY, int arrivalFacing = kFacingKeep);
 	bool isLoaded() const { return _anim.isLoaded(); }
 
-	/** Put the character down with its feet at a walk point, facing forward. */
-	void place(int walkX, int walkY, int facing = 3);
+	/**
+	 * Put the character down with its feet at a walk point, facing forward.
+	 * `traced` false is for the port's own fallbacks, where the original
+	 * makes no CHARANIM:sub_13bce call and so traces nothing.
+	 */
+	void place(int walkX, int walkY, int facing = 3, bool traced = true);
 
 	/// Where he stands, to the 1/64 pixel, and the facing.
 	struct Spot {

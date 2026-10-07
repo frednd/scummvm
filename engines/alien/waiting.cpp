@@ -374,6 +374,13 @@ void AlienEngine::startWaiting() {
 	if (_script.flag(kBenchLeft) == 1)
 		playWaitingPose(0, 3);
 
+	// 0x0909: the node ring and the mask are loaded only while the standing
+	// customer is there to walk round. Once he has gone the room has no nodes
+	// and every walk is a straight line -- through where he stood, which the
+	// mask still blocks (trace parity, pod-card and password).
+	if (_script.flag(kStandingAlien) != 1)
+		_walk.dropNodes();
+
 	_waitingStep = kStepIdle;
 	_waitingPos = 0;
 

@@ -363,7 +363,7 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepVisitWalk:
-		storeWalk(kVisitViaX, kVisitViaY, kVisitX, kVisitY, kVisitFacing);
+		walkHandRoute(kVisitViaX, kVisitViaY, kVisitX, kVisitY, kVisitFacing);
 		_forestStep = kStepVisitWhere;
 		_forestWait = 0;
 		break;

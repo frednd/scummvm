@@ -317,7 +317,7 @@ void AlienEngine::storeSpeak(byte code) {
  * The port's walker takes a route the same way, with the character's own
  * position as the first point and the target appended by `follow`.
  */
-void AlienEngine::storeWalk(int viaX, int viaY, int x, int y, int facing) {
+void AlienEngine::walkHandRoute(int viaX, int viaY, int x, int y, int facing) {
 	WalkRoute route;
 	route.points[0].x = (int16)_ben.walkX();
 	route.points[0].y = (int16)_ben.walkY();
@@ -428,7 +428,7 @@ void AlienEngine::stepStore() {
 
 		if (!_storeWalked && _storePos > kArrivalWait && speechDone()) {
 			_storeWalked = true;
-			storeWalk(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
+			walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
 		}
 
 		if (_storePos == kTurnWait)
@@ -593,13 +593,13 @@ void AlienEngine::stepStore() {
 
 		_storeStep = kStepLeaving;
 		_storePos = 0;
-		storeWalk(kDoorX, kDoorY, kLeaveX, kLeaveY, kLeaveFacing);
+		walkHandRoute(kDoorX, kDoorY, kLeaveX, kLeaveY, kLeaveFacing);
 		break;
 
 	case kStepReturn:
 		// 0x0814, the visit with the suit already bought.
 		if (_storePos == kReturnWait)
-			storeWalk(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
+			walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
 
 		if (_storePos > kArrivalWait) {
 			_storeStep = kStepReturnLines;
@@ -639,7 +639,7 @@ void AlienEngine::stepStore() {
 		_storeStep = kStepUntradedLine;
 		_storePos = 0;
 		storeSalesmanLine(kReturnLine);
-		storeWalk(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
+		walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
 		break;
 
 	case kStepUntradedLine:

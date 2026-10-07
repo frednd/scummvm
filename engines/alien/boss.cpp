@@ -96,9 +96,10 @@ static const uint16 kExitWait = 0x2d;
 static const int kInX = 0xaa, kInY = 0x6e, kInFacing = 2;
 static const int kOutX = 0x50, kOutY = 0x65, kOutFacing = 4;
 
-/// INPUT:sub_01d1c(1) and INPUT:sub_01d00(1): sfx_play_delayed of sample 1 at
-/// 0x2af8, volume 0x37, panned -0x32, two ticks late and one.
-static const uint kDoorSample = 1;
+/// INPUT:sub_01d1c(1) and INPUT:sub_01d00(1): sfx_play_delayed of sample 2
+/// (shut) and 1 (open) at 0x2af8, volume 0x37, panned -0x32, one tick late.
+static const uint kDoorOpenSample = 1, kDoorShutSample = 2;
+static const uint16 kDoorDelay = 1;
 static const uint32 kDoorSampleRate = 0x2af8;
 static const byte kDoorVolume = 0x37;
 static const int8 kDoorPanning = -0x32;
@@ -214,7 +215,7 @@ void AlienEngine::stepBoss() {
 			break;
 		walkTo(kInX, kInY, kInFacing);
 		_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, 3);
-		_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanning, 2);
+		_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanning, kDoorDelay);
 		_bossStep = kStepTalk;
 		_bossPos = 0;
 		break;
@@ -250,7 +251,7 @@ void AlienEngine::stepBoss() {
 		if (_bossPos <= kDoorWait)
 			break;
 		_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, 1);
-		_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanning, 1);
+		_sound.queue(kDoorOpenSample, kDoorSampleRate, kDoorVolume, kDoorPanning, kDoorDelay);
 		_bossStep = kStepExit;
 		break;
 

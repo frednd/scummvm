@@ -142,6 +142,12 @@ public:
 	bool load(int room, const RoomAssets &assets);
 	void unload();
 
+	/**
+	 * walk_node_count = 0 and no walk_load_nodes: a room that loads its ring
+	 * only in some states (room 54) walks every click in a straight line.
+	 */
+	void dropNodes() { _nodes.unload(); }
+
 	const WalkMask &mask() const { return _mask; }
 	const WalkNodes &nodes() const { return _nodes; }
 

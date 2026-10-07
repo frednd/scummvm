@@ -232,7 +232,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
 		_teleportStep(0), _teleportWait(0), _shipStep(0), _shipWait(0),
 		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false),
-		_terminalStep(0),
+		_terminalStep(0), _hallAlienCount(0), _hallAlienWait(0), _hallAlienLast(1),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
 		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
 		_bossSpeaking(false), _bossTalking(false),
@@ -1470,9 +1470,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		// its own -- see keptX/keptY/keptFacing above.
 		_ben.place(keptX, keptY, keptFacing);
 	} else if (_walk.nodes().count()) {
-		_ben.place(_walk.nodes().x(0), _walk.nodes().y(0));
+		// The last two are the port's own: the original makes no char_place,
+		// so they are not traced (room 28 handed back to itself, #178).
+		_ben.place(_walk.nodes().x(0), _walk.nodes().y(0), 3, false);
 	} else {
-		_ben.place(kScreenWidth / 2, 140);
+		_ben.place(kScreenWidth / 2, 140, 3, false);
 	}
 
 	// And the one room that walks him on from there (bedroom.cpp).
@@ -4073,6 +4075,20 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		standClearOfSafe(obj, target);
 		// And room 40's hole, approached from whichever side he is on.
 		caveWalkTarget(obj, target);
+
+		// OBJ:sub_07a0a: feet within a pixel of the approach point and already
+		// facing its way, a plain left click starts no walk at all -- the
+		// armed exit then fires where he stands. The port walks to the spot he
+		// is on, which plots nothing; walking the last pixel was a leg the
+		// original never takes (trace parity, rooms 41 and 48). A right click
+		// or one with an item in hand walks it on the original all the same
+		// (rooms 3, 6, 18, 22 and 54), so the test is the plain click's.
+		if (!rightButton && !_heldItem &&
+			ABS(target.x - _ben.walkX()) <= 1 && ABS(target.y - _ben.walkY()) <= 1 &&
+			_ben.facing() == (int)target.facing) {
+			target.x = _ben.walkX();
+			target.y = _ben.walkY();
+		}
 
 		walkTo(target.x, target.y, target.facing);
 	} else {

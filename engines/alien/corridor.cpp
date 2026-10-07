@@ -92,8 +92,9 @@ static const int kCorridorRoom = 55;
 static const byte kElevatorObj = 2;
 /// [0xa644], the object the last left click was on (cemetery.cpp).
 static const uint16 kClickedObj = 0xa644;
-/// [0xa880], the room the last one was entered from.
-static const uint16 kCameFrom = 0xa880;
+/// [0xa880], the room the last one was entered from, is _mode: it lies
+/// outside the flag block, so RoomScript::flag() answered every test of it 0
+/// and no way in through a door was ever drawn open (trace parity, the ship).
 
 /// [0xa7a1]: the panel has just been used, so this room opens at its elevator.
 static const uint16 kElevatorArrival = 0xa7a1;
@@ -263,14 +264,18 @@ static const int kPodDoorFrames = 0xa, kPodDoorRate = 1;
 
 static const int kForward = 1, kBackward = 3;
 
-/// INPUT:sub_01d00 / sub_01d1c / sub_01d54: sfx_play_delayed of sample 1 at
-/// 0x2af8, volume 0x37, one tick late opening and two closing; the pod door's
-/// is panned the other way.
-static const uint kDoorSample = 1;
+/// INPUT:sub_01d00 / sub_01d1c / sub_01d38 / sub_01d54(1): sfx_play_delayed of
+/// sample 1 opening and sample 2 shutting at 0x2af8, volume 0x37, one tick
+/// late; the word each takes is the delay. The pod door's is panned the other
+/// way.
+static const uint kDoorOpenSample = 1, kDoorShutSample = 2;
 static const uint32 kDoorSampleRate = 0x2af8;
 static const byte kDoorVolume = 0x37;
 static const int8 kDoorPanLeft = -0x32, kDoorPanRight = 0x32;
-static const uint16 kDoorOpenDelay = 1, kDoorShutDelay = 2;
+static const uint16 kDoorDelay = 1;
+
+/// ovr_35_0f9e:0x08bc: the wait before room 57's first alien goes by.
+static const uint16 kHallAlienFirstWait = 0x82;
 
 /// sub_15120: the pod door, walked up to while it is locked.
 static const byte kOutcomePodLocked = 5;
@@ -285,6 +290,9 @@ static bool isElevatorRoom(int room) {
 void AlienEngine::startCorridor() {
 	_hallMan = HallMan();
 	_terminalStep = 0;
+	_hallAlienCount = 0;
+	_hallAlienWait = kHallAlienFirstWait;
+	_hallAlienLast = 1;
 
 	// ovr_38_0f92:0x0499: room 56 drops its door's edge on every way in, and
 	// the way in from the scanner (0x0634) is through the door, drawn open by
@@ -292,7 +300,7 @@ void AlienEngine::startCorridor() {
 	if (_room == kChamberRoom) {
 		_script.setFlag(kDoorB, 0);
 		_script.setFlag(kDoorBWas, 0);
-		if (_script.flag(kCameFrom) == kScannerRoom)
+		if (_mode == kScannerRoom)
 			_script.setFlag(kDoorB, 1);
 	}
 
@@ -300,7 +308,7 @@ void AlienEngine::startCorridor() {
 	if (_room == kPodRoom) {
 		_script.setFlag(kDoorB, 0);
 		_script.setFlag(kDoorBWas, 0);
-		if (_script.flag(kCameFrom) == kHallwayRoomA)
+		if (_mode == kHallwayRoomA)
 			_script.setFlag(kDoorB, 1);
 	}
 
@@ -314,7 +322,7 @@ void AlienEngine::startCorridor() {
 		_script.setFlag(kDoorAWas, 0);
 		_script.setFlag(kDoorB, 0);
 		_script.setFlag(kDoorBWas, 0);
-		if (_script.flag(kCameFrom) == kScannerRoom)
+		if (_mode == kScannerRoom)
 			_script.setFlag(kDoorA, 1);
 	}
 
@@ -324,7 +332,7 @@ void AlienEngine::startCorridor() {
 	if (_room == kLobbyRoom) {
 		_script.setFlag(kDoorB, 0);
 		_script.setFlag(kDoorBWas, 0);
-		if (_script.flag(kCameFrom) == kJailRoom)
+		if (_mode == kJailRoom)
 			_script.setFlag(kDoorB, 1);
 	}
 
@@ -346,7 +354,7 @@ void AlienEngine::startCorridor() {
 		_script.setFlag(kDoorAWas, 0);
 		_script.setFlag(kDoorB, 0);
 		_script.setFlag(kDoorBWas, 0);
-		if (_script.flag(kCameFrom) == kPodRoom) {
+		if (_mode == kPodRoom) {
 			_script.setFlag(kDoorA, 1);
 			_script.setFlag(kDoorAWas, 1);
 			_script.setFlag(kPodLocked, 0);
@@ -639,10 +647,10 @@ void AlienEngine::stepHallwayDoors() {
 	if (_script.flag(kDoorB) != _script.flag(kDoorBWas)) {
 		if (atLift) {
 			_anims.play(liftSlot, 1, kLiftDoorFrames, kLiftDoorRate, kForward);
-			_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorOpenDelay);
+			_sound.queue(kDoorOpenSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorDelay);
 		} else {
 			_anims.play(liftSlot, kLiftDoorFrames, kLiftDoorFrames, kLiftDoorRate, kBackward);
-			_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorShutDelay);
+			_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorDelay);
 		}
 		debugC(1, kDebugRooms, "corridor: the elevator door %s at %d,%d", atLift ? "opens" : "shuts", x, y);
 	}
@@ -660,7 +668,7 @@ void AlienEngine::stepHallwayDoors() {
 
 	_anims.play(kPodDoorSlot, kPodDoorFrames, kPodDoorFrames, kPodDoorRate, kBackward);
 	_script.setFlag(kPodLocked, 1);
-	_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanRight, kDoorShutDelay);
+	_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanRight, kDoorDelay);
 	debugC(1, kDebugRooms, "corridor: the pod door shuts and locks at %d,%d", x, y);
 }
 
@@ -686,7 +694,7 @@ void AlienEngine::stepShipDoors() {
 			_anims.play(d.slot, 1, d.frames, kLiftDoorRate, kForward);
 		else
 			_anims.play(d.slot, d.frames, d.frames, kLiftDoorRate, kBackward);
-		_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, d.pan, in ? kDoorOpenDelay : kDoorShutDelay);
+		_sound.queue(in ? kDoorOpenSample : kDoorShutSample, kDoorSampleRate, kDoorVolume, d.pan, kDoorDelay);
 		debugC(1, kDebugRooms, "corridor: room %d door %u %s at %d,%d", _room, d.slot, in ? "opens" : "shuts", x, y);
 	}
 }
@@ -754,6 +762,58 @@ void AlienEngine::stepLobbyCameras() {
 }
 
 /**
+ * Room 57's six aliens going by the window, from its tick (ovr_35_0f9e:0x0902).
+ * On the tick pair a count climbs; past its wait it starts again, the next
+ * wait is random(400) + 0xa0, and one of the six is picked at random, never
+ * the one before. MIDAS:sub_1994c plays it on its own slot (HAL1_AL1..6, slots
+ * 4..9) with its two footsteps, INPUT:sub_01d70(1|2, delay): samples 1 and 2
+ * at 0x2ee0, volume 0xc, panned 0x14, each pair at its own two delays.
+ */
+struct HallAlien {
+	uint slot;
+	int frames;
+	uint16 delay1, delay2;
+};
+
+static const HallAlien kHallAliens[] = {
+	{ 4, 0x15, 0x1a, 0x3c },
+	{ 5, 0x12, 0x01, 0x32 },
+	{ 6, 0x1f, 0x36, 0x63 },
+	{ 7, 0x1b, 0x01, 0x55 },
+	{ 8, 0x1c, 0x27, 0x5a },
+	{ 9, 0x1a, 0x00, 0x58 }
+};
+
+static const int kHallAlienRate = 4;
+static const uint16 kHallAlienWaitRange = 0x190, kHallAlienWaitBase = 0xa0;
+static const uint32 kHallAlienSampleRate = 0x2ee0;
+static const byte kHallAlienVolume = 0xc;
+static const int8 kHallAlienPan = 0x14;
+
+void AlienEngine::stepHallAliens() {
+	if (_room != kHallwayRoomB)
+		return;
+
+	if (++_hallAlienCount <= _hallAlienWait)
+		return;
+	_hallAlienCount = 0;
+	_hallAlienWait = (uint16)_rnd.getRandomNumber(kHallAlienWaitRange - 1) + kHallAlienWaitBase;
+
+	byte pick;
+	do
+		pick = (byte)_rnd.getRandomNumber(ARRAYSIZE(kHallAliens) - 1) + 1;
+	while (pick == _hallAlienLast);
+	_hallAlienLast = pick;
+
+	const HallAlien &a = kHallAliens[pick - 1];
+	_anims.play(a.slot, 1, a.frames, kHallAlienRate, kForward);
+	_sound.queue(1, kHallAlienSampleRate, kHallAlienVolume, kHallAlienPan, a.delay1);
+	_sound.queue(2, kHallAlienSampleRate, kHallAlienVolume, kHallAlienPan, a.delay2);
+	_dirty = true;
+	debugC(1, kDebugRooms, "corridor: alien %u goes by, the next in %u", pick, _hallAlienWait);
+}
+
+/**
  * The rooms' ticks: the elevator door and the pod door, room 53's man, and
  * room 57's card line opening the terminal (0x0b29).
  */
@@ -761,6 +821,7 @@ void AlienEngine::stepCorridor() {
 	stepHallwayDoors();
 	stepShipDoors();
 	stepLobbyCameras();
+	stepHallAliens();
 	corridorArrival();
 
 	if (_room == kHallwayRoomA)

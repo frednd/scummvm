@@ -847,12 +847,12 @@ void AlienEngine::stepMaze() {
 	}
 
 	case kStepWalk:
-		// 0x0773: a route he is given rather than one he asked for, from the
-		// arrow he arrived on to the doorway itself.
+		// 0x0773: a route he is given rather than one he asked for,
+		// 1021:sub_1023c -- from where he stands to the arrow's foot and on
+		// to the doorway. He walks the first leg; he is not put there.
 		if (!speechDone())
 			break;
-		_ben.place(kDoorWalkFromX, kDoorWalkY);
-		walkTo(kDoorWalkToX, kDoorWalkY, kDoorFacing);
+		walkHandRoute(kDoorWalkFromX, kDoorWalkY, kDoorWalkToX, kDoorWalkY, kDoorFacing);
 		_mazeStep = kStepWow;
 		break;
 

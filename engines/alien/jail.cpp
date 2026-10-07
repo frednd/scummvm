@@ -100,6 +100,7 @@ namespace Alien {
 // The steps that wait on [0xa49c] wait on the animation frame it is counted
 // on ([0xa5f8], 0x09c7), every second tick pair.
 static const int kJailRoom = 58;
+static const int kLobbyRoom = 51;		///< the way in through the corridor door
 
 static const byte kShipExitSubmode = 100;	///< transitions.cpp: room 58, submode 100 -> room 56
 
@@ -237,6 +238,15 @@ void AlienEngine::startJail() {
 	_script.setFlag(0xa7aa, 0x78);
 	_script.setFlag(0xa7bd, 0);
 	_script.setFlag(0xa7c0, 0);
+
+	// 0x087d: the way in from the lobby is through the corridor door, which the
+	// lifted rows place him at and draw open; the open also raises its edge
+	// and clears [0xa7ba], so the door shuts behind him as he steps out of it
+	// (stepJailDoor). Those two writes are not lifted (trace parity, the end).
+	if (_mode == kLobbyRoom) {
+		_script.setFlag(0xa7a2, 1);
+		_script.setFlag(0xa7ba, 0);
+	}
 
 	jailYodlePose(kPoseIdle);
 	startJailGuard();
@@ -450,11 +460,11 @@ void AlienEngine::stepJailDoor() {
 	static const uint16 kInDoorway = 0xa7a2, kWasInDoorway = 0xa7a3, kDoorShut = 0xa7ba;
 	static const int kDoorwayX = 0x233, kDoorwayY = 0x4f;
 	static const uint kDoorSlot = 3, kDoorFrames = 0x16, kDoorRate = 2;
-	static const uint kDoorSample = 1;
+	static const uint kDoorShutSample = 2;	///< INPUT:sub_01d54(1)
 	static const uint32 kDoorSampleRate = 0x2af8;
 	static const byte kDoorVolume = 0x37;
 	static const int8 kDoorPan = 0x32;
-	static const uint16 kDoorShutDelay = 2;
+	static const uint16 kDoorShutDelay = 1;
 	static const int kPlayBackward = 3;	///< anim_play_mode3
 
 	_script.setFlag(kWasInDoorway, _script.flag(kInDoorway));
@@ -465,7 +475,7 @@ void AlienEngine::stepJailDoor() {
 		return;
 
 	_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, kPlayBackward);
-	_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPan, kDoorShutDelay);
+	_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPan, kDoorShutDelay);
 	_script.setFlag(kDoorShut, 1);
 	traceEvent("door shut at %d", _scrollX);
 	debugC(1, kDebugRooms, "jail: the corridor door shuts behind him");
