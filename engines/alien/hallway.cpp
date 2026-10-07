@@ -220,7 +220,11 @@ void AlienEngine::playPeephole() {
 
 		const uint32 now = millis();
 		if (_cutsceneFast || now - last >= kTickMillis) {
-			last = now;
+			// One tick per pass, owed ticks taken on the passes after: the pass
+			// sleeps longer than a tick, and setting the mark to now dropped
+			// one tick in ten -- the scene ran slow against the master tick
+			// and the scene clocks fell behind it.
+			last = _cutsceneFast ? now : last + kTickMillis;
 			tick++;
 			sceneClockTick();
 
@@ -322,7 +326,7 @@ void AlienEngine::playPeephole() {
 			redraw();
 
 		present();
-		if (!_cutsceneFast)
+		if (!_cutsceneFast && millis() - last < kTickMillis)
 			sleep(10);
 	}
 
