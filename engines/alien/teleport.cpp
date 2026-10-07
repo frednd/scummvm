@@ -665,8 +665,7 @@ void AlienEngine::stepShip() {
 			break;
 		_script.setFlag(kPadOff, 0);
 		for (uint i = 0; i < ARRAYSIZE(kEarthItems); i++)
-			if (_inventory.has(kEarthItems[i]))
-				_inventory.remove(kEarthItems[i]);
+			_inventory.remove(kEarthItems[i]);
 		CursorMan.showMouse(true);
 		_shipStep = 0;
 		if (_script.flag(kShipVisited) == 0) {

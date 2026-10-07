@@ -222,6 +222,7 @@ void AlienEngine::playPeephole() {
 		if (_cutsceneFast || now - last >= kTickMillis) {
 			last = now;
 			tick++;
+			sceneClockTick();
 
 			if ((tick & 1) == 0) {
 				if (_anims.isBusy()) {

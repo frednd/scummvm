@@ -418,6 +418,7 @@ void AlienEngine::playLiftPanel() {
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
+			sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;

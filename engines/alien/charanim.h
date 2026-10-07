@@ -199,6 +199,19 @@ public:
 	/** Put the character down with its feet at a walk point, facing forward. */
 	void place(int walkX, int walkY, int facing = 3);
 
+	/// Where he stands, to the 1/64 pixel, and the facing.
+	struct Spot {
+		int x, y, fx, fy, facing;
+	};
+	Spot spot() const { return { _x, _y, _fx, _fy, _facing }; }
+
+	/**
+	 * Put him back on a spot taken before a room reload that the original makes
+	 * without placing him at all (the observatory computer's close): the
+	 * fraction the walker carried survives, and nothing is traced.
+	 */
+	void putBack(const Spot &spot);
+
 	/// The same, given the sprite origin instead of the walk point -- which is
 	/// what a room's own CHARANIM:0x4e call passes (kOpCharPlace).
 	void placeSprite(int spriteX, int spriteY, int facing = 3) {

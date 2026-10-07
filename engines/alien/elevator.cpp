@@ -271,7 +271,11 @@ void AlienEngine::playElevatorPanel() {
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
 					_playIndex++;
 					scripted = 0;
-					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0);
+					// A wait is in master ticks, as the outer driver and the
+					// original's runner count it; a settle has nothing to watch
+					// here and holds for its timeout in milliseconds.
+					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0) *
+						(cmd.type == PlayCommand::kWait ? kMasterTickMillis : 1);
 					break;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
@@ -305,6 +309,7 @@ void AlienEngine::playElevatorPanel() {
 		while (now - last >= kTickMillis && !done) {
 			last += kTickMillis;
 			tick++;
+			sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;

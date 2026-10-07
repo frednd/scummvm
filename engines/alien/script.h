@@ -84,6 +84,9 @@ public:
 	/// read these directly as well, so they live in the state block.
 	static const uint16 kUsedItem = 0xa64b;
 	static const uint16 kClickedObject = 0xa64c;
+	/// And the verb, which sits outside the block: the landing's and the hall's
+	/// doors pick their sound by it (sound 6 opening, 5 otherwise).
+	static const uint16 kClickedVerb = 0xa824;
 
 	/// Three of the sixteen-slot animation arrays (see anim.h) that room scripts
 	/// touch as if they were flags: the current frame, a word per slot, and the
@@ -277,6 +280,7 @@ private:
 	uint16 _cutscenePos;
 	uint16 _scenePos;
 	byte _machine;
+	byte _verb;	///< [0xa824], the verb of the click being run
 	const ScriptBlock *_blocks;
 	uint _blockCount;
 	int _room;

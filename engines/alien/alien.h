@@ -705,6 +705,9 @@ private:
 
 	/** AnimSlots::bake into _background, remembering a wide room's changes. */
 	void bakeSlots();
+	void stepLoopSounds();
+	void sceneClockTick();
+	uint _sceneClockPhase = 0;	///< sceneClockTick()'s tick pair
 	/** Puts the plate back under baked pixels the window has left. */
 	void dropBakedOutOfView();
 	Graphics::Surface _occluder;	///< the room's MSCR sheet, its foreground pieces
@@ -1357,6 +1360,7 @@ private:
 	void playLeftOpen(const char *what);
 	void writeCheckpoint(const PlayCommand &cmd);
 	void writeCheckpointScreen(const Common::String &name);
+	void stopAtCheckpoint(const PlayCommand &cmd);
 	bool resumePlayRun();
 	void restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick);
 	bool scrollWouldPan() const;

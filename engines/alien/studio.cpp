@@ -415,6 +415,7 @@ void AlienEngine::playStudio() {
 				sleep(1);
 			last = millis();
 		}
+		sceneClockTick();
 
 		if (fade != kFadeIdle)
 			fadeScreen(level);

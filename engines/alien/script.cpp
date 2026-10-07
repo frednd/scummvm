@@ -34,7 +34,7 @@
 namespace Alien {
 
 RoomScript::RoomScript() : _vm(nullptr), _anims(nullptr), _inventory(nullptr), _sound(nullptr), _blocks(nullptr), _blockCount(0),
-		_room(0), _queued(kNoEvent), _submode(kNoSubmode), _machine(0),
+		_room(0), _queued(kNoEvent), _submode(kNoSubmode), _machine(0), _verb(0),
 		_placed(false), _again(false), _placeX(0), _placeY(0), _placeFacing(0), _frameList(cutsceneFrameList) {
 	reset();
 }
@@ -341,6 +341,9 @@ byte RoomScript::flag(uint16 addr) const {
 	if (addr == kMachine)
 		return _machine;
 
+	if (addr == kClickedVerb)
+		return _verb;
+
 	const byte *slot = flagSlot(addr);
 	return slot ? *slot : 0;
 }
@@ -424,6 +427,8 @@ bool RoomScript::holds(const ScriptCond &cond) const {
 			equal = value == cond.value;
 			debugC(2, kDebugGraphics, "script: anim state 0x%04x is %d, guard wants %d",
 				   cond.addr, value, cond.value);
+		} else if (cond.addr == kClickedVerb) {
+			equal = _verb == cond.value;
 		} else if (cond.addr == kScenePos || cond.addr == kScenePos + 1) {
 			// The stream cursor is a word the player keeps rather than a byte
 			// of a block, which flag() answers and flagSlot() does not. Reading
@@ -702,6 +707,7 @@ bool RoomScript::run(byte obj, byte verb, byte item) {
 	// directly as well as through the block guards.
 	setFlag(kUsedItem, item);
 	setFlag(kClickedObject, obj);
+	_verb = verb;
 
 	for (uint i = 0; i < _blockCount; i++) {
 		if (!matches(_blocks[i], obj, verb, item))

@@ -480,6 +480,22 @@ void Walker::place(int walkX, int walkY, int facing) {
 	updateFrame();
 }
 
+void Walker::putBack(const Spot &spot) {
+	_x = spot.x;
+	_y = spot.y;
+	_fx = spot.fx;
+	_fy = spot.fy;
+	_facing = spot.facing;
+	_arrivalFacing = kFacingKeep;
+	_phase = 0;
+	_steps = 0;
+	_turnLeft = 0;
+	_route.count = 0;
+	_waypoint = 0;
+	resetIdle();
+	updateFrame();
+}
+
 void Walker::stop() {
 	_route.count = 0;
 	_waypoint = 0;

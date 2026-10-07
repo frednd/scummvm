@@ -288,11 +288,23 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 	// A checkpoint stands in for a save from the menu, and the menu forgets
 	// the way into the room (LOGIC:sub_12b08), so the run that goes on from
 	// here is the one a resumed run sees.
+	const byte mode = _mode;
 	_mode = 0;
 	saveGameStream(&out);
 	writePlayCamera(&out);
 	out.finalize();
 	out.close();
+
+	// `playunbroken` (a trace run, tools/playtest.py --unbroken) goes on from
+	// the engine as it stands, as the original's run does, so the two traces
+	// carry the same fractions and clocks across the mark.
+	if (ConfMan.hasKey("playunbroken") && ConfMan.getBool("playunbroken")) {
+		_mode = mode;
+		debugC(1, kDebugPlay, "play: %u: CHECKPOINT %s tick %u room %d hash %08x seed %u file %s",
+			   cmd.sourceLine, cmd.s.c_str(), _tick, _room, stateHash(), _rnd.getSeed(), file.c_str());
+		stopAtCheckpoint(cmd);
+		return;
+	}
 
 	// And the run goes on from the file, not from the engine as it stands: a
 	// resumed run can only see what the file holds, so the unbroken run has to
@@ -311,7 +323,11 @@ void AlienEngine::writeCheckpoint(const PlayCommand &cmd) {
 	debugC(1, kDebugPlay, "play: %u: CHECKPOINT %s tick %u room %d hash %08x seed %u file %s",
 		   cmd.sourceLine, cmd.s.c_str(), _tick, _room, stateHash(), _rnd.getSeed(), file.c_str());
 
-	// `playuntil` builds the states up to one checkpoint and stops there.
+	stopAtCheckpoint(cmd);
+}
+
+/** `playuntil` builds the states up to one checkpoint and stops there. */
+void AlienEngine::stopAtCheckpoint(const PlayCommand &cmd) {
 	if (ConfMan.hasKey("playuntil") && ConfMan.get("playuntil") == cmd.s) {
 		debugC(1, kDebugPlay, "play: stopped at checkpoint %s, %u assertion failure(s)",
 			   cmd.s.c_str(), _playFails);

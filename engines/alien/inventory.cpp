@@ -194,6 +194,10 @@ void Inventory::remove(byte item) {
 	if (!item)
 		return;
 
+	// OBJ:sprite_remove's entry, whether he carries it or not: the ship's
+	// arrival hands it the whole of ds:0x4438.
+	traceEvent("item- %u", item);
+
 	for (uint i = 1; i < kListSize; i++) {
 		if (_list[i] != item)
 			continue;
@@ -201,7 +205,6 @@ void Inventory::remove(byte item) {
 		// Removal closes the gap, which is what keeps the list dense enough for
 		// the bar to page through it.
 		memmove(&_list[i], &_list[i + 1], kListSize - i - 1);
-		traceEvent("item- %u", item);
 		_list[kListSize - 1] = kNoItem;
 		debugC(1, kDebugItems, "item: %u (%s) given up", item, name(item).c_str());
 

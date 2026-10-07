@@ -208,6 +208,7 @@ void AlienEngine::playTelescopeView() {
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
+			sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;
@@ -340,9 +341,7 @@ static bool inBox(int x, int y, const ScreenBox &box) {
  */
 void AlienEngine::playObservatoryScreen() {
 	const int room = _room;
-	const int benX = _ben.walkX();
-	const int benY = _ben.walkY();
-	const int benFacing = _ben.facing();
+	const Walker::Spot spot = _ben.spot();
 
 	Graphics::Surface plate;
 	byte palette[256 * 3];
@@ -495,7 +494,11 @@ void AlienEngine::playObservatoryScreen() {
 					// even started.
 					_playIndex++;
 					scripted = 0;
-					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0);
+					// A wait is in master ticks, as the outer driver and the
+					// original's runner count it; a settle has nothing to watch
+					// here and holds for its timeout in milliseconds.
+					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0) *
+						(cmd.type == PlayCommand::kWait ? kMasterTickMillis : 1);
 					break;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
@@ -520,6 +523,7 @@ void AlienEngine::playObservatoryScreen() {
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
+			sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;
@@ -640,8 +644,15 @@ void AlienEngine::playObservatoryScreen() {
 
 	debugC(1, kDebugTelescope, "telescope: the computer closes");
 
+	// The computer ends the room's loop the way an exit does, so game_mode is
+	// the room itself when it opens again (OBJ:sub_0879a; the original's trace
+	// reads `room 28 from 28`).
+	if (room > 0)
+		_mode = (byte)room;
 	if (room > 0 && loadRoom(room)) {
-		_ben.place(benX, benY, benFacing);
+		// Room 28's open places nobody when it is its own way in, so he keeps
+		// the spot he had, fraction and all.
+		_ben.putBack(spot);
 		_pendingCutscenes = false;
 	}
 	g_system->getPaletteManager()->setPalette(_palette, 0, 256);

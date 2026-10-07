@@ -162,6 +162,9 @@ void AlienEngine::roomCutscenes(int room) {
  * its scene can never come up. That is the original's behaviour, not a gap here.
  */
 void AlienEngine::stepCutsceneTimers() {
+	debugC(2, kDebugCutscene, "timers: room %d, %u %u %u", _room,
+		   cutsceneTimer(kTimers[0].counter), cutsceneTimer(kTimers[1].counter),
+		   cutsceneTimer(kTimers[2].counter));
 	for (uint i = 0; i < ARRAYSIZE(kTimers); i++) {
 		if (kTimers[i].notInRoom21 && _room == 21)
 			continue;
@@ -191,6 +194,20 @@ uint32 AlienEngine::cutsceneTimer(uint16 addr) const {
 	const uint32 low = _script.flag(addr) | ((uint32)_script.flag(addr + 1) << 8);
 	const uint32 high = _script.flag(addr + 2) | ((uint32)_script.flag(addr + 3) << 8);
 	return (high << 16) | low;
+}
+
+/**
+ * One master tick of a blocking loop that runs OBJ:obj_load on its passes --
+ * every scene and screen with a loop of its own (CUTSCENE's record player and
+ * studio, the telescope, the computer, the lift panel, the elevator, the
+ * scanner, the terminal). obj_load calls tick_gate_2, and that is what steps
+ * the idle timers, so they run on under all of those; only the plain waits (a
+ * fade, UTIL:wait_tick) leave them alone. Counted on every second call, as the
+ * tick pair is.
+ */
+void AlienEngine::sceneClockTick() {
+	if ((++_sceneClockPhase & 1) == 0)
+		tickCutsceneTimers();
 }
 
 /**
@@ -322,6 +339,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 		if (_cutsceneFast || now - last >= kTickMillis) {
 			last = now;
 			tick++;
+			sceneClockTick();
 
 			if ((tick & 1) == 0) {
 				if (_anims.isBusy()) {

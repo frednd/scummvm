@@ -2087,6 +2087,8 @@ void AlienEngine::stepClock() {
 		// And then the room's own loop calls, which is where an animation that
 		// repeats gets restarted. The original makes them from the tail of the
 		// room's tick, after the stepper it calls a few instructions earlier.
+		// Three rooms sound a loop's last frame just before it restarts.
+		stepLoopSounds();
 		_anims.stepLoops();
 
 		// A slot that has run out and leaves its frame behind goes into the
@@ -3794,8 +3796,8 @@ void AlienEngine::tourRooms() {
 void AlienEngine::checkExit() {
 	// OBJ:sub_078dd, the half of the exit mechanism the walk geometry does not
 	// hold: an armed submode fires only once the route has run out, the arrival
-	// turn has played, and the feet are within three pixels of the point the
-	// geometry named. Anything else -- he was interrupted, or the click sent him
+	// turn has played, and the feet are within two pixels of the point the
+	// geometry named (`walk_pos - 3 < feet < walk_pos + 3`, 0251:53fc-0x5442). Anything else -- he was interrupted, or the click sent him
 	// somewhere the router could not reach exactly -- leaves the exit armed.
 	if (!_armed || _speech)
 		return;
@@ -3807,7 +3809,7 @@ void AlienEngine::checkExit() {
 	if (!roomHasSharedExit(_room))
 		return;
 
-	if (ABS(_ben.walkX() - _armedX) > 3 || ABS(_ben.walkY() - _armedY) > 3)
+	if (ABS(_ben.walkX() - _armedX) > 2 || ABS(_ben.walkY() - _armedY) > 2)
 		return;
 
 	// The facing test is a plain comparison in the original, against a global
@@ -4979,6 +4981,42 @@ void AlienEngine::showDialog(uint id) {
 	const TalFile::Entry &e = _tal.entry(id);
 	debugC(1, kDebugGraphics, "dialog %u: %u lines, count byte %d",
 		   id, e.lines.size(), e.lineCount);
+}
+
+/**
+ * The three LOGIC routines a room's tick calls just before it restarts one of
+ * its loops: each looks at that slot's frames left ([0xa4ea + slot]) and, on
+ * the last one, queues a pair of samples, so the animation makes its sound
+ * once a cycle. Room 26's squirrel (LOGIC:0x086d), room 56's beam
+ * (LOGIC:0x089d) and room 48's slot 2 (LOGIC:0x08cd).
+ */
+struct LoopSound {
+	int room;
+	uint slot;
+	struct {
+		byte sample;
+		uint16 rate;
+		byte volume;
+		int8 panning;
+		uint16 delay;
+	} plays[2];
+};
+
+static const LoopSound kLoopSounds[] = {
+	{ 26, 3, { { 3, 0xd6d8, 0x1e,  0x32, 0x0a }, { 3, 0xcb20, 0x14,  0x32, 0x16 } } },
+	{ 48, 2, { { 1, 0x30d4, 0x26, -0x14, 0x2b }, { 1, 0x30d4, 0x26,  0x14, 0xd0 } } },
+	{ 56, 0, { { 5, 0x3e80, 0x2d, -0x1e, 0x03 }, { 5, 0x7d00, 0x28, -0x1e, 0x26 } } },
+};
+
+void AlienEngine::stepLoopSounds() {
+	for (uint i = 0; i < ARRAYSIZE(kLoopSounds); i++) {
+		const LoopSound &l = kLoopSounds[i];
+		if (l.room != _room || _anims.remaining(l.slot) != 1)
+			continue;
+		for (uint p = 0; p < 2; p++)
+			_sound.queue(l.plays[p].sample, l.plays[p].rate, l.plays[p].volume,
+						 l.plays[p].panning, l.plays[p].delay);
+	}
 }
 
 void AlienEngine::bakeSlots() {

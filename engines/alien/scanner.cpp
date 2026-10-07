@@ -228,6 +228,7 @@ void AlienEngine::playDl2Clip(const char *clip, const char *plateName, uint musi
 		if (!due && now - last >= kTickMillis) {
 			last += kTickMillis;
 			due = (++tick & 1) == 0;	// [0xa5fc], the animation tick pair
+			sceneClockTick();
 		}
 
 		if (due) {
