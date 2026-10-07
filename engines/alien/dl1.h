@@ -125,6 +125,18 @@ public:
 				   int clipBottom = kNoClipBottom) const;
 
 	/**
+	 * Draws a frame the way the slot drawer does, MIDAS:sub_180d4: a long-form
+	 * frame is clipped against the window `[windowX, windowX + 319]` in whole
+	 * words, as the original's blit does, and anything it lets through lands
+	 * where the linear buffer behind the window would put it. `destX` is the
+	 * destination column of the window's left edge: 0 for the screen, the
+	 * scroll itself for the room plate (AnimSlots::bake). Short-form frames
+	 * draw as drawFrame() does.
+	 */
+	void drawFrameWindow(uint index, Graphics::Surface &dest, int windowX, int destX,
+						 int clipBottom = kNoClipBottom) const;
+
+	/**
 	 * Draws a frame that was authored against the room's *second* page.
 	 *
 	 * A page is a flat 320-wide buffer, and a bank written into one addresses

@@ -401,7 +401,7 @@ void AlienEngine::playCutsceneRecord(uint number) {
 			// A finished slot that leaves its frame behind goes into the plate
 			// here too: the scene loop calls the same drawer a room's does, and
 			// the drawer is where the stamp happens (see AnimSlots::bake).
-			_anims.bake(_background, _clipBottom);
+			bakeSlots();
 		}
 
 		bool entered = false;	// a step was entered this pass, so the screen moved

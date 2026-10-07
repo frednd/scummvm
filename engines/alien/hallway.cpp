@@ -304,7 +304,7 @@ void AlienEngine::playPeephole() {
 			if (exitTick && debugChannelSet(3, kDebugCutscene) &&
 				tick - exitTick <= (uint32)kExitCount * kExitRate * 2 &&
 				(tick - exitTick) % (kExitRate * 2) == 0) {
-				_anims.bake(_background, _clipBottom);
+				bakeSlots();
 				redraw();
 				dumpScreen(Common::String::format("hallway-exit-%u.png",
 												  (uint)((tick - exitTick) / (kExitRate * 2))));
@@ -314,7 +314,7 @@ void AlienEngine::playPeephole() {
 				skipped = true;
 
 			if ((tick & kAnimTickMask) == 0)
-				_anims.bake(_background, _clipBottom);
+				bakeSlots();
 		}
 
 		if (_dirty)

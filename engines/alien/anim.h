@@ -284,8 +284,11 @@ public:
 	 *  0x1566, guarded on `[0xa5da]` -- set by modes 1, 3 and 6 alone).
 	 *  Without it a finished slot keeps drawing in slot order, so an older
 	 *  play in a higher slot covers a newer one below it. */
-	void bake(Graphics::Surface &background,
+	void bake(Graphics::Surface &background, int scrollX,
 			  int clipBottom = DL1Sprite::kNoClipBottom);
+
+	/** Whether bake() has a slot to stamp this tick. */
+	bool bakePending() const;
 
 	/**
 	 * Stamps one frame of a slot's bank into the background page.

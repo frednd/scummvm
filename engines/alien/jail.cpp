@@ -467,6 +467,7 @@ void AlienEngine::stepJailDoor() {
 	_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, kPlayBackward);
 	_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPan, kDoorShutDelay);
 	_script.setFlag(kDoorShut, 1);
+	traceEvent("door shut at %d", _scrollX);
 	debugC(1, kDebugRooms, "jail: the corridor door shuts behind him");
 }
 

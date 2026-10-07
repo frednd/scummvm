@@ -464,7 +464,7 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 		// decides what pixels this pass puts on screen.
 		const auto drawHeld = [&]() {
 			if (slot.hold && slot.heldFrame > 0)
-				slot.bank.drawFrame((uint)(slot.heldFrame - 1), dest, scrollX, clipBottom);
+				slot.bank.drawFrameWindow((uint)(slot.heldFrame - 1), dest, scrollX, 0, clipBottom);
 		};
 
 		// MIDAS:snd_func_1482 draws a slot while it still has frames to run,
@@ -510,13 +510,23 @@ void AnimSlots::draw(Graphics::Surface &dest, int scrollX, int clipBottom) const
 		debugC(4, kDebugGraphics, "anim: slot %u draws frame %d of %s: %u strips, first %u",
 			   i, frame + 1, slot.name.c_str(), slot.bank.stripCount((uint)frame),
 			   slot.bank.firstStripAddr((uint)frame));
-		slot.bank.drawFrame((uint)frame, dest, scrollX, clipBottom);
+		slot.bank.drawFrameWindow((uint)frame, dest, scrollX, 0, clipBottom);
 		if (slot.hold)
 			slot.heldFrame = frame + 1;
 	}
 }
 
-void AnimSlots::bake(Graphics::Surface &background, int clipBottom) {
+bool AnimSlots::bakePending() const {
+	for (uint i = 0; i < kSlotCount; i++) {
+		const Slot &slot = _slots[i];
+		if (slot.started && !slot.baked && slot.persist && slot.remaining <= 0 && !slot.hold
+				&& slot.bank.frameCount())
+			return true;
+	}
+	return false;
+}
+
+void AnimSlots::bake(Graphics::Surface &background, int scrollX, int clipBottom) {
 	for (uint i = 0; i < kSlotCount; i++) {
 		Slot &slot = _slots[i];
 		if (!slot.started || slot.baked || !slot.persist || slot.remaining > 0)
@@ -539,8 +549,12 @@ void AnimSlots::bake(Graphics::Surface &background, int clipBottom) {
 		// The terminator and the blank below the first frame are the two ends a
 		// range can stop on with nothing to stamp; the erase they stand for has
 		// already been done by the play that ran into them.
+		// The drawer writes it through the same blit as the screen, clipped to
+		// the window on show (MIDAS:snd_func_1482 at 0x158e, sub_180d4 into
+		// the page at [0xd132]); in a wide room the engine then undoes it as
+		// it scrolls out of view (AlienEngine::bakeSlots).
 		if (frame >= 0 && frame < count)
-			slot.bank.drawFrame((uint)frame, background, 0, clipBottom);
+			slot.bank.drawFrameWindow((uint)frame, background, scrollX, scrollX, clipBottom);
 
 		slot.baked = true;
 		debugC(2, kDebugGraphics, "anim: slot %u baked frame %d of %s into the "

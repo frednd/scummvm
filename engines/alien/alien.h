@@ -687,6 +687,26 @@ private:
 
 	Graphics::Surface _screen;		///< 320x200 staging buffer, 8bpp
 	Graphics::Surface _background;	///< the room plate as decoded
+
+	/**
+	 * A wide room's background page is a 320-wide buffer the window starts
+	 * `scroll` bytes into (the screen's own layout), so it holds only what is
+	 * in view: a column that scrolls out is overwritten by the one coming in,
+	 * and comes back from the plate. A slot baked into it is lost that way,
+	 * column by column. These are the pixels a bake changed, with what was
+	 * under them, put back as they leave the window (dropBakedOutOfView).
+	 */
+	struct BakedPixel {
+		int16 x, y;
+		byte under;
+	};
+	Common::Array<BakedPixel> _baked;
+	const void *_bakedPlate;	///< the _background the list belongs to
+
+	/** AnimSlots::bake into _background, remembering a wide room's changes. */
+	void bakeSlots();
+	/** Puts the plate back under baked pixels the window has left. */
+	void dropBakedOutOfView();
 	Graphics::Surface _occluder;	///< the room's MSCR sheet, its foreground pieces
 	byte _palette[256 * 3];
 

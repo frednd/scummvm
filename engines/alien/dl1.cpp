@@ -378,6 +378,84 @@ void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest, int scrollX, int 
 	}
 }
 
+void DL1Sprite::drawFrameWindow(uint index, Graphics::Surface &dest, int windowX, int destX,
+								int clipBottom) const {
+	if (index >= _frames.size())
+		return;
+
+	const Frame &frame = _frames[index];
+	if (frame.strips.empty() || frame.strips[0].roomX == kNoRoomX) {
+		drawFrame(index, dest, windowX - destX, clipBottom);
+		return;
+	}
+
+	// The frame's box against the window picks the clip, the last test that
+	// holds winning: 1 cuts strips on the left, 2 on the right, 0xff leaves
+	// the frame out and 0 copies every strip whole. A frame wider than the
+	// window is clipped on the right only.
+	enum { kWhole, kLeft, kRight, kNone };
+	const int windowEnd = windowX + kScreenWidth - 1;
+	int mode = kWhole;
+	if (frame.hasBbox) {
+		const int x1 = frame.bbox[0], x2 = frame.bbox[2];
+		if (x1 < windowX)
+			mode = kLeft;
+		if (windowEnd < x2)
+			mode = kRight;
+		if (x2 < windowX || windowEnd < x1)
+			mode = kNone;
+	}
+	if (mode == kNone)
+		return;
+
+	for (uint i = 0; i < frame.strips.size(); i++) {
+		const Strip &strip = frame.strips[i];
+		const byte *src = _data + strip.pixelOffset;
+		int words = strip.length / 2;
+		uint32 addr = strip.addr;
+
+		// The cuts are counted in words, so a strip that overhangs the window
+		// by an odd number of pixels loses its last visible column as well:
+		// Yodle's cell edge at scroll 318 (dosbox graphics parity, #167).
+		if (mode == kLeft) {
+			const int over = (int)strip.roomX - windowX;
+			if (over <= 0) {
+				const int skip = (-over + 1) >> 1;
+				if (words <= skip)
+					continue;
+				words -= skip;
+				src += skip * 2;
+				addr += skip * 2;
+			}
+		} else if (mode == kRight) {
+			const int over = (int)strip.roomX + (int)strip.length - windowEnd;
+			if (over > 0) {
+				words -= over >> 1;
+				if (words <= 0)
+					continue;
+			}
+		}
+
+		// The address is the strip's place in a buffer 320 wide that the
+		// window starts `windowX` bytes into, so a pixel past either edge of
+		// the window is the next or the last row's other end.
+		const int row = ((int)strip.addr - (int)strip.roomX) / kScreenWidth;
+		const int start = row * kScreenWidth + (int)strip.roomX + (int)(addr - strip.addr) - windowX;
+		for (int j = 0; j < words * 2; j++) {
+			const int pos = start + j;
+			if (pos < 0)
+				continue;
+			const int y = pos / kScreenWidth;
+			if (y >= dest.h || y >= clipBottom)
+				break;
+			const int col = destX + pos % kScreenWidth;
+			if (col < 0 || col >= dest.w)
+				continue;
+			*((byte *)dest.getBasePtr(col, y)) = src[j];
+		}
+	}
+}
+
 void DL1Sprite::drawFramePage(uint index, Graphics::Surface &dest, int pageX,
 							  int clipBottom) const {
 	if (index >= _frames.size())

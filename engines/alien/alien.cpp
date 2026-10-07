@@ -195,7 +195,7 @@ static bool addTextTree(const Common::FSNode &gameDataDir, const char *tree) {
 
 AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _spriteFrame(0), _spriteBank(0),
-		_room(0), _secondPlate(false), _roomWidth(kScreenWidth), _scrollX(0),
+		_room(0), _secondPlate(false), _bakedPlate(nullptr), _roomWidth(kScreenWidth), _scrollX(0),
 		_scrollPos(0), _scrollVel(0), _scrollState(0xff), _scrollFocus(0), _scrollPlacements(0),
 		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _lightArmed(false), _musicSlot(-1), _liftPlayed(false), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
 		_timescale(1), _virtualMillis(0), _clockRealBase(0), _clockVirtualBase(0), _presentLast(0),
@@ -1257,6 +1257,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 
 	_background.free();
 	_background = loaded;
+	_baked.clear();
 	_roomWidth = wide ? width : kScreenWidth;
 	_scrollX = 0;
 	_scrollHold = -1;
@@ -2094,7 +2095,7 @@ void AlienEngine::stepClock() {
 		// plays slot 3 and taking the bread plays slot 2, and while both were
 		// still drawing from their slots the older, higher one put the bread
 		// back on top of the shelf it had just been taken from.
-		_anims.bake(_background, _clipBottom);
+		bakeSlots();
 
 		// And the clock a few rooms run beside those calls, in the same part of
 		// the same tick: the library owl, the chimney, the sitting room's UFO
@@ -4980,8 +4981,67 @@ void AlienEngine::showDialog(uint id) {
 		   id, e.lines.size(), e.lineCount);
 }
 
+void AlienEngine::bakeSlots() {
+	if (!_anims.bakePending())
+		return;
+
+	if (_background.w <= kScreenWidth) {
+		_anims.bake(_background, _scrollX, _clipBottom);
+		return;
+	}
+
+	// Only the window can change: the blit is clipped to it.
+	const int x0 = MAX(_scrollX, 0), x1 = MIN<int>(_scrollX + kScreenWidth, _background.w);
+	Common::Array<byte> under;
+	under.resize((x1 - x0) * _background.h);
+	for (int y = 0; y < _background.h; y++)
+		memcpy(&under[y * (x1 - x0)], _background.getBasePtr(x0, y), x1 - x0);
+
+	_anims.bake(_background, _scrollX, _clipBottom);
+
+	if (_bakedPlate != _background.getPixels()) {
+		_baked.clear();
+		_bakedPlate = _background.getPixels();
+	}
+	for (int y = 0; y < _background.h; y++) {
+		const byte *row = (const byte *)_background.getBasePtr(x0, y);
+		for (int x = x0; x < x1; x++) {
+			const byte old = under[y * (x1 - x0) + x - x0];
+			if (row[x - x0] == old)
+				continue;
+			BakedPixel p;
+			p.x = (int16)x;
+			p.y = (int16)y;
+			p.under = old;
+			_baked.push_back(p);
+		}
+	}
+}
+
+void AlienEngine::dropBakedOutOfView() {
+	if (_baked.empty())
+		return;
+
+	// A new plate since: nothing of the old one's bakes is left to undo.
+	if (_bakedPlate != _background.getPixels()) {
+		_baked.clear();
+		return;
+	}
+
+	// Later bakes sit on top of earlier ones, so the list is undone newest
+	// first.
+	for (int i = (int)_baked.size() - 1; i >= 0; i--) {
+		const BakedPixel &p = _baked[i];
+		if (p.x >= _scrollX && p.x < _scrollX + kScreenWidth)
+			continue;
+		*(byte *)_background.getBasePtr(p.x, p.y) = p.under;
+		_baked.remove_at(i);
+	}
+}
+
 void AlienEngine::redraw() {
 	_screen.fillRect(Common::Rect(0, 0, _screen.w, _screen.h), 0);
+	dropBakedOutOfView();
 
 	if (_background.getPixels()) {
 		int w = MIN<int>(_background.w - _scrollX, _screen.w);

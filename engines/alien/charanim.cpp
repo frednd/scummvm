@@ -531,11 +531,12 @@ void Walker::follow(const WalkRoute &route, int targetX, int targetY,
 /**
  * OBJ:sub_050c3, the setup of one straight segment, in the original's Real48
  * arithmetic. It splits the plane at the feet, bumps the horizontal span by one
- * on a tie, and then has two branches that run in turn: a sideways walk while
- * the horizontal span is the wider -- 1.5 px a step, Trunc(span / 1.5) steps,
- * the other axis Round(span / steps * 64) sixty-fourths a step -- and, whenever
- * the vertical span is more than half the horizontal one, a walk into or out of
- * the screen over the first: 0.625 px a step the same way round. The branch
+ * on a tie (for its two tests only), and then has two branches that run in
+ * turn: a sideways walk while the horizontal span is the wider -- 1.5 px a
+ * step, Trunc(span / 1.5) steps, the other axis Round(span / steps * 64)
+ * sixty-fourths a step -- and, whenever the vertical span is more than half the
+ * horizontal one, a walk into or out of the screen over the first: 0.625 px a
+ * step the same way round. The branch
  * that runs last sets the facing. Nothing is snapped: the position the mover
  * keeps is in 1/64 px from the last placement on, and the next segment starts
  * from wherever this one ended (dosbox state parity, finding #158).
@@ -552,10 +553,13 @@ void Walker::planSegment(int targetX, int targetY, Segment &seg) const {
 	const int fx = walkX(), fy = walkY();
 	const int signX = targetX < fx ? -1 : 1;
 	const int signY = targetY < fy ? -1 : 1;
-	int dx = ABS(targetX - fx);
+	const int dx = ABS(targetX - fx);
 	const int dy = ABS(targetY - fy);
-	if (dx == dy)
-		dx++;
+	// The tie bump goes into [0xa8f6], which only the two tests read: the
+	// steps and the step sizes take the span from the coordinates again
+	// (0x2cd2, 0x2dd0), so a diagonal of one is one step, not two (room 46's
+	// chest, old-key; dosbox state parity).
+	const int testX = dx == dy ? dx + 1 : dx;
 
 	// TP's Round: to nearest, halves away from zero.
 	struct R { static int round(double v) { return v < 0 ? -(int)(-v + 0.5) : (int)(v + 0.5); } };
@@ -563,14 +567,14 @@ void Walker::planSegment(int targetX, int targetY, Segment &seg) const {
 	seg.facing = 0;
 	seg.steps = 0;
 	seg.stepX = seg.stepY = 0;
-	if (dx > dy) {
+	if (testX > dy) {
 		seg.facing = signX < 0 ? 4 : 2;
 		seg.steps = (int)(dx / kDivX);
 		seg.stepX = signX * speedX;
 		if (seg.steps > 0)
 			seg.stepY = R::round((double)dy / seg.steps * 64.0 * signY);
 	}
-	if (dy > dx / 2.0) {
+	if (dy > testX / 2.0) {
 		seg.facing = signY < 0 ? 1 : 3;
 		seg.steps = (int)(dy / kDivY);
 		seg.stepY = signY * speedY;
@@ -932,28 +936,30 @@ void Walker::swimTo(int walkX, int walkY, int arrivalFacing) {
 	// way the walker's own splitter breaks one. A leg that is under twice as
 	// wide as it is high is then plotted again as a vertical one -- the second
 	// test runs whatever the first decided (0x348e, 0x3641, ...).
+	traceEvent("swim %d %d from %d %d at %d %d", walkX, walkY, _x, _y, (int)_fx, (int)_fy);
 	const int ax = _x + kSwimAnchorX;
 	const int ay = _y + kSwimAnchorY;
 	const bool left = walkX < ax;
 	const bool up = walkY < ay;
 
-	int adx = ABS(walkX - ax);
+	// The tie bump is for the two tests alone, as in the walker's splitter:
+	// the steps and step sizes read the span afresh (0x3766, 0x3863).
+	const int adx = ABS(walkX - ax);
 	const int ady = ABS(walkY - ay);
-	if (adx == ady)
-		adx++;
+	const int testX = adx == ady ? adx + 1 : adx;
 
 	_facing = left ? 4 : 1;
 	const int signX = left ? -1 : 1;
 	const int signY = up ? -1 : 1;
 
-	if (adx > ady) {
+	if (testX > ady) {
 		_steps = adx;
 		_stepX = signX * kSwimSpeedX;
 		if (_steps > 0)
 			_stepY = swimRound((double)ady / _steps * 64.0 * signY);
 	}
 
-	if ((double)ady > (double)adx / 2.0) {
+	if ((double)ady > (double)testX / 2.0) {
 		_steps = swimTrunc(ady / 0.75);
 		_stepY = signY * kSwimSpeedY;
 		if (_steps > 0)
@@ -1078,6 +1084,7 @@ void Walker::stepSwim(bool gate) {
 	// is the fixed point one divided down (GFX:gfx_div32, toward zero), and the
 	// leg simply runs out where it ends: nothing snaps him onto the target.
 	if (_steps > 0 && _turnLeft < kSwimTurnMoves) {
+		traceEvent("swimstep %d turn %d at %d %d", _steps, _turnLeft, (int)_fx, (int)_fy);
 		_steps--;
 		_fx += _stepX;
 		_fy += _stepY;
