@@ -647,6 +647,7 @@ void AlienEngine::runCutsceneProc(uint proc, bool quiet) {
  */
 void AlienEngine::speakCutsceneLine(uint code, int anchorX, int anchorY) {
 	const TalFile::Outcome &chain = _tal.outcome(code);
+	traceEvent("say %s %u", _tal.name().c_str(), code);
 
 	_speechTal = &_tal;
 	// [0xacf6], which the loader writes before it does anything else.

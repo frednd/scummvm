@@ -57,8 +57,11 @@ class AlienEngine : public Engine {
 public:
 	static const int kScreenWidth = 320;
 
-	/// [0x7926], for the behaviour trace.
-	uint32 masterTick() const { return _tick; }
+	/// [0x7926], for the behaviour trace. The interrupt keeps counting while a
+	/// blocking wait holds the loop up, so the ticks stepClock() has yet to
+	/// catch up are counted too (finding #139) -- a scene's lines are stamped
+	/// as they come up, not at the tick the scene started.
+	uint32 masterTick() const;
 	static const int kScreenHeight = 200;
 
 	/// Where OBJ:sub_08a39 clamps the cursor's hot spot: the arrow is 11 wide,

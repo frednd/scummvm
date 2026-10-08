@@ -2047,6 +2047,10 @@ bool AlienEngine::dlgreqRunning() const {
 		   _jailSpeaking || _endingStep;
 }
 
+uint32 AlienEngine::masterTick() const {
+	return _tick + (millis() - _lastTick) / kTickMillis;
+}
+
 void AlienEngine::stepClock() {
 	const uint32 now = millis();
 	if (now - _lastTick < kTickMillis)
