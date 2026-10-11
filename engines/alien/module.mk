@@ -6,6 +6,7 @@ MODULE_OBJS = \
 	animfont.o \
 	anims.o \
 	charanim.o \
+	chat.o \
 	clock.o \
 	cutsceneplay.o \
 	cutscenes.o \
@@ -35,6 +36,8 @@ MODULE_OBJS = \
 	sfx.o \
 	sweeps.o \
 	tables.o \
+	tal.o \
+	text.o \
 	transitions.o \
 	video.o \
 	walk.o \
