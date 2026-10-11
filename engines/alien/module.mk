@@ -48,13 +48,30 @@ MODULE_OBJS = \
 	walkgeom.o \
 	rooms/basement.o \
 	rooms/bedroom.o \
+	rooms/cave.o \
+	rooms/cemetery.o \
+	rooms/cliff.o \
+	rooms/diving.o \
+	rooms/forest.o \
 	rooms/hallway.o \
+	rooms/hippie.o \
 	rooms/lab.o \
 	rooms/library.o \
 	rooms/lift.o \
 	rooms/living.o \
+	rooms/mailbox.o \
+	rooms/maze.o \
+	rooms/observatory.o \
 	rooms/opening.o \
+	rooms/park.o \
 	rooms/sewer.o \
+	rooms/shore.o \
+	rooms/sluggs.o \
+	rooms/store.o \
+	rooms/studio.o \
+	rooms/teleport.o \
+	rooms/telescope.o \
+	rooms/yodle.o
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_ALIEN), DYNAMIC_PLUGIN)
