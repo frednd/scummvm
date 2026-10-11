@@ -806,7 +806,11 @@ void AlienEngine::finishAction() {
 	// The rooms' own bodies (rooms/): four of room 8's pick their animation
 	// slot from a scratch byte the lift could not follow, and two of them it
 	// dropped altogether, so the safe's door and the two things on its shelf
-	// are run by the room instead (library.cpp); and the pick-axe on the
+	// are run by the room instead (library.cpp) -- and the table really does
+	// not see them: the lift now recovers the two shelf bodies it used to
+	// drop, so leaving the row to run as well handed the key and the disks
+	// out twice. And room 11's remote control, whose branches are the room's
+	// click dispatch and not script rows (living.cpp), and the pick-axe on the
 	// rocks at the shore (shore.cpp).
 	bool roomReplaced = false, roomHandled = false;
 	for (Room *r : _rooms) {
@@ -815,22 +819,11 @@ void AlienEngine::finishAction() {
 		roomHandled = roomHandled || b != Room::kBodyNone;
 	}
 
-	// Room 11's television is answered the same way: the remote control's
-	// branches are the room's click dispatch and not script rows (living.cpp).
-	const bool livingHandled = armLiving(spot.obj, item, anchorX, anchorY);
-	// -- and the table really does not see it. The lift now recovers the two
-	// shelf bodies it used to drop (the slot comes out of the scratch word
-	// [0x9908]), so leaving the row to run as well handed the key and the
-	// disks out twice.
 	// Room 40's item uses are the room's own dispatch too, and the table's
 	// three rows for them lost their guards (cave.cpp).
 	const bool caveHandled = armCave(spot.obj, item, anchorX, anchorY);
 	const bool ranScript = !roomReplaced && !caveHandled && _script.run(spot.obj, verb, item);
-	const bool handled = roomHandled || livingHandled || caveHandled || ranScript;
-
-	// And the other half of that dispatch, which runs after the row rather than
-	// instead of it: the cassette going into a set that is already on.
-	livingCassette(spot.obj, item);
+	const bool handled = roomHandled || caveHandled || ranScript;
 
 	// One object in the game is answered by a hook of its room's own rather
 	// than by a script body: room 7's light switch (bedroom.cpp).

@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class LivingRoom;
 	friend class MailboxRoom;
 	friend class SluggsRoom;
 	friend class CemeteryRoom;
@@ -413,13 +414,6 @@ private:
 	void enterBasement(int room);
 	void stepBasement();
 	void takeBasementBattery(int obj);
-
-	/// Room 11's television, the tape it plays and the arrow that comes down
-	/// with it (living.cpp).
-	bool armLiving(int obj, byte item, int anchorX, int anchorY);
-	void livingCassette(int obj, byte item);
-	void startTape();
-	void stepLiving();
 
 	/// Room 31's two ledges and the climb between them (cliff.cpp).
 	void armCliff(int clickX, int clickY, WalkTarget &target);
@@ -847,10 +841,6 @@ private:
 
 	/// Room 13's, which is the same byte in the original (basement.cpp).
 	byte _basementStep;
-
-	/// Room 11's [0xa49f] machine, which is the tape the remote control starts
-	/// (living.cpp).
-	byte _livingStep;
 
 	/// Room 31's, and the [0xa738] beside it that says which climb an arrival
 	/// is going to start (cliff.cpp). [0xa49c] is kept per room, the way the

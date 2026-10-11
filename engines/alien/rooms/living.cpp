@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/living.h"
 
 namespace Alien {
 
@@ -113,17 +114,21 @@ static const uint kTapeSample = 2;
 static const uint kShakeSample = 3;
 static const uint kArrowSample = 1;
 
+LivingRoom::LivingRoom(AlienEngine *vm) : Room(vm),
+		_livingStep(0) {
+}
+
 /**
  * ovr_0b_0e77:0x0000 -- the tape plays, and the arrow comes down with it.
  */
-void AlienEngine::startTape() {
-	_anims.play(kTapeSlot, 1, kTapeFrames, kTapeRate, 1);
-	_script.setFlag(kArrowShown, 1);
-	_script.setFlag(kSetDead, 1);
-	_script.setFlag(kSetStatic, 0);
+void LivingRoom::startTape() {
+	_vm->_anims.play(kTapeSlot, 1, kTapeFrames, kTapeRate, 1);
+	_vm->_script.setFlag(kArrowShown, 1);
+	_vm->_script.setFlag(kSetDead, 1);
+	_vm->_script.setFlag(kSetStatic, 0);
 	_livingStep = kStepStart;
 	CursorMan.showMouse(false);
-	_dirty = true;
+	_vm->_dirty = true;
 
 	debugC(1, kDebugRooms, "living: the tape runs, step 0x%02x", kStepStart);
 }
@@ -135,15 +140,15 @@ void AlienEngine::startTape() {
  *         original sets beside each of these branches -- without it the shared
  *         refusal speaks over the room's own line.
  */
-bool AlienEngine::armLiving(int obj, byte item, int anchorX, int anchorY) {
-	if (_room != kLivingRoom || item != kRemote)
+bool LivingRoom::armLiving(int obj, byte item, int anchorX, int anchorY) {
+	if (_vm->_room != kLivingRoom || item != kRemote)
 		return false;
 	if (obj != kTelevision && obj != kRecorder)
 		return false;
 
 	// 0x0147: the remote is useless on either box until the battery is in it.
-	if (_script.flag(kRemoteBattery) != 1) {
-		queueOutcome(_tal, kLineNoBattery, anchorX, anchorY);
+	if (_vm->_script.flag(kRemoteBattery) != 1) {
+		_vm->queueOutcome(_vm->_tal, kLineNoBattery, anchorX, anchorY);
 		return true;
 	}
 
@@ -153,33 +158,33 @@ bool AlienEngine::armLiving(int obj, byte item, int anchorX, int anchorY) {
 		return false;
 
 	// 0x0084: once the tape has run there is nothing left to switch on.
-	if (_script.flag(kSetDead) == 1) {
-		queueOutcome(_tal, kLineBroken, anchorX, anchorY);
+	if (_vm->_script.flag(kSetDead) == 1) {
+		_vm->queueOutcome(_vm->_tal, kLineBroken, anchorX, anchorY);
 		return true;
 	}
 
-	if (_script.flag(kSetOn) == 0) {
+	if (_vm->_script.flag(kSetOn) == 0) {
 		// 0x00a5: with the tape in, the press starts it; without, the set just
 		// comes on and shows the six frames of nothing.
-		if (_script.flag(kCassetteIn) == 1) {
+		if (_vm->_script.flag(kCassetteIn) == 1) {
 			startTape();
 			return true;
 		}
-		_anims.play(kStaticSlot, 1, kStaticFrames, kStaticRate, 1);
-		_script.setFlag(kSetStatic, 1);
-		_script.setFlag(kSetOn, 1);
-		_dirty = true;
+		_vm->_anims.play(kStaticSlot, 1, kStaticFrames, kStaticRate, 1);
+		_vm->_script.setFlag(kSetStatic, 1);
+		_vm->_script.setFlag(kSetOn, 1);
+		_vm->_dirty = true;
 		debugC(1, kDebugRooms, "living: the set comes on");
 		return true;
 	}
 
 	// 0x00e8: and off again, the loop cut short and one frame of the dead
 	// screen left standing.
-	_anims.stop(kStaticSlot);
-	_anims.play(kDeadSlot, 1, 1, 0, 1);
-	_script.setFlag(kSetStatic, 0);
-	_script.setFlag(kSetOn, 0);
-	_dirty = true;
+	_vm->_anims.stop(kStaticSlot);
+	_vm->_anims.play(kDeadSlot, 1, 1, 0, 1);
+	_vm->_script.setFlag(kSetStatic, 0);
+	_vm->_script.setFlag(kSetOn, 0);
+	_vm->_dirty = true;
 	debugC(1, kDebugRooms, "living: the set goes off");
 	return true;
 }
@@ -192,56 +197,68 @@ bool AlienEngine::armLiving(int obj, byte item, int anchorX, int anchorY) {
  * Called after the script body, because the flag it reads is the one that body
  * sets.
  */
-void AlienEngine::livingCassette(int obj, byte item) {
-	if (_room != kLivingRoom || obj != kRecorder || item != kCassette)
+void LivingRoom::livingCassette(int obj, byte item) {
+	if (_vm->_room != kLivingRoom || obj != kRecorder || item != kCassette)
 		return;
-	if (_script.flag(kSetOn) != 1 || _script.flag(kSetDead) != 0)
+	if (_vm->_script.flag(kSetOn) != 1 || _vm->_script.flag(kSetDead) != 0)
 		return;
 
 	startTape();
 }
 
-void AlienEngine::stepLiving() {
-	if (_room != kLivingRoom || !_livingStep)
+void LivingRoom::tickPair() {
+	if (_vm->_room != kLivingRoom || !_livingStep)
 		return;
 
 	switch (_livingStep) {
 	case kStepStart:
 		// 0x0873: the tape's own sound, on the tick the machine starts.
-		_sound.play(kTapeSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
+		_vm->_sound.play(kTapeSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
 		_livingStep = kStepFirst;
 		break;
 
 	case kStepFirst:
 		// 0x0888
-		if (_anims.remaining(kTapeSlot) != kFirstCue)
+		if (_vm->_anims.remaining(kTapeSlot) != kFirstCue)
 			break;
-		_sound.play(kShakeSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
+		_vm->_sound.play(kShakeSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
 		_livingStep = kStepSecond;
 		break;
 
 	case kStepSecond:
 		// 0x08a1
-		if (_anims.remaining(kTapeSlot) != kSecondCue)
+		if (_vm->_anims.remaining(kTapeSlot) != kSecondCue)
 			break;
-		_sound.play(kArrowSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
+		_vm->_sound.play(kArrowSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
 		_livingStep = kStepLast;
 		break;
 
 	case kStepLast:
 		// 0x08ba: the arrow is on the dish and the room is the player's again.
-		if (_anims.remaining(kTapeSlot) != kLastCue)
+		if (_vm->_anims.remaining(kTapeSlot) != kLastCue)
 			break;
 		_livingStep = 0;
 		CursorMan.showMouse(true);
-		rebuildHotspots();
-		_dirty = true;
+		_vm->rebuildHotspots();
+		_vm->_dirty = true;
 		debugC(1, kDebugRooms, "living: the tape has run, the arrow is on the dish");
 		break;
 
 	default:
 		break;
 	}
+}
+
+/// The remote control's branches are the room's click dispatch and not
+/// script rows; the row runs as well.
+Room::Body LivingRoom::body(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	return armLiving(obj, item, anchorX, anchorY) ? kBodyHandled : kBodyNone;
+}
+
+void LivingRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The other half of that dispatch, which runs after the row rather than
+	// instead of it: the cassette going into a set that is already on.
+	livingCassette(obj, item);
 }
 
 } // End of namespace Alien

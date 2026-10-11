@@ -26,6 +26,7 @@
 
 namespace Alien {
 
+/// Room 32's statue, the phrase it wants and the cave it guards.
 class CemeteryRoom : public Room {
 public:
 	explicit CemeteryRoom(AlienEngine *vm);
@@ -35,7 +36,6 @@ public:
 	void afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) override;
 
 private:
-	/// Room 32's statue, the phrase it wants and the cave it guards.
 	void armCemeteryStatue(int obj, byte verb);
 	void cemeteryArrival();
 	void setCemeteryState(byte state);

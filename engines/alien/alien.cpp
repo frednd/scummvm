@@ -127,8 +127,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false), _rnd("alien"),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
-		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
-		_livingStep(0), _cliffStep(0), _cliffClimb(0), _cliffPos(0), _cliffX(0), _cliffY(0),
+		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0), _cliffStep(0), _cliffClimb(0), _cliffPos(0), _cliffX(0), _cliffY(0),
 		_cliffFacing(Walker::kFacingKeep), _cliffResumeX(0), _cliffResumeY(0),
 		_cliffResumeFacing(Walker::kFacingKeep),
 		_lastSubmode(0),
@@ -639,10 +638,6 @@ void AlienEngine::stepClock() {
 		// And room 31's climb between the foot of the cliff and the ledge on
 		// top of it, which is what arms the two doors up there (cliff.cpp).
 		stepCliff();
-
-		// And room 11's tape, the only thing in the game that puts the arrow on
-		// the dish (living.cpp).
-		stepLiving();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
