@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class ShoreRoom;
 	friend class PoolRoom;
 	friend class DivingRoom;
 	friend class SteamRoom;
@@ -465,21 +466,10 @@ private:
 	void enterCave(int room);
 	bool armCave(int obj, byte item, int anchorX, int anchorY);
 
-	/// Room 41's door to the maze, simplified the same way (shore.cpp).
-	void startShore();
-	bool armShoreAxe(int obj, byte item);
-	bool armShoreSuit(int obj, byte item);
-	void shoreArrival();
-	bool shoreArrivalPending() const;
-	byte shoreRefusal(byte view, byte obj) const;
-	void stepShore();
-
 	bool dlgreqRunning() const;
 	bool roomHoldsCharacter() const;
 
 	void stepBasementLadder();
-
-	bool shoreWalkTo(int x, int y, int arrivalFacing);
 
 	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
 
@@ -959,10 +949,6 @@ private:
 	byte _crystalLeft;
 	bool _crystalSpeaking;
 	byte _mazePose;
-
-	/// Room 41's own machines: the step of the pick-axe swing, or of whichever
-	/// climb between the two cave mouths is running (shore.cpp).
-	byte _shoreStep;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

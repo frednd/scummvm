@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/shore.h"
 
 namespace Alien {
 
@@ -148,6 +149,10 @@ static const byte kAcrossFacing = 2;
 static const int16 kBackX = 0x2c, kBackY = -0x0f;
 static const byte kBackFacing = 4;
 
+ShoreRoom::ShoreRoom(AlienEngine *vm) : Room(vm),
+		_shoreStep(0) {
+}
+
 /**
  * A walk on either ledge. The room's init zeroes the node count before it
  * looks at [0xa77f] (0x0878) and loads KIERRA41 only for the beach, so up on a
@@ -155,17 +160,17 @@ static const byte kBackFacing = 4;
  * target. The beach's mask and nodes would stop him well short of where the pick-axe throw
  * starts.
  */
-bool AlienEngine::shoreWalkTo(int x, int y, int arrivalFacing) {
-	if (_room != kShoreRoom || _script.flag(kView) == kBeach)
+bool ShoreRoom::walk(int x, int y, int arrivalFacing) {
+	if (_vm->_room != kShoreRoom || _vm->_script.flag(kView) == kBeach)
 		return false;
 
-	straightWalkTo(x, y, arrivalFacing);
+	_vm->straightWalkTo(x, y, arrivalFacing);
 	return true;
 }
 
 /// Every arrival resets the machine; the view itself is a flag and outlives it.
-void AlienEngine::startShore() {
-	if (_room != kShoreRoom)
+void ShoreRoom::start() {
+	if (_vm->_room != kShoreRoom)
 		return;
 
 	_shoreStep = 0;
@@ -175,17 +180,17 @@ void AlienEngine::startShore() {
  * The pick-axe on the fence, on the left ledge: entry 3's one item branch
  * (0x0043-0x0077).
  */
-bool AlienEngine::armShoreAxe(int obj, byte item) {
-	if (_room != kShoreRoom || item != kAxe)
+bool ShoreRoom::armShoreAxe(int obj, byte item) {
+	if (_vm->_room != kShoreRoom || item != kAxe)
 		return false;
 	if (obj != kRockObjA && obj != kRockObjB && obj != kRockObjC)
 		return false;
-	if (_script.flag(kView) != kFirstMouth)
+	if (_vm->_script.flag(kView) != kFirstMouth)
 		return false;
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
-	queueOutcome(_tal, kOutcomeSwing, anchorX, anchorY);
+	_vm->characterAnchor(anchorX, anchorY);
+	_vm->queueOutcome(_vm->_tal, kOutcomeSwing, anchorX, anchorY);
 	CursorMan.showMouse(false);
 	_shoreStep = kStepAxeLine;
 	debugC(1, kDebugRooms, "shore: the pick-axe and the rope go over");
@@ -193,10 +198,10 @@ bool AlienEngine::armShoreAxe(int obj, byte item) {
 }
 
 /// The diving suit on the water, entry 3's other item branch (0x007c).
-bool AlienEngine::armShoreSuit(int obj, byte item) {
-	if (_room != kShoreRoom || item != kSuit || obj != kWaterObj)
+bool ShoreRoom::armShoreSuit(int obj, byte item) {
+	if (_vm->_room != kShoreRoom || item != kSuit || obj != kWaterObj)
 		return false;
-	if (_script.flag(kView) != kBeach)
+	if (_vm->_script.flag(kView) != kBeach)
 		return false;
 
 	_shoreStep = kStepSuitStart;
@@ -217,18 +222,18 @@ bool AlienEngine::armShoreSuit(int obj, byte item) {
  * scripted settle: a walk that ends a pixel short takes a step, and the settle
  * would otherwise end on the tick between the step and the room's own test.
  */
-bool AlienEngine::shoreArrivalPending() const {
-	if (_room != kShoreRoom || _shoreStep)
+bool ShoreRoom::busy() const {
+	if (_vm->_room != kShoreRoom || _shoreStep)
 		return false;
-	const byte view = _script.flag(kView);
-	const byte obj = _script.flag(kClickedObj);
+	const byte view = _vm->_script.flag(kView);
+	const byte obj = _vm->_script.flag(kClickedObj);
 	if (view == kBeach)
 		return obj >= 5 && obj <= 8;
 	return obj != 0;
 }
 
 /// What the view says for an object it cannot reach, or 0 (0x0992, 0x09e2, 0x0ad3).
-byte AlienEngine::shoreRefusal(byte view, byte obj) const {
+byte ShoreRoom::shoreRefusal(byte view, byte obj) const {
 	if (view == kBeach)
 		return obj >= 5 && obj <= 8 ? kOutcomeTooHigh : 0;
 
@@ -239,17 +244,17 @@ byte AlienEngine::shoreRefusal(byte view, byte obj) const {
 		line = kOutcomeCaverns;
 	if (obj == 3)
 		line = kOutcomeShallow;
-	if (view == kFirstMouth && _script.flag(kRockOpen) == 0 && (obj == 6 || obj == 8))
+	if (view == kFirstMouth && _vm->_script.flag(kRockOpen) == 0 && (obj == 6 || obj == 8))
 		line = kOutcomeTooFar;
 	return line;
 }
 
-void AlienEngine::shoreArrival() {
-	const byte view = _script.flag(kView);
-	if (_shoreStep || _ben.isWalking() || _ben.isTurning())
+void ShoreRoom::shoreArrival() {
+	const byte view = _vm->_script.flag(kView);
+	if (_shoreStep || _vm->_ben.isWalking() || _vm->_ben.isTurning())
 		return;
 
-	const byte obj = _script.flag(kClickedObj);
+	const byte obj = _vm->_script.flag(kClickedObj);
 	if (!obj)
 		return;
 
@@ -257,69 +262,69 @@ void AlienEngine::shoreArrival() {
 	// speak over whatever the click itself said: the original's test does not
 	// wait for the line, only for him to have stood five frames.
 	const bool crossing = view == kFirstMouth
-						  ? _script.flag(kRockOpen) == 1 && (obj == 6 || obj == 8 || obj == 9)
+						  ? _vm->_script.flag(kRockOpen) == 1 && (obj == 6 || obj == 8 || obj == 9)
 						  : view == kSecondMouth && (obj == 5 || obj == 7 || obj == 9);
 	if (!crossing) {
-		if (_ben.idleCount() < kStandSettle)
+		if (_vm->_ben.idleCount() < kStandSettle)
 			return;
 		const byte line = shoreRefusal(view, obj);
 		if (view == kBeach && !line)
 			return;
-		_script.setFlag(kClickedObj, 0);
+		_vm->_script.setFlag(kClickedObj, 0);
 		if (line) {
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, line, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, line, anchorX, anchorY);
 			debugC(1, kDebugRooms, "shore: object %u is out of reach, event %u", obj, line);
 		}
 		return;
 	}
 
-	if (!speechDone())
+	if (!_vm->speechDone())
 		return;
 
 	if (view == kFirstMouth) {
 		// 0x0a34: and only once the rope is across.
 
-		_script.setFlag(kClickedObj, 0);
-		_script.setFlag(kView, kSecondMouth);
+		_vm->_script.setFlag(kClickedObj, 0);
+		_vm->_script.setFlag(kView, kSecondMouth);
 		CursorMan.showMouse(false);
 
 		// 0x0a5a: the walk along the rope is the animation's, MAE_RIGH, and
 		// the first one is MAE_SLIP, a longer one with a wobble in it, which
 		// [0xa783] remembers has been seen.
-		if (_script.flag(kSeenMouth) == 1) {
+		if (_vm->_script.flag(kSeenMouth) == 1) {
 			_shoreStep = kStepClimbUp;
-			playCharacterAnim(kClimbSlot, 1, kClimbFrames, kAnimRate, kAnimMode);
+			_vm->playCharacterAnim(kClimbSlot, 1, kClimbFrames, kAnimRate, kAnimMode);
 		} else {
-			_script.setFlag(kSeenMouth, 1);
+			_vm->_script.setFlag(kSeenMouth, 1);
 			_shoreStep = kStepClimbFirst;
-			playCharacterAnim(kFirstClimbSlot, 1, kFirstClimbFrames, kAnimRate, kAnimMode);
+			_vm->playCharacterAnim(kFirstClimbSlot, 1, kFirstClimbFrames, kAnimRate, kAnimMode);
 		}
 
 		// 0x0a91: and he is put down at the far door at once, out of sight
 		// until the crossing has played.
-		_ben.placeSprite(kAcrossX, kAcrossY, kAcrossFacing);
+		_vm->_ben.placeSprite(kAcrossX, kAcrossY, kAcrossFacing);
 
 		debugC(1, kDebugRooms, "shore: across the rope to the far ledge");
 	} else {
 		// 0x0b0a: and back down again.
-		_script.setFlag(kClickedObj, 0);
-		_script.setFlag(kView, kFirstMouth);
+		_vm->_script.setFlag(kClickedObj, 0);
+		_vm->_script.setFlag(kView, kFirstMouth);
 		_shoreStep = kStepClimbBack;
-		playCharacterAnim(kBackSlot, 1, kClimbFrames, kAnimRate, kAnimMode);
+		_vm->playCharacterAnim(kBackSlot, 1, kClimbFrames, kAnimRate, kAnimMode);
 		CursorMan.showMouse(false);
-		_ben.placeSprite(kBackX, kBackY, kBackFacing);
+		_vm->_ben.placeSprite(kBackX, kBackY, kBackFacing);
 
 		debugC(1, kDebugRooms, "shore: back along the rope to the left ledge");
 	}
 
-	rebuildHotspots();
+	_vm->rebuildHotspots();
 }
 
 /// The room's [0xa49f] machines: the pick-axe, and the two climbs.
-void AlienEngine::stepShore() {
-	if (_room != kShoreRoom)
+void ShoreRoom::tickPair() {
+	if (_vm->_room != kShoreRoom)
 		return;
 
 	switch (_shoreStep) {
@@ -331,10 +336,10 @@ void AlienEngine::stepShore() {
 		// 0x0b54: the line is the machine's, a pass after the click, so it is
 		// what is left standing over whatever the click itself answered.
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, _script.flag(kSuitTried) == 1 ? kOutcomeSuitAgain : kOutcomeSuitFirst,
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, _vm->_script.flag(kSuitTried) == 1 ? kOutcomeSuitAgain : kOutcomeSuitFirst,
 					 anchorX, anchorY);
-		_script.setFlag(kSuitTried, 1);
+		_vm->_script.setFlag(kSuitTried, 1);
 		CursorMan.showMouse(false);
 		_shoreStep = kStepSuitLine;
 		break;
@@ -342,43 +347,43 @@ void AlienEngine::stepShore() {
 
 	case kStepSuitLine:
 		// 0x0b8d: the line, then the dive.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		playCharacterAnim(kDiveSlot, 1, kDiveFrames, kAnimRate, kAnimMode);
+		_vm->playCharacterAnim(kDiveSlot, 1, kDiveFrames, kAnimRate, kAnimMode);
 		_shoreStep = kStepSuitDive;
 		break;
 
 	case kStepSuitDive:
 		// 0x0bb2: and under, into the cave.
-		if (_anims.isBusy(kDiveSlot))
+		if (_vm->_anims.isBusy(kDiveSlot))
 			break;
 		_shoreStep = 0;
-		_script.setFlag(kDivingView, 1);
-		takeExit(kDiveSubmode);
+		_vm->_script.setFlag(kDivingView, 1);
+		_vm->takeExit(kDiveSubmode);
 		break;
 
 	case kStepAxeLine:
 		// 0x0bd4: the line comes down before the swing.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		_drawCharacter = false;
-		playCharacterAnim(kAxeSlot, 1, kAxeFrames, kAnimRate, kAnimMode);
+		_vm->_drawCharacter = false;
+		_vm->playCharacterAnim(kAxeSlot, 1, kAxeFrames, kAnimRate, kAnimMode);
 		_shoreStep = kStepAxeSwing;
 		break;
 
 	case kStepAxeSwing: {
 		// 0x0bf9: the axe goes over with the rope, and the way across opens.
-		if (_anims.isBusy(kAxeSlot))
+		if (_vm->_anims.isBusy(kAxeSlot))
 			break;
-		_inventory.remove(kAxe);
-		_script.setFlag(kRockOpen, 1);
+		_vm->_inventory.remove(kAxe);
+		_vm->_script.setFlag(kRockOpen, 1);
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOutcomeOpen, anchorX, anchorY);
-		_drawCharacter = true;
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeOpen, anchorX, anchorY);
+		_vm->_drawCharacter = true;
 		_shoreStep = kStepAxeDone;
 		debugC(1, kDebugItems, "shore: item %u (%s) goes over with the rope",
-			   kAxe, _inventory.name(kAxe).c_str());
+			   kAxe, _vm->_inventory.name(kAxe).c_str());
 		break;
 	}
 
@@ -388,11 +393,11 @@ void AlienEngine::stepShore() {
 
 	case kStepAxeLast:
 		// 0x0c30: and the cursor comes back once the second line is down.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_shoreStep = 0;
 		CursorMan.showMouse(true);
-		rebuildHotspots();
+		_vm->rebuildHotspots();
 		break;
 
 	case kStepClimbUp:
@@ -401,17 +406,29 @@ void AlienEngine::stepShore() {
 		// 0x0c43, 0x0c5f and 0x0c7b are one shape: wait for the climb's own
 		// animation, then give him and the cursor back -- and take the
 		// animation's last frame, a drawn-on Ben, off the ledge with it.
-		if (_anims.isBusy(kStepClimbUp == _shoreStep ? kClimbSlot
+		if (_vm->_anims.isBusy(kStepClimbUp == _shoreStep ? kClimbSlot
 						  : (_shoreStep == kStepClimbFirst ? kFirstClimbSlot : kBackSlot)))
 			break;
 		_shoreStep = 0;
-		showCharacter();
+		_vm->showCharacter();
 		CursorMan.showMouse(true);
 		break;
 
 	default:
 		break;
 	}
+}
+
+/// The pick-axe on the rocks, which is what opens the way into the second
+/// maze. Entry 3 answers it and raises [0xa602] (0x0077), so the table's own
+/// row for it, the same line, never runs.
+Room::Body ShoreRoom::body(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	return armShoreAxe(obj, item) ? kBodyReplaced : kBodyNone;
+}
+
+void ShoreRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The diving suit on the water, the way back down to room 46.
+	armShoreSuit(obj, item);
 }
 
 } // End of namespace Alien

@@ -143,7 +143,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_mazeStep(0), _mazePose(0),
 		_crystalStep(0), _crystalWait(0), _crystalSpeaker(0), _crystalLine(0),
 		_crystalLeft(0), _crystalSpeaking(false),
-		_shoreStep(0),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -676,16 +675,6 @@ void AlienEngine::stepClock() {
 
 		// And maze A's, the scene the crystal door opens into (maze.cpp).
 		stepMaze();
-
-		// And room 41's: the pick-axe, and the climb between its two cave
-		// mouths (shore.cpp).
-		stepShore();
-
-		// And room 46's chest, its key, and the swim across (diving.cpp).
-
-
-
-
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)

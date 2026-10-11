@@ -824,7 +824,8 @@ void AlienEngine::finishAction() {
 	// The rooms' own bodies (rooms/): four of room 8's pick their animation
 	// slot from a scratch byte the lift could not follow, and two of them it
 	// dropped altogether, so the safe's door and the two things on its shelf
-	// are run by the room instead (library.cpp).
+	// are run by the room instead (library.cpp); and the pick-axe on the
+	// rocks at the shore (shore.cpp).
 	bool roomReplaced = false, roomHandled = false;
 	for (Room *r : _rooms) {
 		const Room::Body b = r->body(spot.obj, verb, item, anchorX, anchorY);
@@ -839,16 +840,11 @@ void AlienEngine::finishAction() {
 	// shelf bodies it used to drop (the slot comes out of the scratch word
 	// [0x9908]), so leaving the row to run as well handed the key and the
 	// disks out twice.
-	// The pick-axe on the rocks at the shore, which is what opens the way into
-	// the second maze (shore.cpp). Entry 3 answers it and raises [0xa602]
-	// (0x0077), so the table's own row for it, the same line, never runs.
-	const bool shoreAxe = armShoreAxe(spot.obj, item);
 	// Room 40's item uses are the room's own dispatch too, and the table's
 	// three rows for them lost their guards (cave.cpp).
 	const bool caveHandled = armCave(spot.obj, item, anchorX, anchorY);
-	const bool ranScript = !roomReplaced && !shoreAxe && !caveHandled &&
-						   _script.run(spot.obj, verb, item);
-	const bool handled = roomHandled || livingHandled || shoreAxe || caveHandled || ranScript;
+	const bool ranScript = !roomReplaced && !caveHandled && _script.run(spot.obj, verb, item);
+	const bool handled = roomHandled || livingHandled || caveHandled || ranScript;
 
 	// And the other half of that dispatch, which runs after the row rather than
 	// instead of it: the cassette going into a set that is already on.
@@ -877,9 +873,6 @@ void AlienEngine::finishAction() {
 	// and whose line waits for it (observatory.cpp).
 	if (!item)
 		armObservatoryBreaker(spot.obj, verb);
-
-	// And the diving suit on the water there, the way back down to room 46.
-	armShoreSuit(spot.obj, item);
 
 	// And three bodies carry state the lift does not: the sewer's ladder, its
 	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).

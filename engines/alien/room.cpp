@@ -524,9 +524,7 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// wrongly and whose torch the cell may not have (maze.cpp).
 	startMaze();
 
-	// And room 41's machines (shore.cpp), and room 32's way back from the
-	// crystal (cemetery.cpp).
-	startShore();
+	// And room 32's way back from the crystal (cemetery.cpp).
 	startCemetery();
 
 	startObservatory();
@@ -828,14 +826,12 @@ void AlienEngine::showCharacter() {
 }
 
 void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
-	// Room 46 has no mask and no nodes: every walk is a swim in a straight
-	// line (diving.cpp).
+	// The rooms that move him themselves: room 46 has no mask and no nodes,
+	// so every walk is a swim in a straight line (diving.cpp), and room 41's
+	// two ledges have no nodes and no mask of their own (shore.cpp).
 	for (Room *r : _rooms)
 		if (r->walk(x, y, arrivalFacing))
 			return;
-	// Room 41's two ledges have no nodes and no mask of their own (shore.cpp).
-	if (shoreWalkTo(x, y, arrivalFacing))
-		return;
 
 	if (!_walk.plotRoute(_ben.walkX(), _ben.walkY(), x, y, _route)) {
 		// The two mazes have no mask to route through and move him anyway, the
