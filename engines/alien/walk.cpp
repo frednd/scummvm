@@ -1,0 +1,429 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "common/debug.h"
+#include "common/file.h"
+#include "common/path.h"
+#include "common/str.h"
+
+#include "alien/detection.h"
+#include "alien/overlay.h"
+#include "alien/walk.h"
+
+namespace Alien {
+
+static const uint kNoNode = 0xFF;
+
+// --------------------------------------------------------------------------
+// KIER*.PIC, the walk mask
+// --------------------------------------------------------------------------
+
+WalkMask::WalkMask() {
+	for (uint i = 0; i < ARRAYSIZE(_page); i++) {
+		_page[i] = nullptr;
+		_size[i] = 0;
+	}
+}
+
+WalkMask::~WalkMask() {
+	unload();
+}
+
+void WalkMask::unload() {
+	for (uint i = 0; i < ARRAYSIZE(_page); i++) {
+		delete[] _page[i];
+		_page[i] = nullptr;
+		_size[i] = 0;
+	}
+}
+
+bool WalkMask::loadPage(uint page, const Common::Path &path) {
+	if (page >= ARRAYSIZE(_page))
+		return false;
+
+	Common::File f;
+	if (!f.open(path)) {
+		warning("Alien::WalkMask: cannot open %s", path.toString().c_str());
+		return false;
+	}
+
+	delete[] _page[page];
+	_page[page] = nullptr;
+	_size[page] = 0;
+
+	const uint32 pixels = kWidth * kHeight;
+	byte *map = new byte[pixels];
+	memset(map, 1, pixels);
+
+	// The run count in the header is one short of the runs present, so the
+	// file is expanded to its end rather than to that count.
+	f.skip(2);
+	uint32 out = 0;
+	while (out < pixels && f.pos() + 3 <= f.size()) {
+		uint16 length = f.readUint16LE();
+		byte value = f.readByte();
+		if (length > pixels - out)
+			length = (uint16)(pixels - out);
+		memset(map + out, value, length);
+		out += length;
+	}
+
+	if (out < pixels)
+		debugC(1, kDebugResource, "walk mask %s: %u of %u bytes covered",
+			   path.toString().c_str(), out, pixels);
+
+	_page[page] = map;
+	_size[page] = out;
+	return true;
+}
+
+bool WalkMask::blocked(int x, int y) const {
+	if (x < 0 || y < 0 || y >= kHeight)
+		return true;
+
+	uint page = 0;
+	if (x > kPageSplit) {
+		page = 1;
+		x -= kPageSplit;
+	}
+
+	if (x >= kWidth)
+		return true;
+
+	// Nine of the fifteen rooms wider than the screen ship no B mask at all --
+	// room 8 is one, and its safe stands at x 355 -- so the original's page 7
+	// still holds whatever the last room that did load one left in it. That is
+	// not something a port can reproduce, and refusing the strip outright is
+	// the one reading the original certainly does not have: it makes every
+	// destination past x 319 unreachable, and the router laps the ring looking
+	// for a node that can see one. An absent page is open floor instead, which
+	// is what the rooms are authored as -- their masks all end in a full-width
+	// walkable band at the floor line.
+	if (!_page[page])
+		return page == 0;
+
+	const uint32 index = (uint32)y * kWidth + x;
+	if (index >= _size[page])
+		return true;
+
+	return _page[page][index] != 0;
+}
+
+// --------------------------------------------------------------------------
+// KIERRA{N}.DAT, the walk nodes
+// --------------------------------------------------------------------------
+
+WalkNodes::WalkNodes() : _count(0) {
+	memset(_x, 0, sizeof(_x));
+	memset(_y, 0, sizeof(_y));
+}
+
+bool WalkNodes::load(const Common::Path &path) {
+	unload();
+
+	Common::File f;
+	if (!f.open(path)) {
+		warning("Alien::WalkNodes: cannot open %s", path.toString().c_str());
+		return false;
+	}
+
+	const uint16 zoneCount = f.readUint16LE();
+	const uint16 nodeCount = f.readUint16LE();
+
+	const int64 expected = 4 + (int64)zoneCount * 8 + (int64)nodeCount * 4;
+	if (f.size() != expected) {
+		warning("Alien::WalkNodes: %s is %d bytes, expected %d for %u zones and %u nodes",
+				path.toString().c_str(), (int)f.size(), (int)expected, zoneCount, nodeCount);
+		return false;
+	}
+
+	if (nodeCount > kMaxNodes) {
+		warning("Alien::WalkNodes: %s has %u nodes, more than the engine's %d",
+				path.toString().c_str(), nodeCount, kMaxNodes);
+		return false;
+	}
+
+	// The four zone columns are dead in the shipped data: only the global
+	// KIERRA.DAT has any, and nothing ever reads them back.
+	f.skip((uint32)zoneCount * 8);
+
+	// X and Y are two separate arrays rather than one array of pairs.
+	for (uint16 i = 0; i < nodeCount; i++)
+		_x[i] = (int16)f.readUint16LE();
+	for (uint16 i = 0; i < nodeCount; i++)
+		_y[i] = (int16)f.readUint16LE();
+
+	if (f.eos() || f.err())
+		return false;
+
+	_count = nodeCount;
+	return true;
+}
+
+// --------------------------------------------------------------------------
+// The room's walk system
+// --------------------------------------------------------------------------
+
+Walk::Walk() {
+	memset(_slotX, 0, sizeof(_slotX));
+	memset(_slotY, 0, sizeof(_slotY));
+}
+
+void Walk::unload() {
+	_mask.unload();
+	_nodes.unload();
+}
+
+bool Walk::load(int room, const RoomAssets &assets) {
+	unload();
+
+	// Which page a mask belongs to is not something the manifest says, and the
+	// order the names appear in is no guide either: room 3 lists NOKIERRA.PIC,
+	// the walk-nowhere default, where its right half belongs. The names
+	// themselves carry it -- KIER{N}B is the right half of a scrolling room,
+	// anything else naming the room is the left -- so the manifest is used for
+	// what it does settle, and the shipped naming fills in the rest.
+	const Common::String secondName = Common::String::format("KIER%dB.", room);
+	Common::String pageA, pageB;
+	for (uint i = 0; i < assets.maskCount && i < RoomAssets::kMaxMasks; i++) {
+		const Common::String &name = assets.masks[i];
+		if (!scumm_strnicmp(name.c_str(), "NOKIERRA", 8))
+			continue;
+		if (!scumm_strnicmp(name.c_str(), secondName.c_str(), secondName.size()))
+			pageB = name;
+		else if (pageA.empty())
+			pageA = name;
+	}
+
+	if (pageA.empty()) {
+		static const char *const kPatterns[] = { "KIER%dA.PIC", "KIER%d.PIC", "KIERRA%d.PIC" };
+		for (uint i = 0; i < ARRAYSIZE(kPatterns); i++) {
+			Common::String name = Common::String::format(kPatterns[i], room);
+			if (Common::File::exists(Common::Path(name))) {
+				pageA = name;
+				break;
+			}
+		}
+	}
+
+	if (pageB.empty()) {
+		Common::String name = secondName + "PIC";
+		if (Common::File::exists(Common::Path(name)))
+			pageB = name;
+	}
+
+	if (!pageA.empty())
+		_mask.loadPage(0, Common::Path(pageA));
+	if (!pageB.empty())
+		_mask.loadPage(1, Common::Path(pageB));
+
+	Common::Path nodes(assets.walkData);
+	if (assets.walkData.empty())
+		nodes = Common::Path(Common::String::format("KIERRA%d.DAT", room));
+	if (Common::File::exists(nodes))
+		_nodes.load(nodes);
+
+	debugC(1, kDebugResource, "room %d walk: mask %s, %u nodes", room,
+		   _mask.isLoaded() ? "loaded" : "missing", _nodes.count());
+
+	return _mask.isLoaded();
+}
+
+bool Walk::losBlocked(int x0, int y0, int x1, int y1) const {
+	// walk_los_blocked (OBJ 0x76df). The line is marched in 6.6 fixed point
+	// from (x0, y0) -- the first pair pushed, [bp+0xa]/[bp+8] -- toward
+	// (x1, y1), sampling only every fourth pixel of the major axis, and a zero
+	// delta is forced to 1 rather than special-cased, which tilts a perfectly
+	// straight ray by one unit. The march never has to land on its far end, so
+	// which end it starts from changes the answer.
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	if (!dx)
+		dx = 1;
+	if (!dy)
+		dy = 1;
+
+	int major, stepX, stepY;
+	if (ABS(dy) > ABS(dx)) {
+		major = ABS(dy);
+		stepX = (dx << 6) / major;		// truncating division, as x86 idiv does
+		stepY = dy > 0 ? 64 : -64;
+	} else {
+		major = ABS(dx);
+		stepX = dx > 0 ? 64 : -64;
+		stepY = (dy << 6) / major;
+	}
+	stepX <<= 2;
+	stepY <<= 2;
+
+	int fx = x0 << 6;
+	int fy = y0 << 6;
+	for (int i = (major >> 2) + 1; i > 0; i--) {
+		if (_mask.blocked(fx >> 6, fy >> 6))
+			return true;
+		fx += stepX;
+		fy += stepY;
+	}
+	return false;
+}
+
+uint Walk::nearestVisibleNode(int fromX, int fromY, int toX, int toY) const {
+	// walk_nearest_node (OBJ 0x7816): the node nearest (toX, toY) that has a
+	// clear line from (fromX, fromY). The original measures against walk_from,
+	// the character, while testing visibility from walk_pos, the destination,
+	// so plotRoute passes the destination in as the "from" pair.
+	//
+	// Distance halves each axis before
+	// squaring, which is the original's guard against overflowing a 16 bit
+	// multiply rather than a perspective correction. The seeding is quirky and
+	// is reproduced as it stands: node 0 always sets the running distance
+	// whether or not it is visible, and a separate branch adopts the first
+	// visible node while none has been chosen.
+	uint best = kNoNode;
+	int bestDist = 0;
+
+	for (uint i = 0; i < _nodes.count(); i++) {
+		const int nx = _nodes.x(i);
+		const int ny = _nodes.y(i);
+		const int ddx = ABS(toX - nx) >> 1;
+		const int ddy = ABS(toY - ny) >> 1;
+		const int dist = ddx * ddx + ddy * ddy;
+		const bool blocked = losBlocked(fromX, fromY, nx, ny);
+
+		if (!blocked && dist < bestDist) {
+			best = i;
+			bestDist = dist;
+		}
+		if (!blocked && best == kNoNode) {
+			best = i;
+			bestDist = dist;
+		}
+		if (i == 0)
+			bestDist = dist;
+	}
+
+	return best;
+}
+
+uint Walk::buildRoute(int fromX, int fromY, int toX, int toY, bool forward) const {
+	// walk_build_route (OBJ 0x7a36). In the original the route is seeded with
+	// walk_pos, the destination, and the ring is swept until a node can see
+	// walk_from, the character; the mover then reads the route back to front.
+	// plotRoute calls this that way round, because neither this search nor the
+	// line sampler is symmetric. Slot 1 is the destination.
+	uint cur = nearestVisibleNode(fromX, fromY, toX, toY);
+	if (cur == kNoNode)
+		cur = 0;
+
+	uint idx = 1;
+	_slotX[idx] = (int16)fromX;
+	_slotY[idx] = (int16)fromY;
+	idx++;
+
+	// When the two ends can already see each other no node is used at all,
+	// which is the common case in an open room: slot 2 repeats the destination
+	// and the build ends without moving past it.
+	if (!_nodes.count() || !losBlocked(toX, toY, fromX, fromY)) {
+		_slotX[idx] = (int16)fromX;
+		_slotY[idx] = (int16)fromY;
+		return idx;
+	}
+
+	// The original has no guard but the waypoint cap, which a sweep that keeps
+	// dropping the waypoint it has just added never reaches; a generous bound
+	// on passes stands in for it.
+	for (uint pass = 0; pass < 0x1000; pass++) {
+		_slotX[idx] = (int16)_nodes.x(cur);
+		_slotY[idx] = (int16)_nodes.y(cur);
+		const bool done = !losBlocked(_nodes.x(cur), _nodes.y(cur), toX, toY);
+
+		// Shortcut: when the waypoint two back can see the new one, the one in
+		// between is dropped -- the new one is copied down over it, which leaves
+		// a copy behind in the slot it came from.
+		if (idx > 2 && !losBlocked(_slotX[idx], _slotY[idx], _slotX[idx - 2], _slotY[idx - 2])) {
+			_slotX[idx - 1] = _slotX[idx];
+			_slotY[idx - 1] = _slotY[idx];
+			idx--;
+		}
+
+		if (forward)
+			cur = (cur + 1) % _nodes.count();
+		else
+			cur = (cur + _nodes.count() - 1) % _nodes.count();
+
+		idx++;
+		if (done || idx > 0x3b)
+			break;
+	}
+	return idx;
+}
+
+uint16 Walk::routeLength(uint idx) const {
+	// walk_route_finish (OBJ 0x793d). The steps are summed from slot 0 to slot
+	// idx: one before the destination, which is always (0, 0), and one past the
+	// last waypoint, which is stale. All of it in 16 bits, each sum over eight,
+	// squared, and added -- the carry dropped at every step.
+	uint16 sumX = 0, sumY = 0;
+	for (uint i = 0; i < idx && i + 1 < kSlots; i++) {
+		sumX += (uint16)ABS(_slotX[i + 1] - _slotX[i]);
+		sumY += (uint16)ABS(_slotY[i + 1] - _slotY[i]);
+	}
+	sumX >>= 3;
+	sumY >>= 3;
+	return (uint16)((uint16)(sumX * sumX) + (uint16)(sumY * sumY));
+}
+
+bool Walk::plotRoute(int fromX, int fromY, int toX, int toY, WalkRoute &route) const {
+	if (!_mask.isLoaded())
+		return false;
+
+	// walk_plot_route (OBJ 0x7c52): forward round the ring, then back, each
+	// measured; the backward build, being the last one made, stands unless the
+	// forward one is strictly shorter, in which case it is built again. The
+	// search runs from the destination toward the character.
+	const uint16 lenForward = routeLength(buildRoute(toX, toY, fromX, fromY, true));
+	uint idx = buildRoute(toX, toY, fromX, fromY, false);
+	const uint16 lenBack = routeLength(idx);
+	if (lenForward < lenBack)
+		idx = buildRoute(toX, toY, fromX, fromY, true);
+
+	// walk_route_len = idx - 1: the mover takes slots idx - 1 down to 1. Turned
+	// around here so the list reads start to destination, with the character's
+	// own position, which the original never stores, in front. A route that
+	// needed no node comes back as the destination alone.
+	route.count = 0;
+	route.points[route.count].x = (int16)fromX;
+	route.points[route.count].y = (int16)fromY;
+	route.count++;
+
+	for (int i = (int)idx - 1; i >= 1 && route.count < WalkRoute::kMaxPoints; i--) {
+		const WalkRoute::Point &last = route.points[route.count - 1];
+		if (_slotX[i] == last.x && _slotY[i] == last.y)
+			continue;
+		route.points[route.count].x = _slotX[i];
+		route.points[route.count].y = _slotY[i];
+		route.count++;
+	}
+
+	return true;
+}
+
+} // End of namespace Alien

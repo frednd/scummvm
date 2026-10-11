@@ -1,7 +1,10 @@
 MODULE := engines/alien
 
 MODULE_OBJS = \
+	anim.o \
 	animfont.o \
+	anims.o \
+	charanim.o \
 	cutscenes.o \
 	dl1.o \
 	font.o \
@@ -20,6 +23,7 @@ MODULE_OBJS = \
 	tables.o \
 	transitions.o \
 	video.o \
+	walk.o \
 	walkgeom.o \
 
 # This module can be built as a plugin

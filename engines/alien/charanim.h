@@ -1,0 +1,445 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef ALIEN_CHARANIM_H
+#define ALIEN_CHARANIM_H
+
+#include "common/array.h"
+#include "common/scummsys.h"
+#include "common/rect.h"
+#include "common/str.h"
+
+#include "alien/dl1.h"
+#include "alien/walk.h"
+
+namespace Graphics {
+struct Surface;
+}
+
+namespace Alien {
+
+/**
+ * A character animation set: <NAME>.DAT plus its <NAME>.000.. pixel strips.
+ *
+ * Six sets ship with the game, BENANI (the player character) being the one the
+ * walk system drives. The .DAT is a flat array of nine byte records with no
+ * header, and each record points at a run of uncompressed 8bpp pixels inside
+ * one of the strip files:
+ *
+ *   u8  strip      which pixel file: 0 = .000, 1 = .001, ...
+ *   u16 offset     byte offset within that strip
+ *   u16 width
+ *   u16 height
+ *   u8  hotspotX   drawn at the character position plus this
+ *   u8  hotspotY
+ *
+ * Colour 0 is transparent, rows are not padded, and the frames tile their
+ * strip exactly.
+ */
+class CharAnim {
+public:
+	enum {
+		kRecordSize = 9,
+		kMaxStrips = 8,			///< JAIL_GUA, the only set that needs them all
+
+		/// [0xa888] at one to one: the divisor is 8.8, so 0x200 is half size
+		/// and 0x80 -- the value MAIN boots with -- is double.
+		kUnitScale = 0x100,
+
+		/// The walk point's offset down the frame, the 0x40 the blit takes the
+		/// shrink out of so that the feet do not move (0251:0cdf).
+		kFootOffset = 0x40,
+
+		/// The first row of the playfield, which is where the blit's own top
+		/// clip is measured from (0251:0d99).
+		kFieldTop = 13
+	};
+
+	/// Where a frame lands, and how big it lands, once the scale has been
+	/// applied: the original's ([bp-0x20], [bp-0x22]) corner and the row and
+	/// column counts it works out at 0251:0d59 and 0251:0d79.
+	struct Geometry {
+		int left;
+		int top;
+		int width;
+		int height;
+	};
+
+	struct Frame {
+		byte strip;
+		uint16 offset;
+		uint16 width;
+		uint16 height;
+		byte hotspotX;
+		byte hotspotY;
+	};
+
+	CharAnim();
+	~CharAnim();
+
+	/** Read <base>.DAT and every strip it references. */
+	bool load(const Common::String &base);
+	void unload();
+
+	bool isLoaded() const { return !_frames.empty(); }
+	uint frameCount() const { return _frames.size(); }
+	const Frame &frame(uint index) const { return _frames[index]; }
+
+	/**
+	 * Draw a frame with the character standing at (x, y). The original adds
+	 * the record's hotspot to that position rather than subtracting it, so
+	 * the hotspot is where the frame sits inside the character's box, not a
+	 * pivot to centre on.
+	 */
+	/// `clipBottom` is the first row that must not be drawn, the original's
+	/// [0xa8e4]: the character goes through the same OBJ:dl1_load_and_blit the
+	/// room's slots do, so the same global shortens him (see DL1Sprite).
+	///
+	/// `scale` is [0xa888], the depth divisor the same blit reads (scale.cpp).
+	void drawFrame(uint index, Graphics::Surface &dest, int x, int y,
+				   int clipBottom = DL1Sprite::kNoClipBottom,
+				   uint16 scale = kUnitScale) const;
+
+	/// Where the frame would land at that scale, before any clipping.
+	bool geometry(uint index, int x, int y, uint16 scale, Geometry &out) const;
+
+private:
+	Common::Array<Frame> _frames;
+	byte *_strip[kMaxStrips];
+	uint32 _stripSize[kMaxStrips];
+};
+
+/**
+ * The player character walking a plotted route.
+ *
+ * Facing is 1..4 as the original's [0xa944]: 1 back, 2 screen right, 3 front,
+ * 4 screen left. That picks the animation directly -- the sixteen walk frames
+ * of a facing are (facing - 1) * 16 + phase, the standing frame is one of
+ * 0x40/0x44/0x48/0x4c, and a change of facing plays a queued turn first.
+ *
+ * The character position is the sprite's own origin; the point the walk system
+ * routes is that position plus (10, 64), which is where the feet are.
+ */
+class Walker {
+public:
+	enum {
+		kWalkPointX = 10,
+		kWalkPointY = 64,
+		/// The character is not blitted at his own position: OBJ:sub_06466
+		/// passes [0xa8ec] - 10 and [0xa8ee] + 5 to the blitter, so the frame
+		/// sits ten pixels left of the origin and five below it. [0xa73a]
+		/// shifts it further (setLedgeDraw); the pumpkin mask ([0xa79b])
+		/// moves it by kPumpkinOffset (see setPumpkin).
+		kDrawOffsetX = -10,
+		kDrawOffsetY = 5,
+		kPumpkinOffsetX = -2,
+		kPumpkinOffsetY = -5,
+		kWalkFrames = 16,		///< per facing, phases 0..15
+		kMaxTurnFrames = 7,
+		kFacingKeep = 10		///< arrive without turning, the original's default
+	};
+
+	Walker();
+
+	bool load(const Common::String &base) { _set = base; return _anim.load(base); }
+	void unload() { _anim.unload(); }
+
+	/**
+	 * Room 46, underwater. CHARANIM:sub_1446a swaps the character set for
+	 * DIVEANI as the room opens, and from then on segment 0x0ec7 drives him
+	 * instead of OBJ:sub_098d1: OBJ:sub_0585d plots a straight line from the
+	 * middle of the swimmer to the click (there is no walk mask, and the room
+	 * zeroes the node count), and sub_0f560 steps it with a frame cycle, turns
+	 * and a treading loop of its own. Leaving the room puts the set this walker
+	 * was loaded with back.
+	 */
+	void setSwimming(bool swimming);
+	bool isSwimming() const { return _swimming; }
+
+	/**
+	 * The pumpkin mask, [0xa79b]. CHARANIM:sub_14294 swaps the set for
+	 * PUMPWALK (from sub_14679 as each ship room opens, sub_14612 on a
+	 * restore), OBJ:sub_09d22 drives him instead of sub_098d1 -- its own talk
+	 * lists, and no canned idles -- and OBJ:0x3fd3 blits him two pixels left
+	 * and five up. Same walk, turn and standing frames as BENANI.
+	 */
+	void setPumpkin(bool on);
+	bool isPumpkin() const { return _pumpkin; }
+
+	/// Room 31's ledge walk ([0xa73a]), set by the engine before a walk.
+	void setLedgePace(bool ledge) { _ledgePace = ledge; }
+	/// OBJ:sub_06466 with [0xa73a] up: the frame goes 0xb right (0xf in room
+	/// 41, handler 0x29) and 3 up of where it would be drawn.
+	void setLedgeDraw(int dx, int dy) { _ledgeDrawX = dx; _ledgeDrawY = dy; }
+
+	/**
+	 * OBJ:sub_0585d, then the turn OBJ:sub_07890 queues after it. (`walkX`,
+	 * `walkY`) is walk_pos, the point the room's walk geometry chose; it is the
+	 * middle of the swimmer that heads for it, not the feet.
+	 */
+	void swimTo(int walkX, int walkY, int arrivalFacing = kFacingKeep);
+	bool isLoaded() const { return _anim.isLoaded(); }
+
+	/**
+	 * Put the character down with its feet at a walk point, facing forward.
+	 * `traced` false is for the port's own fallbacks, where the original
+	 * makes no CHARANIM:sub_13bce call and so traces nothing.
+	 */
+	void place(int walkX, int walkY, int facing = 3, bool traced = true);
+
+	/// Where he stands, to the 1/64 pixel, and the facing.
+	struct Spot {
+		int x, y, fx, fy, facing;
+	};
+	Spot spot() const { return { _x, _y, _fx, _fy, _facing }; }
+
+	/**
+	 * Put him back on a spot taken before a room reload that the original makes
+	 * without placing him at all (the observatory computer's close): the
+	 * fraction the walker carried survives, and nothing is traced.
+	 */
+	void putBack(const Spot &spot);
+
+	/// The same, given the sprite origin instead of the walk point -- which is
+	/// what a room's own CHARANIM:0x4e call passes (kOpCharPlace).
+	void placeSprite(int spriteX, int spriteY, int facing = 3) {
+		place(spriteX + kWalkPointX, spriteY + kWalkPointY, facing);
+	}
+
+	/**
+	 * Take a route from Walk::plotRoute and start walking it. The router only
+	 * ever ends its route on a walk node -- the last leg, from that node to the
+	 * point that was actually clicked, is the mover's own -- so the target is
+	 * passed in and appended as the final waypoint.
+	 *
+	 * `arrivalFacing` is the way to turn once the route runs out, 1..4, or
+	 * kFacingKeep to arrive facing however the last leg left him. The room's
+	 * walk geometry supplies it per object (see walkgeom.h), and the original
+	 * hands it to the mover the same way: walk_plot_route copies [0xa805] into
+	 * the pending turn when it is under five.
+	 */
+	void follow(const WalkRoute &route, int targetX, int targetY,
+				int arrivalFacing = kFacingKeep);
+
+	/** Drop the route and fall back to standing. */
+	void stop();
+
+	/// Queue the turn to a facing, the original's [0xa803] plus [0xa804]. Room
+	/// code writes that pair directly to turn him where its own machine wants
+	/// him (sewer.cpp); 1 = back, 2 = right, 3 = front, 4 = left.
+	void faceTo(int facing) { turnTo(facing); }
+
+	bool isWalking() const { return _swimming ? _steps > 0 : _waypoint < _route.count; }
+	bool isTurning() const { return _turnLeft != 0; }
+
+	/// Bumped by every place(): the camera snaps on a placement, the way
+	/// CHARANIM:sub_13bce rewrites [0xa0c4] itself, and pans otherwise.
+	uint placements() const { return _placements; }
+
+	/**
+	 * Restart the idle machine, which every click reaching LOGIC's walk
+	 * dispatch does: it zeroes [0xa808] and [0xa80a] whether or not the click
+	 * ended up plotting a route.
+	 */
+	void resetIdle();
+
+	/// Whether an idle animation is playing right now -- the original's
+	/// [0xa0ba], the frames left in the stream, being non-zero.
+	bool isIdlePlaying() const { return _idleLeft > 0; }
+
+	/**
+	 * Whether the character is his own again, the original's [0xa94d] and
+	 * [0xa4a1] together: a room that drives him from an [0xa49f] machine
+	 * clears the first as it hides the cursor and sets it back at the step
+	 * that ends the machine, and the dialog unit raises the second for as long
+	 * as a scene it requested is running. While either says no, the counter
+	 * still runs but nothing fidgets and he does not turn to face the player.
+	 */
+	void setIdleAllowed(bool allowed) { _idleAllowed = allowed; }
+
+	/**
+	 * [0xa958]: the turn to face the player is off. LOGIC's click dispatch
+	 * sets it every time a click plots him a route (11f3:0x02ea, 0x0377,
+	 * 0x03ee, 0x0484) and the idle machine sets it while the bar is up
+	 * (OBJ:0x745c); the next click's walk geometry clears it first
+	 * (1021:sub_105fa), and so does leaving the room (OBJ:0x6300). So a
+	 * character who walked to where he stands keeps the facing he arrived
+	 * with -- he only turns round when he got there some other way.
+	 */
+	void setTurnBlocked(bool blocked) { _turnBlocked = blocked; }
+
+	/**
+	 * Whether a line is being spoken, the original's [0x2938].
+	 *
+	 * BENANI's top twelve frames are a mouth cycle, four lists of them, one per
+	 * facing. The dialog unit raises this flag as it dispatches a line and the
+	 * tick drops it 25 half ticks before the line clears; while it is up and the
+	 * character has been standing still for a moment, the cycle replaces his
+	 * standing frame.
+	 */
+	void setTalking(bool talking);
+	bool isTalking() const { return _talking; }
+
+	/**
+	 * One animation tick: the original runs these at the vsync rate over 4.
+	 *
+	 * `inventoryOpen` is the original's [0xa605], which suppresses the idle
+	 * machine: nothing fidgets while the bar is up.
+	 */
+	void tick(bool inventoryOpen = false);
+
+	/**
+	 * The mover's half of the tick on the other tick pair. OBJ:sub_098d1 runs
+	 * on every tick pair (~35 Hz): only the walk phase, the turn countdown and
+	 * the idle machine wait for [0xa5f9], the position step does not. Returns
+	 * whether he moved.
+	 */
+	bool stepMove();
+
+	void draw(Graphics::Surface &dest, int scrollX = 0,
+			  int clipBottom = DL1Sprite::kNoClipBottom) const;
+
+	/**
+	 * The box the current frame occupies in room space, which is what the
+	 * original leaves in [0xa97a]..[0xa980] as it blits the character and what
+	 * the foreground rectangles are tested against. False when nothing is
+	 * loaded, and so nothing was drawn.
+	 *
+	 * It is the *scaled* box: the original writes it from the corner and the
+	 * row and column counts the blit has just drawn with, so a Ben who is half
+	 * size is half a Ben to the foreground rectangles too.
+	 */
+	bool bounds(Common::Rect &box) const;
+
+	/**
+	 * The depth scale to draw at, [0xa888].
+	 *
+	 * A global in the original and kept as one here: the room decides it and
+	 * every draw of the character reads it (scale.cpp).
+	 */
+	void setScale(uint16 scale) { _scale = scale ? scale : (uint16)CharAnim::kUnitScale; }
+	uint16 scale() const { return _scale; }
+
+	/// The sprite's own origin, the original's [0xa8ec] and [0xa8ee].
+	int spriteX() const { return _x; }
+	int spriteY() const { return _y; }
+
+	int walkX() const { return _x + kWalkPointX; }
+	int walkY() const { return _y + kWalkPointY; }
+	int facing() const { return _facing; }
+	uint frame() const { return _frame; }
+
+	/**
+	 * How long he has been standing still, the original's [0xa808].
+	 *
+	 * The idle machine's own counter, read from outside it by the rooms that
+	 * answer an arrival themselves instead of through the shared test: room 13
+	 * waits 7 ticks at the foot of the ladder and 25 at the hole (basement.cpp),
+	 * where OBJ:sub_078dd waits 5.
+	 */
+	int idleCount() const { return _idleCount; }
+
+private:
+	void startSegment();
+	void advance();
+	struct Segment {
+		int facing;
+		int steps;
+		int stepX, stepY;		///< 1/64 px a step, [0xa926] and [0xa928]
+	};
+	void planSegment(int targetX, int targetY, Segment &seg) const;
+	int facingToward(int targetX, int targetY) const;
+	void turnTo(int facing);
+	void arrive();
+	void updateFrame();
+	void stepIdle(bool inventoryOpen);
+	void stepTalk();
+	void stepSwim(bool gate);
+	void startSwimTurn(int from, int to);
+
+	/// The set the walker should be wearing: DIVEANI, PUMPWALK or _set.
+	Common::String currentSet() const;
+	int drawX() const { return _x + kDrawOffsetX + _ledgeDrawX + (_pumpkin ? kPumpkinOffsetX : 0); }
+	int drawY() const { return _y + kDrawOffsetY + _ledgeDrawY + (_pumpkin ? kPumpkinOffsetY : 0); }
+
+	CharAnim _anim;
+	Common::String _set;			///< the set load() was given, BENANI
+	bool _pumpkin;					///< [0xa79b], the set is PUMPWALK
+
+	/// The swim (see setSwimming). The turn reuses _turnLeft as the
+	/// original's [0xa959], counting down through _swimTurn from the top;
+	/// [0xa945], the facing the last pass saw, is what starts one.
+	enum { kMaxSwimTurn = 22 };
+	bool _swimming;
+	int _swimFacing;
+	byte _swimTurn[kMaxSwimTurn + 1];
+
+	WalkRoute _route;
+	uint _waypoint;					///< the point being walked to, 0 when idle
+
+	int _x;							///< character origin, whole pixels
+	int _y;
+	int _fx;						///< and the same in 1/64 pixel, as the original
+	bool _ledgePace = false;
+	int _ledgeDrawX = 0;			///< [0x98dc], added while [0xa73a] is up
+	int _ledgeDrawY = 0;			///< and [0x98de], taken off
+	int _fy;
+	int _stepX;						///< 1/64 pixel per tick
+	int _stepY;
+	int _steps;						///< ticks left in this segment
+
+	uint16 _scale;					///< [0xa888], the depth divisor
+
+	int _facing;
+	int _arrivalFacing;				///< the turn owed at the end of the route
+	uint _phase;					///< walk cycle position, 0..15
+	uint _frame;
+
+	byte _turn[kMaxTurnFrames];
+	uint _turnLeft;
+
+	/// The idle machine, OBJ:sub_098d1. It counts the ticks the character has
+	/// spent standing -- [0xa808] up to 200, then [0xa80a] one cycle on -- and
+	/// at fixed points in that count starts a canned animation or turns him
+	/// round to face the player.
+	int _idleCount;
+	uint _placements;
+	int _idleCycle;
+	const byte *_idleStream;	///< the frame list being played, [0xa0bc]:[0xa0be]
+	int _idleIndex;				///< how far into it, [0xa0b8]
+	int _idleLeft;				///< frames still to play, [0xa0ba]
+	uint _idleFrame;			///< the one this tick chose
+
+	/// The talk cycle: whether a line is up [0x2938], whether he has stood still
+	/// long enough for the mouth to open [0x293a], how far into the facing's
+	/// frame list it is [0x2939], and the toggle that halves its rate [0x2937].
+	bool _idleAllowed;			///< [0xa94d] == 1 and [0xa4a1] == 0
+	bool _turnBlocked;			///< [0xa958]
+
+	bool _talking;
+	bool _talkReady;
+	uint _talkPhase;
+	bool _talkHalf;
+};
+
+} // End of namespace Alien
+
+#endif
