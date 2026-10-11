@@ -1,0 +1,388 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+// The frame every animation slot opens on, as the room's own enter routine sets
+// it: the effects it runs, with the puzzle-state guards they sit under.
+//
+//   247 plays over 43 rooms, and 454 bytes of frame list.
+
+#include "alien/roominit.h"
+
+namespace Alien {
+
+static const ScriptEffect kRoomInit[] = {
+	{ kOpAnimPlay1,      4, {     2,     1,     4,     9,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 4, 9)
+	{ kOpCharPlace,      5, {     0,   135,     0,    58,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 135, 0, 58, 3)
+	{ kOpCharPlace,      5, {     0,   105,     0,    73,     2,     0 }, 0x00,   0, 1, { { 0xa880, 15, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 105, 0, 73, 2)
+	{ kOpCharPlace,      5, {     0,   117,     0,    52,     1,     0 }, 0x00,   0, 1, { { 0xa6d2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 117, 0, 52, 1)
+	{ kOpSetFlag,        2, { 42706,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa6d2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d2, 0)
+	{ kOpQueueEvent,     1, { 42708,     0,     0,     0,     0,     0 }, 0x01,  28, 1, { { 0xa6d2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// queue_event(flag:0xa6d4+28)
+	{ kOpAddFlag,        2, { 42708,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa6d2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// add_flag(42708, 1)
+	{ kOpSetFlag,        2, { 42708,     0,     0,     0,     0,     0 }, 0x00,   0, 2, { { 0xa6d2, 1, false, 0 }, { 0xa6d4, 2, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d4, 0)
+	{ kOpCharPlace,      5, {     0,   195,     0,    32,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 195, 0, 32, 3)
+	{ kOpCharPlace,      5, {     0,   116,     0,    39,     2,     0 }, 0x00,   0, 1, { { 0xa880, 7, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 116, 0, 39, 2)
+	{ kOpCharPlace,      5, {     0,   274,     0,    31,     3,     0 }, 0x00,   0, 1, { { 0xa880, 18, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 274, 0, 31, 3)
+	{ kOpCharPlace,      5, {     0,    90,     0,    78,     4,     0 }, 0x00,   0, 1, { { 0xa880, 15, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 90, 0, 78, 4)
+	{ kOpSetFlag,        2, { 42697,    83,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6c9, 83)
+	{ kOpSetFlag,        2, { 42697,    50,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa700, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6c9, 50)
+	{ kOpCharPlace,      5, {     0,   146,     0,    34,     3,     0 }, 0x00,   0, 1, { { 0xa880, 6, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 146, 0, 34, 3)
+	{ kOpCharPlace,      5, {     0,   222,     0,    46,     4,     0 }, 0x00,   0, 1, { { 0xa880, 13, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 222, 0, 46, 4)
+	{ kOpMusic,          1, {     2,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa6fa, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// music_play_slot(2)
+	{ kOpCharPlace,      5, {     0,   147,     0,    40,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 147, 0, 40, 3)
+	{ kOpCharPlace,      5, {     0,   155,     0,    31,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 155, 0, 31, 3)
+	{ kOpAnimPlay1,      4, {     8,     1,    39,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(8, 1, 39, 3)
+	{ kOpCharPlace,      5, {     0,   204,     0,    58,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 204, 0, 58, 4)
+	{ kOpSetFlag,        2, { 42752,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa700, 1)
+	{ kOpAnimPlay1,      4, {     5,     1,    13,     3,     0,     0 }, 0x00,   0, 1, { { 0xa6f0, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 13, 3)
+	{ kOpAnimPlay1,      4, {     7,     1,     7,     3,     0,     0 }, 0x00,   0, 1, { { 0xa6f0, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(7, 1, 7, 3)
+	{ kOpSetFlag,        2, { 42704,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d0, 0)
+	{ kOpSetFlag,        2, { 42705,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d1, 0)
+	{ kOpCharPlace,      5, {     0,   234,     0,    51,     4,     0 }, 0x00,   0, 1, { { 0xa880, 7, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 234, 0, 51, 4)
+	{ kOpAnimPlay1,      4, {     0,     1,    11,     2,     0,     0 }, 0x00,   0, 1, { { 0xa880, 7, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 2)
+	{ kOpAnimPlay1,      4, {     0,    11,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 7, true, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 11, 1, 0)
+	{ kOpSetFlag,        2, { 42811,    10,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa73b, 10)
+	{ kOpSetFlag,        2, { 42812,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa73c, 0)
+	{ kOpSetFlag,        2, { 42816,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa740, 0)
+	{ kOpSetFlag,        2, { 42810,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa73a, 1)
+	{ kOpCharPlace,      5, {     0,   103,     0,    69,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 103, 0, 69, 3)
+	{ kOpCharPlace,      5, {     0,   300,     0,    67,     4,     0 }, 0x00,   0, 1, { { 0xa880, 31, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 300, 0, 67, 4)
+	{ kOpCharPlace,      5, {     0,    13,     0,    64,     3,     0 }, 0x00,   0, 2, { { 0xa880, 25, true, 0 }, { 0xa880, 34, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 13, 0, 64, 3)
+	{ kOpCharPlace,      5, {     0,   240,     0,    80,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 240, 0, 80, 3)
+	{ kOpCharPlace,      5, {     0,   417,     0,    50,     3,     0 }, 0x00,   0, 1, { { 0xa880, 6, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 417, 0, 50, 3)
+	{ kOpCharPlace,      5, {     0,   526,     0,    38,     4,     0 }, 0x00,   0, 1, { { 0xa880, 3, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 526, 0, 38, 4)
+	{ kOpCharPlace,      5, {     0,   260,     0,    34,     2,     0 }, 0x00,   0, 1, { { 0xa880, 10, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 260, 0, 34, 2)
+	{ kOpCharPlace,      5, {     0,   317,     0,    34,     3,     0 }, 0x00,   0, 1, { { 0xa880, 11, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 317, 0, 34, 3)
+	{ kOpCharPlace,      5, {     0,    55,     0,    58,     2,     0 }, 0x00,   0, 1, { { 0xa880, 27, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 55, 0, 58, 2)
+	{ kOpCharPlace,      5, {     0,    55,     0,    58,     4,     0 }, 0x00,   0, 1, { { 0x33a4, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 55, 0, 58, 4)
+	{ kOpSetFlag,        2, { 13220,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0x33a4, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0x33a4, 0)
+	{ kOpQueueEvent,     1, {    20,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0x33a4, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// queue_event(20)
+	{ kOpSetFlag,        2, { 42301,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa713, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa53d, 1)
+	{ kOpAnimPlay4,      4, {     3,     1,     3,     4,     0,     0 }, 0x00,   0, 1, { { 0xa713, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(3, 1, 3, 4)
+	{ kOpAnimPlay2,      4, {     1,    11,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa713, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(1, 11, 1, 0)
+	{ kOpCharPlace,      5, {     0,   193,     0,    52,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 193, 0, 52, 4)
+	{ kOpCharPlace,      5, {     0,   121,     0,    55,     2,     0 }, 0x00,   0, 1, { { 0xa880, 19, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 121, 0, 55, 2)
+	{ kOpAnimPlay1,      4, {     1,     1,    25,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 25, 2)
+	{ kOpAnimPlay1,      4, {     4,     1,    64,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 64, 2)
+	{ kOpCharPlace,      5, {     0,   247,     0,    46,     4,     0 }, 0x00,   0, 1, { { 0xa880, 6, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 247, 0, 46, 4)
+	{ kOpMusic,          1, {     7,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0x33ae, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// music_play_slot(7)
+	{ kOpAnimPlay1,      4, {     6,     1,     5,     2,     0,     0 }, 0x00,   0, 1, { { 0x33ae, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 5, 2)
+	{ kOpSetFlag,        2, { 42304,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0x33ae, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa540, 1)
+	{ kOpAnimPlay1,      4, {     7,     1,     5,     2,     0,     0 }, 0x00,   0, 1, { { 0x33ae, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(7, 1, 5, 2)
+	{ kOpSetFlag,        2, { 42305,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0x33ae, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa541, 1)
+	{ kOpAnimPlay1,      4, {     8,     1,     2,     0,     0,     0 }, 0x00,   0, 1, { { 0x33ae, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(8, 1, 2, 0)
+	{ kOpCharPlace,      5, {     0,   232,     0,    26,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 232, 0, 26, 4)
+	{ kOpCharPlace,      5, {     0,   169,     0,    61,     2,     0 }, 0x00,   0, 1, { { 0xa880, 28, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 169, 0, 61, 2)
+	{ kOpCharPlace,      5, {     0,   193,     0,    40,     3,     0 }, 0x00,   0, 3, { { 0xa880, 28, false, 0 }, { 0xa75c, 0, false, 0 }, { 0xa758, 1, false, 0 } } },	// char_place(0, 193, 0, 40, 3)
+	{ kOpAnimPlay4,      4, {     3,     1,    19,     3,     0,     0 }, 0x00,   0, 3, { { 0xa880, 28, false, 0 }, { 0xa75c, 0, false, 0 }, { 0xa758, 1, false, 0 } } },	// anim_play_mode4(3, 1, 19, 3)
+	{ kOpAnimPlay4,      4, {     3,    19,    19,     3,     0,     0 }, 0x00,   0, 2, { { 0xa49f, 3, false, 0 }, { 0xa49c, 80, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(3, 19, 19, 3)
+	{ kOpAnimPlay1,      4, {     4,     1,    17,     2,     0,     0 }, 0x00,   0, 2, { { 0xa49f, 100, false, 0 }, { 0xa49c, 15, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 17, 2)
+	{ kOpCharPlace,      5, {     0,   212,     0,    84,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 212, 0, 84, 4)
+	{ kOpCharPlace,      5, {     0,   587,     0,    69,     4,     0 }, 0x00,   0, 1, { { 0xa880, 22, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 587, 0, 69, 4)
+	{ kOpCharPlace,      5, {     0,   182,     0,    74,     2,     0 }, 0x00,   0, 1, { { 0xa880, 26, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 182, 0, 74, 2)
+	{ kOpCharPlace,      5, {     0,   513,     0,    48,     3,     0 }, 0x00,   0, 1, { { 0xa880, 17, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 513, 0, 48, 3)
+	{ kOpCharPlace,      5, {     0,   615,     0,    62,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 615, 0, 62, 4)
+	{ kOpCharPlace,      5, {     0,     7,     0,    47,     2,     0 }, 0x00,   0, 1, { { 0xa880, 21, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 7, 0, 47, 2)
+	{ kOpCharPlace,      5, {     0,   120,     0,    45,     1,     0 }, 0x00,   0, 1, { { 0xa880, 56, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 120, 0, 45, 1)
+	{ kOpCharPlace,      5, {     0,     9,     0,    51,     2,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 9, 0, 51, 2)
+	{ kOpCharPlace,      5, {     0,   177,     0,    45,     3,     0 }, 0x00,   0, 1, { { 0xa880, 31, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 177, 0, 45, 3)
+	{ kOpAnimPlay1,      4, {     1,     1,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0x33b8, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 1, 0)
+	{ kOpCharPlace,      5, {     0,    85,     0,    50,     2,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 85, 0, 50, 2)
+	{ kOpCharPlace,      5, {     0,   107,     0,    84,     1,     0 }, 0x00,   0, 1, { { 0xa880, 14, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 107, 0, 84, 1)
+	{ kOpCharPlace,      5, {     0,    40,     0,    45,     2,     0 }, 0x00,   0, 1, { { 0xa880, 33, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 40, 0, 45, 2)
+	{ kOpAnimPlay6,      5, {     0,     0,    23,     2,     0,     0 }, 0x00,   0, 1, { { 0xa752, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 23, 2, 0)
+	{ kOpAnimPlay6,      5, {     3,     0,    42,     4,    23,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(3, 0, 42, 4, 23)
+	{ kOpAnimPlay1,      4, {     4,     1,     5,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 5, 3)
+	{ kOpAnimPlay1,      4, {     5,     1,     3,    15,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 3, 15)
+	{ kOpCharPlace,      5, {     0,   210,     0,    55,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 210, 0, 55, 4)
+	{ kOpCharPlace,      5, {     0,   127,     0,    82,     4,     0 }, 0x00,   0, 1, { { 0xa6d3, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 127, 0, 82, 4)
+	{ kOpAnimPlay8,      5, {     0,     0,    16,     2,    65,     0 }, 0x00,   0, 1, { { 0xa49f, 31, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(0, 0, 16, 2, 65)
+	{ kOpAnimPlay8,      5, {     0,     0,    15,     3,    81,     0 }, 0x00,   0, 1, { { 0xa49f, 32, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(0, 0, 15, 3, 81)
+	{ kOpAnimPlay8,      5, {     0,     0,    15,     3,    96,     0 }, 0x00,   0, 2, { { 0xa49f, 34, false, 0 }, { 0xad1c, 1, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(0, 0, 15, 3, 96)
+	{ kOpAnimPlay1,      4, {     0,    24,   106,     3,     0,     0 }, 0x00,   0, 1, { { 0xa49f, 35, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 24, 106, 3)
+	{ kOpAnimPlay1,      4, {     2,     1,    10,     4,     0,     0 }, 0x00,   0, 2, { { 0xa49f, 36, false, 0 }, { 0xa4ea, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 10, 4)
+	{ kOpAnimPlay1,      4, {     1,     1,    15,     3,     0,     0 }, 0x00,   0, 2, { { 0xa49f, 40, false, 0 }, { 0xad1c, 1, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 15, 3)
+	{ kOpSetFlag,        2, { 42809,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa739, 0)
+	{ kOpCharPlace,      5, {     0,    93,     0,    47,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 93, 0, 47, 4)
+	{ kOpCharPlace,      5, {     0,    23,     0,    90,     1,     0 }, 0x00,   0, 1, { { 0xa880, 14, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 23, 0, 90, 1)
+	{ kOpAnimPlay4,      4, {     1,     1,    49,     4,     0,     0 }, 0x00,   0, 2, { { 0xa880, 35, false, 0 }, { 0xa77a, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(1, 1, 49, 4)
+	{ kOpAnimPlay4,      4, {     1,    26,    24,     4,     0,     0 }, 0x00,   0, 2, { { 0xa880, 35, false, 0 }, { 0xa77a, 0, true, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode4(1, 26, 24, 4)
+	{ kOpSetFlag,        2, { 42874,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 35, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa77a, 1)
+	{ kOpCharPlace,      5, {     0,   200,     0,    72,     3,     0 }, 0x00,   0, 1, { { 0xa880, 35, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 200, 0, 72, 3)
+	{ kOpCharPlace,      5, {     0,   131,     0,    27,     3,     0 }, 0x00,   0, 1, { { 0xa880, 19, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 131, 0, 27, 3)
+	{ kOpAnimPlay1,      4, {     1,     1,    17,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 17, 3)
+	{ kOpAnimPlay6,      5, {     2,     0,    96,     4,   111,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(2, 0, 96, 4, 111)
+	{ kOpCharPlace,      5, {     0,   151,     0,    42,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 151, 0, 42, 3)
+	{ kOpSetFlag,        2, { 13240,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa769, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0x33b8, 0)
+	{ kOpSetFlag,        2, { 42808,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa738, 0)
+	{ kOpAnimPlay1,      4, {     2,     1,    51,     3,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, true, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 51, 3)
+	{ kOpAnimPlay1,      4, {     3,     1,    51,     3,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 51, 3)
+	{ kOpAddFlag,        2, { 42800,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// add_flag(42800, 1)
+	{ kOpSetFlag,        2, { 42800,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa730, 1, false, 3 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa730, 0)
+	{ kOpCharPlace,      5, {     0,   179,     0,    87,     1,     0 }, 0x00,   0, 1, { { 0xa880, 23, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 179, 0, 87, 1)
+	{ kOpSetFlag,        2, { 42807,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 23, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa737, 0)
+	{ kOpSetFlag,        2, { 42810,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 23, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa73a, 0)
+	{ kOpSetFlag,        2, { 42810,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 14, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa73a, 1)
+	{ kOpCharPlace,      5, {     0,     1,     0,    63,     2,     0 }, 0x00,   0, 1, { { 0xa880, 14, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 1, 0, 63, 2)
+	{ kOpSetFlag,        2, { 42810,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 32, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa73a, 1)
+	{ kOpCharPlace,      5, {     0,    99,     0,    53,     3,     0 }, 0x00,   0, 1, { { 0xa880, 32, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 99, 0, 53, 3)
+	{ kOpSetFlag,        2, { 42807,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa73a, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa737, 1)
+	{ kOpAnimPlay1,      4, {     5,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     6,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     7,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(7, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     0,     1,    11,     3,     0,     0 }, 0x00,   0, 1, { { 0xa72e, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     2,     1,     9,     3,     0,     0 }, 0x00,   0, 1, { { 0xa72e, 1, true, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 9, 3)
+	{ kOpCharPlace,      5, {     0,    12,     0,    64,     2,     0 }, 0x00,   0, 1, { { 0xa880, 31, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 12, 0, 64, 2)
+	{ kOpCharPlace,      5, {     0,   294,     0,    71,     3,     0 }, 0x00,   0, 1, { { 0xa880, 45, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 294, 0, 71, 3)
+	{ kOpCharPlace,      5, {     0,   358,     0,    66,     3,     0 }, 0x00,   0, 1, { { 0xa880, 40, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 358, 0, 66, 3)
+	{ kOpAnimPlay1,      4, {     0,     1,     1,    50,     0,     0 }, 0x00,   0, 1, { { 0xa76d, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 1, 50)
+	{ kOpAnimPlay1,      4, {     1,     1,    33,     4,     0,     0 }, 0x00,   0, 1, { { 0xa76c, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 33, 4)
+	{ kOpCharPlace,      5, {     0,   199,     0,    67,     4,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 199, 0, 67, 4)
+	{ kOpCharPlace,      5, {     0,   110,     0,    52,     3,     0 }, 0x00,   0, 1, { { 0xa880, 30, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 110, 0, 52, 3)
+	{ kOpCharPlace,      5, {     0,   179,     0,    79,     4,     0 }, 0x00,   0, 1, { { 0x33bc, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 179, 0, 79, 4)
+	{ kOpAnimPlay1,      4, {     2,     1,    99,     4,     0,     0 }, 0x00,   0, 1, { { 0x33bc, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 99, 4)
+	{ kOpSetFlag,        2, { 42867,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa773, 1)
+	{ kOpSetFlag,        2, { 42862,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa770, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa76e, 0)
+	{ kOpAnimPlay6,      5, {     0,     0,    11,     4,   207,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 11, 4, 207)
+	{ kOpCharPlace,      5, {     0,    48,     0,    32,     3,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 48, 0, 32, 3)
+	{ kOpCharPlace,      5, {     0,   128,     0,    87,     1,     0 }, 0x00,   0, 1, { { 0xa880, 14, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 128, 0, 87, 1)
+	{ kOpSetFlag,        2, { 42866,     1,     0,     0,     0,     0 }, 0x00,   0, 2, { { 0xa76e, 0, false, 0 }, { 0xa772, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa772, 1)
+	{ kOpSetFlag,        2, { 42809,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa739, 0)
+	{ kOpCharPlace,      5, {     0,   179,     0,    87,     1,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 179, 0, 87, 1)
+	{ kOpCharPlace,      5, {     0,    82,     0,    73,     1,     0 }, 0x00,   0, 1, { { 0xa880, 27, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 82, 0, 73, 1)
+	{ kOpAnimPlay5,      4, {     1,    18,    18,     3,     0,     0 }, 0x00,   0, 1, { { 0xa880, 27, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode5(1, 18, 18, 3)
+	{ kOpSetFlag,        2, { 42707,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa6d3, 0)
+	{ kOpSetFlag,        2, { 42891,     1,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa78b, 1)
+	{ kOpCharPlace,      5, {     0,   242,     0,    67,     3,     0 }, 0x00,   0, 1, { { 0xa880, 32, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 242, 0, 67, 3)
+	{ kOpCharPlace,      5, {     0,    69,     0,    72,     2,     0 }, 0x00,   0, 1, { { 0xa880, 48, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 69, 0, 72, 2)
+	{ kOpAnimPlay1,      4, {     0,     1,    11,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 4)
+	{ kOpAnimPlay1,      4, {     1,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     2,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     3,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     4,     1,    31,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 31, 2)
+	{ kOpCharPlace,      5, {     0,   232,     0,    58,     3,     0 }, 0x00,   0, 1, { { 0xa880, 46, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 232, 0, 58, 3)
+	{ kOpAnimPlay1,      4, {    11,     1,    84,     4,     0,     0 }, 0x00,   0, 1, { { 0xa880, 46, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(11, 1, 84, 4)
+	{ kOpCharPlace,      5, {     0,    19, 65535, 65519,     2,     0 }, 0x00,   0, 1, { { 0xa77f, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 19, -1, -17, 2)
+	{ kOpCharPlace,      5, {     0,   132, 65535, 65520,     3,     0 }, 0x00,   0, 1, { { 0xa77f, 2, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 132, -1, -16, 3)
+	{ kOpCharPlace,      5, {     0,   155,     0,    35,     3,     0 }, 0x00,   0, 2, { { 0xa880, 44, false, 0 }, { 0xa87f, 2, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 155, 0, 35, 3)
+	{ kOpAnimPlay1,      4, {     0,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     0,     1,    11,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 3)
+	{ kOpAnimPlay1,      4, {     6,     1,    16,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 16, 2)
+	{ kOpCharPlace,      5, {     0,    40,     0,    60,     2,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 40, 0, 60, 2)
+	{ kOpCharPlace,      5, {     0,   140,     0,    20,     1,     0 }, 0x00,   0, 1, { { 0xa880, 46, true, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 140, 0, 20, 1)
+	{ kOpAnimPlay1,      4, {     0,     1,    33,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 33, 2)
+	{ kOpAnimPlay1,      4, {     0,     1,    11,     1,     0,     0 }, 0x00,   0, 1, { { 0xa789, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 11, 1)
+	{ kOpCharPlace,      5, { 65535, 65497,     0,    83,     1,     0 }, 0x00,   0, 1, { { 0xa880, 41, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(-1, -39, 0, 83, 1)
+	{ kOpAnimPlay1,      4, {     1,     1,     6,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 6, 3)
+	{ kOpAnimPlay1,      4, {     0,     1,     9,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 9, 3)
+	{ kOpAnimPlay1,      4, {     2,     1, 65450,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, -86, 2)
+	{ kOpCharPlace,      5, {     0,   155,     0,    46,     4,     0 }, 0x00,   0, 1, { { 0xa880, 40, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 155, 0, 46, 4)
+	{ kOpCharPlace,      5, {     0,    26,     0,    46,     2,     0 }, 0x00,   0, 1, { { 0xa880, 50, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 26, 0, 46, 2)
+	{ kOpAnimPlay1,      4, {     4,     1,    29,     3,     0,     0 }, 0x00,   0, 1, { { 0xa880, 46, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 29, 3)
+	{ kOpCharPlace,      5, {     0,   110,     0,    55,     2,     0 }, 0x00,   0, 1, { { 0xa880, 46, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 110, 0, 55, 2)
+	{ kOpAnimPlay1,      4, {     1,     1,     3,     3,     0,     0 }, 0x00,   0, 1, { { 0xa798, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 3, 3)
+	{ kOpAnimPlay1,      4, {     2,     1,     8,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 8, 3)
+	{ kOpAnimPlay1,      4, {     3,     1,    16,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 16, 3)
+	{ kOpCharPlace,      5, {     0,    98,     0,    41,     1,     0 }, 0x00,   0, 1, { { 0xa880, 50, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 98, 0, 41, 1)
+	{ kOpAnimPlay5,      4, {     0,    18,    18,     4,     0,     0 }, 0x00,   0, 1, { { 0xa880, 50, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode5(0, 18, 18, 4)
+	{ kOpAnimPlay1,      4, {     0,     1,    33,     1,     0,     0 }, 0x00,   0, 1, { { 0xa798, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 33, 1)
+	{ kOpCharPlace,      5, {     0,    94,     0,    41,     2,     0 }, 0x00,   0, 1, { { 0xa880, 48, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 94, 0, 41, 2)
+	{ kOpCharPlace,      5, {     0,    97,     0,    70,     1,     0 }, 0x00,   0, 1, { { 0xa880, 49, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 97, 0, 70, 1)
+	{ kOpAnimPlay1,      4, {     2,     1,    35,     4,     0,     0 }, 0x00,   0, 1, { { 0xa880, 49, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 35, 4)
+	{ kOpAnimPlay1,      4, {     5,     1,     3,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 3, 3)
+	{ kOpCharPlace,      5, {     0,    62,     0,    58,     3,     0 }, 0x00,   0, 1, { { 0xa880, 58, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 62, 0, 58, 3)
+	{ kOpAnimPlay1,      4, {     3,    22,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 58, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 22, 1, 0)
+	{ kOpAnimPlay1,      4, {     4,    10,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 10, 1, 0)
+	{ kOpCharPlace,      5, {     0,   279,     0,    59,     4,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 279, 0, 59, 4)
+	{ kOpAnimPlay1,      4, {     0,     1,   126,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 126, 3)
+	{ kOpAnimPlay1,      4, {     4,     1, 65430,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, -106, 3)
+	{ kOpAnimPlay6,      5, {     3,     0,    41,     4,   218,     0 }, 0x00,   0, 1, { { 0x33e3, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(3, 0, 41, 4, 218)
+	{ kOpCharPlace,      5, {     0,    42,     0,    66,     2,     0 }, 0x00,   0, 1, { { 0xa880, 55, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 42, 0, 66, 2)
+	{ kOpSetFlag,        2, { 42916,     1,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 55, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa7a4, 1)
+	{ kOpAnimPlay1,      4, {     1,     7,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 55, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 7, 1, 0)
+	{ kOpCharPlace,      5, {     0,   573,     0,    62,     4,     0 }, 0x00,   0, 2, { { 0xa880, 56, false, 0 }, { 0x33e2, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 573, 0, 62, 4)
+	{ kOpSetFlag,        2, { 42914,     1,     0,     0,     0,     0 }, 0x00,   0, 2, { { 0xa880, 56, false, 0 }, { 0x33e2, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0xa7a2, 1)
+	{ kOpAnimPlay1,      4, {     2,    10,     1,     0,     0,     0 }, 0x00,   0, 2, { { 0xa880, 56, false, 0 }, { 0x33e2, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 10, 1, 0)
+	{ kOpSetFlag,        2, { 13281,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0x33e1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0x33e1, 0)
+	{ kOpCharPlace,      5, {     0,   197,     0,    61,     4,     0 }, 0x00,   0, 1, { { 0x33e1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 197, 0, 61, 4)
+	{ kOpSetFlag,        2, { 13283,     0,     0,     0,     0,     0 }, 0x00,   0, 1, { { 0x33e3, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0x33e3, 0)
+	{ kOpAnimPlay1,      4, {     5,     1,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0x33e3, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 1, 0)
+	{ kOpAnimPlay1,      4, {     6,     1,    40,     2,     0,     0 }, 0x00,   0, 1, { { 0x33e3, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 1, 40, 2)
+	{ kOpCharPlace,      5, {     0,   197,     0,    61,     4,     0 }, 0x00,   0, 1, { { 0x33e3, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 197, 0, 61, 4)
+	{ kOpSetFlag,        2, { 13282,     0,     0,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// set_flag(0x33e2, 0)
+	{ kOpAnimPlay1,      4, {     0,     1,     5,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 1, 5, 4)
+	{ kOpCharPlace,      5, {     0,   369,     0,    54,     4,     0 }, 0x00,   0, 1, { { 0xa880, 59, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 369, 0, 54, 4)
+	{ kOpAnimPlay1,      4, {     4,    10,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 59, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 10, 1, 0)
+	{ kOpAnimPlay1,      4, {     3,    16,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 16, 1, 0)
+	{ kOpCharPlace,      5, {     0,    73,     0,    51,     3,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 73, 0, 51, 3)
+	{ kOpAnimPlay8,      5, {    10,     0,    20,     4,   293,     0 }, 0x00,   0, 1, { { 0x33f6, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode8(10, 0, 20, 4, 293)
+	{ kOpAnimPlay1,      4, {     5,     1,    17,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 17, 2)
+	{ kOpAnimPlay6,      5, {     7,     0,    33,     1,   313,     0 }, 0x00,   0, 1, { { 0xa7da, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(7, 0, 33, 1, 313)
+	{ kOpAnimPlay6,      5, {     8,     1,    17,     4,   346,     0 }, 0x00,   0, 1, { { 0xa7db, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(8, 1, 17, 4, 346)
+	{ kOpAnimPlay1,      4, {     9,     2,     1,     0,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(9, 2, 1, 0)
+	{ kOpCharPlace,      5, {     0,    28,     0,    51,     2,     0 }, 0x00,   0, 1, { { 0xa880, 57, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 28, 0, 51, 2)
+	{ kOpCharPlace,      5, {     0,   273,     0,    47,     4,     0 }, 0x00,   0, 1, { { 0xa880, 60, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 273, 0, 47, 4)
+	{ kOpAnimPlay3,      4, {     6,    11,    11,     2,     0,     0 }, 0x00,   0, 1, { { 0xa880, 60, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode3(6, 11, 11, 2)
+	{ kOpCharPlace,      5, {     0,    72,     0,    49,     4,     0 }, 0x00,   0, 1, { { 0xa7e2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 72, 0, 49, 4)
+	{ kOpAnimPlay6,      5, {     2,     0,    46,     2,   363,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(2, 0, 46, 2, 363)
+	{ kOpAnimPlay1,      4, {     3,     1,     3,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 3, 2)
+	{ kOpAnimPlay1,      4, {     4,     1,     3,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(4, 1, 3, 2)
+	{ kOpAnimPlay1,      4, {     5,     1,     3,     2,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 3, 2)
+	{ kOpAnimPlay1,      4, {     1,    11,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 11, 1, 0)
+	{ kOpCharPlace,      5, {     0,    89,     0,    68,     2,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 89, 0, 68, 2)
+	{ kOpCharPlace,      5, {     0,   271,     0,    67,     4,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 271, 0, 67, 4)
+	{ kOpAnimPlay1,      4, {     0,    11,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 11, 1, 0)
+	{ kOpAnimPlay1,      4, {     5,     1,     6,     3,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(5, 1, 6, 3)
+	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   409,     0 }, 0x00,   0, 1, { { 0xa7a6, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 409)
+	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   424,     0 }, 0x00,   0, 1, { { 0xa7a6, 2, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 424)
+	{ kOpAnimPlay6,      5, {     0,     0,    15,     3,   439,     0 }, 0x00,   0, 1, { { 0xa7a6, 3, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(0, 0, 15, 3, 439)
+	{ kOpCharPlace,      5, {     0,    66,     0,    29,     2,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 66, 0, 29, 2)
+	{ kOpAnimPlay1,      4, {     1,    10,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 52, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 10, 1, 0)
+	{ kOpCharPlace,      5, {     0,   189,     0,    16,     3,     0 }, 0x00,   0, 1, { { 0xa880, 22, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 189, 0, 16, 3)
+	{ kOpAnimPlay1,      4, {    10,     1,    53,     4,     0,     0 }, 0x00,   0, 1, { { 0x33f4, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(10, 1, 53, 4)
+	{ kOpAnimPlay1,      4, {     1,     1,    29,     5,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 29, 5)
+	{ kOpAnimPlay1,      4, {     2,     1,     5,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 5, 4)
+	{ kOpAnimPlay6,      5, {     3,     0,    34,     2,   259,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode6(3, 0, 34, 2, 259)
+	{ kOpCharPlace,      5, {     0,   363,     0,    57,     4,     0 }, 0x00,   0, 1, { { 0xa880, 54, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 363, 0, 57, 4)
+	{ kOpAnimPlay1,      4, {     0,    16,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 16, 1, 0)
+	{ kOpCharPlace,      5, {     0,    72,     0,    50,     3,     0 }, 0x00,   0, 1, { { 0xa7a1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 72, 0, 50, 3)
+	{ kOpCharPlace,      5, {     0,   323,     0,    65,     2,     0 }, 0x00,   0, 1, { { 0xa7d4, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 323, 0, 65, 2)
+	{ kOpCharPlace,      5, {     0,   604,     0,    69,     4,     0 }, 0x00,   0, 1, { { 0xa880, 51, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 604, 0, 69, 4)
+	{ kOpAnimPlay1,      4, {     3,    22,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 51, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 22, 1, 0)
+	{ kOpCharPlace,      5, {     0,   399,     0,    50,     3,     0 }, 0x00,   0, 1, { { 0xa7b1, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 399, 0, 50, 3)
+	{ kOpCharPlace,      5, {     0,   250,     0,    81,     1,     0 }, 0x00,   0, 2, { { 0xa7b1, 2, false, 0 }, { 0xa7b0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 250, 0, 81, 1)
+	{ kOpAnimPlay1,      4, {     1,     1,    30,     2,     0,     0 }, 0x00,   0, 1, { { 0xa7d2, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(1, 1, 30, 2)
+	{ kOpAnimPlay1,      4, {     2,     1,     5,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(2, 1, 5, 4)
+	{ kOpAnimPlay1,      4, {     3,     1,     5,     4,     0,     0 }, 0x00,   0, 0, { { 0, 0, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(3, 1, 5, 4)
+	{ kOpAnimPlay2,      4, {     4,     1,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa7d2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode2(4, 1, 1, 0)
+	{ kOpCharPlace,      5, {     0,   193,     0,    70,     4,     0 }, 0x00,   0, 1, { { 0xa7d2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 193, 0, 70, 4)
+	{ kOpAnimPlay1,      4, {     6,    22,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa7d2, 1, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(6, 22, 1, 0)
+	{ kOpCharPlace,      5, {     0,    47,     0,    69,     2,     0 }, 0x00,   0, 1, { { 0xa880, 53, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// char_place(0, 47, 0, 69, 2)
+	{ kOpAnimPlay1,      4, {     0,    10,     1,     0,     0,     0 }, 0x00,   0, 1, { { 0xa880, 53, false, 0 }, { 0, 0, false, 0 }, { 0, 0, false, 0 } } },	// anim_play_mode1(0, 10, 1, 0)
+};
+
+// Room number, first effect, count. A room absent from this table opens every
+// slot blank, which is right for the rooms whose plate already draws them.
+struct RoomInitRoom {
+	byte room;
+	uint16 first;
+	uint16 count;
+};
+
+static const RoomInitRoom kRoomInitRooms[] = {
+	{  3,   0,  8 },
+	{  6,   8,  4 },
+	{  7,  12,  5 },
+	{  8,  17,  1 },
+	{ 10,  18,  2 },
+	{ 11,  20,  1 },
+	{ 13,  21,  8 },
+	{ 14,  29,  7 },
+	{ 15,  36, 12 },
+	{ 17,  48,  3 },
+	{ 18,  51,  8 },
+	{ 19,  59,  6 },
+	{ 21,  65,  4 },
+	{ 22,  69,  3 },
+	{ 23,  72,  3 },
+	{ 25,  75,  3 },
+	{ 26,  78, 12 },
+	{ 27,  90,  7 },
+	{ 28,  97,  1 },
+	{ 30,  98,  3 },
+	{ 31, 101, 14 },
+	{ 32, 115,  8 },
+	{ 33, 123,  6 },
+	{ 34, 129,  6 },
+	{ 35, 135,  5 },
+	{ 40, 140,  3 },
+	{ 41, 143, 10 },
+	{ 43, 153,  1 },
+	{ 44, 154,  1 },
+	{ 45, 155,  2 },
+	{ 46, 157,  5 },
+	{ 48, 162,  6 },
+	{ 49, 168,  5 },
+	{ 50, 173,  4 },
+	{ 51, 177,  5 },
+	{ 52, 182, 16 },
+	{ 53, 198,  5 },
+	{ 54, 203,  9 },
+	{ 55, 212,  8 },
+	{ 56, 220,  7 },
+	{ 57, 227,  8 },
+	{ 58, 235,  4 },
+	{ 59, 239,  8 },
+};
+
+// Every frame list the openings play, end to end. Modes 6, 7 and 8 step a
+// cursor into one of these and draw the byte they find, so a play's first
+// argument is that cursor, its fifth is where its list starts here and its
+// third -- the frame count -- is how long the list is.
+static const byte kRoomInitFrames[] = {
+	  1,   2,   2,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,
+	  2,   2,   1,   1,   1,   1,   5,   1,   2,   3,   4,   5,   4,   5,   1,   1,
+	  1,   1,  12,   1,   1,   6,   7,   7,   7,   7,   7,   8,   7,   7,   6,   1,
+	  9,  10,  10,  10,  10,  10,  11,  10,  10,   9,   1,   1,  12,   1,   1,   1,
+	  0,  10,  11,  12,  13,  14,  15,  16,  17,  17,  16,  15,  14,  13,  12,  11,
+	 10,  19,  18,  19,  18,  19,  20,  19,  20,  19,  20,  21,  20,  21,  20,  18,
+	 19,  18,  19,  18,  19,  20,  19,  20,  19,  20,  21,  20,  21,  20,  18,   1,
+	  2,   3,   4,   1,   2,   3,   4,   1,   2,   3,   4,   1,   2,   3,   4,   4,
+	  5,   6,   7,   8,   9,   9,  10,  11,  12,  13,  14,   9,  10,  11,  12,  13,
+	 14,  14,  15,  16,  17,  18,  19,  19,  20,  21,  22,  23,  24,  19,  20,  21,
+	 22,  23,  24,  24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  34,  35,
+	 36,  37,  38,  34,  35,  36,  37,  38,  34,  35,  36,  37,  38,  34,  33,  32,
+	 31,  30,  29,  28,  27,  26,  25,  24,  19,  18,  17,  16,  15,  14,   0,   1,
+	  2,   3,   4,   5,   6,   5,   4,   3,   2,   1,  10,  10,  10,  10,   9,   8,
+	  7,   5,   5,   5,   5,   5,   6,   5,   6,   5,   6,   5,   6,   5,   6,   5,
+	  6,   5,   4,   3,   2,   1,   1,   1,   1,   1,   2,   3,   4,   5,   7,   8,
+	  9,  10,  17,   1,   2,   3,   2,   1,   2,   1,   1,   1,   1,   1,   1,   1,
+	  2,   3,   2,   1,   1,   1,   1,   2,   3,   4,   3,   2,   1,   1,   1,   1,
+	  1,   1,   1,   1,   1,   1,   2,   3,   2,   1,   2,   3,   2,   1,   2,   3,
+	  2,   1,   2,   3,   2,   1,   2,   3,   2,   1,   2,   1,   2,   1,   2,   2,
+	  2,   1,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,
+	  2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   1,   2,   3,   4,   2,   1,
+	  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+	  1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16,
+	 17,  18,  19,  20,  21,  20,  19,  18,  17,  16,  15,  14,  13,  12,  11,  10,
+	  9,   8,   7,   6,   5,   4,   3,   2,   0,   1,   1,   1,   1,   2,   3,   4,
+	  5,   5,   5,   5,   4,   3,   2,   6,   6,   6,   6,   6,   7,   8,   9,  10,
+	 10,  10,  10,   9,   8,   7,  11,  11,  11,  11,  11,  12,  13,  14,  15,  15,
+	 15,  15,  14,  13,  12,   1,
+};
+
+const byte *roomInitFrameList(uint first, uint count) {
+	if (!count || first + count > ARRAYSIZE(kRoomInitFrames))
+		return nullptr;
+	return &kRoomInitFrames[first];
+}
+
+const ScriptEffect *roomInitEffects(int room, uint &count) {
+	count = 0;
+	for (uint i = 0; i < ARRAYSIZE(kRoomInitRooms); i++) {
+		if (kRoomInitRooms[i].room != room)
+			continue;
+		count = kRoomInitRooms[i].count;
+		return &kRoomInit[kRoomInitRooms[i].first];
+	}
+	return nullptr;
+}
+
+} // End of namespace Alien
