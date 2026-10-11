@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/pool.h"
 
 namespace Alien {
 
@@ -65,9 +66,13 @@ static const byte kStepWaitLine = 4;
 static const byte kStepPlain = 5;
 static const byte kStepDiving = 7;
 
+PoolRoom::PoolRoom(AlienEngine *vm) : Room(vm),
+		_poolStep(0) {
+}
+
 /// The diving suit, used on the pool: entry 3's one machine-shaped arm.
-bool AlienEngine::armPool(int obj, byte item) {
-	if (_room != kPoolRoom || obj != kPoolObj || item != kSuit)
+bool PoolRoom::armPool(int obj, byte item) {
+	if (_vm->_room != kPoolRoom || obj != kPoolObj || item != kSuit)
 		return false;
 
 	_poolStep = kStepStart;
@@ -77,22 +82,22 @@ bool AlienEngine::armPool(int obj, byte item) {
 
 /// The room's own [0xa49f] machine: the line the first dive gets, the play,
 /// and the exit it ends in.
-void AlienEngine::stepPool() {
-	if (_room != kPoolRoom || !_poolStep)
+void PoolRoom::tickPair() {
+	if (_vm->_room != kPoolRoom || !_poolStep)
 		return;
 
 	switch (_poolStep) {
 	case kStepStart: {
 		// 0x0511: which of the two follows depends on whether this is the
 		// first time, and either way the flag is set before the play starts.
-		const bool first = _script.flag(kFirstDive) == 0;
-		_script.setFlag(kFirstDive, 1);
+		const bool first = _vm->_script.flag(kFirstDive) == 0;
+		_vm->_script.setFlag(kFirstDive, 1);
 		CursorMan.showMouse(false);
 
 		if (first) {
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, kOutcomeFirstDive, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, kOutcomeFirstDive, anchorX, anchorY);
 			_poolStep = kStepWaitLine;
 		} else {
 			_poolStep = kStepPlain;
@@ -102,31 +107,37 @@ void AlienEngine::stepPool() {
 
 	case kStepWaitLine:
 		// 0x0542: the line comes down before the plunge.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		playCharacterAnim(kDiveSlot, 1, kDiveFrames, kDiveRate, kDiveMode);
+		_vm->playCharacterAnim(kDiveSlot, 1, kDiveFrames, kDiveRate, kDiveMode);
 		_poolStep = kStepDiving;
 		break;
 
 	case kStepPlain:
 		// 0x0562: every dive after the first skips straight to it.
-		playCharacterAnim(kDiveSlot, 1, kDiveFrames, kDiveRate, kDiveMode);
+		_vm->playCharacterAnim(kDiveSlot, 1, kDiveFrames, kDiveRate, kDiveMode);
 		_poolStep = kStepDiving;
 		break;
 
 	case kStepDiving:
 		// 0x057f: the last frame of the plunge is the room's own exit.
-		if (_anims.remaining(kDiveSlot) != 1)
+		if (_vm->_anims.remaining(kDiveSlot) != 1)
 			break;
 		_poolStep = 0;
 		// 0x0599: and it lands him in room 46's shaft, view 0 (diving.cpp).
-		_script.setFlag(0xa785, 0);
-		takeExit(kPoolExitSubmode);
+		_vm->_script.setFlag(0xa785, 0);
+		_vm->takeExit(kPoolExitSubmode);
 		break;
 
 	default:
 		break;
 	}
+}
+
+void PoolRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The diving suit, which the room answers with a machine of its own
+	// rather than a script row.
+	armPool(obj, item);
 }
 
 } // End of namespace Alien

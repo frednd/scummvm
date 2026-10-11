@@ -878,10 +878,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryBreaker(spot.obj, verb);
 
-	// And room 48's pool, which the diving suit answers with a machine of its
-	// own rather than a script row (pool.cpp).
-	armPool(spot.obj, item);
-
 	// And the diving suit on the water there, the way back down to room 46.
 	armShoreSuit(spot.obj, item);
 

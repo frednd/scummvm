@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class PoolRoom;
 	friend class DivingRoom;
 	friend class SteamRoom;
 	friend class ParkRoom;
@@ -458,11 +459,6 @@ private:
 	/// A two-point route from where he stands, for the rooms with no walk mask.
 	void straightWalkTo(int x, int y, int arrivalFacing);
 	const MazeCell *mazeCell(int room) const;
-
-	/// Room 48's pool, and the diving suit that opens the way down to room 46
-	/// (pool.cpp).
-	bool armPool(int obj, byte item);
-	void stepPool();
 
 	/// Room 40's shared files and the one item-use line it has (cave.cpp).
 	void loadSharedTal(uint n);
@@ -963,9 +959,6 @@ private:
 	byte _crystalLeft;
 	bool _crystalSpeaking;
 	byte _mazePose;
-
-	/// Room 48's pool: the step of the dive machine (pool.cpp).
-	byte _poolStep;
 
 	/// Room 41's own machines: the step of the pick-axe swing, or of whichever
 	/// climb between the two cave mouths is running (shore.cpp).
