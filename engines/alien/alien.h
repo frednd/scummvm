@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class SewerRoom;
 	friend class BasementRoom;
 	friend class CliffRoom;
 	friend class LivingRoom;
@@ -113,10 +114,6 @@ public:
 	/// [0xa8e4] as every room opens: the DL1 blitter draws nothing at or below
 	/// it (see DL1Sprite::drawFrame and _clipBottom).
 	static const int kPlayfieldBottom = 0x9b;
-
-	/// How far down the character the sewer's water stands before it is
-	/// drained, the value GAME.EXE ships in [0x4382] (sewer.cpp).
-	static const uint16 kSewerDepthStart = 0x32;
 
 	/// Object ids are bytes, and the outcome rotation is kept per object.
 	static const uint kObjectCount = 256;
@@ -405,13 +402,9 @@ private:
 	void stepHallway();
 	void playPeephole();
 
-	void armSewer(int obj, byte verb);
-	void enterSewer(int room);
 	void openRoomPlate(int room);
 	void dumpPlates();
 	static Common::String argText(uint16 arg);
-	void stepSewer();
-	void sewerValve();
 
 	/// The room's hotspot table, rebuilt from the puzzle state -- and from the
 	/// cell, in the two mazes. Defaults to the room the engine is in; loadRoom
@@ -827,9 +820,6 @@ private:
 	/// that has to rebuild the hover, since the port only hovers on motion.
 	bool _cursorWasVisible;
 
-	/// Room 35's [0xa49f] machine (sewer.cpp). Zero when nothing is running.
-	byte _sewerStep;
-
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
 	int _scrollHold;
@@ -849,18 +839,6 @@ private:
 
 	/// GFX:sub_26ebc, the resident random the store picks its refusal with.
 	Common::RandomSource _rnd;
-
-	/// The sewer's water, which the original keeps as four words of its own in
-	/// the data segment rather than in the state block: [0x4380] is the phase
-	/// into the thirty-entry ripple table at [0x4362], [0x4382] the depth the
-	/// drain has taken off, [0x4384] the divider that lets the depth move once
-	/// every third animation frame, and [0x4385] whether the drain is running.
-	/// GAME.EXE ships them as 0, 0x32, 0, 0 and nothing else in the game reads
-	/// or writes them, so they are here rather than in RoomScript.
-	uint16 _sewerPhase;
-	uint16 _sewerDepth;
-	byte _sewerDivider;
-	byte _sewerDraining;
 
 	/// Whether the room now composed still owes its fade in (fade.cpp). Room
 	/// init leaves the palette black and the loop's tail raises it, which is

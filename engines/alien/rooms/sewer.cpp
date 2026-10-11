@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/sewer.h"
 
 namespace Alien {
 
@@ -132,11 +133,20 @@ static const byte kRipple[] = {
 	1, 1, 1, 1, 1
 };
 
+/// How far down the character the water stands before it is drained, the
+/// value GAME.EXE ships in [0x4382].
+static const uint16 kSewerDepthStart = 0x32;
+
 /// The divider [0x4384] counts to before the drain takes another row.
 static const byte kDrainDivider = 3;
 
 /// The frame of the water the valve waits for before the drain starts.
 static const int kDrainCue = 2;
+
+SewerRoom::SewerRoom(AlienEngine *vm) : Room(vm),
+		_sewerStep(0), _sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0),
+		_sewerDraining(0) {
+}
 
 /**
  * ovr_23_0e7b_sub_0000: the valve turning, which happens on every use of it.
@@ -145,19 +155,19 @@ static const int kDrainCue = 2;
  * 5's six frames forwards and playing them back again, and flips afterwards.
  * 
  */
-void AlienEngine::sewerValve() {
-	_sound.queue(kValveSample, kValveRate, kValveVolume, kValvePanning, kValveDelay);
+void SewerRoom::sewerValve() {
+	_vm->_sound.queue(kValveSample, kValveRate, kValveVolume, kValvePanning, kValveDelay);
 
-	if (_script.flag(kValveOpen) == 0)
-		_anims.play(kValveSlot, 1, 6, 5, 1);
-	else if (_script.flag(kValveOpen) == 1)
-		_anims.play(kValveSlot, 6, 6, 5, 3);
+	if (_vm->_script.flag(kValveOpen) == 0)
+		_vm->_anims.play(kValveSlot, 1, 6, 5, 1);
+	else if (_vm->_script.flag(kValveOpen) == 1)
+		_vm->_anims.play(kValveSlot, 6, 6, 5, 3);
 
-	_script.setFlag(kValveOpen, _script.flag(kValveOpen) == 0 ? 1 : 0);
+	_vm->_script.setFlag(kValveOpen, _vm->_script.flag(kValveOpen) == 0 ? 1 : 0);
 }
 
 /// The room has just opened: the ladder down, when he came in over it.
-void AlienEngine::enterSewer(int room) {
+void SewerRoom::enter(int room) {
 	// The room being opened is passed in: loadRoom does not publish it as _room
 	// until after this runs, so _room here is still the room being left.
 	if (room != kSewerRoom)
@@ -167,28 +177,28 @@ void AlienEngine::enterSewer(int room) {
 	// backwards ladder play among them (roominit.cpp); what is left is the pair
 	// of writes around them. [0xa94d] goes with the cursor everywhere it is
 	// touched in this overlay, so the port folds the two together.
-	if (_mode != kEnterFromMansion)
+	if (_vm->_mode != kEnterFromMansion)
 		return;
 
 	CursorMan.showMouse(false);
 	// SEW_CLIM draws Ben on the ladder, so the walker goes away for it: this is
 	// the [0xa94d] beside the cursor at 0e7b:0x060b, and the slot it names is
 	// the one room init has just started backwards.
-	hideCharacter(kLadderSlot);
+	_vm->hideCharacter(kLadderSlot);
 	_sewerStep = kStepArriving;
 	debugC(1, kDebugRooms, "sewer: down the ladder from room %d, step %d",
-		   _mode, kStepArriving);
+		   _vm->_mode, kStepArriving);
 }
 
 /// The click body has just run: start the machine if the click was one of its.
-void AlienEngine::armSewer(int obj, byte verb) {
-	if (_room != kSewerRoom)
+void SewerRoom::armSewer(int obj, byte verb) {
+	if (_vm->_room != kSewerRoom)
 		return;
 
 	if (obj == kSewerHatch && verb == kSewerPush) {
 		// [0xa777] is what the body sets as the hatch swings open; pushing it
 		// shut again clears the flag and arms nothing.
-		if (_script.flag(kHatchOpen) != 1 || _script.flag(kSceneLatch) != 0)
+		if (_vm->_script.flag(kHatchOpen) != 1 || _vm->_script.flag(kSceneLatch) != 0)
 			return;
 
 		_sewerStep = kStepHatch;
@@ -211,7 +221,7 @@ void AlienEngine::armSewer(int obj, byte verb) {
 		// run, so the same question is asked of the water instead. The two agree:
 		// the valve has never been turned exactly while the room is still
 		// flooded and the drain has not started.
-		if (_script.flag(kFlooded) != 1 || _sewerDraining)
+		if (_vm->_script.flag(kFlooded) != 1 || _sewerDraining)
 			return;
 
 		CursorMan.showMouse(false);
@@ -221,14 +231,14 @@ void AlienEngine::armSewer(int obj, byte verb) {
 	}
 }
 
-void AlienEngine::stepSewer() {
-	if (_room != kSewerRoom)
+void SewerRoom::tickPair() {
+	if (_vm->_room != kSewerRoom)
 		return;
 
-	if (_script.flag(kFlooded) == 1) {
+	if (_vm->_script.flag(kFlooded) == 1) {
 		// The water line, recomputed off wherever the character is standing.
-		_clipBottom = _ben.spriteY() + (int)_sewerDepth + (int)kRipple[_sewerPhase];
-		_dirty = true;
+		_vm->_clipBottom = _vm->_ben.spriteY() + (int)_sewerDepth + (int)kRipple[_sewerPhase];
+		_vm->_dirty = true;
 
 		if (++_sewerPhase >= ARRAYSIZE(kRipple))
 			_sewerPhase = 0;
@@ -242,79 +252,86 @@ void AlienEngine::stepSewer() {
 
 		// And the surface keeps moving: the tick re-issues slot 3 every frame
 		// the room is flooded, the same way a room's lifted loop calls do.
-		_anims.relaunch(kRippleSlot);
+		_vm->_anims.relaunch(kRippleSlot);
 	}
 
 	switch (_sewerStep) {
 	case kStepArriving:
-		if (_anims.remaining(kLadderSlot) != 2)
+		if (_vm->_anims.remaining(kLadderSlot) != 2)
 			break;
 		CursorMan.showMouse(true);
 		// 0e7b:0x0782, and the slot goes down with him so the ladder's last two
 		// frames are not left standing under the walker.
-		showCharacter();
+		_vm->showCharacter();
 		_sewerStep = 0;
-		_ben.faceTo(kFacingFront);
+		_vm->_ben.faceTo(kFacingFront);
 		debugC(1, kDebugRooms, "sewer: at the foot of the ladder");
 		break;
 
 	case kStepClimbing:
 		CursorMan.showMouse(false);
 		// 0e7b:0x0752: the body has the climb running on slot 1 already.
-		hideCharacter(kLadderSlot);
+		_vm->hideCharacter(kLadderSlot);
 		_sewerStep = kStepLeaving;
 		break;
 
 	case kStepLeaving:
-		if (_anims.remaining(kLadderSlot) != 1)
+		if (_vm->_anims.remaining(kLadderSlot) != 1)
 			break;
 		_sewerStep = 0;
 		debugC(1, kDebugRooms, "sewer: submode %d, back up the ladder", kSubmodeLadder);
-		takeExit(kSubmodeLadder);
+		_vm->takeExit(kSubmodeLadder);
 		break;
 
 	case kStepValve:
 		// Slot 3 is the room's own loop, so this waits for the water to come
 		// round to the same point of its cycle every time.
-		if (_anims.frame(kRippleSlot) != kDrainCue) {
+		if (_vm->_anims.frame(kRippleSlot) != kDrainCue) {
 			debugC(3, kDebugRooms, "sewer: the valve waits for slot %u frame %d, "
 				   "which is at %d", kRippleSlot, kDrainCue,
-				   _anims.frame(kRippleSlot));
+				   _vm->_anims.frame(kRippleSlot));
 			break;
 		}
 		_sewerDraining = 1;
-		_anims.play(kDrainSlot, 1, 29, 3, 1);
-		_anims.stop(kRippleSlot);
+		_vm->_anims.play(kDrainSlot, 1, 29, 3, 1);
+		_vm->_anims.stop(kRippleSlot);
 		_sewerStep = kStepDraining;
 		debugC(1, kDebugRooms, "sewer: draining, step 0x%02x", kStepDraining);
 		break;
 
 	case kStepDraining:
-		if (_anims.remaining(kDrainSlot) != 0)
+		if (_vm->_anims.remaining(kDrainSlot) != 0)
 			break;
-		_script.setFlag(kFlooded, 0);
+		_vm->_script.setFlag(kFlooded, 0);
 		CursorMan.showMouse(true);
 		_sewerStep = 0;
-		_clipBottom = kPlayfieldBottom;
-		_dirty = true;
+		_vm->_clipBottom = AlienEngine::kPlayfieldBottom;
+		_vm->_dirty = true;
 		debugC(1, kDebugRooms, "sewer: drained, the hatch can be reached");
 
 		// The hatch's rectangle is guarded on [0x33be], so the room's hotspots
 		// have to be built again now that it is clear.
-		rebuildHotspots();
+		_vm->rebuildHotspots();
 		break;
 
 	case kStepHatch:
-		if (_anims.remaining(kHatchSlot) != 0)
+		if (_vm->_anims.remaining(kHatchSlot) != 0)
 			break;
 		_sewerStep = 0;
 		debugC(1, kDebugRooms, "sewer: submode %d, which raises scene 6", kSubmodeHatch);
-		takeExit(kSubmodeHatch);
+		_vm->takeExit(kSubmodeHatch);
 		break;
 
 	default:
 		break;
 	}
+}
+
+void SewerRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The ladder, the valve and the hatch carry state the lift does not: all
+	// three start the room's [0xa49f] machine.
+	if (!item)
+		armSewer(obj, verb);
 }
 
 } // End of namespace Alien

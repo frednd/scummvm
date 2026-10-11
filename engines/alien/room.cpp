@@ -266,7 +266,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_mansionStep = 0;
 	_labPos = 0;
 	_labNearHole = false;
-	_sewerStep = 0;
 	for (Room *r : _rooms)
 		r->reset();
 	_chatPickNew = false;
@@ -358,12 +357,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 
 	openRoomPlate(room);
 
-	// And the one room whose open carries more than the lift can express: the
-	// sewer's ladder, and the water it may still be full of (sewer.cpp).
-	enterSewer(room);
+	// And room 27's manhole (mansion.cpp).
 	enterMansion(room);
 
-	// And the rooms' own: room 13's, which is the climb down when he came in
+	// And the rooms' own: the sewer's ladder, and the water it may still be
+	// full of (sewer.cpp), room 13's, which is the climb down when he came in
 	// over it (basement.cpp), room 33's, which is him landing in the road after
 	// the mailbox went up -- the far end of [0x33bc] (mailbox.cpp) -- and room
 	// 34's, which puts Sluggs out on the road (sluggs.cpp).

@@ -832,13 +832,8 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryBreaker(spot.obj, verb);
 
-	// And three bodies carry state the lift does not: the sewer's ladder, its
-	// valve and its hatch all start that room's [0xa49f] machine (sewer.cpp).
-	if (!item)
-		armSewer(spot.obj, verb);
-
-	// And the rooms' own (rooms/): room 26's parrot, room 50's lever, room
-	// 57's terminal, and room 58's prisoners, shackle and card.
+	// And the rooms' own (rooms/): the bodies the lift left behind, from the
+	// sewer's ladder, valve and hatch to room 58's prisoners, shackle and card.
 	for (Room *r : _rooms)
 		r->afterScript(spot.obj, verb, item, anchorX, anchorY);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
