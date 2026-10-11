@@ -24,6 +24,7 @@
 #include "alien/alien.h"
 #include "alien/detection.h"
 #include "alien/resources.h"
+#include "alien/rooms/bedroom.h"
 
 #include "graphics/cursorman.h"
 
@@ -78,6 +79,10 @@ static const uint32 kClickRate = 0xcb20;
 static const byte kClickVolume = 0x40;
 static const int8 kClickPanning = -20;
 
+BedroomRoom::BedroomRoom(AlienEngine *vm) : Room(vm),
+		_bedroomLiftStep(0) {
+}
+
 /**
  * Reload the room's plates, as room 7 does when its light changes.
  *
@@ -93,37 +98,37 @@ static const int8 kClickPanning = -20;
  * with `[0xd12c] = 1` -- the PCX loader's "take this file's palette" gate -- so
  * the new plate's colours reach the DAC as part of the swap. 
  */
-void AlienEngine::reloadPlates() {
+void BedroomRoom::reloadPlates() {
 	Graphics::Surface loaded;
 	byte palette[256 * 3];
-	const Common::String name = roomPlate(_room);
+	const Common::String name = _vm->roomPlate(_vm->_room);
 	if (!loadGamePCX(Common::Path(name), loaded, palette)) {
 		loaded.free();
-		warning("room %d: could not load the plate %s", _room, name.c_str());
+		warning("room %d: could not load the plate %s", _vm->_room, name.c_str());
 		return;
 	}
 
 	// Black first, for the one tick the original spends there. Nothing is
 	// redrawn under it: the pixels on screen are the old room's and the palette
 	// they are shown through is dead, which is what the blackout looks like.
-	uploadPalette(_palette, 0);
+	_vm->uploadPalette(_vm->_palette, 0);
 	g_system->updateScreen();
 
-	_background.free();
-	_background = loaded;
-	memcpy(_palette, palette, sizeof(_palette));
-	applyCharPalette(_room);
-	loadOccluder(_room);
-	loadLightMap(_room);
+	_vm->_background.free();
+	_vm->_background = loaded;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
+	_vm->applyCharPalette(_vm->_room);
+	_vm->loadOccluder(_vm->_room);
+	_vm->loadLightMap(_vm->_room);
 
 	// And then the new plate's palette, whole, the way the loader installs it.
 	// The status line's own three entries are the game's and not the plate's,
 	// so they go back over it -- the same order loadRoom settles them in. The
 	// speech ink looks after itself: the per-room pass re-applies it before the
 	// next line is drawn.
-	uploadPalette(_palette, 0x100);
-	resetLabelColors();
-	_dirty = true;
+	_vm->uploadPalette(_vm->_palette, 0x100);
+	_vm->resetLabelColors();
+	_vm->_dirty = true;
 
 	debugC(1, kDebugRooms, "bedroom: plates are now %s", name.c_str());
 }
@@ -135,9 +140,9 @@ void AlienEngine::reloadPlates() {
  * @param anchorX  the spoken line's anchor, the clicked box as everywhere else
  * @param anchorY  ditto
  */
-void AlienEngine::bedroomSwitch(int anchorX, int anchorY) {
-	const bool fuse = _script.flag(kFuseFlag) != 0;
-	const bool lit = _script.flag(kLightFlag) != 0;
+void BedroomRoom::bedroomSwitch(int anchorX, int anchorY) {
+	const bool fuse = _vm->_script.flag(kFuseFlag) != 0;
+	const bool lit = _vm->_script.flag(kLightFlag) != 0;
 
 	// The hook has three arms and no else: with no fuse and the light somehow
 	// on there is no code at all, and the click does nothing.
@@ -154,38 +159,38 @@ void AlienEngine::bedroomSwitch(int anchorX, int anchorY) {
 	if (!code)
 		return;
 
-	_sound.queue(kClickSample, kClickRate, kClickVolume, kClickPanning, 0);
+	_vm->_sound.queue(kClickSample, kClickRate, kClickVolume, kClickPanning, 0);
 
 	switch (code) {
 	case 4:
-		queueOutcome(_tal, kLineDark, anchorX, anchorY);
-		_script.setFlag(kDarkLatch, 1);
+		_vm->queueOutcome(_vm->_tal, kLineDark, anchorX, anchorY);
+		_vm->_script.setFlag(kDarkLatch, 1);
 		break;
 
 	case 5:
-		_script.setFlag(kLightFlag, 1);
+		_vm->_script.setFlag(kLightFlag, 1);
 		reloadPlates();
 
 		// Code 7, which the original leaves for the next pass: the first time
 		// the light comes on he says how loud the switch is.
-		if (!_script.flag(kSpokenFlag))
-			queueOutcome(_tal, kLineLoud, anchorX, anchorY);
-		_script.setFlag(kSpokenFlag, 1);
+		if (!_vm->_script.flag(kSpokenFlag))
+			_vm->queueOutcome(_vm->_tal, kLineLoud, anchorX, anchorY);
+		_vm->_script.setFlag(kSpokenFlag, 1);
 
-		_anims.play(4, 1, 7, 4, 1);
+		_vm->_anims.play(4, 1, 7, 4, 1);
 
 		// 10c9:sub_113f0 at 0x1b4, the room's own plate routine: every frame
 		// the bedroom's puzzle flags say belongs in the background is stamped
 		// into the plate that was just loaded. All seven of room 7's steps are
 		// guarded on the light being on, so this is the one path that runs
 		// them -- and without it the lit room came up with a bare plate.
-		openRoomPlate(_room);
+		_vm->openRoomPlate(_vm->_room);
 		break;
 
 	case 6:
-		_script.setFlag(kLightFlag, 0);
+		_vm->_script.setFlag(kLightFlag, 0);
 		reloadPlates();
-		playMusicSlot(2);
+		_vm->playMusicSlot(2);
 		break;
 
 	default:
@@ -194,12 +199,12 @@ void AlienEngine::bedroomSwitch(int anchorX, int anchorY) {
 
 	// What is clickable changed with the light, so the room's rectangles are
 	// registered again before the next click can land.
-	rebuildHotspots();
+	_vm->rebuildHotspots();
 }
 
 /// True for the one click the room does not answer for itself.
-bool AlienEngine::isBedroomSwitch(int obj) const {
-	return _room == kBedroom && obj == kSwitchObject;
+bool BedroomRoom::isBedroomSwitch(int obj) const {
+	return _vm->_room == kBedroom && obj == kSwitchObject;
 }
 
 // The walk into the lift car. Room 7's tick answers an arrival on walk submode
@@ -219,13 +224,13 @@ static const uint kWalkInSlot = 0;
 static const int kWalkInFrames = 0x10;
 static const int kWalkInRate = 3;
 
-bool AlienEngine::hijackBedroomLift(byte submode) {
-	if (_room != kBedroom || submode != kLiftSubmode)
+bool BedroomRoom::hijackExit(byte submode) {
+	if (_vm->_room != kBedroom || submode != kLiftSubmode)
 		return false;
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
-	queueOutcome(_tal, _script.flag(kLiftLineFlag) == 1 ? kLiftLineAgain : kLiftLine,
+	_vm->characterAnchor(anchorX, anchorY);
+	_vm->queueOutcome(_vm->_tal, _vm->_script.flag(kLiftLineFlag) == 1 ? kLiftLineAgain : kLiftLine,
 				 anchorX, anchorY);
 	CursorMan.showMouse(false);
 	_bedroomLiftStep = 1;
@@ -233,25 +238,25 @@ bool AlienEngine::hijackBedroomLift(byte submode) {
 	return true;
 }
 
-void AlienEngine::stepBedroomLift() {
-	if (_room != kBedroom || !_bedroomLiftStep)
+void BedroomRoom::tickPair() {
+	if (_vm->_room != kBedroom || !_bedroomLiftStep)
 		return;
 
 	if (_bedroomLiftStep == 1) {
-		if (!speechDone())
+		if (!_vm->speechDone())
 			return;
-		_anims.loadBank(kWalkInSlot, "WALKINC1.DL1");
-		playCharacterAnim(kWalkInSlot, 1, kWalkInFrames, kWalkInRate, 1);
+		_vm->_anims.loadBank(kWalkInSlot, "WALKINC1.DL1");
+		_vm->playCharacterAnim(kWalkInSlot, 1, kWalkInFrames, kWalkInRate, 1);
 		_bedroomLiftStep = 2;
 		debugC(1, kDebugRooms, "bedroom: into the car");
 		return;
 	}
 
-	if (_anims.shownFrame(kWalkInSlot) != kWalkInFrames)
+	if (_vm->_anims.shownFrame(kWalkInSlot) != kWalkInFrames)
 		return;
 
 	_bedroomLiftStep = 0;
-	takeExit(kLiftSubmode);
+	_vm->takeExit(kLiftSubmode);
 }
 
 // Out through the bedroom door. Room 6's open, when the room left was the
@@ -264,19 +269,26 @@ static const int kFromBedroom = 7;
 static const int kClearOfDoorX = 0x91, kClearOfDoorY = 0x67, kClearOfDoorFacing = 2;
 
 /// Room 6 has just been placed: the walk out of the bedroom door.
-void AlienEngine::enterLanding(int room) {
-	if (room != kLandingRoom || _mode != kFromBedroom)
+void BedroomRoom::placed(int room) {
+	if (room != kLandingRoom || _vm->_mode != kFromBedroom)
 		return;
 
 	// The route's first point is 0x7e,0x67, which is where the placement has
 	// just put his feet.
 	WalkRoute route;
-	route.points[0].x = (int16)_ben.walkX();
-	route.points[0].y = (int16)_ben.walkY();
+	route.points[0].x = (int16)_vm->_ben.walkX();
+	route.points[0].y = (int16)_vm->_ben.walkY();
 	route.count = 1;
-	_ben.follow(route, kClearOfDoorX, kClearOfDoorY, kClearOfDoorFacing);
+	_vm->_ben.follow(route, kClearOfDoorX, kClearOfDoorY, kClearOfDoorFacing);
 	debugC(1, kDebugRooms, "landing: out of the bedroom, %d,%d -> %d,%d",
-		   _ben.walkX(), _ben.walkY(), kClearOfDoorX, kClearOfDoorY);
+		   _vm->_ben.walkX(), _vm->_ben.walkY(), kClearOfDoorX, kClearOfDoorY);
+}
+
+/// The light switch is answered by a hook of the room's own rather than by a
+/// script body.
+void BedroomRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	if (!item && isBedroomSwitch(obj))
+		bedroomSwitch(anchorX, anchorY);
 }
 
 } // End of namespace Alien

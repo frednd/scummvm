@@ -804,11 +804,6 @@ void AlienEngine::finishAction() {
 	const bool ranScript = !roomReplaced && !caveHandled && _script.run(spot.obj, verb, item);
 	const bool handled = roomHandled || caveHandled || ranScript;
 
-	// One object in the game is answered by a hook of its room's own rather
-	// than by a script body: room 7's light switch (bedroom.cpp).
-	if (!item && isBedroomSwitch(spot.obj))
-		bedroomSwitch(anchorX, anchorY);
-
 	// And the rooms' own (rooms/): the bodies the lift left behind, from the
 	// sewer's ladder, valve and hatch to room 58's prisoners, shackle and card.
 	for (Room *r : _rooms)

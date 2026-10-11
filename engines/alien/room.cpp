@@ -262,7 +262,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// re-entered starts counting again (roomtick.cpp).
 	resetRoomClock(room);
 	_labStep = 0;
-	_bedroomLiftStep = 0;
 	_labPos = 0;
 	_labNearHole = false;
 	for (Room *r : _rooms)
@@ -399,8 +398,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		_ben.place(kScreenWidth / 2, 140, 3, false);
 	}
 
-	// And the one room that walks him on from there (bedroom.cpp).
-	enterLanding(room);
+	// And the rooms that walk him on from there: the landing (bedroom.cpp).
+	for (Room *r : _rooms)
+		r->placed(room);
 
 	// Most rooms name a room<n>.tal, but several speak through a shared file,
 	// and the ones without an overlay fall back to the naming convention.
@@ -1069,12 +1069,9 @@ void AlienEngine::checkExit() {
 	const byte submode = _armed;
 	_armed = 0;
 
-	// Room 7's closet answers its arrival with a line and a walk of its
-	// own before the exit is written (bedroom.cpp).
-	if (hijackBedroomLift(submode))
-		return;
-
-	// And the rooms' own (rooms/): room 19's stairs, which play the climb
+	// The rooms' own (rooms/): room 7's closet, which answers its arrival with
+	// a line and a walk of its own before the exit is written (bedroom.cpp),
+	// room 19's stairs, which play the climb
 	// before the room is left (observatory.cpp), and room 54's tick tail,
 	// which sees the exit armed but not yet taken and can drop it for a
 	// machine of its own (waiting.cpp).

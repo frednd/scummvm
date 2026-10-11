@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class BedroomRoom;
 	friend class MansionRoom;
 	friend class LiftRoom;
 	friend class ObservatoryRoom;
@@ -342,12 +343,6 @@ private:
 	Common::String roomPlate(int room) const;
 	Common::String occluderPlate(int room) const;
 	void loadOccluder(int room);
-	void reloadPlates();
-	void bedroomSwitch(int anchorX, int anchorY);
-	bool isBedroomSwitch(int obj) const;
-	bool hijackBedroomLift(byte submode);
-	void stepBedroomLift();
-	void enterLanding(int room);
 	void applyOcclusion();
 	bool triggerCutscene(byte id);
 	void roomCutscenes(int room);
@@ -761,8 +756,6 @@ private:
 	/// Room 3's [0xa49f] machine, less the opening the two steps in opening.cpp
 	/// carry (lab.cpp). Zero when nothing is running.
 	byte _labStep;
-	/// Room 7's walk into the lift car: 0 idle, 1 his line, 2 WALKINC1 (bedroom.cpp).
-	byte _bedroomLiftStep;
 
 	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
 	bool _restoring;			///< syncGame is reloading the room, not an entry through a door

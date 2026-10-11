@@ -141,7 +141,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
 		_openingStep(0), _openingPending(true),
-		_labStep(0), _bedroomLiftStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
+		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
@@ -611,7 +611,6 @@ void AlienEngine::stepClock() {
 		// And room 35's own machine, which is the water it starts full of and
 		// the hatch that ends it (sewer.cpp).
 		stepLab();
-		stepBedroomLift();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
