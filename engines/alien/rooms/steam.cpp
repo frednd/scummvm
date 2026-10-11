@@ -26,6 +26,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/steam.h"
 
 namespace Alien {
 
@@ -122,32 +123,36 @@ static const byte kStepLever = 0x33;	///< room 50 (its own 3): the lever pull
 static const byte kStepBlowWait = 0x1e;	///< room 49: the valve has just turned
 static const byte kStepBlow = 0x20;
 
+SteamRoom::SteamRoom(AlienEngine *vm) : Room(vm),
+		_steamStep(0), _steamPos(0), _steamWas(0), _steamRelight(false), _steamBurst(0) {
+}
+
 /// The arrival plays that each room's init starts: hide the walker under them
 /// and take the cursor away until they finish.
-void AlienEngine::startSteam() {
+void SteamRoom::start() {
 	_steamStep = 0;
 	_steamPos = 0;
-	_steamWas = _script.flag(kSteamOn);
+	_steamWas = _vm->_script.flag(kSteamOn);
 	_steamBurst = 0;
 	_steamRelight = false;
 
-	if (_room == kEngineRoom) {
+	if (_vm->_room == kEngineRoom) {
 		// ovr_31_0f85:0x0308, and the palette sub_023f4 mixes from.
-		_script.setFlag(kLightLevel, 0);
-		memcpy(_steamLight, _palette + kLightFirst * 3, sizeof(_steamLight));
+		_vm->_script.setFlag(kLightLevel, 0);
+		memcpy(_steamLight, _vm->_palette + kLightFirst * 3, sizeof(_steamLight));
 	}
 
-	if (_room == kEngineRoom && _mode == kBoilerRoom) {
+	if (_vm->_room == kEngineRoom && _vm->_mode == kBoilerRoom) {
 		// ovr_31_0f85:0x045a
 		CursorMan.showMouse(false);
-		hideCharacter(kClimbSlot);
+		_vm->hideCharacter(kClimbSlot);
 		_steamStep = kStepDownArrived;
 		_steamRelight = true;
 		debugC(1, kDebugRooms, "steam: down the ladder from room 50");
-	} else if (_room == kBoilerRoom && _mode == kEngineRoom) {
+	} else if (_vm->_room == kBoilerRoom && _vm->_mode == kEngineRoom) {
 		// ovr_32_0f81:0x0459
 		CursorMan.showMouse(false);
-		hideCharacter(kBoilerLadderSlot);
+		_vm->hideCharacter(kBoilerLadderSlot);
 		_steamStep = kStepUpArrived;
 		_steamRelight = true;
 		debugC(1, kDebugRooms, "steam: up the ladder from room 49");
@@ -156,21 +161,21 @@ void AlienEngine::startSteam() {
 
 /// Room 50's entry 0 (0x0197): a left click on the hot side while the steam
 /// is up latches its own value over the clicked object.
-void AlienEngine::steamClick(int roomX, int y) {
-	if (_room != kBoilerRoom || _script.flag(kSteamOn) != 1 || _heldItem != Inventory::kNoItem)
+void SteamRoom::leftClick(int roomX, int y) {
+	if (_vm->_room != kBoilerRoom || _vm->_script.flag(kSteamOn) != 1 || _vm->_heldItem != Inventory::kNoItem)
 		return;
 	if (roomX > 0xe1 && y < 0xa1)
-		_script.setFlag(kClickedObj, kTooHot);
+		_vm->_script.setFlag(kClickedObj, kTooHot);
 }
 
 /// The click body has just run: room 50's lever plays Ben pulling it.
-void AlienEngine::armSteam(int obj, byte verb) {
-	if (_room != kBoilerRoom || obj != kLeverObj || verb != kVerbPull)
+void SteamRoom::armSteam(int obj, byte verb) {
+	if (_vm->_room != kBoilerRoom || obj != kLeverObj || verb != kVerbPull)
 		return;
 
 	// ovr_32_0f81:0x00b5: the body clears [0xa789] as it starts the play, and
 	// otherwise only speaks, so a running slot 1 is the one sign it pulled.
-	if (_script.flag(kLeverUp) != 0 || _anims.remaining(kLeverSlot) <= 2)
+	if (_vm->_script.flag(kLeverUp) != 0 || _vm->_anims.remaining(kLeverSlot) <= 2)
 		return;
 
 	// The walker only, not the slot: the original sets [0xa94d] back with two
@@ -178,46 +183,46 @@ void AlienEngine::armSteam(int obj, byte verb) {
 	// the lever down without him (frames 27 and 28), in the background. Handing
 	// the slot to showCharacter() took it down there instead, and the plate's
 	// lever came back up under him.
-	hideCharacter();
+	_vm->hideCharacter();
 	_steamStep = kStepLever;
 	debugC(1, kDebugRooms, "steam: the lever is pulled");
 }
 
 /// Room 49's light, once a pass of its loop; the port gives it every tick,
 /// the same as room 46's water (diving.cpp).
-void AlienEngine::stepSteamLight() {
-	if (_room != kEngineRoom)
+void SteamRoom::tick() {
+	if (_vm->_room != kEngineRoom)
 		return;
 
-	const byte was = _script.flag(kLightLevel);
+	const byte was = _vm->_script.flag(kLightLevel);
 	int level = was;
 	// [0xa794], the level the pass started from, which is what decides whether
 	// the palette is written (0x0511, 0x055b); a save carries it.
-	setStateWord(kLightWas, was);
+	_vm->setStateWord(kLightWas, was);
 
-	if (_script.flag(kLightOn) == 1) {
-		if ((_rnd.getRandomNumber(0xffff) & kBurstMask) == 0)
+	if (_vm->_script.flag(kLightOn) == 1) {
+		if ((_vm->_rnd.getRandomNumber(0xffff) & kBurstMask) == 0)
 			_steamBurst = kBurstLength;
 		if (_steamBurst > 0) {
 			_steamBurst--;
-			if ((_rnd.getRandomNumber(0xffff) & kFlashMask) == 0)
+			if ((_vm->_rnd.getRandomNumber(0xffff) & kFlashMask) == 0)
 				level = 0;
 		}
 	}
 
 	level = MIN(level + kLightStep, 0xff);
-	_script.setFlag(kLightLevel, (byte)level);
+	_vm->_script.setFlag(kLightLevel, (byte)level);
 	if (level == was)
 		return;
 
 	// UTIL:sub_023f4: (source * (0x100 - level) + black * level) >> 8.
 	for (int i = 0; i < kLightCount * 3; i++)
-		_palette[kLightFirst * 3 + i] = (byte)((_steamLight[i] * (0x100 - level)) >> 8);
-	g_system->getPaletteManager()->setPalette(_palette + kLightFirst * 3, kLightFirst, kLightCount);
+		_vm->_palette[kLightFirst * 3 + i] = (byte)((_steamLight[i] * (0x100 - level)) >> 8);
+	g_system->getPaletteManager()->setPalette(_vm->_palette + kLightFirst * 3, kLightFirst, kLightCount);
 }
 
-void AlienEngine::stepSteam() {
-	if (_room != kEngineRoom && _room != kBoilerRoom)
+void SteamRoom::tickPair() {
+	if (_vm->_room != kEngineRoom && _vm->_room != kBoilerRoom)
 		return;
 
 	// [0xa49c], which LOGIC advances on every tick pair.
@@ -230,12 +235,12 @@ void AlienEngine::stepSteam() {
 	// rooms, so it is never room 49's far-side palette.
 	if (_steamRelight) {
 		_steamRelight = false;
-		uploadCharPalette(false);
+		_vm->uploadCharPalette(false);
 	}
 
 	// Room 49's valve body turns the steam off; its machine follows on.
-	const byte steam = _script.flag(kSteamOn);
-	if (_room == kEngineRoom && _steamWas == 1 && steam == 0 && !_steamStep) {
+	const byte steam = _vm->_script.flag(kSteamOn);
+	if (_vm->_room == kEngineRoom && _steamWas == 1 && steam == 0 && !_steamStep) {
 		_steamStep = kStepBlowWait;
 		_steamPos = 0;
 		debugC(1, kDebugRooms, "steam: valve turned, step 0x%02x", kStepBlowWait);
@@ -245,29 +250,29 @@ void AlienEngine::stepSteam() {
 	switch (_steamStep) {
 	case kStepDownArrived:
 		// ovr_31_0f85:0x0643
-		if (_anims.remaining(kClimbSlot) != 1)
+		if (_vm->_anims.remaining(kClimbSlot) != 1)
 			return;
-		showCharacter();
+		_vm->showCharacter();
 		CursorMan.showMouse(true);
-		_ben.faceTo(kFacingLeft);
+		_vm->_ben.faceTo(kFacingLeft);
 		_steamStep = 0;
 		debugC(1, kDebugRooms, "steam: at the foot of the ladder");
 		return;
 
 	case kStepClimbingUp:
 		// ovr_31_0f85:0x0669
-		if (_anims.remaining(kClimbSlot) != 1)
+		if (_vm->_anims.remaining(kClimbSlot) != 1)
 			return;
 		_steamStep = 0;
 		debugC(1, kDebugRooms, "steam: submode %d, up to room 50", kLadderSubmode);
-		takeExit(kLadderSubmode);
+		_vm->takeExit(kLadderSubmode);
 		return;
 
 	case kStepUpArrived:
 		// ovr_32_0f81:0x0697
-		if (_anims.remaining(kBoilerLadderSlot) != 2)
+		if (_vm->_anims.remaining(kBoilerLadderSlot) != 2)
 			return;
-		showCharacter();
+		_vm->showCharacter();
 		CursorMan.showMouse(true);
 		_steamStep = 0;
 		debugC(1, kDebugRooms, "steam: at the top of the ladder");
@@ -275,9 +280,9 @@ void AlienEngine::stepSteam() {
 
 	case kStepLever:
 		// ovr_32_0f81:0x0680
-		if (_anims.remaining(kLeverSlot) != 2)
+		if (_vm->_anims.remaining(kLeverSlot) != 2)
 			return;
-		showCharacter();
+		_vm->showCharacter();
 		_steamStep = 0;
 		return;
 
@@ -290,8 +295,8 @@ void AlienEngine::stepSteam() {
 
 	case kStepBlow:
 		// ovr_31_0f85:0x0697
-		_sound.queue(kBlowSample, kBlowSampleRate, kBlowVolume, kBlowPanning, kBlowDelay);
-		_anims.play(kBlowSlot, 1, kBlowFrames, kBlowRate, 1);
+		_vm->_sound.queue(kBlowSample, kBlowSampleRate, kBlowVolume, kBlowPanning, kBlowDelay);
+		_vm->_anims.play(kBlowSlot, 1, kBlowFrames, kBlowRate, 1);
 		_steamStep = 0;
 		return;
 
@@ -300,38 +305,44 @@ void AlienEngine::stepSteam() {
 	}
 
 	// The arrival tests, which run only while no step owns the room.
-	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+	if (_vm->_ben.isWalking() || _vm->_ben.isTurning() || !_vm->speechDone())
 		return;
 
-	const byte obj = _script.flag(kClickedObj);
+	const byte obj = _vm->_script.flag(kClickedObj);
 	if (!obj)
 		return;
 
 	if (obj == kLadderObj) {
-		_script.setFlag(kClickedObj, 0);
-		if (_room == kBoilerRoom) {
+		_vm->_script.setFlag(kClickedObj, 0);
+		if (_vm->_room == kBoilerRoom) {
 			// ovr_32_0f81:0x06b2
 			debugC(1, kDebugRooms, "steam: submode %d, down to room 49", kLadderSubmode);
-			takeExit(kLadderSubmode);
+			_vm->takeExit(kLadderSubmode);
 		} else {
 			// ovr_31_0f85:0x06c0
 			CursorMan.showMouse(false);
-			playCharacterAnim(kClimbSlot, 1, kClimbFrames, kClimbRate, kClimbMode);
+			_vm->playCharacterAnim(kClimbSlot, 1, kClimbFrames, kClimbRate, kClimbMode);
 			_steamStep = kStepClimbingUp;
 			debugC(1, kDebugRooms, "steam: up the ladder");
 		}
 		return;
 	}
 
-	if (_room == kBoilerRoom && obj == kTooHot) {
+	if (_vm->_room == kBoilerRoom && obj == kTooHot) {
 		// ovr_32_0f81:0x06e9
-		_script.setFlag(kClickedObj, 0);
+		_vm->_script.setFlag(kClickedObj, 0);
 		if (steam == 1) {
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, kOutcomeTooHot, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, kOutcomeTooHot, anchorX, anchorY);
 		}
 	}
+}
+
+void SteamRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// Room 50's lever, whose pull is Ben's own animation.
+	if (!item)
+		armSteam(obj, verb);
 }
 
 } // End of namespace Alien

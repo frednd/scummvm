@@ -107,8 +107,8 @@ public:
 	/// \name Clicks, in the order finishAction() runs them.
 	/// @{
 
-	/// A left click on the floor, before the walk is worked out.
-	virtual void floorClick(int roomX, int y) {}
+	/// A left click, before the walk it starts is worked out.
+	virtual void leftClick(int roomX, int y) {}
 	/// The walk a click starts, once the geometry has named it.
 	virtual void walkTarget(byte obj, int roomX, int y, bool action, WalkTarget &target) {}
 	/// Ahead of everything, the room's script included.

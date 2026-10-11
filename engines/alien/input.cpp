@@ -597,7 +597,8 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// Room 50 writes its own value over it for the side the steam blocks
 	// (steam.cpp).
 	if (asLeft)
-		steamClick(roomX, y);
+		for (Room *r : _rooms)
+			r->leftClick(roomX, y);
 
 	WalkTarget target;
 	// Every click rearms from scratch, as the original rewrites walk_submode
@@ -892,17 +893,13 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armSewer(spot.obj, verb);
 
-	// And room 50's lever, whose pull is Ben's own animation (steam.cpp).
-	if (!item)
-		armSteam(spot.obj, verb);
-
 	// And room 13's battery, whose body stops two animation slots by writing
 	// into the slot arrays, which the lifted row cannot (basement.cpp).
 	if (!item)
 		takeBasementBattery(spot.obj);
 
-	// And the rooms' own (rooms/): room 26's parrot, room 57's terminal, and
-	// room 58's prisoners, shackle and card.
+	// And the rooms' own (rooms/): room 26's parrot, room 50's lever, room
+	// 57's terminal, and room 58's prisoners, shackle and card.
 	for (Room *r : _rooms)
 		r->afterScript(spot.obj, verb, item, anchorX, anchorY);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)

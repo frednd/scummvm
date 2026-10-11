@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class SteamRoom;
 	friend class ParkRoom;
 	friend class YodleRoom;
 	friend class ForestRoom;
@@ -490,14 +491,6 @@ private:
 
 	bool dlgreqRunning() const;
 	bool roomHoldsCharacter() const;
-
-	/// The ladder between rooms 49 and 50, and the steam over room 50's
-	/// right half (steam.cpp).
-	void startSteam();
-	void steamClick(int roomX, int y);
-	void armSteam(int obj, byte verb);
-	void stepSteam();
-	void stepSteamLight();
 
 	void stepBasementLadder();
 
@@ -1004,18 +997,6 @@ private:
 	/// Room 41's own machines: the step of the pick-axe swing, or of whichever
 	/// climb between the two cave mouths is running (shore.cpp).
 	byte _shoreStep;
-
-	/// Rooms 49 and 50's [0xa49f] step, their [0xa49c] count, and the steam
-	/// flag as the last tick saw it (steam.cpp).
-	byte _steamStep;
-	uint _steamPos;
-	byte _steamWas;
-	/// A ladder arrival still owes the character his new room's light.
-	bool _steamRelight;
-	/// Room 49's light: passes left of a flicker burst, and the palette entries
-	/// the level darkens, as the room loaded them (steam.cpp).
-	uint _steamBurst;
-	byte _steamLight[0x1a * 3];
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

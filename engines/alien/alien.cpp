@@ -146,7 +146,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_poolStep(0),
 		_divingStep(0), _divingExit(0), _divingWavePhase(0),
 		_shoreStep(0),
-		_steamStep(0), _steamPos(0), _steamWas(0), _steamRelight(false), _steamBurst(0),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -585,11 +584,10 @@ void AlienEngine::stepClock() {
 	// tick pair -- INPUT:0x5D9 tests the same [0xa5fc] the slots do.
 	_sound.tick((_tick & 1) == 0);
 
-	// Room 46's water ripples a step every tick (diving.cpp), and room 49's
-	// light fades and flickers at the same pace (steam.cpp).
+	// Room 46's water ripples a step every tick (diving.cpp).
 	stepDivingWave();
-	stepSteamLight();
-	// And the rooms' own (rooms/): room 56's flashes as the beam hums
+	// And the rooms' own (rooms/): room 49's light fades and flickers at the
+	// same pace (steam.cpp), and room 56's flashes as the beam hums
 	// (teleport.cpp).
 	for (Room *r : _rooms)
 		r->tick();
@@ -693,10 +691,6 @@ void AlienEngine::stepClock() {
 		// And room 46's chest, its key, and the swim across (diving.cpp).
 		stepDiving();
 		stepDivingWater();
-
-		// And rooms 49 and 50's: the ladder between them and what the valve
-		// and the lever leave running (steam.cpp).
-		stepSteam();
 
 
 

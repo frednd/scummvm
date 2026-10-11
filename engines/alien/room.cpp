@@ -531,9 +531,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startShore();
 	startCemetery();
 
-	// And the ladder between rooms 49 and 50 (steam.cpp).
-	startSteam();
-
 	startObservatory();
 
 
