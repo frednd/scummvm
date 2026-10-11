@@ -130,10 +130,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
-		_dialogId(1), _lastEvent(0), _speechCustom(false), _speechBen(true), _liftPending(false),
-		_observatoryLook(false),
-		_observatoryBreaker(false), _observatoryStep(0), _observatoryPos(0),
-		_observatoryEncore(false), _stairsDescents(0), _restoring(false),
+		_dialogId(1), _lastEvent(0), _speechCustom(false), _speechBen(true), _liftPending(false), _stairsDescents(0), _restoring(false),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -621,14 +618,6 @@ void AlienEngine::stepClock() {
 		// line to come down -- by the countdown or by a click (lift.cpp).
 		stepLiftCall();
 
-		// And room 19's fuse-panel cover, which waits for the line the look at
-		// it raised (observatory.cpp). Stepped here as well as off the line
-		// coming down, because a line dismissed by a click ends between the
-		// two and the cover would otherwise stay shut.
-		stepObservatoryPanel();
-		stepObservatoryBreaker();
-		stepObservatoryStairs();
-
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
 			r->tickPair();
@@ -644,10 +633,6 @@ void AlienEngine::stepClock() {
 			// And room 3's entry 3 tests the same word for the computer's
 			// line, which is what opens the lift panel (lift.cpp).
 			stepLiftCall();
-
-			// And room 19's, which takes the cover off the fuse box once the
-			// line the look raised has come down (observatory.cpp).
-			stepObservatoryPanel();
 
 			// And the rooms' own (rooms/): room 25's, which lights the fuse
 			// when the matches' line comes down (mailbox.cpp).

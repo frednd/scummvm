@@ -763,27 +763,9 @@ void AlienEngine::finishAction() {
 	for (Room *r : _rooms)
 		r->preAction(spot.obj, verb, item);
 
-	// And room 19's fuse-panel cover, for the same reason: the lifted pair for
-	// it has the branch that shuts the cover and not the one that opens it, so
-	// the table on its own could only ever shut a cover nothing opened
-	// (observatory.cpp).
-	if (!item && armObservatoryPanel(spot.obj, verb)) {
-		rebuildHotspots();
-		_hover = -1;
-		const Common::Point dome = g_system->getEventManager()->getMousePos();
-		updateHover(dome.x, dome.y);
-		return;
-	}
-
-	// The look at the same cover *is* a lifted row -- it raises event 10 -- and
-	// what the lift has none of is the arrival that answers the line. Armed
-	// before the row so that the row is what speaks.
-	if (!item)
-		armObservatoryLook(spot.obj, verb);
-
 	// And the rooms' own (rooms/): a click a room answers with a machine of
-	// its own -- the owl, Sluggs, the hippie, the maintenance man, the phone,
-	// Yodle -- must not reach the body. The lifted rows for those keep their
+	// its own -- the owl, Sluggs, the fuse-panel cover, the hippie, the
+	// maintenance man, the phone, Yodle -- must not reach the body. The lifted rows for those keep their
 	// guards but drop the calls that are the real bodies.
 	for (Room *r : _rooms) {
 		if (r->takeAction(spot.obj, verb, item, anchorX, anchorY)) {
@@ -826,11 +808,6 @@ void AlienEngine::finishAction() {
 	// than by a script body: room 7's light switch (bedroom.cpp).
 	if (!item && isBedroomSwitch(spot.obj))
 		bedroomSwitch(anchorX, anchorY);
-
-	// And room 19's circuit breaker, whose hand on slot 5 draws Ben himself
-	// and whose line waits for it (observatory.cpp).
-	if (!item)
-		armObservatoryBreaker(spot.obj, verb);
 
 	// And the rooms' own (rooms/): the bodies the lift left behind, from the
 	// sewer's ladder, valve and hatch to room 58's prisoners, shackle and card.

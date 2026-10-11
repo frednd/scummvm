@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class ObservatoryRoom;
 	friend class SewerRoom;
 	friend class BasementRoom;
 	friend class CliffRoom;
@@ -378,20 +379,6 @@ private:
 	void armLab(int obj, bool item);
 	void stepLab();
 	void stepLabHole();
-
-	/// Room 19's fuse-panel cover: the rectangle the lift could not carry
-	/// because its width is computed, the look that opens it and the move that
-	/// toggles it (observatory.cpp).
-	bool armObservatoryPanel(int obj, byte verb);
-	void armObservatoryLook(int obj, byte verb);
-	void armObservatoryBreaker(int obj, byte verb);
-	void stepObservatoryBreaker();
-	void startObservatory();
-	void stepObservatoryStairs();
-	bool hijackObservatoryStairs(byte submode);
-	void stepObservatoryPanel();
-	void openObservatoryPanel();
-	void closeObservatoryPanel();
 
 	/// The lab computer and the lift car it parks (lift.cpp).
 	bool armLiftCall(int obj, int anchorX, int anchorY);
@@ -786,13 +773,6 @@ private:
 	byte _mansionStep;
 	bool _liftPending;			///< the computer's line is up; the panel follows it
 
-	/// Room 19: the cover has been looked at and its line is still up. The
-	/// cover comes off when the line comes down (observatory.cpp).
-	bool _observatoryLook;
-	bool _observatoryBreaker;	///< room 19's [0xa49f] 0x14, the walker away
-	byte _observatoryStep;		///< room 19's [0xa49f]: 1-4 the slip, 0x64 the stairs
-	uint16 _observatoryPos;		///< and its [0xa49c]
-	bool _observatoryEncore;	///< the slip under way is the port's own
 	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
 	bool _restoring;			///< syncGame is reloading the room, not an entry through a door
 

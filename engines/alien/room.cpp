@@ -502,8 +502,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// with the character talking to himself before the player gets the cursor.
 	startOpening();
 
-	startObservatory();
-
 
 	// And the rooms' own (rooms/), in the order rooms.cpp gives.
 	for (Room *r : _rooms)
@@ -1080,13 +1078,10 @@ void AlienEngine::checkExit() {
 	if (hijackBedroomLift(submode))
 		return;
 
-	// And room 19's stairs, which play the climb before the room is left
-	// (observatory.cpp).
-	if (hijackObservatoryStairs(submode))
-		return;
-
-	// And the rooms' own (rooms/): room 54's tick tail sees the exit armed but
-	// not yet taken, and can drop it for a machine of its own (waiting.cpp).
+	// And the rooms' own (rooms/): room 19's stairs, which play the climb
+	// before the room is left (observatory.cpp), and room 54's tick tail,
+	// which sees the exit armed but not yet taken and can drop it for a
+	// machine of its own (waiting.cpp).
 	for (Room *r : _rooms)
 		if (r->hijackExit(submode))
 			return;

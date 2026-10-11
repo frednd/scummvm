@@ -24,6 +24,7 @@
 #include "alien/detection.h"
 #include "alien/play.h"
 #include "alien/sfx.h"
+#include "alien/rooms/observatory.h"
 
 #include "graphics/cursorman.h"
 
@@ -113,6 +114,11 @@ static const uint32 kCloseRate = 0x2328;
 static const byte kPanelVolume = 0x40;
 static const uint16 kCloseDelay = 7;
 
+ObservatoryRoom::ObservatoryRoom(AlienEngine *vm) : Room(vm),
+		_observatoryLook(false), _observatoryBreaker(false), _observatoryStep(0),
+		_observatoryPos(0), _observatoryEncore(false) {
+}
+
 /**
  * ovr0eb3_sub_0068: the cover comes off.
  *
@@ -121,14 +127,14 @@ static const uint16 kCloseDelay = 7;
  * ordering to protect -- movePanel() is the only caller and it returns to a
  * dispatch that skips the table -- so the flag is left to the caller.
  */
-void AlienEngine::openObservatoryPanel() {
-	const bool fuse = _script.flag(kFuseIn) == 1;
+void ObservatoryRoom::openObservatoryPanel() {
+	const bool fuse = _vm->_script.flag(kFuseIn) == 1;
 	const byte *frames = fuse ? kPanelOpenFuse : kPanelOpen;
 	const int count = fuse ? ARRAYSIZE(kPanelOpenFuse) : ARRAYSIZE(kPanelOpen);
 
-	_anims.play(kPanelSlot, 0, count, kPanelRate, kPanelMode, frames);
-	_sound.queue(kOpenSample, kOpenRate, kPanelVolume, 0, 0);
-	_script.setFlag(kPanelShut, 0);
+	_vm->_anims.play(kPanelSlot, 0, count, kPanelRate, kPanelMode, frames);
+	_vm->_sound.queue(kOpenSample, kOpenRate, kPanelVolume, 0, 0);
+	_vm->_script.setFlag(kPanelShut, 0);
 }
 
 /**
@@ -137,14 +143,14 @@ void AlienEngine::openObservatoryPanel() {
  * The lifted row for this pair sets [0xa758] and plays the sample; the frames
  * are what it could not carry, so they are all this adds.
  */
-void AlienEngine::closeObservatoryPanel() {
-	const bool fuse = _script.flag(kFuseIn) == 1;
+void ObservatoryRoom::closeObservatoryPanel() {
+	const bool fuse = _vm->_script.flag(kFuseIn) == 1;
 	const byte *frames = fuse ? kPanelCloseFuse : kPanelClose;
 	const int count = fuse ? ARRAYSIZE(kPanelCloseFuse) : ARRAYSIZE(kPanelClose);
 
-	_anims.play(kPanelSlot, 0, count, kPanelRate, kPanelMode, frames);
-	_sound.queue(kCloseSample, kCloseRate, kPanelVolume, 0, kCloseDelay);
-	_script.setFlag(kPanelShut, 1);
+	_vm->_anims.play(kPanelSlot, 0, count, kPanelRate, kPanelMode, frames);
+	_vm->_sound.queue(kCloseSample, kCloseRate, kPanelVolume, 0, kCloseDelay);
+	_vm->_script.setFlag(kPanelShut, 1);
 }
 
 /**
@@ -154,11 +160,11 @@ void AlienEngine::closeObservatoryPanel() {
  * Returns true when the click is the room's, so that the lifted pair -- which
  * has the closing half without the opening one -- is not offered it.
  */
-bool AlienEngine::armObservatoryPanel(int obj, byte verb) {
-	if (_room != kObservatoryRoom || obj != kPanelObject || verb != kVerbMove)
+bool ObservatoryRoom::armObservatoryPanel(int obj, byte verb) {
+	if (_vm->_room != kObservatoryRoom || obj != kPanelObject || verb != kVerbMove)
 		return false;
 
-	if (_script.flag(kPanelShut) == 1)
+	if (_vm->_script.flag(kPanelShut) == 1)
 		openObservatoryPanel();
 	else
 		closeObservatoryPanel();
@@ -174,26 +180,26 @@ bool AlienEngine::armObservatoryPanel(int obj, byte verb) {
  * ([0xa948] := 0 at 0x018f, back at 0x00cc); the port's speech already gates
  * input while a line is up, so only the two writes that outlive it are here.
  */
-void AlienEngine::stepObservatoryPanel() {
-	if (!_observatoryLook || _room != kObservatoryRoom)
+void ObservatoryRoom::stepObservatoryPanel() {
+	if (!_observatoryLook || _vm->_room != kObservatoryRoom)
 		return;
-	if (_lastEvent != kPanelLookEvent || !speechDone())
+	if (_vm->_lastEvent != kPanelLookEvent || !_vm->speechDone())
 		return;
 
 	_observatoryLook = false;
 	openObservatoryPanel();
-	_script.setFlag(kPanelSeen, 1);
-	rebuildHotspots();
+	_vm->_script.setFlag(kPanelSeen, 1);
+	_vm->rebuildHotspots();
 }
 
 /**
  * The other end of it: the look itself, which the lifted row raises the event
  * for. Arming is separate from answering because the answer waits for the line.
  */
-void AlienEngine::armObservatoryLook(int obj, byte verb) {
-	if (_room != kObservatoryRoom || obj != kPanelObject || verb != kVerbLookAt)
+void ObservatoryRoom::armObservatoryLook(int obj, byte verb) {
+	if (_vm->_room != kObservatoryRoom || obj != kPanelObject || verb != kVerbLookAt)
 		return;
-	if (_script.flag(kPanelSeen) == 1)
+	if (_vm->_script.flag(kPanelSeen) == 1)
 		return;
 
 	_observatoryLook = true;
@@ -217,31 +223,31 @@ static const byte kPowerOffEvent = 0x0c;	///< "There. The power is switched off.
  * at 0x0285, 0x02c2) and arms [0xa49f] 0x14. The lifted rows have the plays
  * and the flag, not the two byte writes.
  */
-void AlienEngine::armObservatoryBreaker(int obj, byte verb) {
-	if (_room != kObservatoryRoom || obj != kBreakerObject || verb != kVerbUse)
+void ObservatoryRoom::armObservatoryBreaker(int obj, byte verb) {
+	if (_vm->_room != kObservatoryRoom || obj != kBreakerObject || verb != kVerbUse)
 		return;
-	if (!_anims.isBusy(5))
+	if (!_vm->_anims.isBusy(5))
 		return;
 
-	hideCharacter();
+	_vm->hideCharacter();
 	_observatoryBreaker = true;
 	debugC(1, kDebugRooms, "observatory: the breaker, power %s",
-		   _script.flag(kPowerOn) ? "on" : "off");
+		   _vm->_script.flag(kPowerOn) ? "on" : "off");
 }
 
 /// 0x0ad0: one frame left on the hand, and Ben is back to say which way it went.
-void AlienEngine::stepObservatoryBreaker() {
-	if (!_observatoryBreaker || _room != kObservatoryRoom)
+void ObservatoryRoom::stepObservatoryBreaker() {
+	if (!_observatoryBreaker || _vm->_room != kObservatoryRoom)
 		return;
-	if (_script.flag(kBreakerLeft) > 1)
+	if (_vm->_script.flag(kBreakerLeft) > 1)
 		return;
 
 	_observatoryBreaker = false;
-	showCharacter();
+	_vm->showCharacter();
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
-	queueOutcome(_tal, _script.flag(kPowerOn) ? kPowerOnEvent : kPowerOffEvent,
+	_vm->characterAnchor(anchorX, anchorY);
+	_vm->queueOutcome(_vm->_tal, _vm->_script.flag(kPowerOn) ? kPowerOnEvent : kPowerOffEvent,
 				 anchorX, anchorY);
 }
 
@@ -314,38 +320,38 @@ static const uint16 kSlipDelayA = 0x20, kSlipDelayB = 0x36;
 /// Entry 2 at 0x0799. The placement at 193,40 facing front and the first half
 /// of the play are lifted rows (roominit.cpp); the rest is the walker taken
 /// away, the cursor, the sounds and the latch.
-void AlienEngine::startObservatory() {
+void ObservatoryRoom::start() {
 	_observatoryStep = 0;
 	_observatoryPos = 0;
 
-	if (_room != kObservatoryRoom || _mode != kTelescopeRoom || _restoring)
+	if (_vm->_room != kObservatoryRoom || _vm->_mode != kTelescopeRoom || _vm->_restoring)
 		return;
 
-	const bool original = _script.flag(kSlipped) == 0 && _script.flag(kPanelShut) == 1;
+	const bool original = _vm->_script.flag(kSlipped) == 0 && _vm->_script.flag(kPanelShut) == 1;
 
 	// The count runs on every trip down, the original's slip included.
-	_stairsDescents = (byte)((_stairsDescents + 1) % kEveryFall);
-	const bool encore = !original && _stairsDescents == 0;
+	_vm->_stairsDescents = (byte)((_vm->_stairsDescents + 1) % kEveryFall);
+	const bool encore = !original && _vm->_stairsDescents == 0;
 	if (!original && !encore)
 		return;
 
 	if (encore) {
 		// The lifted rows only place him and start the play under the
 		// original's own guard, so the encore does both itself.
-		_ben.placeSprite(kSlipX, kSlipY, kFacingFront);
-		_anims.play(kSlipSlot, 1, kSlipFrames, kSlipRate, kSlipMode);
-		updateScroll(true);
+		_vm->_ben.placeSprite(kSlipX, kSlipY, kFacingFront);
+		_vm->_anims.play(kSlipSlot, 1, kSlipFrames, kSlipRate, kSlipMode);
+		_vm->updateScroll(true);
 	}
 
 	// A port addition (setHold()): mode 4 takes its last frame away, and he
 	// lies on the floor between the two halves for the whole of the line.
-	hideCharacter(kSlipSlot);
-	_anims.setHold(kSlipSlot, true);
+	_vm->hideCharacter(kSlipSlot);
+	_vm->_anims.setHold(kSlipSlot, true);
 	CursorMan.showMouse(false);
-	_sound.queue(kSlipSample, kSlipRateA, kSlipVolumeA, 0, kSlipDelayA);
-	_sound.queue(kSlipSample, kSlipRateB, kSlipVolumeB, 0, kSlipDelayB);
+	_vm->_sound.queue(kSlipSample, kSlipRateA, kSlipVolumeA, 0, kSlipDelayA);
+	_vm->_sound.queue(kSlipSample, kSlipRateB, kSlipVolumeB, 0, kSlipDelayB);
 	if (original)
-		_script.setFlag(kSlipped, 1);
+		_vm->_script.setFlag(kSlipped, 1);
 	_observatoryEncore = encore;
 	_observatoryStep = kStepSlipFall;
 	debugC(1, kDebugRooms, "observatory: down the stairs the fast way%s",
@@ -353,8 +359,8 @@ void AlienEngine::startObservatory() {
 }
 
 /// 0x0b0e: the arrival at the stairs, taken before the shared exit sees it.
-bool AlienEngine::hijackObservatoryStairs(byte submode) {
-	if (_room != kObservatoryRoom || submode != kStairsSubmode)
+bool ObservatoryRoom::hijackExit(byte submode) {
+	if (_vm->_room != kObservatoryRoom || submode != kStairsSubmode)
 		return false;
 
 	CursorMan.showMouse(false);
@@ -365,18 +371,18 @@ bool AlienEngine::hijackObservatoryStairs(byte submode) {
 }
 
 /// The loop's [0xa49f] states for both, 0x0a57 to 0x0b6f.
-void AlienEngine::stepObservatoryStairs() {
-	if (_room != kObservatoryRoom || !_observatoryStep)
+void ObservatoryRoom::stepObservatoryStairs() {
+	if (_vm->_room != kObservatoryRoom || !_observatoryStep)
 		return;
 
 	// [0xa49c] moves on the animation gate ([0xa5f8], 0x088d), every other
 	// tick pair.
-	if ((_tick & 3) == 0)
+	if ((_vm->_tick & 3) == 0)
 		_observatoryPos++;
 
 	switch (_observatoryStep) {
 	case kStepSlipFall:
-		if (_anims.isBusy(kSlipSlot))
+		if (_vm->_anims.isBusy(kSlipSlot))
 			return;
 		_observatoryStep = kStepSlipLie;
 		_observatoryPos = 0;
@@ -385,7 +391,7 @@ void AlienEngine::stepObservatoryStairs() {
 	case kStepSlipLie:
 		if (_observatoryPos < kSlipLineAt)
 			return;
-		queueOutcome(_tal, _observatoryEncore ? kEncoreLine : kSlipLine, kSlipLineX, kSlipLineY);
+		_vm->queueOutcome(_vm->_tal, _observatoryEncore ? kEncoreLine : kSlipLine, kSlipLineX, kSlipLineY);
 		_observatoryStep = kStepSlipLine;
 		_observatoryPos = 0;
 		return;
@@ -395,17 +401,17 @@ void AlienEngine::stepObservatoryStairs() {
 			return;
 		// The encore's line is longer than the original's, and he stays down
 		// until he has said it.
-		if (_observatoryEncore && !speechDone())
+		if (_observatoryEncore && !_vm->speechDone())
 			return;
-		playCharacterAnim(kSlipSlot, kSlipFrames, kSlipFrames, kSlipRate, kSlipMode);
+		_vm->playCharacterAnim(kSlipSlot, kSlipFrames, kSlipFrames, kSlipRate, kSlipMode);
 		_observatoryStep = kStepSlipUp;
 		return;
 
 	case kStepSlipUp:
-		if (_anims.isBusy(kSlipSlot))
+		if (_vm->_anims.isBusy(kSlipSlot))
 			return;
-		_anims.setHold(kSlipSlot, false);
-		showCharacter();
+		_vm->_anims.setHold(kSlipSlot, false);
+		_vm->showCharacter();
 		CursorMan.showMouse(true);
 		_observatoryStep = 0;
 		debugC(1, kDebugRooms, "observatory: back on his feet");
@@ -415,20 +421,59 @@ void AlienEngine::stepObservatoryStairs() {
 		if (_observatoryPos < kClimbAt)
 			return;
 		if (_observatoryPos == kClimbAt) {
-			playCharacterAnim(kClimbSlot, 1, kClimbFrames, kClimbRate, kClimbMode);
+			_vm->playCharacterAnim(kClimbSlot, 1, kClimbFrames, kClimbRate, kClimbMode);
 			_observatoryPos++;
 			debugC(1, kDebugRooms, "observatory: up the stairs");
 			return;
 		}
-		if (_anims.isBusy(kClimbSlot))
+		if (_vm->_anims.isBusy(kClimbSlot))
 			return;
 		_observatoryStep = 0;
-		takeExit(kStairsSubmode);
+		_vm->takeExit(kStairsSubmode);
 		return;
 
 	default:
 		return;
 	}
+}
+
+void ObservatoryRoom::tickPair() {
+	// The panel steps here as well as when a line comes down, because a line
+	// dismissed by a click ends between the two and the cover would otherwise
+	// stay shut.
+	stepObservatoryPanel();
+	stepObservatoryBreaker();
+	stepObservatoryStairs();
+}
+
+void ObservatoryRoom::lineDown() {
+	// The cover comes off the fuse box once the line the look raised has come
+	// down.
+	stepObservatoryPanel();
+}
+
+bool ObservatoryRoom::takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	if (item)
+		return false;
+
+	// The fuse-panel cover: the lifted pair for it has the branch that shuts
+	// the cover and not the one that opens it, so the table on its own could
+	// only ever shut a cover nothing opened.
+	if (armObservatoryPanel(obj, verb))
+		return true;
+
+	// The look at the same cover *is* a lifted row -- it raises event 10 --
+	// and what the lift has none of is the arrival that answers the line.
+	// Armed before the row so that the row is what speaks.
+	armObservatoryLook(obj, verb);
+	return false;
+}
+
+void ObservatoryRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The circuit breaker, whose hand on slot 5 draws Ben himself and whose
+	// line waits for it.
+	if (!item)
+		armObservatoryBreaker(obj, verb);
 }
 
 } // End of namespace Alien
