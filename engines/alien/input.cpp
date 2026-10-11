@@ -950,15 +950,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armSteam(spot.obj, verb);
 
-	// And room 54's ticket machine button, for the same reason: the lifted body
-	// on it is only the refusal (waiting.cpp).
-	if (!item)
-		armWaitingButton(spot.obj, verb);
-
-	// And the two customers waiting beside it, whose conversations are that
-	// room's machine as well (waiting.cpp).
-	armWaitingCustomers(spot.obj, verb, item);
-
 	// And room 13's battery, whose body stops two animation slots by writing
 	// into the slot arrays, which the lifted row cannot (basement.cpp).
 	if (!item)

@@ -556,11 +556,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startObservatory();
 
 	// And the ship's four elevator floors (corridor.cpp), the scanner's
-	// robot (scanner.cpp), then the number board, simplified the same way
-	// (waiting.cpp).
+	// robot (scanner.cpp).
 	startCorridor();
 	startScanner();
-	startWaiting();
 
 	// And the rooms' own (rooms/), in the order rooms.cpp gives.
 	for (Room *r : _rooms)
@@ -1116,12 +1114,7 @@ void AlienEngine::checkExit() {
 	const byte submode = _armed;
 	_armed = 0;
 
-	// Room 54's tick tail sees the exit armed but not yet taken, and can drop
-	// it for a machine of its own (waiting.cpp).
-	if (hijackWaitingExit(submode))
-		return;
-
-	// And room 7's closet answers its arrival with a line and a walk of its
+	// Room 7's closet answers its arrival with a line and a walk of its
 	// own before the exit is written (bedroom.cpp).
 	if (hijackBedroomLift(submode))
 		return;
@@ -1130,6 +1123,12 @@ void AlienEngine::checkExit() {
 	// (observatory.cpp).
 	if (hijackObservatoryStairs(submode))
 		return;
+
+	// And the rooms' own (rooms/): room 54's tick tail sees the exit armed but
+	// not yet taken, and can drop it for a machine of its own (waiting.cpp).
+	for (Room *r : _rooms)
+		if (r->hijackExit(submode))
+			return;
 
 	takeExit(submode);
 }

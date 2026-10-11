@@ -22,6 +22,7 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
+#include "alien/rooms/waiting.h"
 #include "alien/detection.h"
 
 namespace Alien {
@@ -298,11 +299,15 @@ static const WaitingPose kWaitingPoses[] = {
 
 static const int kPoseMode = 8;
 
-void AlienEngine::playWaitingPose(uint slot, byte pose) {
+WaitingRoom::WaitingRoom(AlienEngine *vm) : Room(vm),
+		_waitingStep(0), _waitingPos(0) {
+}
+
+void WaitingRoom::playWaitingPose(uint slot, byte pose) {
 	for (uint i = 0; i < ARRAYSIZE(kWaitingPoses); i++) {
 		const WaitingPose &p = kWaitingPoses[i];
 		if (p.slot == slot && p.pose == pose) {
-			_anims.play(slot, 0, p.count, p.rate, kPoseMode, p.frames);
+			_vm->_anims.play(slot, 0, p.count, p.rate, kPoseMode, p.frames);
 			return;
 		}
 	}
@@ -310,13 +315,13 @@ void AlienEngine::playWaitingPose(uint slot, byte pose) {
 
 /// DLGREQ:sub_0c275 for room 54: the customer named by [0xa7df] takes his
 /// talking pose and says the line, in the colour and place sub_0c250 gave him.
-void AlienEngine::waitingCustomerSays(byte code) {
-	const bool standing = _script.flag(kSpeaker) == 1;
+void WaitingRoom::waitingCustomerSays(byte code) {
+	const bool standing = _vm->_script.flag(kSpeaker) == 1;
 	playWaitingPose(standing ? 1 : 0, standing ? 2 : 1);
 	const byte *ink = standing ? kStandingInk : kBenchInk;
-	setTextColor(ink[0], ink[1], ink[2]);
-	uploadTextColor();
-	queueOutcome(_tal, code, standing ? kStandingX : kBenchX, standing ? kStandingY : kBenchY,
+	_vm->setTextColor(ink[0], ink[1], ink[2]);
+	_vm->uploadTextColor();
+	_vm->queueOutcome(_vm->_tal, code, standing ? kStandingX : kBenchX, standing ? kStandingY : kBenchY,
 				 false);
 	debugC(1, kDebugRooms, "waiting: the %s customer says outcome 0x%02x",
 		   standing ? "standing" : "bench", code);
@@ -327,8 +332,8 @@ void AlienEngine::waitingCustomerSays(byte code) {
  * item to either starts his conversation, with Ben's own line -- the table's --
  * going first.
  */
-bool AlienEngine::armWaitingCustomers(int obj, byte verb, byte item) {
-	if (_room != kWaitingRoom)
+bool WaitingRoom::armWaitingCustomers(int obj, byte verb, byte item) {
+	if (_vm->_room != kWaitingRoom)
 		return false;
 
 	// Ben's own line -- 0x14 holding an item out, 0x33 for the bench he has
@@ -353,25 +358,25 @@ bool AlienEngine::armWaitingCustomers(int obj, byte verb, byte item) {
 }
 
 /// Every arrival answers the self-link.
-void AlienEngine::startWaiting() {
-	if (_room != kWaitingRoom)
+void WaitingRoom::start() {
+	if (_vm->_room != kWaitingRoom)
 		return;
 
 	// 10c9:sub_11855, from the room's open (ovr_36_0fa6:0x093d): whoever is
 	// still waiting takes up their pose. 
-	if (_script.flag(kBenchAlien) == 1)
+	if (_vm->_script.flag(kBenchAlien) == 1)
 		playWaitingPose(0, 2);
-	if (_script.flag(kStandingAlien) == 1)
+	if (_vm->_script.flag(kStandingAlien) == 1)
 		playWaitingPose(1, 1);
-	if (_script.flag(kBenchLeft) == 1)
+	if (_vm->_script.flag(kBenchLeft) == 1)
 		playWaitingPose(0, 3);
 
 	// 0x0909: the node ring and the mask are loaded only while the standing
 	// customer is there to walk round. Once he has gone the room has no nodes
 	// and every walk is a straight line -- through where he stood, which the
 	// mask still blocks 
-	if (_script.flag(kStandingAlien) != 1)
-		_walk.dropNodes();
+	if (_vm->_script.flag(kStandingAlien) != 1)
+		_vm->_walk.dropNodes();
 
 	_waitingStep = kStepIdle;
 	_waitingPos = 0;
@@ -379,8 +384,8 @@ void AlienEngine::startWaiting() {
 	// ovr_36_0fa6:0x08df, the tick's own first test after the reload: the flag
 	// state 0x64 left behind, which roominit.cpp has already read to stand him
 	// at the desk. Clearing it here is that body's own first act.
-	if (_script.flag(kCalledReload) == 1) {
-		_script.setFlag(kCalledReload, 0);
+	if (_vm->_script.flag(kCalledReload) == 1) {
+		_vm->_script.setFlag(kCalledReload, 0);
 		_waitingStep = kStepDesk;
 		CursorMan.showMouse(false);
 
@@ -388,8 +393,8 @@ void AlienEngine::startWaiting() {
 	}
 
 	// 0x0986: the alarm's once, cleared as it is answered.
-	if (_script.flag(kAlarmPlayed) == 1) {
-		_script.setFlag(kAlarmPlayed, 0);
+	if (_vm->_script.flag(kAlarmPlayed) == 1) {
+		_vm->_script.setFlag(kAlarmPlayed, 0);
 		_waitingStep = kStepAlarm;
 		CursorMan.showMouse(false);
 
@@ -398,12 +403,12 @@ void AlienEngine::startWaiting() {
 }
 
 /// [0xad1c]: the line the machine put up has come down and nothing follows it.
-bool AlienEngine::waitingLineDone() const {
-	return !_speech && _queueNext >= _queueCount;
+bool WaitingRoom::waitingLineDone() const {
+	return !_vm->_speech && _vm->_queueNext >= _vm->_queueCount;
 }
 
-void AlienEngine::speakWaiting(byte code) {
-	queueOutcome(_tal, code, _ben.walkX(), _ben.walkY() - Walker::kWalkPointY);
+void WaitingRoom::speakWaiting(byte code) {
+	_vm->queueOutcome(_vm->_tal, code, _vm->_ben.walkX(), _vm->_ben.walkY() - Walker::kWalkPointY);
 }
 
 /**
@@ -415,13 +420,13 @@ void AlienEngine::speakWaiting(byte code) {
  * held at three, which is why the fourth push and every one after it goes back
  * to the loudspeaker.
  */
-bool AlienEngine::armWaitingButton(int obj, byte verb) {
-	if (_room != kWaitingRoom || obj != kButton || verb != kPushVerb)
+bool WaitingRoom::armWaitingButton(int obj, byte verb) {
+	if (_vm->_room != kWaitingRoom || obj != kButton || verb != kPushVerb)
 		return false;
-	if (_script.flag(kTicketOut) == 1)
+	if (_vm->_script.flag(kTicketOut) == 1)
 		return false;
 
-	const byte pushes = _script.flag(kPushCount);
+	const byte pushes = _vm->_script.flag(kPushCount);
 
 	CursorMan.showMouse(false);
 	if (pushes == 2) {
@@ -432,14 +437,14 @@ bool AlienEngine::armWaitingButton(int obj, byte verb) {
 		_waitingStep = kStepAnnounce;
 		_waitingPos = 0;
 		// [0xa53c]: the machine's own loop, running while it thinks.
-		_anims.setLoopFlag(kMachineSlot, 1);
+		_vm->_anims.setLoopFlag(kMachineSlot, 1);
 		// 10c9:sub_11d17, the button back up.
-		_anims.setLoopFlag(kButtonSlot, 0);
-		_anims.play(kButtonSlot, kButtonUpFrame, 1, 0, 1);
+		_vm->_anims.setLoopFlag(kButtonSlot, 0);
+		_vm->_anims.play(kButtonSlot, kButtonUpFrame, 1, 0, 1);
 	}
 
 	if (pushes < kMaxPushes)
-		_script.setFlag(kPushCount, pushes + 1);
+		_vm->_script.setFlag(kPushCount, pushes + 1);
 
 	debugC(1, kDebugRooms, "waiting: push %u, step 0x%02x", pushes + 1, _waitingStep);
 	return true;
@@ -448,8 +453,8 @@ bool AlienEngine::armWaitingButton(int obj, byte verb) {
 /**
  * One step of the machine, on the tick pair the room's own entry 2 runs on.
  */
-void AlienEngine::stepWaitingMachine() {
-	if (_room != kWaitingRoom)
+void WaitingRoom::tickPair() {
+	if (_vm->_room != kWaitingRoom)
 		return;
 
 	waitingArrival();
@@ -471,7 +476,7 @@ void AlienEngine::stepWaitingMachine() {
 			break;
 		const bool standing = _waitingStep == kStepStandingTalk || _waitingStep == kStepStandingItem;
 		const bool word = _waitingStep == kStepBenchTalk || _waitingStep == kStepStandingTalk;
-		_script.setFlag(kSpeaker, standing ? 1 : 0);
+		_vm->_script.setFlag(kSpeaker, standing ? 1 : 0);
 		waitingCustomerSays(word ? (standing ? kLineStandingWord : kLineBenchWord)
 								 : (standing ? kLineStandingItem : kLineBenchItem));
 		_waitingStep = word ? (standing ? kStepStandingDone : kStepBenchDone)
@@ -506,7 +511,7 @@ void AlienEngine::stepWaitingMachine() {
 	case kStepAnnounceDone:
 		if (!waitingLineDone())
 			break;
-		_anims.setLoopFlag(kMachineSlot, 0);
+		_vm->_anims.setLoopFlag(kMachineSlot, 0);
 		_waitingStep = kStepWhirr;
 		break;
 
@@ -514,16 +519,16 @@ void AlienEngine::stepWaitingMachine() {
 		// The original waits on [0xa4ec] here, a byte only room 11 ever writes
 		// and only ever to zero, so the wait is over as soon as it is reached.
 		// 10c9:sub_11d00, the button going down.
-		_anims.setLoopFlag(kButtonSlot, 1);
-		_anims.play(kButtonSlot, kButtonDownFrame, 1, 4, 1);
+		_vm->_anims.setLoopFlag(kButtonSlot, 1);
+		_vm->_anims.play(kButtonSlot, kButtonDownFrame, 1, 4, 1);
 		_waitingPos = 0;
-		_waitingStep = _script.flag(kNumberCalled) == 0 ? kStepPrint : kStepDeadStart;
+		_waitingStep = _vm->_script.flag(kNumberCalled) == 0 ? kStepPrint : kStepDeadStart;
 		break;
 
 	case kStepPrint:
 		if (_waitingPos <= kPrintWait)
 			break;
-		_anims.play(kMachineSlot, kPrintFirst, kPrintCount, kPrintRate, 1);
+		_vm->_anims.play(kMachineSlot, kPrintFirst, kPrintCount, kPrintRate, 1);
 		_waitingPos = 0;
 		_waitingStep = kStepTicket;
 		break;
@@ -534,10 +539,10 @@ void AlienEngine::stepWaitingMachine() {
 		speakWaiting(kLinePrinted);
 		// The whole point of the sequence: object 13's hotspot is registered
 		// on this flag, so the ticket becomes something that can be taken.
-		_script.setFlag(kTicketOut, 1);
+		_vm->_script.setFlag(kTicketOut, 1);
 		// The table is a program over the room's flags and is only run when
 		// something asks for it, so the rectangle appears with the ticket.
-		rebuildHotspots();
+		_vm->rebuildHotspots();
 		CursorMan.showMouse(true);
 		_waitingStep = kStepIdle;
 		break;
@@ -561,21 +566,21 @@ void AlienEngine::stepWaitingMachine() {
 		// The original grabs the screen here (GFX:sub_263ea over a buffer of
 		// its own, then CHARANIM:sub_14ba9) because it is about to reload the
 		// room under the player; the port's takeExit does that work itself.
-		_script.setFlag(kNumberCalled, 1);
-		_script.setFlag(kBenchAlien, 0);
-		_script.setFlag(kStandingAlien, 0);
-		_script.setFlag(kBenchLeft, 1);
-		_script.setFlag(kCalledReload, 1);
+		_vm->_script.setFlag(kNumberCalled, 1);
+		_vm->_script.setFlag(kBenchAlien, 0);
+		_vm->_script.setFlag(kStandingAlien, 0);
+		_vm->_script.setFlag(kBenchLeft, 1);
+		_vm->_script.setFlag(kCalledReload, 1);
 		_waitingStep = kStepIdle;
-		takeExit(kCallSubmode);
+		_vm->takeExit(kCallSubmode);
 		break;
 
 	case kStepDesk:
 		speakWaiting(kLineDesk);
 		// The third number is the second one taken back and stamped: an
 		// inv_replace in the original, and the only place item 47 comes from.
-		_inventory.remove(kTicketSecond);
-		_inventory.add(kTicketThird);
+		_vm->_inventory.remove(kTicketSecond);
+		_vm->_inventory.add(kTicketThird);
 		_waitingStep = kStepDeskDone;
 		break;
 
@@ -588,17 +593,17 @@ void AlienEngine::stepWaitingMachine() {
 
 	case kStepAlarm:
 		// [0xa4f4]: slot 10's frames left.
-		if (_anims.remaining(kAlarmSlot) != 0)
+		if (_vm->_anims.remaining(kAlarmSlot) != 0)
 			break;
-		walkTo(kAlarmX1, kAlarmY1, kAlarmFacing1);
-		_anims.play(kAlarmSlot, kAlarmFirst, kAlarmCount, kAlarmRate, 1);
+		_vm->walkTo(kAlarmX1, kAlarmY1, kAlarmFacing1);
+		_vm->_anims.play(kAlarmSlot, kAlarmFirst, kAlarmCount, kAlarmRate, 1);
 		_waitingStep = kStepAlarmLeg;
 		break;
 
 	case kStepAlarmLeg:
-		if (_anims.remaining(kAlarmSlot) != 0)
+		if (_vm->_anims.remaining(kAlarmSlot) != 0)
 			break;
-		walkTo(kAlarmX2, kAlarmY2, kAlarmFacing2);
+		_vm->walkTo(kAlarmX2, kAlarmY2, kAlarmFacing2);
 		_waitingPos = 0;
 		_waitingStep = kStepAlarmDone;
 		break;
@@ -608,12 +613,12 @@ void AlienEngine::stepWaitingMachine() {
 			break;
 		CursorMan.showMouse(true);
 		_waitingStep = kStepIdle;
-		debugC(1, kDebugRooms, "waiting: the alarm's aftermath is over at %d,%d", _ben.walkX(), _ben.walkY());
+		debugC(1, kDebugRooms, "waiting: the alarm's aftermath is over at %d,%d", _vm->_ben.walkX(), _vm->_ben.walkY());
 		break;
 
 	case kStepNotice:
-		_anims.play(kBoardSlot, 0, ARRAYSIZE(kBoardFrames), kBoardRate, kBoardMode, kBoardFrames);
-		_sound.queue(kChimeSample, kChimeRate, kChimeVolume, 0, 1);
+		_vm->_anims.play(kBoardSlot, 0, ARRAYSIZE(kBoardFrames), kBoardRate, kBoardMode, kBoardFrames);
+		_vm->_sound.queue(kChimeSample, kChimeRate, kChimeVolume, 0, 1);
 		_waitingPos = 0;
 		_waitingStep = kStepWaitMinute;
 		break;
@@ -629,7 +634,7 @@ void AlienEngine::stepWaitingMachine() {
 	case kStepToBoard:
 		if (_waitingPos <= kToBoardWait)
 			break;
-		walkTo(kBoardX, kBoardY, kBoardFacing);
+		_vm->walkTo(kBoardX, kBoardY, kBoardFacing);
 		_waitingPos = 0;
 		_waitingStep = kStepFigure;
 		break;
@@ -644,7 +649,7 @@ void AlienEngine::stepWaitingMachine() {
 	case kStepToDoor:
 		if (!waitingLineDone())
 			break;
-		walkTo(kDoorX, kDoorY, kDoorFacing);
+		_vm->walkTo(kDoorX, kDoorY, kDoorFacing);
 		_waitingPos = 0;
 		_waitingStep = kStepDoorOpen;
 		break;
@@ -652,22 +657,22 @@ void AlienEngine::stepWaitingMachine() {
 	case kStepDoorOpen:
 		if (_waitingPos <= kDoorWait)
 			break;
-		_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, 1);
-		_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanning, 1);
+		_vm->_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, 1);
+		_vm->_sound.queue(kDoorSample, kDoorSampleRate, kDoorVolume, kDoorPanning, 1);
 		_waitingStep = kStepEnter;
 		break;
 
 	case kStepEnter:
 		// [0xa4f0], slot 6's frames left.
-		if (_anims.remaining(kDoorSlot) != 0)
+		if (_vm->_anims.remaining(kDoorSlot) != 0)
 			break;
 		// The original wipes the screen here too (OBJ:sub_02f27); the port's
 		// room change does without it, the same as maze.cpp's.
-		_script.setFlag(kBeenInside, 1);
+		_vm->_script.setFlag(kBeenInside, 1);
 		_waitingStep = kStepIdle;
 		_waitingPos = 0;
 		CursorMan.showMouse(true);
-		takeExit(kJackExitSubmode);
+		_vm->takeExit(kJackExitSubmode);
 		break;
 
 	default:
@@ -681,14 +686,14 @@ void AlienEngine::stepWaitingMachine() {
  * checkExit() asks this before it takes an exit the arrival has fired, which
  * is the point the original's tick tail sees it: armed, and not yet taken.
  */
-bool AlienEngine::hijackWaitingExit(byte submode) {
-	if (_room != kWaitingRoom || submode != kWayOutSubmode || _waitingStep != kStepIdle)
+bool WaitingRoom::hijackExit(byte submode) {
+	if (_vm->_room != kWaitingRoom || submode != kWayOutSubmode || _waitingStep != kStepIdle)
 		return false;
-	if (_script.flag(kNotSummoned) != 0 || _script.flag(kBadge) != 1 ||
-		_script.flag(kBeenInside) != 0 || _script.flag(kClickedObj) != kWayOut)
+	if (_vm->_script.flag(kNotSummoned) != 0 || _vm->_script.flag(kBadge) != 1 ||
+		_vm->_script.flag(kBeenInside) != 0 || _vm->_script.flag(kClickedObj) != kWayOut)
 		return false;
 
-	_script.setFlag(kClickedObj, 0);
+	_vm->_script.setFlag(kClickedObj, 0);
 	CursorMan.showMouse(false);
 	_waitingStep = kStepNotice;
 	_waitingPos = 0;
@@ -698,18 +703,27 @@ bool AlienEngine::hijackWaitingExit(byte submode) {
 }
 
 /// 0x0e56: a walk that ends on the door to Jack's room.
-void AlienEngine::waitingArrival() {
+void WaitingRoom::waitingArrival() {
 	if (_waitingStep != kStepIdle)
 		return;
-	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+	if (_vm->_ben.isWalking() || _vm->_ben.isTurning() || !_vm->speechDone())
 		return;
-	if (_script.flag(kClickedObj) != kJackDoor)
+	if (_vm->_script.flag(kClickedObj) != kJackDoor)
 		return;
 
-	_script.setFlag(kClickedObj, 0);
-	const byte line = _script.flag(kBeenInside) == 1 ? kLineNotAgain : kLineNotYet;
+	_vm->_script.setFlag(kClickedObj, 0);
+	const byte line = _vm->_script.flag(kBeenInside) == 1 ? kLineNotAgain : kLineNotYet;
 	speakWaiting(line);
 	debugC(1, kDebugRooms, "waiting: the door to Jack's room, outcome 0x%02x", line);
+}
+
+void WaitingRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The ticket machine's button, whose lifted body is only the refusal, and
+	// the two customers waiting beside it, whose conversations are the room's
+	// machine as well.
+	if (!item)
+		armWaitingButton(obj, verb);
+	armWaitingCustomers(obj, verb, item);
 }
 
 } // End of namespace Alien

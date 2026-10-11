@@ -159,7 +159,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false),
 		_terminalStep(0), _hallAlienCount(0), _hallAlienWait(0), _hallAlienLast(1),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
-		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
+		_scannerArrest(false), _scannerStep(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false), _hippieHandOff(-1),
@@ -736,14 +736,11 @@ void AlienEngine::stepClock() {
 		// stepped with the conversation menu, further down.
 		stepLibrarySafe();
 
-		// And room 54's machine: the three ticket numbers, and the way in
-		// to Jack's room once his number is up (waiting.cpp).
-		stepWaitingMachine();
-
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives:
-		// room 60's boss, and room 58's conversation through the bars and the
-		// way out it ends in.
+		// room 54's ticket numbers and the way in to Jack's room once his is
+		// up, room 60's boss, and room 58's conversation through the bars and
+		// the way out it ends in.
 		for (Room *r : _rooms)
 			r->tickPair();
 

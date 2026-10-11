@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class WaitingRoom;
 	friend class JailRoom;
 
 public:
@@ -567,22 +568,6 @@ private:
 	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
 	void startScanner();
 	void stepScanner();
-
-	/// Room 54's call in to Jack's room: the way out through object 1, taken
-	/// over once his number is up, and the door's own refusal (waiting.cpp).
-	void startWaiting();
-	void playWaitingPose(uint slot, byte pose);
-	void waitingCustomerSays(byte code);
-	bool armWaitingCustomers(int obj, byte verb, byte item);
-	bool hijackWaitingExit(byte submode);
-	void waitingArrival();
-
-	/// Room 54's ticket machine, which is not simplified: the [0xa49f] machine
-	/// behind object 12 and the three numbers it gives out (waiting.cpp).
-	bool armWaitingButton(int obj, byte verb);
-	void stepWaitingMachine();
-	void speakWaiting(byte code);
-	bool waitingLineDone() const;
 
 	bool chatReplyOwed() const;
 
@@ -1206,13 +1191,6 @@ private:
 	/// [0xa49f] machine step that arrests him (scanner.cpp).
 	bool _scannerArrest;
 	byte _scannerStep;
-
-	/// Room 54's [0xa49f] machine: the ticket machine, and the number that is
-	/// finally called (waiting.cpp).
-	byte _waitingStep;
-
-	/// [0xa49c] as room 54 reads it, cleared where each of its steps starts.
-	uint16 _waitingPos;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
