@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class LibraryRoom;
 	friend class WaitingRoom;
 	friend class JailRoom;
 
@@ -499,6 +500,7 @@ private:
 	void yodleStoryWait();
 	void drawYodleWater(Graphics::Surface &dest) const;
 	bool dlgreqRunning() const;
+	bool roomHoldsCharacter() const;
 
 	/// The ladder between rooms 49 and 50, and the steam over room 50's
 	/// right half (steam.cpp).
@@ -653,14 +655,7 @@ private:
 	void showBar();
 	void stepChat();
 
-	bool armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY);
-	void stepLibrary();
-	void armLibrarySafe(int obj, byte item);
-	void enterLibrary(int room);
-	bool runLibraryBody(int obj, bool item);
-	void standClearOfSafe(byte obj, WalkTarget &target) const;
 	void caveWalkTarget(byte obj, WalkTarget &target);
-	void stepLibrarySafe();
 	void nextSpeech();
 	void stopSpeech();
 
@@ -923,13 +918,6 @@ private:
 	/// The conversation menu, and the room machine that is the port's first
 	/// caller of it (chat.cpp, library.cpp).
 	ChatMenu _chat;
-
-	/// Room 8's [0xa49f] machine: talking to the owl, and cracking the safe.
-	byte _libraryStep;
-
-	/// [0xa49c] as room 8 reads it: the free-running counter its safe steps
-	/// time themselves off, cleared where each of them starts.
-	uint16 _libraryPos;
 
 	/// [0x8d02] and [0x8d04]: where the cursor was when the hover last ran. The
 	/// conversation menu tests the cursor against its own bands from the room's

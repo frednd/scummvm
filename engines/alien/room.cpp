@@ -272,7 +272,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_mailboxStep = 0;
 	_mailboxPos = 0;
 	_townStep = 0;
-	_libraryStep = 0;
 	_sluggsStep = 0;
 	_sluggsPos = 0;
 	_sluggsLeft = 0;
@@ -284,6 +283,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_hippieAnswer = false;
 	_hippieHandOff = -1;
 	_hippieTalking = false;
+	for (Room *r : _rooms)
+		r->reset();
 	_chatPickNew = false;
 	_chat.close();
 	_barHidden = false;
@@ -362,10 +363,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// says belongs there -- the door left open, the shelf pushed aside, the item
 	// already taken -- and starts the slots the room opens with running
 	// (roomplate.cpp). The original calls it last, so it runs last here too.
-	// And room 8's, which its own overlay writes rather than the 10c9 unit:
-	// the safe it has been cracked, the shelf pushed off it, the padlock
-	// (library.cpp). It runs before the 10c9 pass, as the enter routine does.
-	enterLibrary(room);
+	// And the rooms' own, which their overlays write rather than the 10c9
+	// unit -- room 8's safe, cracked, the shelf pushed off it, the padlock
+	// (library.cpp). They run before the 10c9 pass, as the enter routine does.
+	for (Room *r : _rooms)
+		r->restorePlate(room);
 
 	openRoomPlate(room);
 

@@ -622,11 +622,12 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		// rather than by a flag (teleport.cpp).
 		shipWalkTarget(obj, rightButton || _heldItem, target);
 
-		// And room 8's open safe, where the port stands him aside to take
-		// what is on its shelf (library.cpp).
-		standClearOfSafe(obj, target);
 		// And room 40's hole, approached from whichever side he is on.
 		caveWalkTarget(obj, target);
+		// And the rooms' own (rooms/): room 8's open safe, where the port
+		// stands him aside to take what is on its shelf (library.cpp).
+		for (Room *r : _rooms)
+			r->walkTarget(obj, roomX, y, rightButton || _heldItem, target);
 
 		// OBJ:sub_07a0a: feet within a pixel of the approach point and already
 		// facing its way, a plain left click starts no walk at all -- the
@@ -761,23 +762,13 @@ void AlienEngine::finishAction() {
 	// guarded on a flag the body sets (lab.cpp).
 	armLab(spot.obj, item != Inventory::kNoItem);
 
-	// And room 8's safe, which is armed the same way and for the same reason:
-	// the machine is the room's, the ten frames it opens with are the body's.
-	armLibrarySafe(spot.obj, item);
+	// And the rooms' own (rooms/): room 8's safe, which is armed the same way
+	// and for the same reason.
+	for (Room *r : _rooms)
+		r->preAction(spot.obj, verb, item);
 
-	// Room 8's owl is answered by a machine of the room's own rather than by a
-	// script body, and its click must not reach the body: the lifted table has
-	// the owl's other arm without the guards that keep it off a talk
-	// (library.cpp).
-	if (armLibrary(spot.obj, verb, item != Inventory::kNoItem, anchorX, anchorY)) {
-		rebuildHotspots();
-		_hover = -1;
-		const Common::Point owl = g_system->getEventManager()->getMousePos();
-		updateHover(owl.x, owl.y);
-		return;
-	}
-
-	// And room 34's Sluggs, for the same reason: the talk on him is entry 3's
+	// Room 34's Sluggs is answered by a machine of the room's own rather than
+	// by a script body: the talk on him is entry 3's
 	// own, the lifted rows for the room are the two item uses, and the keys are
 	// handed over by the machine behind it (sluggs.cpp).
 	if (armSluggs(spot.obj, verb, item)) {
@@ -847,10 +838,6 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
-	// Four of room 8's bodies pick their animation slot from a scratch byte the
-	// lift could not follow, and two of them it dropped altogether: the safe's
-	// door and the two things on its shelf are run by the room instead
-	// (library.cpp). A body the room takes is not offered to the table.
 	// Room 21 puts its own file back before the bodies that speak out of it,
 	// which the lifted row would otherwise read out of a Yodle file (yodle.cpp).
 	yodleRoomScriptFor(spot.obj, verb, item);
@@ -869,12 +856,34 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
+	// And the rooms' own (rooms/), whose click must not reach the body either:
+	// room 8's owl, whose other arm the lifted table has without the guards
+	// that keep it off a talk (library.cpp).
+	for (Room *r : _rooms) {
+		if (r->takeAction(spot.obj, verb, item, anchorX, anchorY)) {
+			rebuildHotspots();
+			_hover = -1;
+			const Common::Point mouse = g_system->getEventManager()->getMousePos();
+			updateHover(mouse.x, mouse.y);
+			return;
+		}
+	}
+
 	// And the rooms' own (rooms/): room 58's LCD reads [0xa7ab] before the
 	// ring's row raises it (jail.cpp).
 	for (Room *r : _rooms)
 		r->beforeScript(spot.obj, verb, item);
 
-	const bool libraryHandled = runLibraryBody(spot.obj, item != Inventory::kNoItem);
+	// The rooms' own bodies (rooms/): four of room 8's pick their animation
+	// slot from a scratch byte the lift could not follow, and two of them it
+	// dropped altogether, so the safe's door and the two things on its shelf
+	// are run by the room instead (library.cpp).
+	bool roomReplaced = false, roomHandled = false;
+	for (Room *r : _rooms) {
+		const Room::Body b = r->body(spot.obj, verb, item, anchorX, anchorY);
+		roomReplaced = roomReplaced || b == Room::kBodyReplaced;
+		roomHandled = roomHandled || b != Room::kBodyNone;
+	}
 
 	// Room 11's television is answered the same way: the remote control's
 	// branches are the room's click dispatch and not script rows (living.cpp).
@@ -890,9 +899,9 @@ void AlienEngine::finishAction() {
 	// Room 40's item uses are the room's own dispatch too, and the table's
 	// three rows for them lost their guards (cave.cpp).
 	const bool caveHandled = armCave(spot.obj, item, anchorX, anchorY);
-	const bool ranScript = !libraryHandled && !shoreAxe && !caveHandled &&
+	const bool ranScript = !roomReplaced && !shoreAxe && !caveHandled &&
 						   _script.run(spot.obj, verb, item);
-	const bool handled = libraryHandled || livingHandled || shoreAxe || caveHandled || ranScript;
+	const bool handled = roomHandled || livingHandled || shoreAxe || caveHandled || ranScript;
 
 	// And the other half of that dispatch, which runs after the row rather than
 	// instead of it: the cassette going into a set that is already on.

@@ -139,7 +139,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_observatoryLook(false),
 		_observatoryBreaker(false), _observatoryStep(0), _observatoryPos(0),
 		_observatoryEncore(false), _stairsDescents(0), _restoring(false),
-		_libraryStep(0), _libraryPos(0),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
 		_cemeteryPos(0), _cemeteryZapPos(-1), _cemeteryCursorOwed(false), _cemeteryStep(0),
@@ -557,6 +556,14 @@ Common::Error AlienEngine::run() {
 	return Common::kNoError;
 }
 
+/// A room has the character to itself, in a machine of its own (rooms/).
+bool AlienEngine::roomHoldsCharacter() const {
+	for (const Room *r : _rooms)
+		if (r->holdsCharacter())
+			return true;
+	return false;
+}
+
 /**
  * [0xa4a1]: a conversation is currently running. The runner sets it as
  * it starts and clears it after the last line completes. Idle animations
@@ -731,16 +738,8 @@ void AlienEngine::stepClock() {
 		// runs the walkman-for-gameson trade behind it (hippie.cpp).
 		stepHippie();
 
-		// And room 8's safe, whose steps are timed off the same counter room 3's
-		// are (library.cpp). The owl's half of that machine is per frame and is
-		// stepped with the conversation menu, further down.
-		stepLibrarySafe();
 
-
-		// And the rooms' own machines (rooms/), in the order rooms.cpp gives:
-		// room 54's ticket numbers and the way in to Jack's room once his is
-		// up, room 60's boss, and room 58's conversation through the bars and
-		// the way out it ends in.
+		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
 			r->tickPair();
 
@@ -788,7 +787,8 @@ void AlienEngine::stepClock() {
 	// per tick pair: room 8's tick calls OBJ:sub_0a89c, sub_0a865 and
 	// sub_0acb9 unguarded, and its [0xa49f] machine sits in the same body.
 	stepChat();
-	stepLibrary();
+	for (Room *r : _rooms)
+		r->frame();
 
 	// The status line's fade runs off the frame, not off the animation gate.
 	stepLabelFade();
@@ -830,7 +830,7 @@ void AlienEngine::stepClock() {
 	// it back at the step that ends the machine, and the dialog unit holds
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
-	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !_libraryStep && !_labStep &&
+	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !roomHoldsCharacter() && !_labStep &&
 						!_sewerStep && !_mansionStep && !_basementStep && !_endingStep && !_openingStep &&
 						!dlgreqRunning());
 

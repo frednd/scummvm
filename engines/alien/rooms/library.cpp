@@ -22,6 +22,7 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
+#include "alien/rooms/library.h"
 #include "alien/detection.h"
 
 namespace Alien {
@@ -106,7 +107,7 @@ static const byte kStepSwing = 0x96;
 static const uint16 kListenWait = 0x28, kDialWait = 0x32, kDialAgainWait = 0x41,
 					kStandWait = 0x5a, kSwingWait = 0x23;
 
-// What the room's enter routine draws from the puzzle state (enterLibrary).
+// What the room's enter routine draws from the puzzle state (restorePlate).
 static const uint16 kShelfPushed = 0xa708;	///< the bookshelf is off the safe
 static const uint16 kSafeShut = 0xa709;		///< 0 once the safe has been cracked
 static const uint16 kPadlockOff = 0xa70b;	///< 0 once the key has taken it off
@@ -165,21 +166,25 @@ static const byte kSafeVolume = 0x40;
 static const int8 kSafePanning = 0x3e;
 static const uint16 kSafeDelay2 = 6;
 
-bool AlienEngine::armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY) {
-	if (_room != kLibraryRoom || item || obj != kOwl || verb != kVerbTalkTo)
+LibraryRoom::LibraryRoom(AlienEngine *vm) : Room(vm),
+		_libraryStep(0), _libraryPos(0) {
+}
+
+bool LibraryRoom::armLibrary(int obj, byte verb, bool item, int anchorX, int anchorY) {
+	if (_vm->_room != kLibraryRoom || item || obj != kOwl || verb != kVerbTalkTo)
 		return false;
 
 	// The talk arm only exists while the owl is awake, and the hotspot pass
 	// retires it once all three conversations have been had ([0x33ad] != 3 is
 	// the guard on the arm that carries the verb).
-	if (_script.flag(kOwlAwake) != 1)
+	if (_vm->_script.flag(kOwlAwake) != 1)
 		return false;
 
-	const byte topic = _script.flag(kOwlTopic);
+	const byte topic = _vm->_script.flag(kOwlTopic);
 	if (topic >= kOwlTopicCount)
 		return false;
 
-	queueOutcome(_tal, kOwlOpening[topic], anchorX, anchorY);
+	_vm->queueOutcome(_vm->_tal, kOwlOpening[topic], anchorX, anchorY);
 	CursorMan.showMouse(false);
 	_libraryStep = kStepOpen;
 
@@ -188,28 +193,28 @@ bool AlienEngine::armLibrary(int obj, byte verb, bool item, int anchorX, int anc
 	return true;
 }
 
-void AlienEngine::stepLibrary() {
-	if (_room != kLibraryRoom || !_libraryStep)
+void LibraryRoom::frame() {
+	if (_vm->_room != kLibraryRoom || !_libraryStep)
 		return;
 
 	switch (_libraryStep) {
 	case kStepOpen:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			return;
 
 		CursorMan.showMouse(true);
-		openChat(_script.flag(kOwlTopic));
+		_vm->openChat(_vm->_script.flag(kOwlTopic));
 
 		// The counter stops at three, and the third conversation is the last
 		// one the owl's rectangle offers.
-		if (_script.flag(kOwlTopic) < kOwlTopicCount)
-			_script.setFlag(kOwlTopic, _script.flag(kOwlTopic) + 1);
+		if (_vm->_script.flag(kOwlTopic) < kOwlTopicCount)
+			_vm->_script.setFlag(kOwlTopic, _vm->_script.flag(kOwlTopic) + 1);
 
 		_libraryStep = kStepChat;
 		break;
 
 	case kStepChat:
-		if (!_chat.isFinished())
+		if (!_vm->_chat.isFinished())
 			return;
 
 		CursorMan.showMouse(false);
@@ -217,13 +222,13 @@ void AlienEngine::stepLibrary() {
 		break;
 
 	case kStepReply:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			return;
 
-		_anims.play(kOwlSlot, 1, kOwlFrames, kOwlRate, 1);
-		setTextColor(kOwlInk[0], kOwlInk[1], kOwlInk[2]);
-		uploadTextColor();
-		queueOutcome(_tal, kOwlReply, kOwlAnchorX, kOwlAnchorY, false);
+		_vm->_anims.play(kOwlSlot, 1, kOwlFrames, kOwlRate, 1);
+		_vm->setTextColor(kOwlInk[0], kOwlInk[1], kOwlInk[2]);
+		_vm->uploadTextColor();
+		_vm->queueOutcome(_vm->_tal, kOwlReply, kOwlAnchorX, kOwlAnchorY, false);
 		CursorMan.showMouse(true);
 		_libraryStep = kStepColor;
 
@@ -233,16 +238,16 @@ void AlienEngine::stepLibrary() {
 	case kStepColor:
 		// White is what the original resets to before every line; the port has
 		// no such reset, so the room takes its colour back itself.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			return;
 
-		setTextColor(0x3f, 0x3f, 0x3f);
-		uploadTextColor();
+		_vm->setTextColor(0x3f, 0x3f, 0x3f);
+		_vm->uploadTextColor();
 		_libraryStep = 0;
 		break;
 
 	default:
-		// The safe's states run on the tick pair, in stepLibrarySafe: they are
+		// The safe's states run on the tick pair, in tickPair: they are
 		// the same [0xa49f] the owl's are, so they come through here too.
 		break;
 	}
@@ -274,23 +279,23 @@ void AlienEngine::stepLibrary() {
  * The whole of LIB_STET's last stretch is what takes that picture away again:
  * frame 54 is a four-by-two speck, so the slot ends holding nothing anyone can see.
  */
-void AlienEngine::armLibrarySafe(int obj, byte item) {
-	if (_room != kLibraryRoom || obj != kSafe || item != kStethoscope)
+void LibraryRoom::armLibrarySafe(int obj, byte item) {
+	if (_vm->_room != kLibraryRoom || obj != kSafe || item != kStethoscope)
 		return;
 
 	_libraryStep = kStepListen;
 	_libraryPos = 0;
 	// The four plays below all land on this one slot, so naming it once here
 	// hands the whole sequence to showCharacter() at the end of it.
-	hideCharacter(kStetSlot);
+	_vm->hideCharacter(kStetSlot);
 	CursorMan.showMouse(false);
 
 	debugC(1, kDebugRooms, "library: the stethoscope goes on the safe, step 0x%02x",
 		   kStepListen);
 }
 
-void AlienEngine::stepLibrarySafe() {
-	if (_room != kLibraryRoom)
+void LibraryRoom::tickPair() {
+	if (_vm->_room != kLibraryRoom)
 		return;
 
 	// [0xa49c], which LOGIC:sub_11f79 advances on every tick pair whether or
@@ -301,7 +306,7 @@ void AlienEngine::stepLibrarySafe() {
 	case kStepListen:
 		if (_libraryPos <= kListenWait)
 			break;
-		_anims.play(kStetSlot, 10, 16, 3, 2);
+		_vm->_anims.play(kStetSlot, 10, 16, 3, 2);
 		_libraryStep = kStepDialOnce;
 		_libraryPos = 0;
 		break;
@@ -309,7 +314,7 @@ void AlienEngine::stepLibrarySafe() {
 	case kStepDialOnce:
 		if (_libraryPos <= kDialWait)
 			break;
-		_anims.play(kStetSlot, 26, 10, 5, 2);
+		_vm->_anims.play(kStetSlot, 26, 10, 5, 2);
 		_libraryStep = kStepDialTwice;
 		_libraryPos = 0;
 		break;
@@ -317,7 +322,7 @@ void AlienEngine::stepLibrarySafe() {
 	case kStepDialTwice:
 		if (_libraryPos <= kDialAgainWait)
 			break;
-		_anims.play(kStetSlot, 26, 10, 5, 2);
+		_vm->_anims.play(kStetSlot, 26, 10, 5, 2);
 		_libraryStep = kStepStandUp;
 		_libraryPos = 0;
 		break;
@@ -325,7 +330,7 @@ void AlienEngine::stepLibrarySafe() {
 	case kStepStandUp:
 		if (_libraryPos <= kStandWait)
 			break;
-		_anims.play(kStetSlot, 36, 20, 4, 2);
+		_vm->_anims.play(kStetSlot, 36, 20, 4, 2);
 		_libraryStep = kStepCracked;
 		_libraryPos = 0;
 		break;
@@ -333,12 +338,12 @@ void AlienEngine::stepLibrarySafe() {
 	case kStepCracked:
 		// This one waits on the play, not on the clock: he is his own again two
 		// frames before it ends, which is where the walker takes the pose back.
-		if (_anims.remaining(kStetSlot) != 2)
+		if (_vm->_anims.remaining(kStetSlot) != 2)
 			break;
 		// Mode 2 comes back to the frame it started on when it runs out, so
 		// the slot would go on drawing him crouched at the safe with the walker
 		// already standing: it goes down with him.
-		showCharacter();
+		_vm->showCharacter();
 		_libraryStep = kStepSwing;
 		_libraryPos = 0;
 		break;
@@ -346,13 +351,13 @@ void AlienEngine::stepLibrarySafe() {
 	case kStepSwing: {
 		if (_libraryPos <= kSwingWait)
 			break;
-		_anims.play(kSafeSlot, 1, 7, 1, 1);
-		_sound.queue(kSafeSample1, kSafeRate1, kSafeVolume, kSafePanning, 0);
-		_sound.queue(kSafeSample2, kSafeRate2, kSafeVolume, kSafePanning, kSafeDelay2);
+		_vm->_anims.play(kSafeSlot, 1, 7, 1, 1);
+		_vm->_sound.queue(kSafeSample1, kSafeRate1, kSafeVolume, kSafePanning, 0);
+		_vm->_sound.queue(kSafeSample2, kSafeRate2, kSafeVolume, kSafePanning, kSafeDelay2);
 
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kSafeLine, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kSafeLine, anchorX, anchorY);
 		CursorMan.showMouse(true);
 		_libraryStep = 0;
 
@@ -399,31 +404,31 @@ void AlienEngine::stepLibrarySafe() {
  * origin. The safe's second stamp is dropped: page A already holds the columns
  * it draws, and the original writes it twice only because it keeps two pages.
  */
-void AlienEngine::enterLibrary(int room) {
+void LibraryRoom::restorePlate(int room) {
 	if (room != kLibraryRoom)
 		return;
 
 	// [0xa5ef]: which of the four safe banks is the one whose open door also
 	// shows what is still on the shelf inside.
-	const uint bank = safeBank(_script.flag(kSafeItem1) == 1,
-							   _script.flag(kSafeItem2) == 1);
+	const uint bank = safeBank(_vm->_script.flag(kSafeItem1) == 1,
+							   _vm->_script.flag(kSafeItem2) == 1);
 
-	if (_script.flag(kShelfPushed) == 1) {
-		_anims.stamp(kShelfPageA, 1, _background);
-		_anims.stamp(kShelfPageB, 1, _background, DL1Sprite::kNoClipBottom,
-					 kScreenWidth);
+	if (_vm->_script.flag(kShelfPushed) == 1) {
+		_vm->_anims.stamp(kShelfPageA, 1, _vm->_background);
+		_vm->_anims.stamp(kShelfPageB, 1, _vm->_background, DL1Sprite::kNoClipBottom,
+					 AlienEngine::kScreenWidth);
 	}
 
-	if (_script.flag(kSafeShut) == 0)
-		_anims.stamp(bank, kSafeOpenFrame, _background);
+	if (_vm->_script.flag(kSafeShut) == 0)
+		_vm->_anims.stamp(bank, kSafeOpenFrame, _vm->_background);
 
-	if (_script.flag(kShelfPushed) == 0 && _script.flag(kPadlockOff) == 0)
-		_anims.stamp(kPadlockSlot, 1, _background, DL1Sprite::kNoClipBottom,
-					 kScreenWidth);
+	if (_vm->_script.flag(kShelfPushed) == 0 && _vm->_script.flag(kPadlockOff) == 0)
+		_vm->_anims.stamp(kPadlockSlot, 1, _vm->_background, DL1Sprite::kNoClipBottom,
+					 AlienEngine::kScreenWidth);
 
 	debugC(1, kDebugPlate, "library: shelf %d, safe %d on bank %u, padlock off %d",
-		   _script.flag(kShelfPushed), _script.flag(kSafeShut), bank,
-		   _script.flag(kPadlockOff));
+		   _vm->_script.flag(kShelfPushed), _vm->_script.flag(kSafeShut), bank,
+		   _vm->_script.flag(kPadlockOff));
 }
 
 /**
@@ -457,10 +462,10 @@ void AlienEngine::enterLibrary(int room) {
  */
 static const int kShelfSideX = 312, kShelfSideY = 140, kShelfSideFacing = 4;
 
-void AlienEngine::standClearOfSafe(byte obj, WalkTarget &target) const {
-	if (_room != kLibraryRoom || (obj != kSafeShelfPair && obj != kSafeShelfSingle))
+void LibraryRoom::standClearOfSafe(byte obj, WalkTarget &target) const {
+	if (_vm->_room != kLibraryRoom || (obj != kSafeShelfPair && obj != kSafeShelfSingle))
 		return;
-	if (_walk.mask().blocked(kShelfSideX, kShelfSideY))
+	if (_vm->_walk.mask().blocked(kShelfSideX, kShelfSideY))
 		return;
 
 	target.x = kShelfSideX;
@@ -468,44 +473,44 @@ void AlienEngine::standClearOfSafe(byte obj, WalkTarget &target) const {
 	target.facing = kShelfSideFacing;
 }
 
-bool AlienEngine::runLibraryBody(int obj, bool item) {
+bool LibraryRoom::runLibraryBody(int obj, bool item) {
 	// The whole block sits under the plain-verb half of the dispatch
 	// ([0xa956] == 0x4e25), so an item in hand never reaches it.
-	if (_room != kLibraryRoom || item)
+	if (_vm->_room != kLibraryRoom || item)
 		return false;
 
-	const bool first = _script.flag(kSafeItem1) == 1;
-	const bool second = _script.flag(kSafeItem2) == 1;
+	const bool first = _vm->_script.flag(kSafeItem1) == 1;
+	const bool second = _vm->_script.flag(kSafeItem2) == 1;
 
 	switch (obj) {
 	case kSafeDoorOpen:
-		_anims.play(safeBank(first, second), 1, kSafeFrames, 1, 1);
-		_sound.queue(kSafeSample1, kSafeRate1, kSafeVolume, kSafePanning, 0);
-		_sound.queue(kSafeSample2, kSafeRate2, kSafeVolume, kSafePanning, kSafeDelay2);
-		_script.setFlag(kSafeShut, 0);
+		_vm->_anims.play(safeBank(first, second), 1, kSafeFrames, 1, 1);
+		_vm->_sound.queue(kSafeSample1, kSafeRate1, kSafeVolume, kSafePanning, 0);
+		_vm->_sound.queue(kSafeSample2, kSafeRate2, kSafeVolume, kSafePanning, kSafeDelay2);
+		_vm->_script.setFlag(kSafeShut, 0);
 		break;
 
 	case kSafeDoorShut:
 		// Mode 3 runs the range backward from the frame it is given, so this is
 		// the same seven frames the other way about.
-		_anims.play(safeBank(first, second), kSafeOpenFrame, kSafeFrames, 1, 3);
-		_sound.queue(kShutSample, kShutRate, kSafeVolume, kSafePanning, kShutDelay);
-		_script.setFlag(kSafeShut, 1);
+		_vm->_anims.play(safeBank(first, second), kSafeOpenFrame, kSafeFrames, 1, 3);
+		_vm->_sound.queue(kShutSample, kShutRate, kSafeVolume, kSafePanning, kShutDelay);
+		_vm->_script.setFlag(kSafeShut, 1);
 		break;
 
 	case kSafeShelfPair:
 		// The frame that is left is the one the *other* bank holds: taking this
 		// pair off the shelf leaves either the single item or an empty safe.
-		_anims.play(safeBank(false, second), kSafeOpenFrame, 1, 0, 1);
-		_inventory.add(kShelfItem1);
-		_inventory.add(kShelfItem2);
-		_script.setFlag(kSafeItem1, 0);
+		_vm->_anims.play(safeBank(false, second), kSafeOpenFrame, 1, 0, 1);
+		_vm->_inventory.add(kShelfItem1);
+		_vm->_inventory.add(kShelfItem2);
+		_vm->_script.setFlag(kSafeItem1, 0);
 		break;
 
 	case kSafeShelfSingle:
-		_anims.play(safeBank(first, false), kSafeOpenFrame, 1, 0, 1);
-		_inventory.add(kShelfItem3);
-		_script.setFlag(kSafeItem2, 0);
+		_vm->_anims.play(safeBank(first, false), kSafeOpenFrame, 1, 0, 1);
+		_vm->_inventory.add(kShelfItem3);
+		_vm->_script.setFlag(kSafeItem2, 0);
 		break;
 
 	default:
@@ -513,9 +518,27 @@ bool AlienEngine::runLibraryBody(int obj, bool item) {
 	}
 
 	debugC(1, kDebugRooms, "library: object %d answered by the room, safe %d, "
-		   "shelf %d/%d", obj, _script.flag(kSafeShut), _script.flag(kSafeItem1),
-		   _script.flag(kSafeItem2));
+		   "shelf %d/%d", obj, _vm->_script.flag(kSafeShut), _vm->_script.flag(kSafeItem1),
+		   _vm->_script.flag(kSafeItem2));
 	return true;
+}
+
+void LibraryRoom::walkTarget(byte obj, int roomX, int y, bool action, WalkTarget &target) {
+	standClearOfSafe(obj, target);
+}
+
+void LibraryRoom::preAction(int obj, byte verb, byte item) {
+	// Armed ahead of the body for the same reason the lab's are: the machine
+	// is the room's, the ten frames the safe opens with are the body's.
+	armLibrarySafe(obj, item);
+}
+
+bool LibraryRoom::takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	return armLibrary(obj, verb, item != Inventory::kNoItem, anchorX, anchorY);
+}
+
+Room::Body LibraryRoom::body(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	return runLibraryBody(obj, item != Inventory::kNoItem) ? kBodyReplaced : kBodyNone;
 }
 
 } // End of namespace Alien
