@@ -39,6 +39,7 @@ MODULE_OBJS = \
 	scale.o \
 	script.o \
 	sfx.o \
+	studio.o \
 	sweeps.o \
 	tables.o \
 	tal.o \
@@ -81,7 +82,6 @@ MODULE_OBJS = \
 	rooms/sluggs.o \
 	rooms/steam.o \
 	rooms/store.o \
-	rooms/studio.o \
 	rooms/teleport.o \
 	rooms/telescope.o \
 	rooms/terminal.o \
