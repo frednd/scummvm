@@ -127,9 +127,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false), _rnd("alien"),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
-		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0), _cliffStep(0), _cliffClimb(0), _cliffPos(0), _cliffX(0), _cliffY(0),
-		_cliffFacing(Walker::kFacingKeep), _cliffResumeX(0), _cliffResumeY(0),
-		_cliffResumeFacing(Walker::kFacingKeep),
+		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
 		_lastSubmode(0),
 		_queueCount(0), _queueNext(0), _speechTal(nullptr), _labelSlot(0), _labelFading(false), _labelHold(0), _walkReported(false),
 		_dialogId(1), _lastEvent(0), _speechCustom(false), _speechBen(true), _liftPending(false),
@@ -634,10 +632,6 @@ void AlienEngine::stepClock() {
 		stepObservatoryStairs();
 		stepSewer();
 		stepBasement();
-
-		// And room 31's climb between the foot of the cliff and the ledge on
-		// top of it, which is what arms the two doors up there (cliff.cpp).
-		stepCliff();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)

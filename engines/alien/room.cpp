@@ -270,9 +270,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_basementStep = 0;
 	_basementClimbing = false;
 	_basementWalkOff = false;
-	_cliffStep = 0;
-	_cliffClimb = 0;
-	_cliffPos = 0;
 	for (Room *r : _rooms)
 		r->reset();
 	_chatPickNew = false;

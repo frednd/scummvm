@@ -615,13 +615,10 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 			debugC(1, kDebugRooms, "exit: object %u arms submode %u at %d,%d facing %u",
 				   obj, target.submode, target.x, target.y, target.facing);
 		}
-		// Room 31 answers a click off the ledge he is standing on with a climb,
-		// and may send the walk to the rock rather than to the point the
-		// geometry named (cliff.cpp).
-		armCliff(roomX, y, target);
 		// And room 40's hole, approached from whichever side he is on.
 		caveWalkTarget(obj, target);
-		// And the rooms' own (rooms/): room 8's open safe, where the port
+		// And the rooms' own (rooms/): room 31, which answers a click off the
+		// ledge he is standing on with a climb (cliff.cpp), room 8's open safe, where the port
 		// stands him aside to take what is on its shelf (library.cpp), and
 		// room 56's chamber, which has two approach points, chosen by the
 		// button rather than by a flag (teleport.cpp).

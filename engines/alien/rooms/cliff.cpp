@@ -24,6 +24,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/cliff.h"
 
 namespace Alien {
 
@@ -168,21 +169,27 @@ static bool cliffInside(const CliffRect &r, int x, int y) {
 	return x >= r.x1 && y >= r.y1 && x <= r.x2 && y <= r.y2;
 }
 
+CliffRoom::CliffRoom(AlienEngine *vm) : Room(vm),
+		_cliffClimb(0), _cliffStep(0), _cliffPos(0), _cliffX(0), _cliffY(0),
+		_cliffFacing(Walker::kFacingKeep), _cliffResumeX(0), _cliffResumeY(0),
+		_cliffResumeFacing(Walker::kFacingKeep) {
+}
+
 /**
  * Entry 0's tail: whether this click is a climb, and where it walks to first.
  *
  * Called from the click path with the target the room's geometry has already
  * produced, which is what the original has in walk_pos by the time it asks.
  */
-void AlienEngine::armCliff(int clickX, int clickY, WalkTarget &target) {
-	if (_room != kCliffRoom || _cliffStep)
+void CliffRoom::armCliff(int clickX, int clickY, WalkTarget &target) {
+	if (_vm->_room != kCliffRoom || _cliffStep)
 		return;
 
 	// Whichever way this click goes, it replaces the one before it: entry 0
 	// clears [0xa738] at the top of both arms.
 	_cliffClimb = 0;
 
-	if (_script.flag(kCliffTop) == 1) {
+	if (_vm->_script.flag(kCliffTop) == 1) {
 		bool over = false;
 		for (uint i = 0; i < ARRAYSIZE(kDownRects) && !over; i++)
 			over = cliffInside(kDownRects[i], clickX, clickY);
@@ -212,9 +219,9 @@ void AlienEngine::armCliff(int clickX, int clickY, WalkTarget &target) {
 	_cliffResumeY = target.y;
 	_cliffResumeFacing = target.facing;
 	// Where the original keeps the same three (0x0250), which a save holds.
-	setStateWord(kCliffResumeX, target.x);
-	setStateWord(kCliffResumeY, target.y);
-	_script.setFlag(kCliffResumeFacing, target.facing);
+	_vm->setStateWord(kCliffResumeX, target.x);
+	_vm->setStateWord(kCliffResumeY, target.y);
+	_vm->_script.setFlag(kCliffResumeFacing, target.facing);
 	target.x = kClimbX;
 	target.y = kClimbY;
 	target.facing = kClimbFacing;
@@ -225,8 +232,8 @@ void AlienEngine::armCliff(int clickX, int clickY, WalkTarget &target) {
 		   _cliffResumeX, _cliffResumeY, _cliffResumeFacing);
 }
 
-void AlienEngine::stepCliff() {
-	if (_room != kCliffRoom)
+void CliffRoom::tickPair() {
+	if (_vm->_room != kCliffRoom)
 		return;
 
 	// [0xa49c], which LOGIC advances on every tick pair whether or not a machine
@@ -235,11 +242,11 @@ void AlienEngine::stepCliff() {
 
 	if (_cliffClimb && !_cliffStep) {
 		// 0x06b9: the arrival, which is the shared test written out again.
-		if (_ben.isWalking() || _ben.isTurning())
+		if (_vm->_ben.isWalking() || _vm->_ben.isTurning())
 			return;
-		if (ABS(_ben.walkX() - _cliffX) > 3 || ABS(_ben.walkY() - _cliffY) > 3)
+		if (ABS(_vm->_ben.walkX() - _cliffX) > 3 || ABS(_vm->_ben.walkY() - _cliffY) > 3)
 			return;
-		if (_ben.facing() != _cliffFacing)
+		if (_vm->_ben.facing() != _cliffFacing)
 			return;
 
 		_cliffStep = _cliffClimb == kClimbDown ? kStepDown : kStepUp;
@@ -255,36 +262,36 @@ void AlienEngine::stepCliff() {
 		// 0x0763: the pause before he goes over, and then the climb itself.
 		if (_cliffPos <= kDownWait)
 			break;
-		playCharacterAnim(kDownSlot, 1, kDownFrames, kClimbRate, kClimbMode);
-		_script.setFlag(kCliffTop, 0);
+		_vm->playCharacterAnim(kDownSlot, 1, kDownFrames, kClimbRate, kClimbMode);
+		_vm->_script.setFlag(kCliffTop, 0);
 		_cliffStep = kStepDownEnd;
 		_cliffPos = 0;
 		break;
 
 	case kStepDownEnd:
 		// 0x0792: down, and the room is the near, bright, full-size one again.
-		if (_anims.remaining(kDownSlot) != kClimbCue)
+		if (_vm->_anims.remaining(kDownSlot) != kClimbCue)
 			break;
 		CursorMan.showMouse(true);
-		showCharacter();
-		_ben.setScale(kFootScale);
-		_script.setFlag(kCliffLedge, 0);
-		_ben.placeSprite(kFootX, kFootY, kFootFacing);
+		_vm->showCharacter();
+		_vm->_ben.setScale(kFootScale);
+		_vm->_script.setFlag(kCliffLedge, 0);
+		_vm->_ben.placeSprite(kFootX, kFootY, kFootFacing);
 		_cliffStep = 0;
-		_dirty = true;
+		_vm->_dirty = true;
 		debugC(1, kDebugRooms, "cliff: down at the foot of the path");
 		break;
 
 	case kStepUp:
 		// 0x07ca
-		playCharacterAnim(kUpSlot, 1, kUpFrames, kClimbRate, kClimbMode);
+		_vm->playCharacterAnim(kUpSlot, 1, kUpFrames, kClimbRate, kClimbMode);
 		_cliffStep = kStepUpPlaying;
 		_cliffPos = 0;
 		break;
 
 	case kStepUpPlaying:
 		// 0x07ed
-		if (_anims.remaining(kUpSlot) != kClimbCue)
+		if (_vm->_anims.remaining(kUpSlot) != kClimbCue)
 			break;
 		_cliffStep = kStepUpEnd;
 		_cliffPos = 0;
@@ -296,18 +303,18 @@ void AlienEngine::stepCliff() {
 		if (_cliffPos <= kUpWait)
 			break;
 		CursorMan.showMouse(true);
-		showCharacter();
-		_ben.setScale(kLedgeScale);
-		_script.setFlag(kCliffTop, 1);
-		_script.setFlag(kCliffLedge, 1);
-		_ben.placeSprite(kLedgeX, kLedgeY, kLedgeFacing);
+		_vm->showCharacter();
+		_vm->_ben.setScale(kLedgeScale);
+		_vm->_script.setFlag(kCliffTop, 1);
+		_vm->_script.setFlag(kCliffLedge, 1);
+		_vm->_ben.placeSprite(kLedgeX, kLedgeY, kLedgeFacing);
 		_cliffStep = 0;
-		_dirty = true;
+		_vm->_dirty = true;
 
 		// The room's hotspots and its geometry both read [0xa737], so the ledge
 		// has to be built again now that he is standing on it.
-		rebuildHotspots();
-		walkTo(_cliffResumeX, _cliffResumeY, _cliffResumeFacing);
+		_vm->rebuildHotspots();
+		_vm->walkTo(_cliffResumeX, _cliffResumeY, _cliffResumeFacing);
 		debugC(1, kDebugRooms, "cliff: up on the ledge, walking on to %d,%d",
 			   _cliffResumeX, _cliffResumeY);
 		break;
@@ -315,6 +322,19 @@ void AlienEngine::stepCliff() {
 	default:
 		break;
 	}
+}
+
+/// The shared room open drops whatever the last visit left standing.
+void CliffRoom::reset() {
+	_cliffStep = 0;
+	_cliffClimb = 0;
+	_cliffPos = 0;
+}
+
+/// A click off the ledge he is standing on is a climb, and may send the walk
+/// to the rock rather than to the point the geometry named.
+void CliffRoom::walkTarget(byte obj, int roomX, int y, bool action, WalkTarget &target) {
+	armCliff(roomX, y, target);
 }
 
 } // End of namespace Alien

@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class CliffRoom;
 	friend class LivingRoom;
 	friend class MailboxRoom;
 	friend class SluggsRoom;
@@ -414,10 +415,6 @@ private:
 	void enterBasement(int room);
 	void stepBasement();
 	void takeBasementBattery(int obj);
-
-	/// Room 31's two ledges and the climb between them (cliff.cpp).
-	void armCliff(int clickX, int clickY, WalkTarget &target);
-	void stepCliff();
 
 	/// The room's hotspot table, rebuilt from the puzzle state -- and from the
 	/// cell, in the two mazes. Defaults to the room the engine is in; loadRoom
@@ -841,19 +838,6 @@ private:
 
 	/// Room 13's, which is the same byte in the original (basement.cpp).
 	byte _basementStep;
-
-	/// Room 31's, and the [0xa738] beside it that says which climb an arrival
-	/// is going to start (cliff.cpp). [0xa49c] is kept per room, the way the
-	/// lab and the library keep theirs.
-	byte _cliffStep;
-	byte _cliffClimb;
-	uint16 _cliffPos;
-
-	/// The point the climb waits for him at, and -- for the way up -- the point
-	/// the click that started it had asked for, the original's [0xa732],
-	/// [0xa734] and [0xa736].
-	int _cliffX, _cliffY, _cliffFacing;
-	int _cliffResumeX, _cliffResumeY, _cliffResumeFacing;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

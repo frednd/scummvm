@@ -92,7 +92,7 @@ bool AlienEngine::playIdle() const {
 	const bool chatWaiting = _chat.isActive() && (!_chat.isLive() || chatReplyOwed());
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
-		   !_armed && !_cliffClimb && !_cliffStep &&
+		   !_armed &&
 		   _scrollVel == 0 && !scrollWouldPan() && !roomBusy() &&
 		   !chatWaiting &&
 		   CursorMan.isVisible();
