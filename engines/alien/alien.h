@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class LiftRoom;
 	friend class ObservatoryRoom;
 	friend class SewerRoom;
 	friend class BasementRoom;
@@ -379,12 +380,6 @@ private:
 	void armLab(int obj, bool item);
 	void stepLab();
 	void stepLabHole();
-
-	/// The lab computer and the lift car it parks (lift.cpp).
-	bool armLiftCall(int obj, int anchorX, int anchorY);
-	void stepLiftCall();
-	void playLiftPanel();
-	bool liftWipe(const Graphics::Surface &to);
 
 	void stepHallway();
 	void playPeephole();
@@ -771,7 +766,6 @@ private:
 	byte _bedroomLiftStep;
 	/// Room 27's [0xa49f]: 3 while the manhole climb has the character (sewer.cpp).
 	byte _mansionStep;
-	bool _liftPending;			///< the computer's line is up; the panel follows it
 
 	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
 	bool _restoring;			///< syncGame is reloading the room, not an entry through a door

@@ -28,6 +28,7 @@
 #include "alien/detection.h"
 #include "alien/play.h"
 #include "alien/resources.h"
+#include "alien/rooms/lift.h"
 
 namespace Alien {
 
@@ -170,6 +171,10 @@ static byte liftBoxAt(int x, int y, byte carFloor) {
 	return 0;
 }
 
+LiftRoom::LiftRoom(AlienEngine *vm) : Room(vm),
+		_liftPending(false) {
+}
+
 /**
  * The computer has been clicked: raise the line that opens the panel.
  *
@@ -177,14 +182,14 @@ static byte liftBoxAt(int x, int y, byte carFloor) {
  * table because the table has no body for it at all -- room 3 obj 1 under the
  * password note is a bare set_action_handled(1).
  */
-bool AlienEngine::armLiftCall(int obj, int anchorX, int anchorY) {
-	if (_room != kLabRoom || obj != kComputer)
+bool LiftRoom::armLiftCall(int obj, int anchorX, int anchorY) {
+	if (_vm->_room != kLabRoom || obj != kComputer)
 		return false;
 
-	if (_script.flag(kTerminalUsed) != 1) {
+	if (_vm->_script.flag(kTerminalUsed) != 1) {
 		// 0x003f: the drive is empty, so the computer has nothing to say beyond
 		// the one line. No panel, and the cursor stays.
-		queueOutcome(_tal, kLineNoDisk, anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kLineNoDisk, anchorX, anchorY);
 		debugC(1, kDebugRooms, "lift: the drive is empty, outcome 0x%02x", kLineNoDisk);
 		return true;
 	}
@@ -193,14 +198,14 @@ bool AlienEngine::armLiftCall(int obj, int anchorX, int anchorY) {
 	// 0x2f87), so the panel wants the password note in hand -- or to have run
 	// once before ([0xa701]). Without either the computer says its one line
 	// (0x003f) and nothing more: no panel, and the cursor stays.
-	if (!_inventory.has(kPasswordNote) && _script.flag(kPanelSeen) != 1) {
-		queueOutcome(_tal, kLineNoNote, anchorX, anchorY);
+	if (!_vm->_inventory.has(kPasswordNote) && _vm->_script.flag(kPanelSeen) != 1) {
+		_vm->queueOutcome(_vm->_tal, kLineNoNote, anchorX, anchorY);
 		debugC(1, kDebugRooms, "lift: no password, outcome 0x%02x", kLineNoNote);
 		return true;
 	}
 
-	const byte code = _script.flag(kPanelSeen) == 1 ? kLineAgain : kLineFirst;
-	queueOutcome(_tal, code, anchorX, anchorY);
+	const byte code = _vm->_script.flag(kPanelSeen) == 1 ? kLineAgain : kLineFirst;
+	_vm->queueOutcome(_vm->_tal, code, anchorX, anchorY);
 
 	// 0x0038: the cursor goes away for the length of the line, and the panel
 	// takes the screen when it comes down.
@@ -217,12 +222,12 @@ bool AlienEngine::armLiftCall(int obj, int anchorX, int anchorY) {
  * cleared" word, the same one room 15 answers the front door with -- against
  * [0xacf6], the id the last queue_event was raised with.
  */
-void AlienEngine::stepLiftCall() {
-	if (!_liftPending || _room != kLabRoom)
+void LiftRoom::stepLiftCall() {
+	if (!_liftPending || _vm->_room != kLabRoom)
 		return;
-	if (_lastEvent != kLineFirst && _lastEvent != kLineAgain)
+	if (_vm->_lastEvent != kLineFirst && _vm->_lastEvent != kLineAgain)
 		return;
-	if (!speechDone())
+	if (!_vm->speechDone())
 		return;
 
 	_liftPending = false;
@@ -241,7 +246,7 @@ void AlienEngine::stepLiftCall() {
  * Whatever is on the screen now stays under the tiles still to come. Returns
  * false if the player quit, which the caller treats as the quit box.
  */
-bool AlienEngine::liftWipe(const Graphics::Surface &to) {
+bool LiftRoom::liftWipe(const Graphics::Surface &to) {
 	bool skip = false;
 	for (int row = 0; row < kWipeRows; row++) {
 		for (int col = 0; col < kWipeCols; col++) {
@@ -251,8 +256,8 @@ bool AlienEngine::liftWipe(const Graphics::Surface &to) {
 				continue;
 
 			// OBJ:obj_set_active, a wait for the next master tick.
-			present();
-			sleep(kTickMillis);
+			_vm->present();
+			_vm->sleep(kTickMillis);
 
 			Common::Event event;
 			while (g_system->getEventManager()->pollEvent(event)) {
@@ -263,7 +268,7 @@ bool AlienEngine::liftWipe(const Graphics::Surface &to) {
 					event.type == Common::EVENT_RBUTTONDOWN)
 					skip = true;
 			}
-			if (shouldQuit())
+			if (_vm->shouldQuit())
 				return false;
 		}
 	}
@@ -271,8 +276,8 @@ bool AlienEngine::liftWipe(const Graphics::Surface &to) {
 	return true;
 }
 
-void AlienEngine::playLiftPanel() {
-	const int room = _room;
+void LiftRoom::playLiftPanel() {
+	const int room = _vm->_room;
 
 	Graphics::Surface plate;
 	byte palette[256 * 3];
@@ -283,38 +288,38 @@ void AlienEngine::playLiftPanel() {
 		return;
 	}
 
-	stopSpeech();
+	_vm->stopSpeech();
 
 	// [0xa604] is the flag a menu raises to say it owns the input and [0x7924]
 	// turns the room's own tick off; the port's modal screens carry both as
 	// _cutscene. The pointer stays, because unlike a scene this one is clicked.
-	_cutscene = true;
-	_background.free();
-	_background = plate;
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
+	_vm->_cutscene = true;
+	_vm->_background.free();
+	_vm->_background = plate;
+	_vm->_roomWidth = AlienEngine::kScreenWidth;
+	_vm->_scrollX = 0;
 
 	// A room clips its sprites at the playfield's bottom, because the status bar
 	// sits under it. The console owns the whole screen, and the shaft frames run
 	// down to y 183: clipped at 0x9f the plate's parked car is never painted over
 	// and stays under the rising one.
-	const int clip = _clipBottom;
-	_clipBottom = _screen.h - 1;
-	memcpy(_palette, palette, sizeof(_palette));
+	const int clip = _vm->_clipBottom;
+	_vm->_clipBottom = _vm->_screen.h - 1;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 	CursorMan.showMouse(true);
 
 	const char *bootBanks[] = { kBootBank };
-	_anims.loadBanks(bootBanks, ARRAYSIZE(bootBanks));
-	_anims.play(kShaftSlot, 1, 0xf, 1, kForward);
+	_vm->_anims.loadBanks(bootBanks, ARRAYSIZE(bootBanks));
+	_vm->_anims.play(kShaftSlot, 1, 0xf, 1, kForward);
 
-	playMusicSlot(3);
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	_dirty = true;
+	_vm->playMusicSlot(3);
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
+	_vm->_dirty = true;
 
 	debugC(1, kDebugRooms, "lift: the console opens, the car is %s",
-		   _script.flag(kCarFloor) == 0 ? "at the bedroom" : "in the basement");
+		   _vm->_script.flag(kCarFloor) == 0 ? "at the bedroom" : "in the basement");
 
-	uint32 last = millis();
+	uint32 last = _vm->millis();
 	uint32 tick = 0;
 
 	bool booting = true;
@@ -329,7 +334,7 @@ void AlienEngine::playLiftPanel() {
 	uint scripted = 0;		///< passes a scripted run has spent with nothing to click
 	uint shot = 0;			///< frames still to be written by the debug channel
 
-	while (!shouldQuit() && !_quit && !quit) {
+	while (!_vm->shouldQuit() && !_vm->_quit && !quit) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 			const bool click = event.type == Common::EVENT_LBUTTONDOWN ||
@@ -354,11 +359,11 @@ void AlienEngine::playLiftPanel() {
 				think = 1;
 				continue;
 			}
-			if (indicator && _anims.isBusy(kShaftSlot)) {
-				if (_script.flag(kCarFloor) == 0)
-					_anims.play(kShaftSlot, 0xe, 1, 0, kForward);
+			if (indicator && _vm->_anims.isBusy(kShaftSlot)) {
+				if (_vm->_script.flag(kCarFloor) == 0)
+					_vm->_anims.play(kShaftSlot, 0xe, 1, 0, kForward);
 				else
-					_anims.takeDown(kShaftSlot);
+					_vm->_anims.takeDown(kShaftSlot);
 				continue;
 			}
 
@@ -368,12 +373,12 @@ void AlienEngine::playLiftPanel() {
 				continue;
 
 			const byte hit = liftBoxAt(event.mouse.x, event.mouse.y,
-									   _script.flag(kCarFloor));
+									   _vm->_script.flag(kCarFloor));
 			if (hit) {
 				// 0x02fa: the press flash, and then the console takes its time.
 				pending = hit;
 				think = kThinkTicks;
-				_anims.play(kPanelSlot, 4, 5, 4, kForward);
+				_vm->_anims.play(kPanelSlot, 4, 5, 4, kForward);
 			}
 		}
 
@@ -383,58 +388,58 @@ void AlienEngine::playLiftPanel() {
 		// stepped over; anything else is left for the room the panel hands back
 		// to. A script that never clicks the quit box would hang a headless run,
 		// so the panel leaves on its own after kScriptedGiveUp.
-		if (_playActive && !booting && !pending && think == 0 && hold == 0) {
-			while (_playIndex < _play.commands().size()) {
-				const PlayCommand &cmd = _play.commands()[_playIndex];
+		if (_vm->_playActive && !booting && !pending && think == 0 && hold == 0) {
+			while (_vm->_playIndex < _vm->_play.commands().size()) {
+				const PlayCommand &cmd = _vm->_play.commands()[_vm->_playIndex];
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
-					_playIndex++;
+					_vm->_playIndex++;
 					continue;
 				}
 				if (cmd.type != PlayCommand::kClick &&
 					cmd.type != PlayCommand::kRightClick)
 					break;
 
-				_playIndex++;
+				_vm->_playIndex++;
 				scripted = 0;
-				const byte hit = liftBoxAt(cmd.a, cmd.b, _script.flag(kCarFloor));
+				const byte hit = liftBoxAt(cmd.a, cmd.b, _vm->_script.flag(kCarFloor));
 				debugC(1, kDebugRooms, "lift: play: %u: click %d,%d -> case %u",
 					   cmd.sourceLine, cmd.a, cmd.b, hit);
 				if (hit) {
 					pending = hit;
 					think = kThinkTicks;
-					_anims.play(kPanelSlot, 4, 5, 4, kForward);
+					_vm->_anims.play(kPanelSlot, 4, 5, 4, kForward);
 				}
 				break;
 			}
 
 			if (++scripted > kScriptedGiveUp) {
 				warning("lift: the script left the panel open; closing it");
-				playLeftOpen("the lab computer");
+				_vm->playLeftOpen("the lab computer");
 				quit = true;
 			}
 		}
 
-		const uint32 now = millis();
+		const uint32 now = _vm->millis();
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
-			sceneClockTick();
+			_vm->sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;
 
 			// Everything below is on the animation tick, which is the clock
 			// [0xa5f8] gates and the one both counters are measured in.
-			_anims.tick();
+			_vm->_anims.tick();
 
 			if (booting) {
 				// The boot text is typed out: each frame of 64INIT is a few
 				// characters, and the console never repaints, so they build up
 				// on the page. The port's redraw starts from the plate every
 				// frame, so each one is stamped into it.
-				_anims.draw(_background, 0, _screen.h - 1);
+				_vm->_anims.draw(_vm->_background, 0, _vm->_screen.h - 1);
 				// 0x0173: the boot animation loops for as long as it runs.
-				_anims.relaunch(kShaftSlot);
+				_vm->_anims.relaunch(kShaftSlot);
 				if (--bootLeft > 0) {
 					if ((bootLeft & 0xf) == 0)
 						shot = 1;
@@ -445,7 +450,7 @@ void AlienEngine::playLiftPanel() {
 				// colour and wiped off...
 				booting = false;
 				Graphics::Surface cleared;
-				cleared.copyFrom(_screen);
+				cleared.copyFrom(_vm->_screen);
 				cleared.fillRect(Common::Rect(kClearX, kClearY, kClearX + kClearW,
 											  kClearY + kClearH), kClearColour);
 				if (!liftWipe(cleared))
@@ -456,29 +461,29 @@ void AlienEngine::playLiftPanel() {
 				Graphics::Surface panel;
 				byte panelPalette[256 * 3];
 				if (loadGamePCX(Common::Path(kPanelPlate), panel, panelPalette)) {
-					_background.free();
-					_background = panel;
-					memcpy(_palette, panelPalette, sizeof(_palette));
-					g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+					_vm->_background.free();
+					_vm->_background = panel;
+					memcpy(_vm->_palette, panelPalette, sizeof(_vm->_palette));
+					g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
 				} else {
 					warning("lift: could not load %s", kPanelPlate);
 				}
 
 				const char *panelBanks[] = { kShaftBank, kPanelBank, kCursorBank };
-				_anims.loadBanks(panelBanks, ARRAYSIZE(panelBanks));
-				_anims.play(kCursorSlot, 1, 4, 9, kForward);
-				_anims.play(kPanelSlot, 1, 1, 0, kForward);
+				_vm->_anims.loadBanks(panelBanks, ARRAYSIZE(panelBanks));
+				_vm->_anims.play(kCursorSlot, 1, 4, 9, kForward);
+				_vm->_anims.play(kPanelSlot, 1, 1, 0, kForward);
 
 				// 0x0243: a car already parked here is drawn at the top of the
 				// shaft rather than played there.
-				if (_script.flag(kCarFloor) == 0)
-					_anims.play(kShaftSlot, 0xe, 1, 0, kForward);
+				if (_vm->_script.flag(kCarFloor) == 0)
+					_vm->_anims.play(kShaftSlot, 0xe, 1, 0, kForward);
 
 				// 0x046e: the first pass of the console is wiped in over the
 				// cleared screen, which redraw() has to be kept from showing.
-				redraw();
+				_vm->redraw();
 				Graphics::Surface console;
-				console.copyFrom(_screen);
+				console.copyFrom(_vm->_screen);
 				g_system->copyRectToScreen(cleared.getPixels(), cleared.pitch, 0, 0,
 										   cleared.w, cleared.h);
 				if (!quit && !liftWipe(console))
@@ -493,8 +498,8 @@ void AlienEngine::playLiftPanel() {
 			// 0x02a2: the spinner loops while the console thinks, the prompt
 			// blinks for as long as it is up.
 			if (think > 0)
-				_anims.relaunch(kPanelSlot);
-			_anims.relaunch(kCursorSlot);
+				_vm->_anims.relaunch(kPanelSlot);
+			_vm->_anims.relaunch(kCursorSlot);
 
 			if (think > 0)
 				think--;
@@ -506,25 +511,25 @@ void AlienEngine::playLiftPanel() {
 				case kCaseUp:
 					// 0x03be: the car rises, and this is the write the whole
 					// closet depends on.
-					_anims.play(kShaftSlot, 1, 0xe, 7, kForward);
-					_script.setFlag(kCarFloor, 0);
-					_anims.play(kPanelSlot, 2, 1, 0, kForward);
+					_vm->_anims.play(kShaftSlot, 1, 0xe, 7, kForward);
+					_vm->_script.setFlag(kCarFloor, 0);
+					_vm->_anims.play(kPanelSlot, 2, 1, 0, kForward);
 					indicator = true;
 					debugC(1, kDebugRooms, "lift: the car comes up, [0xa700] = 0");
 					break;
 
 				case kCaseDown:
 					// 0x03e7: the same fourteen frames backwards.
-					_anims.play(kShaftSlot, 0xe, 0xf, 7, kBackward);
-					_script.setFlag(kCarFloor, 1);
-					_anims.play(kPanelSlot, 2, 1, 0, kForward);
+					_vm->_anims.play(kShaftSlot, 0xe, 0xf, 7, kBackward);
+					_vm->_script.setFlag(kCarFloor, 1);
+					_vm->_anims.play(kPanelSlot, 2, 1, 0, kForward);
 					indicator = true;
 					debugC(1, kDebugRooms, "lift: the car goes down, [0xa700] = 1");
 					break;
 
 				case kCaseRefuse:
 					// 0x0410: the car is already on that floor.
-					_anims.play(kPanelSlot, 3, 1, 0, kForward);
+					_vm->_anims.play(kPanelSlot, 3, 1, 0, kForward);
 					hold = kRefuseTicks;
 					restore = true;
 					debugC(1, kDebugRooms, "lift: refused, the car is already there");
@@ -544,56 +549,63 @@ void AlienEngine::playLiftPanel() {
 			// 0x0433 and 0x0450: the indicator goes back to its rest frame, once
 			// the refusal's hold has run out and once the car has stopped.
 			if (hold == 0 && restore) {
-				_anims.play(kPanelSlot, 1, 1, 0, kForward);
+				_vm->_anims.play(kPanelSlot, 1, 1, 0, kForward);
 				restore = false;
 			}
 			// The ride itself is worth a frame a tick when the channel is at
 			// level 3: it is the only way to see the car move headless.
-			if (_anims.isBusy(kShaftSlot))
+			if (_vm->_anims.isBusy(kShaftSlot))
 				shot = 1;
 
-			if (indicator && !_anims.isBusy(kShaftSlot)) {
-				_anims.play(kPanelSlot, 1, 1, 0, kForward);
+			if (indicator && !_vm->_anims.isBusy(kShaftSlot)) {
+				_vm->_anims.play(kPanelSlot, 1, 1, 0, kForward);
 				indicator = false;
 			}
 
-			_dirty = true;
+			_vm->_dirty = true;
 		}
 
-		if (_dirty)
-			redraw();
+		if (_vm->_dirty)
+			_vm->redraw();
 
 		// Level 4 writes one frame where the screen has just changed -- the
 		// boot every sixteen ticks, the console opening and each case -- which
 		// is the only way to look at the panel from a headless run.
 		if (shot && debugChannelSet(4, kDebugRooms)) {
-			dumpScreen(Common::String::format("lift-%u.png", tick));
+			_vm->dumpScreen(Common::String::format("lift-%u.png", tick));
 			shot = 0;
 		}
 
-		present();
-		sleep(10);
+		_vm->present();
+		_vm->sleep(10);
 	}
 
 	// 0x0486: the panel hands the input back, and room 3's entry 3 marks it seen
 	// before it leaves by submode 0x6f -- which the chain routes back to room 3,
 	// so the lab is reloaded exactly as a scene's room is.
-	stopMusic();
-	_cutscene = false;
-	_clipBottom = clip;
-	_script.setFlag(kPanelSeen, 1);
-	_script.setFlag(kPanelReturn, 1);
+	_vm->stopMusic();
+	_vm->_cutscene = false;
+	_vm->_clipBottom = clip;
+	_vm->_script.setFlag(kPanelSeen, 1);
+	_vm->_script.setFlag(kPanelReturn, 1);
 
 	debugC(1, kDebugRooms, "lift: the console closes, the car is %s",
-		   _script.flag(kCarFloor) == 0 ? "at the bedroom" : "in the basement");
+		   _vm->_script.flag(kCarFloor) == 0 ? "at the bedroom" : "in the basement");
 
 	// Room 3's open reads [0xa6d2]: it stands Ben back at 117,52 and
 	// gives him his line.
-	if (room > 0 && loadRoom(room))
-		_pendingCutscenes = false;
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	if (room > 0 && _vm->loadRoom(room))
+		_vm->_pendingCutscenes = false;
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
 	CursorMan.showMouse(true);
-	_dirty = true;
+	_vm->_dirty = true;
+}
+
+/// The computer is answered by a hook of its own: the original's body for it
+/// is overlay code and not a script row, and it speaks its own line, so it
+/// runs past the table's queue rather than before it.
+void LiftRoom::afterQueue(int obj, int anchorX, int anchorY) {
+	armLiftCall(obj, anchorX, anchorY);
 }
 
 } // End of namespace Alien

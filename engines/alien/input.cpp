@@ -816,12 +816,11 @@ void AlienEngine::finishAction() {
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
 
-	// Room 3's computer is answered by a hook of its own for the same reason
-	// room 7's light switch is: the original's body for it is overlay code and
-	// not a script row, and it speaks its own line, so it runs past the table's
-	// queue rather than before it (lift.cpp).
-	if (_script.queuedEvent() == RoomScript::kNoEvent)
-		armLiftCall(spot.obj, anchorX, anchorY);
+	// The rooms whose own line runs past the table's queue rather than before
+	// it, when the table queued none: room 3's computer (lift.cpp).
+	for (Room *r : _rooms)
+		if (_script.queuedEvent() == RoomScript::kNoEvent)
+			r->afterQueue(spot.obj, anchorX, anchorY);
 
 	// A combination no room owns gets the shared refusal, and either way the hand
 	// is empty once the click is spent.
