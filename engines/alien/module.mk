@@ -8,6 +8,7 @@ MODULE_OBJS = \
 	charanim.o \
 	chat.o \
 	clock.o \
+	console.o \
 	cutsceneplay.o \
 	cutscenes.o \
 	dl1.o \
