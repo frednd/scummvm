@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/sluggs.h"
 
 namespace Alien {
 
@@ -153,6 +154,11 @@ static const byte kStepGiven = 6;		///< "There you go."
 static const byte kStepDone = 7;
 static const byte kStepLine = 0x15;		///< every other conversation ends here
 
+SluggsRoom::SluggsRoom(AlienEngine *vm) : Room(vm),
+		_sluggsSpeaking(false), _sluggsStep(0), _sluggsPos(0), _sluggsLine(0),
+		_sluggsSpeaker(0), _sluggsLeft(0), _sluggsTalking(false) {
+}
+
 /**
  * MIDAS:sub_19a34, the room's own two poses.
  *
@@ -161,19 +167,19 @@ static const byte kStepLine = 0x15;		///< every other conversation ends here
  * talking loop repeats while the pose says so, and the fifty frames of state 5
  * run once because it does not.
  */
-void AlienEngine::sluggsPose(byte pose) {
+void SluggsRoom::sluggsPose(byte pose) {
 	// A port addition (anim.h's setHold()): whatever the talk cycle's frame
 	// list ends on, and the one tick pair between a finished play and the
 	// next pose this function issues, never go blank on screen.
-	_anims.setHold(kSluggsSlot, true);
+	_vm->_anims.setHold(kSluggsSlot, true);
 
 	if (pose == kPoseTalk) {
-		_anims.setLoopFlag(kSluggsSlot, 1);
-		_anims.play(kSluggsSlot, 0, ARRAYSIZE(kTalkFrames), kTalkRate, kLoopMode,
+		_vm->_anims.setLoopFlag(kSluggsSlot, 1);
+		_vm->_anims.play(kSluggsSlot, 0, ARRAYSIZE(kTalkFrames), kTalkRate, kLoopMode,
 					kTalkFrames);
 	} else {
-		_anims.setLoopFlag(kSluggsSlot, 0);
-		_anims.play(kSluggsSlot, kIdleFrame, 1, kIdleRate, kPoseMode);
+		_vm->_anims.setLoopFlag(kSluggsSlot, 0);
+		_vm->_anims.play(kSluggsSlot, kIdleFrame, 1, kIdleRate, kPoseMode);
 	}
 
 	debugC(3, kDebugRooms, "sluggs: pose %u", pose);
@@ -187,7 +193,7 @@ void AlienEngine::sluggsPose(byte pose) {
  * conversation, which is what [0xad40] counting down past the last line does in
  * the original.
  */
-void AlienEngine::sluggsSpeak() {
+void SluggsRoom::sluggsSpeak() {
 	if (!_sluggsLeft) {
 		_sluggsSpeaking = false;
 		return;
@@ -195,9 +201,9 @@ void AlienEngine::sluggsSpeak() {
 
 	const bool sluggs = _sluggsSpeaker == 0;
 	const byte *ink = sluggs ? kSluggsInk : kBenInk;
-	setTextColor(ink[0], ink[1], ink[2]);
-	uploadTextColor();
-	queueOutcome(_tal, _sluggsLine, sluggs ? kSluggsX : kBenX,
+	_vm->setTextColor(ink[0], ink[1], ink[2]);
+	_vm->uploadTextColor();
+	_vm->queueOutcome(_vm->_tal, _sluggsLine, sluggs ? kSluggsX : kBenX,
 				 sluggs ? kSluggsY : kBenY, !sluggs);
 
 	// DLGREQ:sub_0c384's own half of it: handler 0x22 starts the talking loop
@@ -217,7 +223,7 @@ void AlienEngine::sluggsSpeak() {
 }
 
 /// DLGREQ:sub_0c4d1: set the run up, and speak the first line of it.
-void AlienEngine::sluggsTalk(byte speaker, byte line, byte count) {
+void SluggsRoom::sluggsTalk(byte speaker, byte line, byte count) {
 	_sluggsSpeaker = speaker;
 	_sluggsLine = line;
 	_sluggsLeft = count;
@@ -233,8 +239,8 @@ void AlienEngine::sluggsTalk(byte speaker, byte line, byte count) {
  * the lifted rows for room 34 are the item-use pair and neither of them wants
  * a bare talk.
  */
-bool AlienEngine::armSluggs(int obj, byte verb, byte item) {
-	if (_room != kSluggsRoom || obj != kSluggs)
+bool SluggsRoom::armSluggs(int obj, byte verb, byte item) {
+	if (_vm->_room != kSluggsRoom || obj != kSluggs)
 		return false;
 
 	// Entry 3's item half (0x0033), which the lift sees as two rows that say
@@ -248,13 +254,13 @@ bool AlienEngine::armSluggs(int obj, byte verb, byte item) {
 		return true;
 	}
 	if (item == kOfferItem) {
-		const byte asked = MIN<byte>(_script.flag(kOffered), 1);
-		hideBar();
+		const byte asked = MIN<byte>(_vm->_script.flag(kOffered), 1);
+		_vm->hideBar();
 		sluggsTalk(0, kOfferLine[asked], kOfferCount[asked]);
 		_sluggsStep = kStepLine;
 		_sluggsPos = 0;
 		if (asked < 1)
-			_script.setFlag(kOffered, asked + 1);
+			_vm->_script.setFlag(kOffered, asked + 1);
 		debugC(1, kDebugRooms, "sluggs: item %u offered, exchange %u", item, asked);
 		return true;
 	}
@@ -265,22 +271,22 @@ bool AlienEngine::armSluggs(int obj, byte verb, byte item) {
 	// The rectangle is only registered while he is out there, but a click that
 	// was already in flight when the last conversation ended would still reach
 	// this.
-	if (_script.flag(kSluggsHere) != 1)
+	if (_vm->_script.flag(kSluggsHere) != 1)
 		return false;
 
-	const byte stage = MIN<byte>(_script.flag(kStage), kStageCount);
+	const byte stage = MIN<byte>(_vm->_script.flag(kStage), kStageCount);
 
 	// 0x0109: the keys are a machine, the other three are spoken from here.
 	// Every one of them slides the bar off first (OBJ:sub_02f27); the keys'
 	// does it in the machine's first state, the same tick.
-	hideBar();
+	_vm->hideBar();
 	if (stage == 0) {
 		_sluggsStep = kStepKeys;
 		_sluggsPos = 0;
 		CursorMan.showMouse(false);
 	} else {
 		if (stage == kStageCount)
-			_script.setFlag(kSluggsLeaving, 1);
+			_vm->_script.setFlag(kSluggsLeaving, 1);
 		sluggsTalk(1, kTalkLine[stage], kTalkCount[stage]);
 		_sluggsStep = kStepLine;
 		_sluggsPos = 0;
@@ -288,7 +294,7 @@ bool AlienEngine::armSluggs(int obj, byte verb, byte item) {
 
 	// 0x01ab: and the counter moves on, stopping at the last conversation.
 	if (stage < kStageCount)
-		_script.setFlag(kStage, stage + 1);
+		_vm->_script.setFlag(kStage, stage + 1);
 
 	debugC(1, kDebugRooms, "sluggs: conversation %u, step 0x%02x", stage, _sluggsStep);
 	return true;
@@ -301,27 +307,27 @@ bool AlienEngine::armSluggs(int obj, byte verb, byte item) {
  * PAL_ANIM is Sluggs himself -- without it the room would open with his
  * rectangle and nobody in it.
  */
-void AlienEngine::enterSluggs(int room) {
-	if (room != kSluggsRoom || _script.flag(kSluggsHere) != 1)
+void SluggsRoom::enter(int room) {
+	if (room != kSluggsRoom || _vm->_script.flag(kSluggsHere) != 1)
 		return;
 	sluggsPose(kPoseIdle);
 }
 
 /// The room's [0xa49f] machine, and the pass the conversation makes beside it.
-void AlienEngine::stepSluggs() {
-	if (_room != kSluggsRoom || !_sluggsStep)
+void SluggsRoom::tickPair() {
+	if (_vm->_room != kSluggsRoom || !_sluggsStep)
 		return;
 
 	// [0xad1b], the frame a line comes down: the talking loop stops with it
 	// (0x06c3). The port has no such pulse, so the flag the line was started
 	// with stands in for it, as the store's does.
-	if (_sluggsTalking && speechDone()) {
+	if (_sluggsTalking && _vm->speechDone()) {
 		_sluggsTalking = false;
 		sluggsPose(kPoseIdle);
 	}
 
 	// A conversation keeps itself going: one line per line that came down.
-	if (_sluggsSpeaking && speechDone())
+	if (_sluggsSpeaking && _vm->speechDone())
 		sluggsSpeak();
 
 	// [0xa49c], which LOGIC advances whether or not a machine is reading it.
@@ -337,7 +343,7 @@ void AlienEngine::stepSluggs() {
 
 	case kStepHandOver:
 		// 0x05b8: and when they are over, the cursor stays away for the rest.
-		if (_sluggsSpeaking || !speechDone())
+		if (_sluggsSpeaking || !_vm->speechDone())
 			break;
 		CursorMan.showMouse(false);
 		_sluggsStep = kStepFetch;
@@ -346,16 +352,16 @@ void AlienEngine::stepSluggs() {
 
 	case kStepFetch:
 		// 0x05da: the keys themselves, and the fifty frames he finds them in.
-		_inventory.add(kKeys);
+		_vm->_inventory.add(kKeys);
 		// [0xa52b] = 0xc8 at 0x05ef: any value but the talking pose, so that
 		// the tick leaves this play alone rather than repeating it.
-		_anims.setLoopFlag(kSluggsSlot, 0);
-		_anims.play(kSluggsSlot, 0, ARRAYSIZE(kKeyFrames), kKeyRate, kKeyMode,
+		_vm->_anims.setLoopFlag(kSluggsSlot, 0);
+		_vm->_anims.play(kSluggsSlot, 0, ARRAYSIZE(kKeyFrames), kKeyRate, kKeyMode,
 					kKeyFrames);
 		_sluggsStep = kStepGiven;
 		_sluggsPos = 0;
 		debugC(1, kDebugItems, "sluggs: hands over item %u (%s)", kKeys,
-			   _inventory.name(kKeys).c_str());
+			   _vm->_inventory.name(kKeys).c_str());
 		break;
 
 	case kStepGiven:
@@ -371,21 +377,40 @@ void AlienEngine::stepSluggs() {
 	case kStepLine:
 		// 0x0648 and 0x066a, which are the same state twice over: the cursor
 		// comes back once the last line has come down.
-		if (_sluggsSpeaking || !speechDone())
+		if (_sluggsSpeaking || !_vm->speechDone())
 			break;
 		_sluggsStep = 0;
-		setTextColor(0x3f, 0x3f, 0x3f);
-		uploadTextColor();
+		_vm->setTextColor(0x3f, 0x3f, 0x3f);
+		_vm->uploadTextColor();
 		CursorMan.showMouse(true);
 		// OBJ:sub_030f4 at 0x0665 and 0x068c: and the bar glides back up. A
 		// line that never took it away (the keys held out) leaves it be.
-		showBar();
+		_vm->showBar();
 		debugC(1, kDebugRooms, "sluggs: the conversation is over");
 		break;
 
 	default:
 		break;
 	}
+}
+
+/// The shared room open drops whatever the last visit left standing.
+void SluggsRoom::reset() {
+	_sluggsStep = 0;
+	_sluggsPos = 0;
+	_sluggsLeft = 0;
+	_sluggsSpeaking = false;
+	_sluggsTalking = false;
+}
+
+/// The talk on him is entry 3's own, the lifted rows for the room are the two
+/// item uses, and the keys are handed over by the machine behind it.
+bool SluggsRoom::takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	if (!armSluggs(obj, verb, item))
+		return false;
+	if (item)
+		_vm->holdItem(Inventory::kNoItem);
+	return true;
 }
 
 } // End of namespace Alien

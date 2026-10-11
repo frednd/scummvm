@@ -766,20 +766,6 @@ void AlienEngine::finishAction() {
 	for (Room *r : _rooms)
 		r->preAction(spot.obj, verb, item);
 
-	// Room 34's Sluggs is answered by a machine of the room's own rather than
-	// by a script body: the talk on him is entry 3's
-	// own, the lifted rows for the room are the two item uses, and the keys are
-	// handed over by the machine behind it (sluggs.cpp).
-	if (armSluggs(spot.obj, verb, item)) {
-		if (item)
-			holdItem(Inventory::kNoItem);
-		rebuildHotspots();
-		_hover = -1;
-		const Common::Point road = g_system->getEventManager()->getMousePos();
-		updateHover(road.x, road.y);
-		return;
-	}
-
 	// And room 19's fuse-panel cover, for the same reason: the lifted pair for
 	// it has the branch that shuts the cover and not the one that opens it, so
 	// the table on its own could only ever shut a cover nothing opened
@@ -798,14 +784,10 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryLook(spot.obj, verb);
 
-	// And the rooms' own (rooms/), whose click must not reach the body either:
-	// room 8's owl, whose other arm the lifted table has without the guards
-	// that keep it off a talk (library.cpp), room 23's hippie, whose talk and
-	// walkman both end in the conversation menu (hippie.cpp), and room 53's
-	// maintenance man and room 57's loudspeaker, whose lifted rows keep the
-	// guards but drop the calls that are the bodies (corridor.cpp), and room
-	// 22's phone, whose dial and the teleporter it fires are the room's own
-	// machine (teleport.cpp), and room 21's Yodle (yodle.cpp).
+	// And the rooms' own (rooms/): a click a room answers with a machine of
+	// its own -- the owl, Sluggs, the hippie, the maintenance man, the phone,
+	// Yodle -- must not reach the body. The lifted rows for those keep their
+	// guards but drop the calls that are the real bodies.
 	for (Room *r : _rooms) {
 		if (r->takeAction(spot.obj, verb, item, anchorX, anchorY)) {
 			rebuildHotspots();

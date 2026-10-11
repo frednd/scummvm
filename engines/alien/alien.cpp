@@ -137,8 +137,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_observatoryLook(false),
 		_observatoryBreaker(false), _observatoryStep(0), _observatoryPos(0),
 		_observatoryEncore(false), _stairsDescents(0), _restoring(false),
-		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
-		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -551,7 +549,7 @@ bool AlienEngine::dlgreqRunning() const {
 	for (const Room *r : _rooms)
 		if (r->conversationRunning())
 			return true;
-	return _sluggsSpeaking || _endingStep;
+	return _endingStep;
 }
 
 uint32 AlienEngine::masterTick() const {
@@ -651,11 +649,6 @@ void AlienEngine::stepClock() {
 		// (mailbox.cpp).
 		stepMailbox();
 		stepTown();
-
-		// And room 34's, which is the conversation that hands over the
-		// observatory keys -- the one source the tables have none of
-		// (sluggs.cpp).
-		stepSluggs();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)

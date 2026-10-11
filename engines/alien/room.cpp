@@ -277,11 +277,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_mailboxStep = 0;
 	_mailboxPos = 0;
 	_townStep = 0;
-	_sluggsStep = 0;
-	_sluggsPos = 0;
-	_sluggsLeft = 0;
-	_sluggsSpeaking = false;
-	_sluggsTalking = false;
 	for (Room *r : _rooms)
 		r->reset();
 	_chatPickNew = false;
@@ -386,8 +381,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// up -- the far end of [0x33bc] (mailbox.cpp).
 	enterTown(room);
 
-	// And room 34's, which puts Sluggs out on the road (sluggs.cpp).
-	enterSluggs(room);
+	// And the rooms' own: room 34's, which puts Sluggs out on the road
+	// (sluggs.cpp).
+	for (Room *r : _rooms)
+		r->enter(room);
 
 	// The rectangles the room registers, by running entry 1 of its overlay as
 	// Which ones exist depends on the puzzle

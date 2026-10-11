@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class SluggsRoom;
 	friend class CemeteryRoom;
 	friend class TelescopeRoom;
 	friend class MazeRoom;
@@ -451,15 +452,6 @@ private:
 	void stepMailbox();
 	void enterTown(int room);
 	void stepTown();
-
-	/// Room 34's Sluggs, the one hand that gives out the observatory keys
-	/// (sluggs.cpp).
-	bool armSluggs(int obj, byte verb, byte item);
-	void enterSluggs(int room);
-	void stepSluggs();
-	void sluggsTalk(byte speaker, byte line, byte count);
-	void sluggsSpeak();
-	void sluggsPose(byte pose);
 
 	void walkHandRoute(int viaX, int viaY, int x, int y, int facing);
 	bool roomHasSharedExit(int room) const;
@@ -884,18 +876,6 @@ private:
 	byte _mailboxStep;
 	uint16 _mailboxPos;
 	byte _townStep;
-
-	/// Room 34's [0xa49f] machine and the conversation running beside it: the
-	/// step, its counter, the outcome the two speakers are taking turns over
-	/// ([0xa4a2]), whose turn it is ([0xa4a3]), how many lines are still owed
-	/// ([0xad40]) and whether Sluggs has a line standing (sluggs.cpp).
-	byte _sluggsStep;
-	uint16 _sluggsPos;
-	byte _sluggsLine;
-	byte _sluggsSpeaker;
-	byte _sluggsLeft;
-	bool _sluggsSpeaking;
-	bool _sluggsTalking;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
