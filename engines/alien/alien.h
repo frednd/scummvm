@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class ForestRoom;
 	friend class TeleportRoom;
 	friend class CorridorRoom;
 	friend class ScannerRoom;
@@ -521,17 +522,6 @@ private:
 	void stepPark();
 	void stepParkTrigger();
 	void stepBasementLadder();
-
-	/// Room 26's parrot: the brush-off and the moldy bread it actually wants
-	/// (forest.cpp).
-	void armForestParrot(int obj, byte verb, int item);
-	void stepForestParrot();
-	void startForest();
-	bool runYodleNote(int obj, byte verb, byte submode);
-	void parrotSays(byte line);
-	void parrotQuiet();
-	void forestBenSays(byte line);
-	void forestArm(byte step);
 
 	bool shoreWalkTo(int x, int y, int arrivalFacing);
 
@@ -1054,11 +1044,6 @@ private:
 	byte _parkStep;
 	uint _parkWait;
 	bool _parkLock;				///< [0xa8a4]: the scene holds the camera
-
-	/// Room 26's parrot machine (forest.cpp).
-	byte _forestStep;
-	uint _forestWait;
-	bool _forestTalk;		///< a plain verb on the parrot waits for its line
 
 	/// Room 21's Yodle: the step of his machine, [0xa49c] beside it, the run
 	/// standing in [0xa4a2] and the menu reply owed (yodle.cpp).

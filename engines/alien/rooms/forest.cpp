@@ -30,6 +30,7 @@
 #include "alien/detection.h"
 #include "alien/play.h"
 #include "alien/resources.h"
+#include "alien/rooms/forest.h"
 
 namespace Alien {
 
@@ -127,26 +128,30 @@ static const int kWatchX = 0xb3, kWatchY = 0x7a, kWatchFacing = 2;
 /// CUTSCENE:sub_0d384's picture.
 static const char *const kNotePicture = "YOD_NOTE.PCX";
 
+ForestRoom::ForestRoom(AlienEngine *vm) : Room(vm),
+		_forestStep(0), _forestWait(0), _forestTalk(false) {
+}
+
 /// DIALOG:sub_0b63a: the parrot speaks, and its beak moves while it does.
-void AlienEngine::parrotSays(byte line) {
-	queueOutcome(_tal, line, kParrotX, kParrotY, false);
-	_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotBeak), kIdleRate, kListMode, kParrotBeak);
+void ForestRoom::parrotSays(byte line) {
+	_vm->queueOutcome(_vm->_tal, line, kParrotX, kParrotY, false);
+	_vm->_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotBeak), kIdleRate, kListMode, kParrotBeak);
 	debugC(1, kDebugRooms, "forest: the parrot says outcome 0x%02x", line);
 }
 
 /// And the state after it: the idle list back under the loop.
-void AlienEngine::parrotQuiet() {
-	_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotIdle), kIdleRate, kListMode, kParrotIdle);
+void ForestRoom::parrotQuiet() {
+	_vm->_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotIdle), kIdleRate, kListMode, kParrotIdle);
 }
 
 /// A plain queue_event: Ben's own line, at his own anchor.
-void AlienEngine::forestBenSays(byte line) {
+void ForestRoom::forestBenSays(byte line) {
 	int x, y;
-	characterAnchor(x, y);
-	queueOutcome(_tal, line, x, y);
+	_vm->characterAnchor(x, y);
+	_vm->queueOutcome(_vm->_tal, line, x, y);
 }
 
-void AlienEngine::forestArm(byte step) {
+void ForestRoom::forestArm(byte step) {
 	_forestStep = step;
 	_forestWait = 0;
 	CursorMan.showMouse(false);
@@ -157,8 +162,8 @@ void AlienEngine::forestArm(byte step) {
  * Entry 3, as far as the parrot goes (0x0049-0x00b9 for items, 0x00e4 for the
  * plain verbs). The already-fed row, queue_event(28), is the lifted table's.
  */
-void AlienEngine::armForestParrot(int obj, byte verb, int item) {
-	if (_room != kForestRoom || obj != kParrotObj)
+void ForestRoom::armForestParrot(int obj, byte verb, int item) {
+	if (_vm->_room != kForestRoom || obj != kParrotObj)
 		return;
 	if (_forestStep)
 		return;
@@ -166,30 +171,30 @@ void AlienEngine::armForestParrot(int obj, byte verb, int item) {
 	if (item == Inventory::kNoItem) {
 		// 0x00e4: the cursor goes for whatever the verb says, and the
 		// answer is armed when event 0x12 comes down (0x0017).
-		if (_script.flag(kMood) == 1) {
+		if (_vm->_script.flag(kMood) == 1) {
 			_forestTalk = true;
 			CursorMan.showMouse(false);
 		}
 		return;
 	}
 
-	if (_script.flag(kMood) == 3)
+	if (_vm->_script.flag(kMood) == 3)
 		return;
 
-	if (item == kBread && _script.flag(kMood) == 1)
+	if (item == kBread && _vm->_script.flag(kMood) == 1)
 		forestArm(kStepFeed);
 	else
 		forestArm(kStepBrushOff);
 }
 
-void AlienEngine::stepForestParrot() {
-	if (_room != kForestRoom)
+void ForestRoom::tickPair() {
+	if (_vm->_room != kForestRoom)
 		return;
 
 	// Entry 3's arrival half: the plain verb's line is down.
-	if (_forestTalk && speechDone()) {
+	if (_forestTalk && _vm->speechDone()) {
 		_forestTalk = false;
-		if (_lastEvent == kEventTalk && !_forestStep)
+		if (_vm->_lastEvent == kEventTalk && !_forestStep)
 			forestArm(kStepAnswer);
 		else
 			CursorMan.showMouse(true);
@@ -215,7 +220,7 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepBrushOffBen:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		parrotQuiet();
 		forestBenSays(kLineNotInterested);
@@ -229,7 +234,7 @@ void AlienEngine::stepForestParrot() {
 
 	case kStepBrushOffDone:
 	case kStepAnswerDone:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		if (_forestStep == kStepAnswerDone)
 			parrotQuiet();
@@ -245,8 +250,8 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepEat:
-		_script.setFlag(kMood, 2);
-		_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat1), 2, kReturnMode, kParrotEat1);
+		_vm->_script.setFlag(kMood, 2);
+		_vm->_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat1), 2, kReturnMode, kParrotEat1);
 		_forestStep = kStepSmell;
 		_forestWait = 0;
 		break;
@@ -254,23 +259,23 @@ void AlienEngine::stepForestParrot() {
 	case kStepSmell:
 		if (_forestWait <= 0x1e)
 			break;
-		_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat2), 3, kReturnMode, kParrotEat2);
-		queueOutcome(_tal, kLineSmell, kParrotX, kParrotY, false);
+		_vm->_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat2), 3, kReturnMode, kParrotEat2);
+		_vm->queueOutcome(_vm->_tal, kLineSmell, kParrotX, kParrotY, false);
 		_forestStep = kStepBread;
 		break;
 
 	case kStepBread:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		forestBenSays(kLineBread);
 		_forestStep = kStepLove;
 		break;
 
 	case kStepLove:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat2), 3, kReturnMode, kParrotEat2);
-		queueOutcome(_tal, kLineLove, kParrotX, kParrotY, false);
+		_vm->_anims.play(kParrotSlot, 0, ARRAYSIZE(kParrotEat2), 3, kReturnMode, kParrotEat2);
+		_vm->queueOutcome(_vm->_tal, kLineLove, kParrotX, kParrotY, false);
 		_forestStep = kStepSwallow;
 		_forestWait = 0;
 		break;
@@ -279,30 +284,30 @@ void AlienEngine::stepForestParrot() {
 		// 0x0ad2: the bread is gone, and so is the parrot.
 		if (_forestWait <= 0x96)
 			break;
-		_inventory.remove(kBread);
-		_script.setFlag(kMood, 3);
-		_anims.play(kParrotSlot, 0x18, 0x6a, 3, 1);
+		_vm->_inventory.remove(kBread);
+		_vm->_script.setFlag(kMood, 3);
+		_vm->_anims.play(kParrotSlot, 0x18, 0x6a, 3, 1);
 		_forestStep = kStepFall;
 		_forestWait = 0;
 		debugC(1, kDebugItems, "forest: the parrot eats item %u (%s)", kBread,
-			   _inventory.name(kBread).c_str());
+			   _vm->_inventory.name(kBread).c_str());
 		break;
 
 	case kStepFall:
-		if (_anims.remaining(kParrotSlot) != 0)
+		if (_vm->_anims.remaining(kParrotSlot) != 0)
 			break;
-		_anims.play(kLedSlot, 1, 0xa, 4, 1);
+		_vm->_anims.play(kLedSlot, 1, 0xa, 4, 1);
 		_forestStep = kStepLed;
 		break;
 
 	case kStepLed:
-		if (_anims.remaining(kLedSlot) != 0)
+		if (_vm->_anims.remaining(kLedSlot) != 0)
 			break;
 		_forestStep = kStepBack;
 		break;
 
 	case kStepBack:
-		walkTo(kWatchX, kWatchY, kWatchFacing);
+		_vm->walkTo(kWatchX, kWatchY, kWatchFacing);
 		_forestStep = kStepWhat;
 		_forestWait = 0;
 		break;
@@ -315,27 +320,27 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepSafe:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		_script.setFlag(kSafeShut, 0);
-		_anims.play(kSafeSlot, 1, 0xf, 3, 1);
+		_vm->_script.setFlag(kSafeShut, 0);
+		_vm->_anims.play(kSafeSlot, 1, 0xf, 3, 1);
 		_forestStep = kStepSafeLine;
 		_forestWait = 0;
 		break;
 
 	case kStepSafeLine:
-		if (_anims.remaining(kSafeSlot) != 0 || _forestWait <= 0x14)
+		if (_vm->_anims.remaining(kSafeSlot) != 0 || _forestWait <= 0x14)
 			break;
 		forestBenSays(kLineSafe);
 		_forestStep = kStepFedDone;
 		break;
 
 	case kStepFedDone:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		CursorMan.showMouse(true);
 		_forestStep = 0;
-		rebuildHotspots();
+		_vm->rebuildHotspots();
 		debugC(1, kDebugRooms, "forest: the parrot is fed, the safe is open");
 		break;
 
@@ -348,7 +353,7 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepVisitLine:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_forestStep = kStepVisitPause;
 		_forestWait = 0;
@@ -361,7 +366,7 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepVisitWalk:
-		walkHandRoute(kVisitViaX, kVisitViaY, kVisitX, kVisitY, kVisitFacing);
+		_vm->walkHandRoute(kVisitViaX, kVisitViaY, kVisitX, kVisitY, kVisitFacing);
 		_forestStep = kStepVisitWhere;
 		_forestWait = 0;
 		break;
@@ -374,7 +379,7 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepVisitWhereDone:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_forestStep = kStepVisitCroak;
 		break;
@@ -385,7 +390,7 @@ void AlienEngine::stepForestParrot() {
 		break;
 
 	case kStepVisitCroakDone:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		parrotQuiet();
 		_forestStep = kStepVisitOut;
@@ -410,20 +415,20 @@ void AlienEngine::stepForestParrot() {
  * Entry 2's open, the parts the lift does not carry: the note's line on the way
  * back from reading it (0x069f, once, [0xa755]) and the first visit (0x070a).
  */
-void AlienEngine::startForest() {
+void ForestRoom::start() {
 	_forestStep = 0;
 	_forestWait = 0;
 	_forestTalk = false;
-	if (_room != kForestRoom)
+	if (_vm->_room != kForestRoom)
 		return;
 
-	if (_script.flag(kScenePlayed) == 1 && _script.flag(kNoteRead) == 0) {
-		_script.setFlag(kNoteRead, 1);
+	if (_vm->_script.flag(kScenePlayed) == 1 && _vm->_script.flag(kNoteRead) == 0) {
+		_vm->_script.setFlag(kNoteRead, 1);
 		forestBenSays(kLineNote);
 	}
 
-	if (_script.flag(kVisited) == 0) {
-		_script.setFlag(kVisited, 1);
+	if (_vm->_script.flag(kVisited) == 0) {
+		_vm->_script.setFlag(kVisited, 1);
 		forestArm(kStepVisit);
 	}
 }
@@ -435,12 +440,12 @@ void AlienEngine::startForest() {
  * The teardown's [0xa6d3] is what the reload places him by
  * and what startForest() says the note's line on.
  */
-bool AlienEngine::runYodleNote(int obj, byte verb, byte submode) {
-	if (_room != kForestRoom || submode != kSelfSubmode || obj != kNoteObj ||
+bool ForestRoom::takeSubmode(int obj, byte verb, byte submode) {
+	if (_vm->_room != kForestRoom || submode != kSelfSubmode || obj != kNoteObj ||
 		verb != kVerbLookAt)
 		return false;
 
-	const int room = _room;
+	const int room = _vm->_room;
 	Graphics::Surface plate;
 	byte palette[256 * 3];
 	if (!loadGamePCX(Common::Path(kNotePicture), plate, palette)) {
@@ -450,30 +455,30 @@ bool AlienEngine::runYodleNote(int obj, byte verb, byte submode) {
 	}
 
 	// CUTSCENE:sub_0c597, the shared setup: the room goes dark first.
-	stopSpeech();
-	fadeOut();
-	_cutscene = true;
-	_background.free();
-	_background = plate;
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
-	const int clip = _clipBottom;
-	_clipBottom = _screen.h - 1;
-	memcpy(_palette, palette, sizeof(_palette));
+	_vm->stopSpeech();
+	_vm->fadeOut();
+	_vm->_cutscene = true;
+	_vm->_background.free();
+	_vm->_background = plate;
+	_vm->_roomWidth = AlienEngine::kScreenWidth;
+	_vm->_scrollX = 0;
+	const int clip = _vm->_clipBottom;
+	_vm->_clipBottom = _vm->_screen.h - 1;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 	for (uint i = 0; i < AnimSlots::kSlotCount; i++)
-		_anims.takeDown(i);
+		_vm->_anims.takeDown(i);
 	// sub_0c597 clears [0xa948]: no pointer over the note, only the click
 	// that takes it down.
 	CursorMan.showMouse(false);
-	redraw();
-	fadeIn(false);
+	_vm->redraw();
+	_vm->fadeIn(false);
 
 	debugC(1, kDebugRooms, "forest: the note");
 
 	// 0x0e85: [0xa94a], any click.
 	bool quit = false;
 	uint scripted = 0;
-	while (!shouldQuit() && !_quit && !quit) {
+	while (!_vm->shouldQuit() && !_vm->_quit && !quit) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 			if (event.type == Common::EVENT_LBUTTONDOWN ||
@@ -483,15 +488,15 @@ bool AlienEngine::runYodleNote(int obj, byte verb, byte submode) {
 				quit = true;
 		}
 
-		if (_playActive && !quit) {
-			while (_playIndex < _play.commands().size()) {
-				const PlayCommand &cmd = _play.commands()[_playIndex];
+		if (_vm->_playActive && !quit) {
+			while (_vm->_playIndex < _vm->_play.commands().size()) {
+				const PlayCommand &cmd = _vm->_play.commands()[_vm->_playIndex];
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
-					_playIndex++;
+					_vm->_playIndex++;
 					continue;
 				}
 				if (cmd.type == PlayCommand::kClick || cmd.type == PlayCommand::kRightClick) {
-					_playIndex++;
+					_vm->_playIndex++;
 					quit = true;
 				}
 				break;
@@ -500,21 +505,28 @@ bool AlienEngine::runYodleNote(int obj, byte verb, byte submode) {
 				quit = true;
 		}
 
-		present();
-		sleep(10);
+		_vm->present();
+		_vm->sleep(10);
 	}
 
 	// CUTSCENE:sub_0c5c9, the teardown every scene shares.
-	fadeOut();
-	_cutscene = false;
-	_clipBottom = clip;
-	_script.setFlag(kScenePlayed, 1);
-	if (loadRoom(room))
-		_pendingCutscenes = false;
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	_vm->fadeOut();
+	_vm->_cutscene = false;
+	_vm->_clipBottom = clip;
+	_vm->_script.setFlag(kScenePlayed, 1);
+	if (_vm->loadRoom(room))
+		_vm->_pendingCutscenes = false;
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
 	CursorMan.showMouse(true);
-	_dirty = true;
+	_vm->_dirty = true;
 	return true;
+}
+
+void ForestRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The parrot's reaction to anything but the moldy bread it wants is a
+	// brush-off, and its reaction to that is a machine of its own, neither of
+	// them an opcode the lift has.
+	armForestParrot(obj, verb, item);
 }
 
 } // End of namespace Alien

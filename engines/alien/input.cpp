@@ -895,11 +895,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryBreaker(spot.obj, verb);
 
-	// And room 26's parrot, whose reaction to anything but the moldy bread it
-	// wants is a brush-off and whose reaction to that is a machine of its own,
-	// neither of them an opcode the lift has (forest.cpp).
-	armForestParrot(spot.obj, verb, item);
-
 	// And room 48's pool, which the diving suit answers with a machine of its
 	// own rather than a script row (pool.cpp).
 	armPool(spot.obj, item);
@@ -924,7 +919,8 @@ void AlienEngine::finishAction() {
 	if (!item)
 		takeBasementBattery(spot.obj);
 
-	// And the rooms' own (rooms/): room 58's prisoners, shackle and card.
+	// And the rooms' own (rooms/): room 26's parrot, room 57's terminal, and
+	// room 58's prisoners, shackle and card.
 	for (Room *r : _rooms)
 		r->afterScript(spot.obj, verb, item, anchorX, anchorY);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
@@ -973,8 +969,11 @@ void AlienEngine::finishAction() {
 		// carry, and this is the arrival test they run under
 		// (ovr_1c_0eb7:0x0128, telescope.cpp).
 		// And room 26's note, the same way (forest.cpp).
-		if (!runTelescopeScreen(spot.obj, verb, _script.submodeRequest()) &&
-			!runYodleNote(spot.obj, verb, _script.submodeRequest()))
+		bool taken = runTelescopeScreen(spot.obj, verb, _script.submodeRequest());
+		for (Room *r : _rooms)
+			if (!taken)
+				taken = r->takeSubmode(spot.obj, verb, _script.submodeRequest());
+		if (!taken)
 			takeExit(_script.submodeRequest());
 	}
 }

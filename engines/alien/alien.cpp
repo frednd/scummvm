@@ -148,7 +148,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_shoreStep(0),
 		_steamStep(0), _steamPos(0), _steamWas(0), _steamRelight(false), _steamBurst(0),
 		_parkStep(0), _parkWait(0), _parkLock(false),
-		_forestStep(0), _forestWait(0), _forestTalk(false),
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
@@ -708,7 +707,6 @@ void AlienEngine::stepClock() {
 		stepPark();
 		stepYodle();
 		stepYodleWater();
-		stepForestParrot();
 
 
 

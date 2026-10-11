@@ -538,7 +538,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// a lifted cutscene (park.cpp).
 	startPark();
 	startYodle();
-	startForest();
 	startObservatory();
 
 
