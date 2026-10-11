@@ -1,0 +1,481 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "common/debug.h"
+#include "common/file.h"
+#include "common/path.h"
+#include "common/stream.h"
+#include "graphics/surface.h"
+
+#include "alien/detection.h"
+#include "alien/dl1.h"
+
+namespace Alien {
+
+static const byte kMarker[8] = { 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00 };
+static const uint kMaxFrames = 200;
+/// The staging buffer a strip address indexes: 320 by 200.
+static const uint32 kScreenPixels = 320 * 200;
+
+DL1Sprite::DL1Sprite() : _data(nullptr), _size(0), _typeId(0), _longForm(false) {
+}
+
+DL1Sprite::~DL1Sprite() {
+	clear();
+}
+
+void DL1Sprite::clear() {
+	delete[] _data;
+	_data = nullptr;
+	_size = 0;
+	_typeId = 0;
+	_longForm = false;
+	_frames.clear();
+}
+
+bool DL1Sprite::load(const Common::Path &path) {
+	Common::File f;
+	if (!f.open(path)) {
+		warning("DL1: cannot open %s", path.toString().c_str());
+		return false;
+	}
+	return loadStream(f);
+}
+
+bool DL1Sprite::loadStream(Common::SeekableReadStream &stream) {
+	clear();
+
+	int64 size = stream.size();
+	if (size < 16 || size > 0x400000) {
+		warning("DL1: implausible file size %d", (int)size);
+		return false;
+	}
+
+	_size = (uint32)size;
+	_data = new byte[_size];
+	if (stream.read(_data, _size) != _size) {
+		warning("DL1: short read");
+		clear();
+		return false;
+	}
+
+	if (!parse()) {
+		clear();
+		return false;
+	}
+	return true;
+}
+
+bool DL1Sprite::longStripAt(uint32 pos) const {
+	if (pos + 8 > _size)
+		return false;
+	uint32 words = READ_LE_UINT16(_data + pos + 2);
+	uint32 x1 = READ_LE_UINT16(_data + pos + 4);
+	uint32 x2 = READ_LE_UINT16(_data + pos + 6);
+	return words > 0 && x2 > x1 && (x2 - x1) == words * 2;
+}
+
+/**
+ * Where the first strip of the frame opening at `pos` starts: past the
+ * full-screen sentinel and every copy of the start address, the walk
+ * parseFrames() makes. YODLE1 opens on a blank frame, so its address is there
+ * three times, and testing one word in landed on a copy and read the file as
+ * short-form -- one frame of junk and no talking.
+ */
+uint32 DL1Sprite::firstStripAt(uint32 pos) const {
+	if (pos + 2 > _size)
+		return pos;
+	uint16 startAddr = READ_LE_UINT16(_data + pos);
+	if (startAddr >= kScreenPixels && pos + 8 <= _size) {
+		pos += 2;
+		startAddr = READ_LE_UINT16(_data + pos);
+	}
+	while (pos + 4 <= _size && READ_LE_UINT16(_data + pos + 2) == startAddr)
+		pos += 2;
+	return pos;
+}
+
+bool DL1Sprite::parseFrames(uint32 bboxAt, uint nframes, bool longForm, ParseResult &out) const {
+	out.frames.clear();
+
+	uint32 pos = bboxAt + nframes * 8;
+
+	// The declared frame count is a hint only: a few files ship fewer frames
+	// than they declare and the two large DL2 screens ship more, so the loop
+	// runs until the data is exhausted rather than for a fixed count.
+	while (pos + 6 <= _size) {
+		uint frameIndex = out.frames.size();
+		uint16 startAddr = READ_LE_UINT16(_data + pos);
+
+		// A full-screen frame opens with 64000 -- one past the staging buffer
+		// -- instead of its first strip's address, and the strip follows it.
+		// PAL_BLOW's last three frames are shipped that way: the blast
+		// whitening the whole playfield.
+		if (startAddr >= kScreenPixels && pos + 8 <= _size) {
+			pos += 2;
+			startAddr = READ_LE_UINT16(_data + pos);
+		}
+
+		// A frame opens with its first strip's address repeated once. A copy
+		// more than that is a *blank* frame: a start address with no strips,
+		// whose bbox the table gives as (0,0,2,2). YODLE1 opens on one,
+		// OBS_SCR1 and OBS_MENU have one in the middle; reading the extra copy
+		// as a repeat dropped the frame and shifted every later one a frame
+		// early -- the monitor's scatter and the disk showing too soon
+		uint repeats = 0;
+		while (pos + 4 <= _size && READ_LE_UINT16(_data + pos + 2) == startAddr) {
+			pos += 2;
+			repeats++;
+		}
+		for (uint blank = 1; blank < repeats; blank++) {
+			Frame empty;
+			empty.startAddr = startAddr;
+			const uint index = out.frames.size();
+			empty.hasBbox = index < nframes;
+			for (int i = 0; i < 4; i++)
+				empty.bbox[i] = empty.hasBbox
+					? READ_LE_UINT16(_data + bboxAt + index * 8 + i * 2) : 0;
+			out.frames.push_back(empty);
+		}
+		frameIndex = out.frames.size();
+
+		bool longStrips = longForm && longStripAt(pos);
+		uint32 header = longStrips ? 8 : 4;
+
+		Frame frame;
+		frame.startAddr = startAddr;
+		frame.hasBbox = frameIndex < nframes;
+		if (frame.hasBbox) {
+			for (int i = 0; i < 4; i++)
+				frame.bbox[i] = READ_LE_UINT16(_data + bboxAt + frameIndex * 8 + i * 2);
+		} else {
+			for (int i = 0; i < 4; i++)
+				frame.bbox[i] = 0;
+		}
+
+		while (pos + header <= _size) {
+			uint16 addr = READ_LE_UINT16(_data + pos);
+			uint16 words = READ_LE_UINT16(_data + pos + 2);
+
+			// A strip's first word is a screen address and its second a small
+			// word count, so the two are only ever equal at a frame boundary.
+			if (!frame.strips.empty() && addr == words)
+				break;
+			if (words == 0)
+				break;
+
+			// A strip's address is an offset into the 320x200 staging buffer,
+			// so a run that starts outside it, or walks off its end, is not a
+			// strip. Reading the full-screen sentinel above as one is what drew
+			// a band of white across the blast instead of the whiteout.
+			if (addr >= kScreenPixels || (uint32)addr + (uint32)words * 2 > kScreenPixels)
+				break;
+
+			uint32 pixels = (uint32)words * 2;
+			if (pos + header + pixels > _size) {
+				// Ragged tail: keep what has been decoded so far.
+				if (!frame.strips.empty() || !out.frames.empty())
+					break;
+				return false;
+			}
+
+			Strip strip;
+			strip.addr = addr;
+			strip.length = (uint16)pixels;
+			strip.roomX = kNoRoomX;
+			if (longStrips) {
+				uint32 x1 = READ_LE_UINT16(_data + pos + 4);
+				uint32 x2 = READ_LE_UINT16(_data + pos + 6);
+				if (x2 - x1 != pixels)
+					return false;
+				strip.roomX = (uint16)x1;
+			}
+			strip.pixelOffset = pos + header;
+			frame.strips.push_back(strip);
+
+			pos += header + pixels;
+		}
+
+		if (frame.strips.empty()) {
+			if (out.frames.empty())
+				return false;
+			pos -= 2;			// ran into the end-of-file padding
+			break;
+		}
+
+		out.frames.push_back(frame);
+	}
+
+	out.endPos = pos;
+	return !out.frames.empty();
+}
+
+int32 DL1Sprite::score(const ParseResult &result) const {
+	// Unconsumed bytes are suspicious; bounding boxes that agree with the
+	// decoded rows are strong evidence the right frame table was picked.
+	int32 s = -(int32)(_size - result.endPos);
+
+	for (uint i = 0; i < result.frames.size(); i++) {
+		const Frame &frame = result.frames[i];
+		if (!frame.hasBbox || frame.strips.empty())
+			continue;
+
+		int32 minY = 0x7FFFFFFF, maxY = -1;
+		for (uint j = 0; j < frame.strips.size(); j++) {
+			int32 y = frame.strips[j].addr / kScreenWidth;
+			minY = MIN(minY, y);
+			maxY = MAX(maxY, y);
+		}
+
+		int32 y1 = (int32)frame.bbox[1];
+		int32 y2 = (int32)frame.bbox[3];
+		if (y1 - 1 <= minY && maxY <= y2 + 1)
+			s += 64;
+	}
+	return s;
+}
+
+bool DL1Sprite::parse() {
+	_typeId = _data[0];
+
+	// The stored frame count includes a terminator entry.
+	int declared = (int)_data[1] - 1;
+	if (declared < 1 || declared > (int)kMaxFrames) {
+		warning("DL1: implausible frame count %d", (int)_data[1]);
+		return false;
+	}
+	uint nframes = (uint)declared;
+
+	bool haveBest = false;
+	int32 bestScore = 0;
+	ParseResult best;
+
+	// The bounding-box table follows a fixed marker, but the marker byte
+	// sequence also occurs inside the sprite editor residue at the head of the
+	// file, so every occurrence is tried and the best-scoring one wins.
+	uint32 searchFrom = 8;
+	while (searchFrom + sizeof(kMarker) <= _size) {
+		uint32 found = _size;
+		for (uint32 i = searchFrom; i + sizeof(kMarker) <= _size; i++) {
+			if (!memcmp(_data + i, kMarker, sizeof(kMarker))) {
+				found = i;
+				break;
+			}
+		}
+		if (found == _size)
+			break;
+		searchFrom = found + 1;
+
+		uint32 bboxAt = found + sizeof(kMarker);
+		if (bboxAt + nframes * 8 > _size)
+			continue;
+
+		bool longForm = longStripAt(firstStripAt(bboxAt + nframes * 8));
+		bool order[2];
+		order[0] = longForm;
+		order[1] = !longForm;
+
+		for (int i = 0; i < 2; i++) {
+			ParseResult candidate;
+			if (!parseFrames(bboxAt, nframes, order[i], candidate))
+				continue;
+
+			int32 sc = score(candidate);
+			if (!haveBest || sc > bestScore) {
+				haveBest = true;
+				bestScore = sc;
+				best = candidate;
+				_longForm = order[i];
+			}
+			break;
+		}
+	}
+
+	if (!haveBest) {
+		warning("DL1: no usable frame table");
+		return false;
+	}
+
+	_frames = best.frames;
+	debugC(1, kDebugResource, "DL1: type %02x, %u frames, %s form",
+		   _typeId, _frames.size(), _longForm ? "long" : "short");
+	return true;
+}
+
+void DL1Sprite::drawFrame(uint index, Graphics::Surface &dest, int scrollX, int clipBottom) const {
+	if (index >= _frames.size())
+		return;
+
+	const Frame &frame = _frames[index];
+	for (uint i = 0; i < frame.strips.size(); i++) {
+		const Strip &strip = frame.strips[i];
+		const byte *src = _data + strip.pixelOffset;
+
+		// A long-form strip carries its own column, so it says where it goes
+		// and never runs off the end of its row. Its address is the row times
+		// 320 plus that room column -- not plus the column within a 320-wide
+		// page -- so a strip right of x 320 has its row one lower in the
+		// address than on the screen: every frame's strips span exactly its
+		// bounding box only when read this way.
+		if (strip.roomX != kNoRoomX) {
+			const int y = ((int)strip.addr - (int)strip.roomX) / kScreenWidth;
+			if (y < 0 || y >= dest.h || y >= clipBottom)
+				continue;
+			byte *dst = (byte *)dest.getBasePtr(0, y);
+			for (uint j = 0; j < strip.length; j++) {
+				const int col = (int)strip.roomX - scrollX + (int)j;
+				if (col < 0 || col >= dest.w)
+					continue;
+				dst[col] = src[j];
+			}
+			continue;
+		}
+
+		// A strip is a linear run in the 320-column staging buffer,
+		// where a run that reaches the right edge carries straight on into the
+		// next row, which is how the big frames are written -- 41 of the 66
+		// strips of MW5_SHUT's frame 36 cross it. Clipping those at the edge
+		// instead of wrapping would leave the shuttle leaving the house as a
+		// handful of horizontal lines.
+		//
+		// A strip is copied verbatim, zeros included: the blit never tests a
+		// pixel. Transparency in this format is the *gap* between strips, not a
+		// colour, and the zeros inside a run are real black pixels -- the dark
+		// opening a door leaves behind when it swings away. Skipping them would
+		// leave room 6's doors looking shut however far the animation has run.
+		for (uint j = 0; j < strip.length; j++) {
+			const uint32 pos = (uint32)strip.addr + j;
+			const int y = (int)(pos / kScreenWidth);
+			if (y < 0 || y >= dest.h || y >= clipBottom)
+				continue;
+			const int col = (int)(pos % kScreenWidth) - scrollX;
+			if (col < 0 || col >= dest.w)
+				continue;
+			*((byte *)dest.getBasePtr(0, y) + col) = src[j];
+		}
+	}
+}
+
+void DL1Sprite::drawFrameWindow(uint index, Graphics::Surface &dest, int windowX, int destX,
+								int clipBottom) const {
+	if (index >= _frames.size())
+		return;
+
+	const Frame &frame = _frames[index];
+	if (frame.strips.empty() || frame.strips[0].roomX == kNoRoomX) {
+		drawFrame(index, dest, windowX - destX, clipBottom);
+		return;
+	}
+
+	// The frame's box against the window picks the clip, the last test that
+	// holds winning: 1 cuts strips on the left, 2 on the right, 0xff leaves
+	// the frame out and 0 copies every strip whole. A frame wider than the
+	// window is clipped on the right only.
+	enum { kWhole, kLeft, kRight, kNone };
+	const int windowEnd = windowX + kScreenWidth - 1;
+	int mode = kWhole;
+	if (frame.hasBbox) {
+		const int x1 = frame.bbox[0], x2 = frame.bbox[2];
+		if (x1 < windowX)
+			mode = kLeft;
+		if (windowEnd < x2)
+			mode = kRight;
+		if (x2 < windowX || windowEnd < x1)
+			mode = kNone;
+	}
+	if (mode == kNone)
+		return;
+
+	for (uint i = 0; i < frame.strips.size(); i++) {
+		const Strip &strip = frame.strips[i];
+		const byte *src = _data + strip.pixelOffset;
+		int words = strip.length / 2;
+		uint32 addr = strip.addr;
+
+		// The cuts are counted in words, so a strip that overhangs the window
+		// by an odd number of pixels loses its last visible column as well:
+		// (e.g. Yodle's cell edge at scroll 318).
+		if (mode == kLeft) {
+			const int over = (int)strip.roomX - windowX;
+			if (over <= 0) {
+				const int skip = (-over + 1) >> 1;
+				if (words <= skip)
+					continue;
+				words -= skip;
+				src += skip * 2;
+				addr += skip * 2;
+			}
+		} else if (mode == kRight) {
+			const int over = (int)strip.roomX + (int)strip.length - windowEnd;
+			if (over > 0) {
+				words -= over >> 1;
+				if (words <= 0)
+					continue;
+			}
+		}
+
+		// The address is the strip's place in a buffer 320 wide that the
+		// window starts `windowX` bytes into, so a pixel past either edge of
+		// the window is the next or the last row's other end.
+		const int row = ((int)strip.addr - (int)strip.roomX) / kScreenWidth;
+		const int start = row * kScreenWidth + (int)strip.roomX + (int)(addr - strip.addr) - windowX;
+		for (int j = 0; j < words * 2; j++) {
+			const int pos = start + j;
+			if (pos < 0)
+				continue;
+			const int y = pos / kScreenWidth;
+			if (y >= dest.h || y >= clipBottom)
+				break;
+			const int col = destX + pos % kScreenWidth;
+			if (col < 0 || col >= dest.w)
+				continue;
+			*((byte *)dest.getBasePtr(col, y)) = src[j];
+		}
+	}
+}
+
+void DL1Sprite::drawFramePage(uint index, Graphics::Surface &dest, int pageX,
+							  int clipBottom) const {
+	if (index >= _frames.size())
+		return;
+
+	const Frame &frame = _frames[index];
+	for (uint i = 0; i < frame.strips.size(); i++) {
+		const Strip &strip = frame.strips[i];
+		const byte *src = _data + strip.pixelOffset;
+
+		// The page is flat, so the run carries on into the next row when it
+		// reaches the page's own right edge -- which is what a strip starting
+		// at column 319 is for.
+		for (uint j = 0; j < strip.length; j++) {
+			const uint32 pos = strip.addr + j;
+			const int row = (int)(pos / kScreenWidth);
+			const int col = pageX + (int)(pos % kScreenWidth);
+			if (row < 0 || row >= dest.h || row >= clipBottom)
+				continue;
+			if (col < 0 || col >= dest.w)
+				continue;
+			*((byte *)dest.getBasePtr(0, row) + col) = src[j];
+		}
+	}
+}
+
+} // End of namespace Alien

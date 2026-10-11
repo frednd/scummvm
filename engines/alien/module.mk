@@ -1,6 +1,11 @@
 MODULE := engines/alien
 
 MODULE_OBJS = \
+	animfont.o \
+	dl1.o \
+	font.o \
+	overlay.o \
+	resources.o \
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_ALIEN), DYNAMIC_PLUGIN)
