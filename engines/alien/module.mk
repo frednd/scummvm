@@ -1,25 +1,37 @@
 MODULE := engines/alien
 
 MODULE_OBJS = \
+	alien.o \
 	anim.o \
 	animfont.o \
 	anims.o \
 	charanim.o \
+	clock.o \
 	cutscenes.o \
 	dl1.o \
+	fade.o \
 	font.o \
 	hotspots.o \
+	input.o \
 	inventory.o \
+	lighting.o \
 	mazetables.o \
+	media.o \
 	occlusion.o \
 	overlay.o \
 	pack.o \
 	plates.o \
+	render.o \
 	resources.o \
+	room.o \
 	roominit.o \
+	roomplate.o \
 	roomscripts.o \
+	roomtick.o \
 	s3m.o \
+	scale.o \
 	sfx.o \
+	sweeps.o \
 	tables.o \
 	transitions.o \
 	video.o \

@@ -1,0 +1,154 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef ALIEN_PLAY_H
+#define ALIEN_PLAY_H
+
+#include "common/array.h"
+#include "common/str.h"
+
+namespace Alien {
+
+/**
+ * One line of a test script.
+ * The engine has no interactive input in a headless run, so a walkthrough
+ * is driven from a text command file instead of an event queue: one command
+ * per line, blank lines and '#' comments skipped.
+ *
+ *   click X Y ["LABEL"]  left click at a playfield point -- walks, and arms
+ *                        an exit; it performs no verb
+ *   rclick X Y ["LABEL"] right click: performs the hovered object's verb, and
+ *                        does nothing at all over bare floor. With a label, the
+ *                        status line has to contain it once the cursor is there
+ *                        (any case), or the click is a FAIL
+ *
+ * Both take **room** coordinates, the ones check_hotspots.py prints, not screen
+ * ones: a wide room's camera moves with the character, and the engine puts the
+ * scroll back before it dispatches the click.
+ *   hover X Y            move the cursor without clicking, which is what lights
+ *                        a bar control and rebuilds the status line. Screen
+ *                        coordinates, not room ones, because the bar does not
+ *                        scroll.
+ *   use N                take inventory item N into the hand
+ *   combine N            left click the slot item N sits on with something
+ *                        already in hand, which is the bar's own combine
+ *   look N               right click the slot item N sits on with an empty
+ *                        hand, which is the bar's own look -- and the only way
+ *                        to reach the item right-click script (10c9:0x4f7)
+ *   unuse                put down whatever is in the hand
+ *   wait N                advance N master ticks with nothing happening
+ *   settle [N]            advance ticks until Ben, speech, anims and any
+ *                          armed exit are all idle, or N ticks pass (default
+ *                          700, about 10s of game time) -- logs STUCK on
+ *                          timeout and moves on rather than hanging the run
+ *   expect room N          assert the current room
+ *   expect item N           assert the item is held in the inventory
+ *   expect noitem N         assert the item is not held
+ *   expect flag ADDR VAL    assert a state-block byte (hex address, e.g.
+ *                           0xa650) equals VAL
+ *   expect won              assert the game has been won; the win ends the
+ *                           loop where the script stands, so this has to be
+ *                           the last line, after the settle that reaches it
+ *   flag ADDR VAL           write a state-block byte, to put the game in a
+ *                           state a script would otherwise have to play its
+ *                           way to (the bedroom needs the lab's fuse in)
+ *   give N                  put item N in the list, for reaching a bar state
+ *                           that would take a long play session to carry to
+ *   cutscene N              raise scene id N, the way a room's own code does
+ *   snap NAME               write the composed screen to NAME.png
+ *   spots                   log the room's current hotspot list on the play
+ *                           channel (independent of --debugflags=hotspots),
+ *                           for checking what a state change revealed
+ *   skip                    click through the line on screen, the player's way
+ *                           of cutting it short; logged and ignored when no line
+ *                           is up (cutscenes are skipped by the `skippable` key)
+ *   quit                    stop the script early
+ *   checkpoint NAME         settle, then write the state to NAME.sav in the
+ *                           `playstates` directory and log a CHECKPOINT line;
+ *                           a run can start from it again with `playfrom`
+ *                           and `playline`
+ *   strict                  this script runs with no cheating:
+ *                           flag, give,
+ *                           cutscene and load are refused, the bar is worked
+ *                           by clicking its arrows and slots, a click the
+ *                           cursor is not there for fails, and the first
+ *                           failure ends the run. `playstrict=true` in the
+ *                           config does the same for any script.
+ */
+struct PlayCommand {
+	enum Type {
+		kClick,
+		kRightClick,
+		kHover,
+		kUse,
+		kCombine,
+		kLook,
+		kUnuse,
+		kWait,
+		kPause,
+		kConsole,
+		kSettle,
+		kUntilTimer,
+		kUntilRoom,
+		kExpectRoom,
+		kExpectItem,
+		kExpectNoItem,
+		kExpectFlag,
+		kExpectWon,
+		kCutscene,
+		kSnap,
+		kSpots,
+		kSkip,
+		kCheckpoint,
+		kGive,
+		kSave,
+		kLoad,
+		kFlag,
+		kQuit
+	};
+
+	Type type = kQuit;
+	int a = 0;
+	int b = 0;
+	int c = 0;
+	Common::String s;
+	uint sourceLine = 0;
+
+	/// Whether a strict run refuses this command.
+	bool isCheat() const;
+};
+
+/// Parses a command script file into a list of PlayCommands.
+class PlayScript {
+public:
+	bool load(const Common::String &path);
+	const Common::Array<PlayCommand> &commands() const { return _commands; }
+	/// The script asked for strict mode itself, with a `strict` line.
+	bool strict() const { return _strict; }
+
+private:
+	Common::Array<PlayCommand> _commands;
+	bool _strict = false;
+};
+
+} // End of namespace Alien
+
+#endif
