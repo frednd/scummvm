@@ -6,6 +6,10 @@ MODULE_OBJS = \
 	font.o \
 	overlay.o \
 	resources.o \
+	s3m.o \
+	sfx.o \
+	tables.o \
+	video.o \
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_ALIEN), DYNAMIC_PLUGIN)
