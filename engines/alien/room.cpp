@@ -141,7 +141,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// Before anything is read: the two mazes take their position from the way
 	// in, and their plate and their rectangles are both read from it
 	// (maze.cpp).
-	mazeEnter(room);
+	for (Room *r : _rooms)
+		r->preload(room);
 
 	const int width = roomWidth(room);
 	const bool wide = width > kScreenWidth;
@@ -167,8 +168,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// piece from the cell, out of the three MAZBLK plates (maze.cpp). Failing
 	// that -- missing art -- roomPlate() answers the FADE43.PCX both inits open
 	// on, so the room still loads.
-	if (!mazeBackground(room, loaded, palette) &&
-		!loadGamePCX(Common::Path(plate), loaded, palette)) {
+	bool composed = false;
+	for (Room *r : _rooms)
+		composed = composed || r->loadBackground(room, loaded, palette);
+	if (!composed && !loadGamePCX(Common::Path(plate), loaded, palette)) {
 		loaded.free();
 		return false;
 	}
@@ -520,10 +523,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// with the character talking to himself before the player gets the cursor.
 	startOpening();
 
-	// And the two mazes, whose dialog file the shared overlay's manifest names
-	// wrongly and whose torch the cell may not have (maze.cpp).
-	startMaze();
-
 	// And room 32's way back from the crystal (cemetery.cpp).
 	startCemetery();
 
@@ -842,8 +841,6 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 		for (Room *r : _rooms)
 			if (r->walkUnrouted(x, y, arrivalFacing))
 				return;
-		if (mazeWalkTo(x, y, arrivalFacing))
-			return;
 
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
 		return;
@@ -913,14 +910,10 @@ void AlienEngine::rebuildHotspots(int room) {
 	// state.
 	_script.buildHotspots(room < 0 ? _room : room, _spots);
 
-	// The two mazes are the exception: theirs are per cell rather than per flag,
-	// which is a guard the lift cannot carry, so the maze replaces the table
-	// outright (maze.cpp).
-	buildMazeHotspots(room < 0 ? _room : room);
-
-	// And the rooms' own, which the lift cannot carry either: room 58's two
-	// prisoners, behind a computed guard and in a rectangle that moves
-	// (jailguard.cpp).
+	// And the rooms' own, which the lift cannot carry: the two mazes', per
+	// cell rather than per flag, which replace the table outright (maze.cpp),
+	// and room 58's two prisoners, behind a computed guard and in a rectangle
+	// that moves (jailguard.cpp).
 	for (Room *r : _rooms)
 		r->buildHotspots(room < 0 ? _room : room);
 
@@ -1128,8 +1121,9 @@ bool AlienEngine::takeExit(byte submode) {
 	// Except in the two mazes, where an armed submode is a turn rather than a
 	// door: the game answers it out of the cell table and re-enters the
 	// same room, and only four of them ever reach the chain at all (maze.cpp).
-	if (mazeExit(submode))
-		return true;
+	for (Room *r : _rooms)
+		if (r->turnExit(submode))
+			return true;
 
 	// The room's tick loop ends here, and ending it is what sets game_mode to
 	// the room being left (OBJ:sub_0879a). The main loop then walks its chain of

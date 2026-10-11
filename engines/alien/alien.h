@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class MazeRoom;
 	friend class ShoreRoom;
 	friend class PoolRoom;
 	friend class DivingRoom;
@@ -443,23 +444,8 @@ private:
 	/// passes the room it is opening, which is not yet _room.
 	void rebuildHotspots(int room = -1);
 
-	/// Rooms 43 and 44, the two mazes: their per-cell backgrounds, arrows and
-	/// routing, and the crystal door that ends maze A (maze.cpp).
-	void startMaze();
-	void stepMaze();
-	void stepCrystal();
-	void crystalSpeak();
-	void crystalSay(byte outcome);
-	bool mazeBackground(int room, Graphics::Surface &plate, byte *palette);
-	void buildMazeHotspots(int room);
-	void mazeEnter(int room);
-	void mazePlace();
-	bool mazeExit(byte &submode);
-	bool mazeWalkTo(int x, int y, int arrivalFacing);
-
 	/// A two-point route from where he stands, for the rooms with no walk mask.
 	void straightWalkTo(int x, int y, int arrivalFacing);
-	const MazeCell *mazeCell(int room) const;
 
 	/// Room 40's shared files and the one item-use line it has (cave.cpp).
 	void loadSharedTal(uint n);
@@ -933,22 +919,6 @@ private:
 	int _cemeteryZapPos;		///< [bp-4] after a zap, -1 when none is pending
 	bool _cemeteryCursorOwed;	///< the phrase took the cursor; its line gives it back
 	byte _cemeteryStep;	///< [0xa49f] while the cave is being walked into
-
-	/// The two mazes: the step of the crystal-door scene, and the submode the
-	/// last cell was left by, which says where the next one is entered from
-	/// (maze.cpp). The cell itself is a state-block flag, [0xa77c].
-	byte _mazeStep;
-	byte _crystalStep;
-	uint _crystalWait;
-
-	/// Room 45's two-speaker run, the same four the DLGREQ runner keeps
-	/// everywhere it appears (sluggs.cpp): whose turn, which outcome, how many
-	/// are left, and whether a run is standing at all.
-	byte _crystalSpeaker;
-	byte _crystalLine;
-	byte _crystalLeft;
-	bool _crystalSpeaking;
-	byte _mazePose;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

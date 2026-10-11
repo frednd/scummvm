@@ -140,9 +140,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
 		_cemeteryPos(0), _cemeteryZapPos(-1), _cemeteryCursorOwed(false), _cemeteryStep(0),
-		_mazeStep(0), _mazePose(0),
-		_crystalStep(0), _crystalWait(0), _crystalSpeaker(0), _crystalLine(0),
-		_crystalLeft(0), _crystalSpeaking(false),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -555,7 +552,7 @@ bool AlienEngine::dlgreqRunning() const {
 	for (const Room *r : _rooms)
 		if (r->conversationRunning())
 			return true;
-	return _sluggsSpeaking || _crystalSpeaking || _endingStep;
+	return _sluggsSpeaking || _endingStep;
 }
 
 uint32 AlienEngine::masterTick() const {
@@ -669,12 +666,6 @@ void AlienEngine::stepClock() {
 		// thing that writes [0xa760] -- which is what the observatory
 		// computer saves as co-ordinates 1 or 2 (telescope.cpp).
 		stepTelescopeLever();
-
-		// And room 45, the crystal entry scene (maze.cpp).
-		stepCrystal();
-
-		// And maze A's, the scene the crystal door opens into (maze.cpp).
-		stepMaze();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)

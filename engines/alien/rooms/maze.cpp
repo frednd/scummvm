@@ -26,6 +26,7 @@
 #include "alien/detection.h"
 #include "alien/mazetables.h"
 #include "alien/resources.h"
+#include "alien/rooms/maze.h"
 
 namespace Alien {
 
@@ -49,15 +50,15 @@ namespace Alien {
 //   the torch        slot 0's MAZ_TOR1 loop runs only where the far wall is an
 //                    opening (0x066a, 0x0967)
 //
-// buildMazeHotspots() rebuilds the table from the cell, mazeBackground()
-// composes the plate, and startMaze() silences the torch where the original
+// buildHotspots() rebuilds the table from the cell, loadBackground()
+// composes the plate, and start() silences the torch where the original
 // never starts it.
 //
 // Stepping is handled after the room loop returns:
 // read the armed submode as a direction, index the cell's four neighbours, write
 // the new cell and re-enter the same room without ever reaching the transition chain.
 // The four submodes that do leave, and the crystal door in between, are the tests
-// that run around it -- see mazeExit().
+// that run around it -- see turnExit().
 static const int kMazeRoomA = 43;
 static const int kMazeRoomB = 44;
 static const int kShoreRoom = 41;	///< the only room either of them is entered from
@@ -223,10 +224,15 @@ static byte mazeDirection(byte submode) {
 	}
 }
 
-const MazeCell *AlienEngine::mazeCell(int room) const {
+MazeRoom::MazeRoom(AlienEngine *vm) : Room(vm),
+		_crystalSpeaking(false), _mazeStep(0), _crystalStep(0), _crystalWait(0),
+		_crystalSpeaker(0), _crystalLine(0), _crystalLeft(0), _mazePose(0) {
+}
+
+const MazeCell *MazeRoom::mazeCell(int room) const {
 	uint count = 0;
 	const MazeCell *cells = mazeCells(room, count);
-	const byte cell = _script.flag(kCell);
+	const byte cell = _vm->_script.flag(kCell);
 	if (!cells || cell >= count)
 		return nullptr;
 
@@ -244,7 +250,7 @@ const MazeCell *AlienEngine::mazeCell(int room) const {
  * then loadRoom falls back on roomPlate()'s FADE43.PCX, which is what both
  * inits open on before their first swap.
  */
-bool AlienEngine::mazeBackground(int room, Graphics::Surface &plate, byte *palette) {
+bool MazeRoom::loadBackground(int room, Graphics::Surface &plate, byte *palette) {
 	if (!isMaze(room))
 		return false;
 
@@ -292,7 +298,7 @@ bool AlienEngine::mazeBackground(int room, Graphics::Surface &plate, byte *palet
 	}
 
 	debugC(1, kDebugRooms, "maze: room %d cell 0x%02x is %d%d%d%d%d%d%d", room,
-		   _script.flag(kCell), cell->tile[0], cell->tile[1], cell->tile[2],
+		   _vm->_script.flag(kCell), cell->tile[0], cell->tile[1], cell->tile[2],
 		   cell->tile[3], cell->tile[4], cell->tile[5], cell->tile[6]);
 	return true;
 }
@@ -310,11 +316,11 @@ bool AlienEngine::mazeBackground(int room, Graphics::Surface &plate, byte *palet
  * So that is what an arrow click gets here: a straight line to the approach
  * point the geometry named, which is all the corridor has room for anyway.
  */
-bool AlienEngine::mazeWalkTo(int x, int y, int arrivalFacing) {
-	if (!isMaze(_room))
+bool MazeRoom::walkUnrouted(int x, int y, int arrivalFacing) {
+	if (!isMaze(_vm->_room))
 		return false;
 
-	straightWalkTo(x, y, arrivalFacing);
+	_vm->straightWalkTo(x, y, arrivalFacing);
 	return true;
 }
 
@@ -326,7 +332,7 @@ bool AlienEngine::mazeWalkTo(int x, int y, int arrivalFacing) {
  * filtered: the guards that decide these are not flags, and the lift dropped
  * every one of them.
  */
-void AlienEngine::buildMazeHotspots(int room) {
+void MazeRoom::buildHotspots(int room) {
 	if (!isMaze(room))
 		return;
 
@@ -334,7 +340,7 @@ void AlienEngine::buildMazeHotspots(int room) {
 	if (!cell)
 		return;
 
-	_spots.clear();
+	_vm->_spots.clear();
 
 	for (uint i = 0; i < ARRAYSIZE(kMazeSpots); i++) {
 		const MazeSpot &spot = kMazeSpots[i];
@@ -354,7 +360,7 @@ void AlienEngine::buildMazeHotspots(int room) {
 			wanted = tile == 2;
 			break;
 		case kSpotAxe:
-			wanted = tile == 2 && _script.flag(kAxeThere) == 1;
+			wanted = tile == 2 && _vm->_script.flag(kAxeThere) == 1;
 			break;
 		default:
 			wanted = true;
@@ -376,11 +382,11 @@ void AlienEngine::buildMazeHotspots(int room) {
 		for (uint o = 0; o < ARRAYSIZE(out.outcomes); o++)
 			out.outcomes[o] = spot.outcomes[o];
 
-		_spots.push_back(out);
+		_vm->_spots.push_back(out);
 	}
 
 	debugC(1, kDebugHotspots, "maze: room %d cell 0x%02x registers %u rectangles",
-		   room, _script.flag(kCell), _spots.size());
+		   room, _vm->_script.flag(kCell), _vm->_spots.size());
 }
 
 /**
@@ -392,25 +398,25 @@ void AlienEngine::buildMazeHotspots(int room) {
  * re-entered would open on whatever cell it was last left at, which the
  * original never does -- inside the maze nothing but the step moves [0xa77c].
  */
-void AlienEngine::mazeEnter(int room) {
-	if (!isMaze(room) || _mode != kShoreRoom)
+void MazeRoom::preload(int room) {
+	if (!isMaze(room) || _vm->_mode != kShoreRoom)
 		return;
 
-	if (room == kMazeRoomA && _lastSubmode == 3) {
-		_script.setFlag(kCell, 0);
+	if (room == kMazeRoomA && _vm->_lastSubmode == 3) {
+		_vm->_script.setFlag(kCell, 0);
 		_mazePose = 4;
-	} else if (room == kMazeRoomB && _lastSubmode == 1) {
-		_script.setFlag(kCell, 0);
+	} else if (room == kMazeRoomB && _vm->_lastSubmode == 1) {
+		_vm->_script.setFlag(kCell, 0);
 		_mazePose = 2;
-	} else if (room == kMazeRoomB && _lastSubmode == 2) {
-		_script.setFlag(kCell, kCellFarMouth);
+	} else if (room == kMazeRoomB && _vm->_lastSubmode == 2) {
+		_vm->_script.setFlag(kCell, kCellFarMouth);
 		_mazePose = 4;
 	} else {
 		return;
 	}
 
 	debugC(1, kDebugRooms, "maze: room %d opens on cell 0x%02x, entered as %u",
-		   room, _script.flag(kCell), _mazePose);
+		   room, _vm->_script.flag(kCell), _mazePose);
 }
 
 /**
@@ -420,7 +426,7 @@ void AlienEngine::mazeEnter(int room) {
  * char_place of its own in roominit.cpp -- the original's inits call this
  * instead, both for a step inside the maze and for the way in from the shore.
  */
-void AlienEngine::mazePlace() {
+void MazeRoom::mazePlace() {
 	int16 x = kMazeArrivalX, y = kMazeArrivalY;
 	byte facing = kMazeArrivalFacing;
 	for (uint i = 0; i < ARRAYSIZE(kMazeArrivals); i++) {
@@ -431,18 +437,18 @@ void AlienEngine::mazePlace() {
 		facing = kMazeArrivals[i].facing;
 		break;
 	}
-	_ben.placeSprite(x, y, facing);
+	_vm->_ben.placeSprite(x, y, facing);
 }
 
 /// Every arrival: where the way in stands him, the room's own dialog file, and
 /// the torch the cell may not have.
-void AlienEngine::startMaze() {
-	if (!isMaze(_room))
+void MazeRoom::start() {
+	if (!isMaze(_vm->_room))
 		return;
 
 	// The step places him itself, once the room it re-entered is up; this is
-	// the way in from the shore, whose pose mazeEnter() has already chosen.
-	if (_mode == kShoreRoom)
+	// the way in from the shore, whose pose preload() has already chosen.
+	if (_vm->_mode == kShoreRoom)
 		mazePlace();
 
 	// The generic room open reads one script name out of the shared overlay's
@@ -451,7 +457,7 @@ void AlienEngine::startMaze() {
 	// Both mazes speak out of room43.tal (the string pools at 0x570 and 0x84e).
 	const Common::Path script("room43.tal");
 	if (Common::File::exists(script))
-		_tal.load(script, &_pack);
+		_vm->_tal.load(script, &_vm->_pack);
 
 	// The torch burns on the far wall, so it burns only where there is one to
 	// see: the original's play sits under the same guard the centre arrow does
@@ -459,9 +465,9 @@ void AlienEngine::startMaze() {
 	// unconditional because that guard is an indexed compare. Taken down
 	// rather than stopped: a mode 1 play cut short leaves its frame in the
 	// plate, a torch standing on a wall that has none.
-	const MazeCell *cell = mazeCell(_room);
+	const MazeCell *cell = mazeCell(_vm->_room);
 	if (cell && cell->tile[2] != 1)
-		_anims.takeDown(kTorchSlot);
+		_vm->_anims.takeDown(kTorchSlot);
 }
 
 /**
@@ -475,30 +481,30 @@ void AlienEngine::startMaze() {
  * Returns true when the maze has answered the submode, and leaves `submode`
  * rewritten when it has not.
  */
-bool AlienEngine::mazeExit(byte &submode) {
-	if (!isMaze(_room))
+bool MazeRoom::turnExit(byte &submode) {
+	if (!isMaze(_vm->_room))
 		return false;
 
-	const MazeCell *cell = mazeCell(_room);
+	const MazeCell *cell = mazeCell(_vm->_room);
 	if (!cell)
 		return false;
 
-	const byte at = _script.flag(kCell);
+	const byte at = _vm->_script.flag(kCell);
 
 	// 0000:0019, 0000:00a6 and 0000:00c3: the three mouths. Each names which
 	// of room 41's three views he comes out into.
-	if (_room == kMazeRoomA && at == 0 && submode == 7) {
-		_script.setFlag(kShoreMouth, 2);
+	if (_vm->_room == kMazeRoomA && at == 0 && submode == 7) {
+		_vm->_script.setFlag(kShoreMouth, 2);
 		submode = kShoreSubmodeA;
 		return false;
 	}
-	if (_room == kMazeRoomB && at == kCellFarMouth && submode == 7) {
-		_script.setFlag(kShoreMouth, 1);
+	if (_vm->_room == kMazeRoomB && at == kCellFarMouth && submode == 7) {
+		_vm->_script.setFlag(kShoreMouth, 1);
 		submode = kShoreSubmodeA;
 		return false;
 	}
-	if (_room == kMazeRoomB && at == 0 && submode == 6) {
-		_script.setFlag(kShoreMouth, 0);
+	if (_vm->_room == kMazeRoomB && at == 0 && submode == 6) {
+		_vm->_script.setFlag(kShoreMouth, 0);
 		submode = kShoreSubmodeB;
 		return false;
 	}
@@ -507,19 +513,19 @@ bool AlienEngine::mazeExit(byte &submode) {
 	// arrow it was, is the scene instead of a step. [0xa77d] makes it once
 	// only, and its own exit comes back through here with the flag set, which
 	// is the submode 5 the test below rewrites.
-	if (_room == kMazeRoomA && at == kCellCrystalDoor && !_script.flag(kDoorOpen)) {
-		_script.setFlag(kDoorOpen, 1);
+	if (_vm->_room == kMazeRoomA && at == kCellCrystalDoor && !_vm->_script.flag(kDoorOpen)) {
+		_vm->_script.setFlag(kDoorOpen, 1);
 		_mazeStep = kStepDoorPlay;
 		CursorMan.showMouse(false);
 		// CRY_DMOR is the door alone: he stands in front of it the whole time
 		// (nothing in 0x0722-0x07ec touches [0xa94d]).
-		_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, kDoorMode);
+		_vm->_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, kDoorMode);
 		debugC(1, kDebugRooms, "maze: the crystal door opens");
 		return true;
 	}
 
 	// 0000:0077: and with the door already open, the one submode that leaves.
-	if (_room == kMazeRoomA && at == kCellCrystalDoor && submode == 5) {
+	if (_vm->_room == kMazeRoomA && at == kCellCrystalDoor && submode == 5) {
 		submode = kCrystalExitSubmode;
 		return false;
 	}
@@ -533,24 +539,24 @@ bool AlienEngine::mazeExit(byte &submode) {
 	const byte next = cell->next[dir - 1];
 	if (next == kNoCell) {
 		debugC(1, kDebugRooms, "maze: room %d cell 0x%02x has no way out in direction %u",
-			   _room, at, dir);
+			   _vm->_room, at, dir);
 		return true;
 	}
 
 	debugC(1, kDebugRooms, "maze: room %d cell 0x%02x -> 0x%02x, direction %u",
-		   _room, at, next, dir);
-	_script.setFlag(kCell, next);
+		   _vm->_room, at, next, dir);
+	_vm->_script.setFlag(kCell, next);
 	_mazePose = submode;
 
 	// The room's loop ends for a step exactly as it does for a real exit, and
 	// ending it is what sets game_mode to the room being left (OBJ:sub_0879a,
 	// called from 0x0847 either way). So the re-entry sees the maze's own
-	// handler code rather than the shore's, and mazeEnter() leaves the cell
+	// handler code rather than the shore's, and preload() leaves the cell
 	// this step just wrote alone.
-	const int room = _room;
-	_mode = (byte)room;
-	_lastSubmode = submode;
-	if (!loadRoom(room))
+	const int room = _vm->_room;
+	_vm->_mode = (byte)room;
+	_vm->_lastSubmode = submode;
+	if (!_vm->loadRoom(room))
 		return true;
 
 	mazePlace();
@@ -659,7 +665,7 @@ static const int kCryForward = 1;		///< mode 1: forward, left behind (anim.h)
 static const uint16 kCrystalLoopOn = 0xa784;
 
 /// DLGREQ:sub_0c432, one pass, the same alternating runner sluggs.cpp explains.
-void AlienEngine::crystalSpeak() {
+void MazeRoom::crystalSpeak() {
 	if (!_crystalLeft) {
 		_crystalSpeaking = false;
 		return;
@@ -667,9 +673,9 @@ void AlienEngine::crystalSpeak() {
 
 	const bool awlox = _crystalSpeaker == 0;
 	const byte *ink = awlox ? kAwloxInk : kCryBenInk;
-	setTextColor(ink[0], ink[1], ink[2]);
-	uploadTextColor();
-	queueOutcome(_tal, _crystalLine, awlox ? kAwloxX : kCryBenX,
+	_vm->setTextColor(ink[0], ink[1], ink[2]);
+	_vm->uploadTextColor();
+	_vm->queueOutcome(_vm->_tal, _crystalLine, awlox ? kAwloxX : kCryBenX,
 				 awlox ? kAwloxY : kCryBenY, !awlox);
 
 	debugC(1, kDebugRooms, "crystal: %s says outcome 0x%02x",
@@ -681,18 +687,18 @@ void AlienEngine::crystalSpeak() {
 }
 
 /// One of the two lines the machine speaks on its own, outside the runner.
-void AlienEngine::crystalSay(byte outcome) {
-	setTextColor(kCryBenInk[0], kCryBenInk[1], kCryBenInk[2]);
-	uploadTextColor();
+void MazeRoom::crystalSay(byte outcome) {
+	_vm->setTextColor(kCryBenInk[0], kCryBenInk[1], kCryBenInk[2]);
+	_vm->uploadTextColor();
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
-	queueOutcome(_tal, outcome, anchorX, anchorY);
+	_vm->characterAnchor(anchorX, anchorY);
+	_vm->queueOutcome(_vm->_tal, outcome, anchorX, anchorY);
 }
 
 /// Room 45 crystal entry scene: the [0xa49f] machine at 0x0bee.
-void AlienEngine::stepCrystal() {
-	if (_room != kCrystalRoom) {
+void MazeRoom::stepCrystal() {
+	if (_vm->_room != kCrystalRoom) {
 		_crystalStep = 0;
 		_crystalSpeaking = false;
 		return;
@@ -704,47 +710,47 @@ void AlienEngine::stepCrystal() {
 		_crystalStep = 1;
 		_crystalWait = 0;
 		_crystalSpeaking = false;
-		_script.setFlag(RoomScript::kMachine, kCrystalWhat);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalWhat);
 		CursorMan.showMouse(false);
 	}
 
 	// A conversation keeps itself going, one line per line that came down.
-	if (_crystalSpeaking && speechDone())
+	if (_crystalSpeaking && _vm->speechDone())
 		crystalSpeak();
 
 	// [0xa49c], which LOGIC advances whether or not a state is reading it.
 	_crystalWait++;
 
-	switch (_script.flag(RoomScript::kMachine)) {
+	switch (_vm->_script.flag(RoomScript::kMachine)) {
 	case kCrystalWhat:
 		// 0x0bf5: the wipe, then the first thing he says to himself.
 		crystalSay(kCryWhatLine);
-		_script.setFlag(RoomScript::kMachine, kCrystalWhatDown);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalWhatDown);
 		break;
 
 	case kCrystalWhatDown:
 		// 0x0c0d: [0xad1c], the line being down.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		_script.setFlag(RoomScript::kMachine, kCrystalComeOut);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalComeOut);
 		_crystalWait = 0;
 		break;
 
 	case kCrystalComeOut:
 		if (_crystalWait <= kCryOutWait)
 			break;
-		_anims.play(kCryDoorSlot, kCryOutFirst, kCryOutCount, kCryRate, kCryForward);
-		_script.setFlag(RoomScript::kMachine, kCrystalStandIn);
+		_vm->_anims.play(kCryDoorSlot, kCryOutFirst, kCryOutCount, kCryRate, kCryForward);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalStandIn);
 		break;
 
 	case kCrystalStandIn:
 		// 0x0c45: on the last frame of it, and not after -- the relaunch below
 		// would otherwise never be told to start.
-		if (_anims.remaining(kCryDoorSlot) != 1)
+		if (_vm->_anims.remaining(kCryDoorSlot) != 1)
 			break;
-		_script.setFlag(kCrystalLoopOn, 1);
-		_anims.play(kCryDoorSlot, kCryStandFirst, kCryStandCount, kCryRate, kCryForward);
-		_script.setFlag(RoomScript::kMachine, kCrystalUh);
+		_vm->_script.setFlag(kCrystalLoopOn, 1);
+		_vm->_anims.play(kCryDoorSlot, kCryStandFirst, kCryStandCount, kCryRate, kCryForward);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalUh);
 		_crystalWait = 0;
 		break;
 
@@ -752,47 +758,47 @@ void AlienEngine::stepCrystal() {
 		if (_crystalWait <= kCryUhWait)
 			break;
 		crystalSay(kCryUhLine);
-		_script.setFlag(RoomScript::kMachine, kCrystalUhDown);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalUhDown);
 		break;
 
 	case kCrystalUhDown:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_crystalSpeaker = 0;
 		_crystalLine = kCryTalkFirst;
 		_crystalLeft = kCryTalkCount;
 		_crystalSpeaking = true;
 		crystalSpeak();
-		_script.setFlag(RoomScript::kMachine, kCrystalTalking);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalTalking);
 		break;
 
 	case kCrystalTalking:
 		// 0x0cc1: [0xad3f], the run having nothing left to say.
-		if (_crystalSpeaking || !speechDone())
+		if (_crystalSpeaking || !_vm->speechDone())
 			break;
 		CursorMan.showMouse(false);
-		_anims.play(kCryNoteSlot, 1, kCryNoteCount, kCryRate, kCryForward);
-		_script.setFlag(RoomScript::kMachine, kCrystalNote);
+		_vm->_anims.play(kCryNoteSlot, 1, kCryNoteCount, kCryRate, kCryForward);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalNote);
 		_crystalWait = 0;
 		break;
 
 	case kCrystalNote:
-		if (_anims.remaining(kCryNoteSlot) != 0)
+		if (_vm->_anims.remaining(kCryNoteSlot) != 0)
 			break;
-		_script.setFlag(RoomScript::kMachine, kCrystalTake);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalTake);
 		break;
 
 	case kCrystalTake:
 		// 0x0d02: the one moment in the scene that is timed to the standing
 		// loop rather than to a play of its own.
-		if (_anims.frame(kCryDoorSlot) != kCryStandFrame)
+		if (_vm->_anims.frame(kCryDoorSlot) != kCryStandFrame)
 			break;
-		_inventory.add(kCryPhoneNumber);
-		_anims.stop(kCryDoorSlot);
-		_anims.stop(kCryDropSlot);
-		_anims.play(kCryDoorSlot, kCryStandFirst, 1, 0, kCryForward);
-		_anims.play(kCryBenSlot, 1, kCryBenCount, kCryRate, kCryForward);
-		_script.setFlag(RoomScript::kMachine, kCrystalGo);
+		_vm->_inventory.add(kCryPhoneNumber);
+		_vm->_anims.stop(kCryDoorSlot);
+		_vm->_anims.stop(kCryDropSlot);
+		_vm->_anims.play(kCryDoorSlot, kCryStandFirst, 1, 0, kCryForward);
+		_vm->_anims.play(kCryBenSlot, 1, kCryBenCount, kCryRate, kCryForward);
+		_vm->_script.setFlag(RoomScript::kMachine, kCrystalGo);
 		debugC(1, kDebugRooms, "crystal: item %u handed over", kCryPhoneNumber);
 		break;
 
@@ -800,12 +806,12 @@ void AlienEngine::stepCrystal() {
 		// 0x0d46 also drops [0xa94d] four frames in. The port has no home for
 		// that byte and the cursor has been away since the opening, so there
 		// is nothing here for it to close.
-		if (_anims.remaining(kCryBenSlot) != 1)
+		if (_vm->_anims.remaining(kCryBenSlot) != 1)
 			break;
-		_script.setFlag(RoomScript::kMachine, 0);
+		_vm->_script.setFlag(RoomScript::kMachine, 0);
 		_crystalStep = 0;
 		CursorMan.showMouse(true);
-		takeExit(kCrystalExit);
+		_vm->takeExit(kCrystalExit);
 		break;
 
 	default:
@@ -814,27 +820,27 @@ void AlienEngine::stepCrystal() {
 }
 
 /// The crystal-door scene, [0xa49f] 3..8 (0x0722-0x07ec).
-void AlienEngine::stepMaze() {
-	if (_room != kMazeRoomA || !_mazeStep)
+void MazeRoom::stepMaze() {
+	if (_vm->_room != kMazeRoomA || !_mazeStep)
 		return;
 
 	switch (_mazeStep) {
 	case kStepDoorPlay:
 		// 0x0722: the door's own thirteen frames come up first, and he turns
 		// to face it.
-		if (_anims.isBusy(kDoorSlot))
+		if (_vm->_anims.isBusy(kDoorSlot))
 			break;
-		_ben.faceTo(kDoorTurnFacing);
+		_vm->_ben.faceTo(kDoorTurnFacing);
 		_mazeStep = kStepWhat;
 		break;
 
 	case kStepWhat: {
 		// 0x0741: "What the..."
-		if (_ben.isTurning())
+		if (_vm->_ben.isTurning())
 			break;
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOutcomeWhat, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeWhat, anchorX, anchorY);
 		_mazeStep = kStepWalk;
 		break;
 	}
@@ -843,43 +849,50 @@ void AlienEngine::stepMaze() {
 		// 0x0773: a route he is given rather than one he asked for,
 		// 1021:sub_1023c -- from where he stands to the arrow's foot and on
 		// to the doorway. He walks the first leg; he is not put there.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		walkHandRoute(kDoorWalkFromX, kDoorWalkY, kDoorWalkToX, kDoorWalkY, kDoorFacing);
+		_vm->walkHandRoute(kDoorWalkFromX, kDoorWalkY, kDoorWalkToX, kDoorWalkY, kDoorFacing);
 		_mazeStep = kStepWow;
 		break;
 
 	case kStepWow: {
 		// 0x079c: "Wow..." once he is there.
-		if (_ben.isWalking() || _ben.isTurning())
+		if (_vm->_ben.isWalking() || _vm->_ben.isTurning())
 			break;
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOutcomeWow, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeWow, anchorX, anchorY);
 		_mazeStep = kStepStep;
 		break;
 	}
 
 	case kStepStep:
 		// 0x07c5: and the step through it.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		walkTo(kDoorStepX, kDoorWalkY, kDoorFacing);
+		_vm->walkTo(kDoorStepX, kDoorWalkY, kDoorFacing);
 		_mazeStep = kStepLeave;
 		break;
 
 	case kStepLeave:
 		// 0x07dd: submode 5, which is rewritten into the 10 the chain
 		// answers with room 45.
-		if (_ben.isWalking() || _ben.isTurning())
+		if (_vm->_ben.isWalking() || _vm->_ben.isTurning())
 			break;
 		_mazeStep = 0;
-		takeExit(5);
+		_vm->takeExit(5);
 		break;
 
 	default:
 		break;
 	}
+}
+
+void MazeRoom::tickPair() {
+	// Room 45, the crystal entry scene, and maze A's, the scene the crystal
+	// door opens into.
+	stepCrystal();
+	stepMaze();
 }
 
 } // End of namespace Alien
