@@ -25,6 +25,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/teleport.h"
 
 namespace Alien {
 
@@ -265,6 +266,11 @@ static const uint16 kChamberView = 0xa7a6;		///< room 56's view, 1..3; 2 shows t
 static const uint16 kCardThere = 0xa7a7;		///< the security card (item 41) still lies there
 static const uint16 kFromCorridor = 0xa7a8;		///< room 55 was entered since the last visit
 
+TeleportRoom::TeleportRoom(AlienEngine *vm) : Room(vm),
+		_teleportStep(0), _teleportWait(0), _shipStep(0), _shipWait(0),
+		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false) {
+}
+
 /**
  * Room 56 is drawn, walked and clicked in one of three views picked by
  * [0xa7a6] -- the room's own plates, floor rectangles and hotspots all switch
@@ -276,54 +282,54 @@ static const uint16 kFromCorridor = 0xa7a8;		///< room 55 was entered since the 
  * teleporter from the park never raises [0xa7a8], so the first arrival is view
  * 3 and the card is out of sight until Ben has been to the corridor.
  */
-void AlienEngine::advanceChamberView(int room) {
+void TeleportRoom::chooseView(int room) {
 	if (room == kCorridorRoom) {
-		_script.setFlag(kFromCorridor, 1);
+		_vm->_script.setFlag(kFromCorridor, 1);
 		return;
 	}
 
-	if (room != kShipRoom || _script.flag(kFromCorridor) != 1)
+	if (room != kShipRoom || _vm->_script.flag(kFromCorridor) != 1)
 		return;
 
-	_script.setFlag(kFromCorridor, 0);
-	if (_script.flag(kCardThere) == 1) {
-		_script.setFlag(kChamberView, 2);
+	_vm->_script.setFlag(kFromCorridor, 0);
+	if (_vm->_script.flag(kCardThere) == 1) {
+		_vm->_script.setFlag(kChamberView, 2);
 	} else {
-		byte view = _script.flag(kChamberView) + 1;
-		_script.setFlag(kChamberView, view > 2 ? 1 : view);
+		byte view = _vm->_script.flag(kChamberView) + 1;
+		_vm->_script.setFlag(kChamberView, view > 2 ? 1 : view);
 	}
-	debugC(1, kDebugRooms, "teleport: room 56 in view %u", _script.flag(kChamberView));
+	debugC(1, kDebugRooms, "teleport: room 56 in view %u", _vm->_script.flag(kChamberView));
 }
 
 /// Every arrival puts room 22's machine down, and opens room 56 (0x0462).
-void AlienEngine::startTeleport() {
+void TeleportRoom::start() {
 	_teleportStep = 0;
 	_teleportWait = 0;
 	_shipStep = 0;
 	_shipWait = 0;
 
-	if (_room != kShipRoom)
+	if (_vm->_room != kShipRoom)
 		return;
 
-	_script.setFlag(kPadOff, 0);
+	_vm->_script.setFlag(kPadOff, 0);
 
 	// The vent is the jail arrival's own play ([0xa49f] 9, 0x093c), which
 	// roominit.cpp lifts as an opening play on every way in; the machine
 	// below plays it when it is due.
-	_anims.takeDown(kShaftSlot);
+	_vm->_anims.takeDown(kShaftSlot);
 	_shipFlashes = 0;
 	_shipFlashDue = false;
 
 	// 0x0591: the chamber stands open for an arrival through it.
-	const bool fromPark = _mode == kFromPark;
-	_script.setFlag(kChamberState, 1);
+	const bool fromPark = _vm->_mode == kFromPark;
+	_vm->_script.setFlag(kChamberState, 1);
 	if (fromPark) {
-		_script.setFlag(kChamberState, 2);
-		_script.setFlag(kPadOff, 1);
+		_vm->_script.setFlag(kChamberState, 2);
+		_vm->_script.setFlag(kPadOff, 1);
 	}
 	shipChamber(fromPark);
 
-	if (_mode == kFromJail)
+	if (_vm->_mode == kFromJail)
 		shipFromJail();
 
 	if (!fromPark)
@@ -331,34 +337,34 @@ void AlienEngine::startTeleport() {
 
 	// 0x0669: on the pad, out of sight, and no cursor until he is off it.
 	// roominit.cpp has already stood him there.
-	_script.setFlag(kShipBeenHere, 1);
-	_ben.placeSprite(kPadX, kPadY, kOffPadFacing);
-	hideCharacter();
+	_vm->_script.setFlag(kShipBeenHere, 1);
+	_vm->_ben.placeSprite(kPadX, kPadY, kOffPadFacing);
+	_vm->hideCharacter();
 	CursorMan.showMouse(false);
 	_shipStep = kShipBeamIn;
 	debugC(1, kDebugRooms, "ship: beamed in from the park");
 }
 
 /// CHARANIM:sub_14b1a, room 56's opening after the climb through the shaft.
-void AlienEngine::shipFromJail() {
-	_script.setFlag(kJailView, kJailCorridor);
-	_ben.placeSprite(kVentX, kVentY, kVentFacing);
+void TeleportRoom::shipFromJail() {
+	_vm->_script.setFlag(kJailView, kJailCorridor);
+	_vm->_ben.placeSprite(kVentX, kVentY, kVentFacing);
 
-	if (_script.flag(kOutOfJail) == 1)
+	if (_vm->_script.flag(kOutOfJail) == 1)
 		return;
 
-	showStill(kJailCard, kJailCardTicks);
-	hideCharacter();
+	_vm->showStill(kJailCard, kJailCardTicks);
+	_vm->hideCharacter();
 	CursorMan.showMouse(false);
 	_shipStep = kShipVent;
 	_shipWait = 0;
-	_script.setFlag(kOutOfJail, 1);
+	_vm->_script.setFlag(kOutOfJail, 1);
 	debugC(1, kDebugRooms, "ship: much, much later, out of the vent");
 }
 
 /// INPUT:sub_01e2e's half of the flash: [0x33ea] = 5 and the rest cleared.
-void AlienEngine::startShipFlash() {
-	memcpy(_shipFlashSource, _palette, sizeof(_shipFlashSource));
+void TeleportRoom::startShipFlash() {
+	memcpy(_shipFlashSource, _vm->_palette, sizeof(_shipFlashSource));
 	_shipFlashes = kFlashCount;
 	_shipFlashCount = 0;
 	_shipFlashLevel = 0;
@@ -369,17 +375,17 @@ void AlienEngine::startShipFlash() {
 /// and while flashes are left the level falls and a new pulse starts every
 /// second tick pair. The last mix is at the level the last pulse fell to,
 /// which the source puts back.
-void AlienEngine::stepShipFlash() {
-	if (_room != kShipRoom || (!_shipFlashes && !_shipFlashDue))
+void TeleportRoom::tick() {
+	if (_vm->_room != kShipRoom || (!_shipFlashes && !_shipFlashDue))
 		return;
 
 	if (_shipFlashDue) {
 		const int level = _shipFlashLevel;
 		for (int i = kFlashFirst * 3; i < (kFlashFirst + kFlashEntries) * 3; i++) {
 			const int ink = kFlashInk[i % 3] * 255 / 63;
-			_palette[i] = (byte)((_shipFlashSource[i] * (0x100 - level) + ink * level) >> 8);
+			_vm->_palette[i] = (byte)((_shipFlashSource[i] * (0x100 - level) + ink * level) >> 8);
 		}
-		g_system->getPaletteManager()->setPalette(_palette + kFlashFirst * 3, kFlashFirst,
+		g_system->getPaletteManager()->setPalette(_vm->_palette + kFlashFirst * 3, kFlashFirst,
 												  kFlashEntries);
 		_shipFlashDue = false;
 	}
@@ -390,7 +396,7 @@ void AlienEngine::stepShipFlash() {
 	_shipFlashDue = true;
 	if (_shipFlashLevel > 0)
 		_shipFlashLevel = MAX(_shipFlashLevel - kFlashFall, 0);
-	if ((_tick & 1) == 0)
+	if ((_vm->_tick & 1) == 0)
 		_shipFlashCount++;
 	if (_shipFlashCount == 2) {
 		_shipFlashes--;
@@ -402,23 +408,23 @@ void AlienEngine::stepShipFlash() {
 
 	// Where the original keeps the three (0x07e7-0x083c), which a save holds
 	// 
-	_script.setFlag(0x33ea, (byte)_shipFlashes);
-	setStateWord(0x33e8, (uint16)_shipFlashLevel);
-	setStateWord(0x33ec, (uint16)_shipFlashCount);
+	_vm->_script.setFlag(0x33ea, (byte)_shipFlashes);
+	_vm->setStateWord(0x33e8, (uint16)_shipFlashLevel);
+	_vm->setStateWord(0x33ec, (uint16)_shipFlashCount);
 }
 
 /// LOGIC:sub_123f1 and sub_123d0: the chamber open, or shut and pulsing.
-void AlienEngine::shipChamber(bool open) {
+void TeleportRoom::shipChamber(bool open) {
 	if (open) {
-		_script.setFlag(kChamberState, 2);
-		_anims.stop(kShutSlot);
-		_anims.play(kOpenSlot, kOpenFirst, kOpenCount, kOpenRate, kPlayMode);
+		_vm->_script.setFlag(kChamberState, 2);
+		_vm->_anims.stop(kShutSlot);
+		_vm->_anims.play(kOpenSlot, kOpenFirst, kOpenCount, kOpenRate, kPlayMode);
 	} else {
-		_script.setFlag(kChamberState, 1);
-		_anims.stop(kOpenSlot);
-		_anims.play(kShutSlot, 0, ARRAYSIZE(kShutFrames), kShutRate, 6, kShutFrames);
+		_vm->_script.setFlag(kChamberState, 1);
+		_vm->_anims.stop(kOpenSlot);
+		_vm->_anims.play(kShutSlot, 0, ARRAYSIZE(kShutFrames), kShutRate, 6, kShutFrames);
 	}
-	_dirty = true;
+	_vm->_dirty = true;
 }
 
 /**
@@ -427,8 +433,8 @@ void AlienEngine::shipChamber(bool open) {
  * [0xa825] with [0x8d0e]) stops in front of it. The lift keeps both rows and
  * the second always wins, so the switch on the button is put back here.
  */
-void AlienEngine::shipWalkTarget(byte obj, bool action, WalkTarget &target) {
-	if (_room != kShipRoom || obj != kChamberObj || action)
+void TeleportRoom::shipWalkTarget(byte obj, bool action, WalkTarget &target) {
+	if (_vm->_room != kShipRoom || obj != kChamberObj || action)
 		return;
 
 	target.x = kPadWalkX;
@@ -437,25 +443,25 @@ void AlienEngine::shipWalkTarget(byte obj, bool action, WalkTarget &target) {
 }
 
 /// 0x046b: the first arrival from the park opens on the ship itself.
-void AlienEngine::shipArrivalScene(int room) {
-	if (room != kShipRoom || _mode != kFromPark || _script.flag(kShipVisited) != 0)
+void TeleportRoom::raiseScenes(int room) {
+	if (room != kShipRoom || _vm->_mode != kFromPark || _vm->_script.flag(kShipVisited) != 0)
 		return;
 
 	debugC(1, kDebugCutscene, "ship: record %u, the ship in space", kShipRecord);
-	playCutsceneRecord(kShipRecord);
+	_vm->playCutsceneRecord(kShipRecord);
 }
 
 /// The two click hooks at 0x0043 and 0x00e5: the phone, and the number on it.
-bool AlienEngine::armTeleportPhone(int obj, byte verb, byte item) {
-	if (_room != kParkRoom || _teleportStep)
+bool TeleportRoom::armTeleportPhone(int obj, byte verb, byte item) {
+	if (_vm->_room != kParkRoom || _teleportStep)
 		return false;
 
 	// 0x0134: the handset off its hook.
 	if (!item && obj == kHandsetObj && verb == kVerbPickUp &&
-		_script.flag(kHandsetDown) == 1) {
-		_script.setFlag(kHandsetDown, 0);
-		hideCharacter();
-		_anims.play(kLiftSlot, 0, ARRAYSIZE(kLiftFrames), kLiftRate, kLiftMode, kLiftFrames);
+		_vm->_script.flag(kHandsetDown) == 1) {
+		_vm->_script.setFlag(kHandsetDown, 0);
+		_vm->hideCharacter();
+		_vm->_anims.play(kLiftSlot, 0, ARRAYSIZE(kLiftFrames), kLiftRate, kLiftMode, kLiftFrames);
 		CursorMan.showMouse(false);
 		_teleportStep = kStepLifted;
 		debugC(1, kDebugRooms, "teleport: the handset comes off its hook");
@@ -463,39 +469,39 @@ bool AlienEngine::armTeleportPhone(int obj, byte verb, byte item) {
 	}
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
+	_vm->characterAnchor(anchorX, anchorY);
 
 	if (item) {
 		// 0x0043: only the number, only on the phone or the booth, and only
 		// with the line open.
 		if (item != kNumberItem || (obj != kPhoneObj && obj != kBoothObj) ||
-			_script.flag(kHandsetDown) != 0)
+			_vm->_script.flag(kHandsetDown) != 0)
 			return false;
 	} else {
 		// 0x00e5
 		if (obj != kPhoneObj || verb != kVerbUse)
 			return false;
 
-		const bool first = _script.flag(kPhoneUses) == 0;
-		if (_script.flag(kPhoneUses) < 1)
-			_script.setFlag(kPhoneUses, 1);
+		const bool first = _vm->_script.flag(kPhoneUses) == 0;
+		if (_vm->_script.flag(kPhoneUses) < 1)
+			_vm->_script.setFlag(kPhoneUses, 1);
 
-		if (!_inventory.has(kNumberItem)) {
+		if (!_vm->_inventory.has(kNumberItem)) {
 			if (first) {
-				queueOutcome(_tal, kLineMumble, anchorX, anchorY);
+				_vm->queueOutcome(_vm->_tal, kLineMumble, anchorX, anchorY);
 				CursorMan.showMouse(false);
 				_teleportStep = kStepMumble;
 			} else {
-				queueOutcome(_tal, kLineStillOpen, anchorX, anchorY);
+				_vm->queueOutcome(_vm->_tal, kLineStillOpen, anchorX, anchorY);
 			}
 			return true;
 		}
 	}
 
 	// 0x0a4e: the number is dialled.
-	const byte line = _script.flag(kDialledBefore) == 1 ? kLineNumberAgain : kLineNumber;
-	queueOutcome(_tal, line, anchorX, anchorY);
-	_script.setFlag(kDialledBefore, 1);
+	const byte line = _vm->_script.flag(kDialledBefore) == 1 ? kLineNumberAgain : kLineNumber;
+	_vm->queueOutcome(_vm->_tal, line, anchorX, anchorY);
+	_vm->_script.setFlag(kDialledBefore, 1);
 	CursorMan.showMouse(false);
 	_teleportStep = kStepDialDone;
 	debugC(1, kDebugRooms, "teleport: the number is dialled, outcome %u", line);
@@ -503,23 +509,23 @@ bool AlienEngine::armTeleportPhone(int obj, byte verb, byte item) {
 }
 
 /// Room 22's [0xa49f] machine from 0x0a04, the phone's half of it.
-void AlienEngine::stepTeleport() {
-	if (_room != kParkRoom || !_teleportStep)
+void TeleportRoom::stepTeleport() {
+	if (_vm->_room != kParkRoom || !_teleportStep)
 		return;
 
 	switch (_teleportStep) {
 	case kStepLifted:
 		// 0x0bf5: [0xa4ec], two frames of the lift still to go.
-		if (_anims.remaining(kLiftSlot) > 2)
+		if (_vm->_anims.remaining(kLiftSlot) > 2)
 			break;
 		_teleportStep = 0;
-		showCharacter();
+		_vm->showCharacter();
 		CursorMan.showMouse(true);
 		break;
 
 	case kStepMumble:
 		// 0x0a36
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_teleportStep = 0;
 		CursorMan.showMouse(true);
@@ -527,20 +533,20 @@ void AlienEngine::stepTeleport() {
 
 	case kStepDialDone:
 		// 0x0a80
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_teleportStep = kStepSpark;
 		break;
 
 	case kStepSpark:
 		// 0x0c12
-		_anims.play(kSparkSlot, kSparkFirst, kSparkCount, kSparkRate, kPlayMode);
+		_vm->_anims.play(kSparkSlot, kSparkFirst, kSparkCount, kSparkRate, kPlayMode);
 		for (uint i = 0; i < ARRAYSIZE(kSparkSamples); i++)
-			_sound.queue(kSparkSamples[i].sample, kSparkSamples[i].rate,
+			_vm->_sound.queue(kSparkSamples[i].sample, kSparkSamples[i].rate,
 						 kSparkSamples[i].volume, 0, kSparkSamples[i].delay);
 		_teleportWait = kFireTicks;
 		_teleportStep = kStepFire;
-		_dirty = true;
+		_vm->_dirty = true;
 		break;
 
 	case kStepFire: {
@@ -548,21 +554,21 @@ void AlienEngine::stepTeleport() {
 		if (_teleportWait && --_teleportWait)
 			break;
 
-		if (_script.flag(kTeleportRepaired) != 1 || _script.flag(kTeleportDest) != kDestShip) {
+		if (_vm->_script.flag(kTeleportRepaired) != 1 || _vm->_script.flag(kTeleportDest) != kDestShip) {
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, kLineNothing, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, kLineNothing, anchorX, anchorY);
 			_teleportStep = 0;
 			CursorMan.showMouse(true);
 			debugC(1, kDebugRooms, "teleport: nothing happens, [0x33b3] = %u, [0x33b6] = %u",
-				   _script.flag(kTeleportRepaired), _script.flag(kTeleportDest));
+				   _vm->_script.flag(kTeleportRepaired), _vm->_script.flag(kTeleportDest));
 			break;
 		}
 
 		// 0x0c5c: Ben goes with the beam.
-		playCharacterAnim(kBeamSlot, kBeamFirst, kBeamCount, kBeamRate, kPlayMode);
+		_vm->playCharacterAnim(kBeamSlot, kBeamFirst, kBeamCount, kBeamRate, kPlayMode);
 		for (uint i = 0; i < ARRAYSIZE(kBeamSamples); i++)
-			_sound.queue(kBeamSamples[i].sample, kBeamSamples[i].rate,
+			_vm->_sound.queue(kBeamSamples[i].sample, kBeamSamples[i].rate,
 						 kBeamSamples[i].volume, 0, kBeamSamples[i].delay);
 		_teleportWait = kGoneTicks;
 		_teleportStep = kStepGone;
@@ -575,7 +581,7 @@ void AlienEngine::stepTeleport() {
 		if (_teleportWait && --_teleportWait)
 			break;
 		_teleportStep = 0;
-		takeExit(kToShipSubmode);
+		_vm->takeExit(kToShipSubmode);
 		break;
 
 	default:
@@ -584,12 +590,12 @@ void AlienEngine::stepTeleport() {
 }
 
 /// Room 56's machine (0x092e) and the pad under it (0x0aae).
-void AlienEngine::stepShip() {
-	if (_room != kShipRoom)
+void TeleportRoom::stepShip() {
+	if (_vm->_room != kShipRoom)
 		return;
 
 	// [0xa49c] moves on the animation frame (0x0715), every second tick pair.
-	if ((_tick & 3) == 0)
+	if ((_vm->_tick & 3) == 0)
 		_shipWait++;
 
 	switch (_shipStep) {
@@ -597,19 +603,19 @@ void AlienEngine::stepShip() {
 		CursorMan.showMouse(false);
 		if (_shipWait <= kVentWait)
 			break;
-		_anims.play(kShaftSlot, 1, kVentFrames, kVentRate, 1);
+		_vm->_anims.play(kShaftSlot, 1, kVentFrames, kVentRate, 1);
 		for (uint i = 0; i < ARRAYSIZE(kVentSamples); i++)
-			_sound.queue(kVentSamples[i].sample, kVentSamples[i].rate, kVentSamples[i].volume,
+			_vm->_sound.queue(kVentSamples[i].sample, kVentSamples[i].rate, kVentSamples[i].volume,
 						 kVentPanning, kVentSamples[i].delay);
 		_shipStep = kShipVentOut;
 		debugC(1, kDebugRooms, "ship: out of the vent, %d frames", kVentFrames);
 		break;
 
 	case kShipVentOut:
-		if (_anims.remaining(kShaftSlot) != 0)
+		if (_vm->_anims.remaining(kShaftSlot) != 0)
 			break;
-		showCharacter();
-		debugC(1, kDebugRooms, "ship: standing by the vent at %d,%d", _ben.walkX(), _ben.walkY());
+		_vm->showCharacter();
+		debugC(1, kDebugRooms, "ship: standing by the vent at %d,%d", _vm->_ben.walkX(), _vm->_ben.walkY());
 		_shipStep = kShipVentDone;
 		_shipWait = 0;
 		break;
@@ -620,8 +626,8 @@ void AlienEngine::stepShip() {
 		CursorMan.showMouse(true);
 		_shipStep = 0;
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kLineOutOfJail, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kLineOutOfJail, anchorX, anchorY);
 		break;
 	}
 
@@ -631,7 +637,7 @@ void AlienEngine::stepShip() {
 		if (_shipWait <= kBeamInTicks)
 			break;
 		for (uint i = 0; i < kHumCount; i++)
-			_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
+			_vm->_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
 						 kHumSample.delay);
 		startShipFlash();
 		_shipStep = kShipAppear;
@@ -641,7 +647,7 @@ void AlienEngine::stepShip() {
 	case kShipAppear:
 		if (_shipWait <= 0)
 			break;
-		showCharacter();
+		_vm->showCharacter();
 		_shipStep = kShipStepOff;
 		_shipWait = 0;
 		break;
@@ -649,9 +655,9 @@ void AlienEngine::stepShip() {
 	case kShipStepOff:
 		if (_shipWait <= kStepOffTicks)
 			break;
-		walkTo(kOffPadX, kOffPadY, kOffPadFacing);
-		debugC(1, kDebugRooms, "ship: off the pad from %d,%d, walking %d", _ben.walkX(),
-			   _ben.walkY(), _ben.isWalking());
+		_vm->walkTo(kOffPadX, kOffPadY, kOffPadFacing);
+		debugC(1, kDebugRooms, "ship: off the pad from %d,%d, walking %d", _vm->_ben.walkX(),
+			   _vm->_ben.walkY(), _vm->_ben.isWalking());
 		_shipStep = kShipSettle;
 		_shipWait = 0;
 		break;
@@ -659,19 +665,19 @@ void AlienEngine::stepShip() {
 	case kShipSettle: {
 		if (_shipWait <= kSettleTicks)
 			break;
-		_script.setFlag(kPadOff, 0);
+		_vm->_script.setFlag(kPadOff, 0);
 		for (uint i = 0; i < ARRAYSIZE(kEarthItems); i++)
-			_inventory.remove(kEarthItems[i]);
+			_vm->_inventory.remove(kEarthItems[i]);
 		CursorMan.showMouse(true);
 		_shipStep = 0;
-		if (_script.flag(kShipVisited) == 0) {
+		if (_vm->_script.flag(kShipVisited) == 0) {
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, kLineAboard, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, kLineAboard, anchorX, anchorY);
 		}
-		_script.setFlag(kShipVisited, _script.flag(kShipVisited) + 1);
+		_vm->_script.setFlag(kShipVisited, _vm->_script.flag(kShipVisited) + 1);
 		debugC(1, kDebugRooms, "ship: aboard at %d,%d, the Earth things left behind",
-			   _ben.walkX(), _ben.walkY());
+			   _vm->_ben.walkX(), _vm->_ben.walkY());
 		break;
 	}
 
@@ -685,7 +691,7 @@ void AlienEngine::stepShip() {
 		if (_shipWait <= kHumTicks)
 			break;
 		for (uint i = 0; i < kHumCount; i++)
-			_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
+			_vm->_sound.queue(kHumSample.sample, kHumSample.rate, kHumSample.volume, 0,
 						 kHumSample.delay);
 		startShipFlash();
 		_shipStep = kShipVanish;
@@ -695,7 +701,7 @@ void AlienEngine::stepShip() {
 	case kShipVanish:
 		if (_shipWait <= 0)
 			break;
-		hideCharacter();
+		_vm->hideCharacter();
 		_shipStep = kShipGone;
 		_shipWait = 0;
 		break;
@@ -705,8 +711,8 @@ void AlienEngine::stepShip() {
 			break;
 		_shipStep = 0;
 		CursorMan.showMouse(true);
-		showCharacter();
-		takeExit(kToParkSubmode);
+		_vm->showCharacter();
+		_vm->takeExit(kToParkSubmode);
 		return;
 
 	default:
@@ -714,26 +720,43 @@ void AlienEngine::stepShip() {
 	}
 
 	// 0x0aae: the pad, whenever the arrival is not holding it off.
-	if (_script.flag(kPadOff) == 0) {
-		const int x = _ben.spriteX(), y = _ben.spriteY();
+	if (_vm->_script.flag(kPadOff) == 0) {
+		const int x = _vm->_ben.spriteX(), y = _vm->_ben.spriteY();
 		if (x > kPadMinX && x < kPadMaxX && y < kPadMaxY) {
-			if (_script.flag(kPadCount) < kPadGo)
-				_script.setFlag(kPadCount, _script.flag(kPadCount) + 1);
+			if (_vm->_script.flag(kPadCount) < kPadGo)
+				_vm->_script.setFlag(kPadCount, _vm->_script.flag(kPadCount) + 1);
 		} else {
-			_script.setFlag(kPadCount, 0);
-			if (_script.flag(kChamberState) == 2)
+			_vm->_script.setFlag(kPadCount, 0);
+			if (_vm->_script.flag(kChamberState) == 2)
 				shipChamber(false);
 		}
 	}
-	if (_script.flag(kPadCount) == kPadOpen) {
-		_script.setFlag(kPadCount, kPadOpen + 1);
+	if (_vm->_script.flag(kPadCount) == kPadOpen) {
+		_vm->_script.setFlag(kPadCount, kPadOpen + 1);
 		shipChamber(true);
 	}
-	if (_script.flag(kPadCount) == kPadGo) {
-		_script.setFlag(kPadCount, kPadGo + 1);
+	if (_vm->_script.flag(kPadCount) == kPadGo) {
+		_vm->_script.setFlag(kPadCount, kPadGo + 1);
 		_shipStep = kShipLeave;
 		debugC(1, kDebugRooms, "ship: on the pad long enough, back to the park");
 	}
+}
+
+void TeleportRoom::tickPair() {
+	stepTeleport();
+	stepShip();
+}
+
+void TeleportRoom::walkTarget(byte obj, int roomX, int y, bool action, WalkTarget &target) {
+	shipWalkTarget(obj, action, target);
+}
+
+bool TeleportRoom::takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	if (!armTeleportPhone(obj, verb, item))
+		return false;
+	if (item)
+		_vm->holdItem(Inventory::kNoItem);
+	return true;
 }
 
 } // End of namespace Alien

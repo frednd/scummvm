@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class TeleportRoom;
 	friend class CorridorRoom;
 	friend class ScannerRoom;
 	friend class StoreRoom;
@@ -531,20 +532,6 @@ private:
 	void parrotQuiet();
 	void forestBenSays(byte line);
 	void forestArm(byte step);
-
-	/// Room 22's phone, which dials the teleporter, and room 56's chamber at
-	/// the other end: the arrival, the pad and the trip back (teleport.cpp).
-	void startTeleport();
-	void advanceChamberView(int room);
-	bool armTeleportPhone(int obj, byte verb, byte item);
-	void stepTeleport();
-	void shipArrivalScene(int room);
-	void shipWalkTarget(byte obj, bool action, WalkTarget &target);
-	void shipChamber(bool open);
-	void stepShip();
-	void startShipFlash();
-	void stepShipFlash();
-	void shipFromJail();
 
 	bool shoreWalkTo(int x, int y, int arrivalFacing);
 
@@ -1088,23 +1075,6 @@ private:
 	bool _yodleTalking;			///< his talk loop is up until the line comes down
 	byte _yodleWater;			///< [0xa5eb], the puddle's frame, 1..30
 	bool _yodleWaterDue;		///< [0xa5f9], the tick pair it waits out between frames
-
-	/// Room 22's [0xa49f] machine for the phone, ticks left of its current
-	/// wait, and room 56's simplified return, clicks taken so far
-	/// (teleport.cpp).
-	byte _teleportStep;
-	uint _teleportWait;
-	/// Room 56's [0xa49f] machine and its [0xa49c] wait (teleport.cpp).
-	byte _shipStep;
-	uint _shipWait;
-	/// The hum's flashes (the room's tick, 0x07cc): [0x33ea] flashes left,
-	/// [0x33e8] the level, [0x33ec] the tick-pair count, [0x33ee] a mix due,
-	/// and the palette they mix from.
-	byte _shipFlashes;
-	int _shipFlashLevel;
-	uint _shipFlashCount;
-	bool _shipFlashDue;
-	byte _shipFlashSource[256 * 3];
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

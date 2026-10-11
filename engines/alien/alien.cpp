@@ -152,8 +152,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
 		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
-		_teleportStep(0), _teleportWait(0), _shipStep(0), _shipWait(0),
-		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -596,8 +594,10 @@ void AlienEngine::stepClock() {
 	// light fades and flickers at the same pace (steam.cpp).
 	stepDivingWave();
 	stepSteamLight();
-	// And room 56's flashes as the beam hums (teleport.cpp).
-	stepShipFlash();
+	// And the rooms' own (rooms/): room 56's flashes as the beam hums
+	// (teleport.cpp).
+	for (Room *r : _rooms)
+		r->tick();
 
 	if ((_tick & 1) == 0) {
 		// The elapsed-time counters the timed scenes run off, which the original
@@ -709,11 +709,6 @@ void AlienEngine::stepClock() {
 		stepYodle();
 		stepYodleWater();
 		stepForestParrot();
-
-		// And room 22's phone, the teleporter it dials, and the chamber it
-		// lands in (teleport.cpp).
-		stepTeleport();
-		stepShip();
 
 
 

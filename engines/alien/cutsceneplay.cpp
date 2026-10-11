@@ -129,9 +129,10 @@ void AlienEngine::roomCutscenes(int room) {
 	// elapsed-time scenes get their chance before the room's own.
 	stepCutsceneTimers();
 
-	// And the one room that plays a record without going through the
-	// dispatch at all (teleport.cpp).
-	shipArrivalScene(room);
+	// And the rooms that play a record without going through the dispatch at
+	// all: room 56's ship in space (teleport.cpp).
+	for (Room *r : _rooms)
+		r->raiseScenes(room);
 
 	uint count = 0;
 	const CutsceneTrigger *triggers = cutsceneTriggers(room, count);

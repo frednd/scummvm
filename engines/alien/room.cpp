@@ -342,8 +342,10 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	if (room == 41)
 		_script.setFlag(0xa73a, 1);
 
-	// Room 56's view, before anything that draws or registers by it.
-	advanceChamberView(room);
+	// The room's view, before anything that draws or registers by it: room
+	// 56's (teleport.cpp).
+	for (Room *r : _rooms)
+		r->chooseView(room);
 
 	_anims.loadRoom(room, _script);
 	loadDivingBanks(room);
@@ -529,10 +531,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startShore();
 	startCemetery();
 
-	// And the ladder between rooms 49 and 50, and room 56's return trip
-	// (steam.cpp, teleport.cpp).
+	// And the ladder between rooms 49 and 50 (steam.cpp).
 	startSteam();
-	startTeleport();
 
 	// And room 22's arrival scene, which is the room's own machine rather than
 	// a lifted cutscene (park.cpp).

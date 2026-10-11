@@ -81,6 +81,8 @@ public:
 	virtual void start() {}
 	/// The last thing the open does: a camera the room holds.
 	virtual void holdCamera() {}
+	/// The scenes the room raises once it is up, ahead of the table's own.
+	virtual void raiseScenes(int room) {}
 	/// Rectangles the table cannot express, after it has registered its own.
 	virtual void buildHotspots(int room) {}
 	/// @}

@@ -618,14 +618,12 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 		// and may send the walk to the rock rather than to the point the
 		// geometry named (cliff.cpp).
 		armCliff(roomX, y, target);
-		// And room 56's chamber has two approach points, chosen by the button
-		// rather than by a flag (teleport.cpp).
-		shipWalkTarget(obj, rightButton || _heldItem, target);
-
 		// And room 40's hole, approached from whichever side he is on.
 		caveWalkTarget(obj, target);
 		// And the rooms' own (rooms/): room 8's open safe, where the port
-		// stands him aside to take what is on its shelf (library.cpp).
+		// stands him aside to take what is on its shelf (library.cpp), and
+		// room 56's chamber, which has two approach points, chosen by the
+		// button rather than by a flag (teleport.cpp).
 		for (Room *r : _rooms)
 			r->walkTarget(obj, roomX, y, rightButton || _heldItem, target);
 
@@ -781,20 +779,6 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
-	// And room 22's phone, for the same reason: the lifted row for the number
-	// on it is a bare action_handled and the one for a plain use is only the
-	// refusal, while the dial and the teleporter it fires are the room's own
-	// machine (teleport.cpp).
-	if (armTeleportPhone(spot.obj, verb, item)) {
-		if (item)
-			holdItem(Inventory::kNoItem);
-		rebuildHotspots();
-		_hover = -1;
-		const Common::Point park = g_system->getEventManager()->getMousePos();
-		updateHover(park.x, park.y);
-		return;
-	}
-
 	// And room 19's fuse-panel cover, for the same reason: the lifted pair for
 	// it has the branch that shuts the cover and not the one that opens it, so
 	// the table on its own could only ever shut a cover nothing opened
@@ -836,7 +820,9 @@ void AlienEngine::finishAction() {
 	// that keep it off a talk (library.cpp), room 23's hippie, whose talk and
 	// walkman both end in the conversation menu (hippie.cpp), and room 53's
 	// maintenance man and room 57's loudspeaker, whose lifted rows keep the
-	// guards but drop the calls that are the bodies (corridor.cpp).
+	// guards but drop the calls that are the bodies (corridor.cpp), and room
+	// 22's phone, whose dial and the teleporter it fires are the room's own
+	// machine (teleport.cpp).
 	for (Room *r : _rooms) {
 		if (r->takeAction(spot.obj, verb, item, anchorX, anchorY)) {
 			rebuildHotspots();
