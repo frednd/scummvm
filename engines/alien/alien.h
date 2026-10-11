@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class OpeningRoom;
 	friend class HallwayRoom;
 	friend class LabRoom;
 	friend class BedroomRoom;
@@ -367,8 +368,6 @@ private:
 	uint subtitleLanguage() const;
 	void startEnding();
 	void armEnding();
-	void startOpening();
-	void stepOpening();
 	void stepRoomClock();
 	uint16 stateWord(uint16 addr) const;
 	void setStateWord(uint16 addr, uint16 value);
@@ -393,13 +392,14 @@ private:
 
 	bool dlgreqRunning() const;
 	bool roomHoldsCharacter() const;
+	bool roomHoldsInput() const;
+	void skipOpening();
 
 	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
 
 	bool chatReplyOwed() const;
 
 	void walkHandRoute(int viaX, int viaY, int x, int y, int facing);
-	void cancelOpening();
 	void stepEnding();
 	void speakEnding(byte code);
 	bool endingLineDone() const;
@@ -742,12 +742,6 @@ private:
 	/// one step waits on, the slot-4 cycle [0xa53e] leaves running, and the win
 	/// flag [0x7dc5] the last step sets (ending.cpp).
 	byte _endingStep;
-
-	/// Room 3's opening machine: the step it is on, and [0x7dc4] -- whether the
-	/// game has yet to say its first words. A restored save clears the flag the
-	/// way MAIN's load branch does.
-	byte _openingStep;
-	bool _openingPending;
 
 	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
 	bool _restoring;			///< syncGame is reloading the room, not an entry through a door

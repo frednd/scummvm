@@ -54,7 +54,7 @@ void AlienEngine::updateHover(int x, int y) {
 	// writes the status line until it hands the cursor back. The port carries
 	// the flag as the cursor's own visibility, which every one of those
 	// machines already clears.
-	if (_openingStep || !CursorMan.isVisible())
+	if (roomHoldsInput() || !CursorMan.isVisible())
 		return;
 
 	_cursorX = x;
@@ -108,7 +108,7 @@ void AlienEngine::updateHover(int x, int y) {
  */
 void AlienEngine::getHotspotPositions(Common::Array<Graphics::HotspotInfo> &hotspots) {
 	_hotspotStamp = hotspotStamp();
-	if (_openingStep || !CursorMan.isVisible() || _chat.isActive())
+	if (roomHoldsInput() || !CursorMan.isVisible() || _chat.isActive())
 		return;
 
 	for (uint i = 0; i < _spots.size(); i++) {
@@ -507,7 +507,7 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 	// landing mid-animation is not held for later -- it never happened. Without
 	// this the safe could be emptied while it was still being cracked, and the
 	// hand holding the stethoscope would take the click instead.
-	if (_openingStep || !CursorMan.isVisible())
+	if (roomHoldsInput() || !CursorMan.isVisible())
 		return;
 
 	// The menu may still be active but past its listed phases (kPicked and

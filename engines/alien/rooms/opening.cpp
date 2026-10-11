@@ -25,6 +25,7 @@
 #include "alien/alien.h"
 #include "alien/charanim.h"
 #include "alien/detection.h"
+#include "alien/rooms/opening.h"
 
 namespace Alien {
 
@@ -51,8 +52,12 @@ namespace Alien {
 static const int kOpeningRoom = 3;
 static const byte kOpeningLine = 0x50;
 
-void AlienEngine::startOpening() {
-	if (_room != kOpeningRoom || !_openingPending)
+OpeningRoom::OpeningRoom(AlienEngine *vm) : Room(vm),
+		_openingStep(0), _openingPending(true) {
+}
+
+void OpeningRoom::startOpening() {
+	if (_vm->_room != kOpeningRoom || !_openingPending)
 		return;
 
 	_openingStep = 0x64;
@@ -60,15 +65,15 @@ void AlienEngine::startOpening() {
 	debugC(1, kDebugRooms, "opening: room %d, step 0x64", kOpeningRoom);
 }
 
-void AlienEngine::stepOpening() {
+void OpeningRoom::stepOpening() {
 	if (!_openingStep)
 		return;
 
 	switch (_openingStep) {
 	case 0x64: {
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOpeningLine, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOpeningLine, anchorX, anchorY);
 		_openingStep = 0x6e;
 		break;
 	}
@@ -76,7 +81,7 @@ void AlienEngine::stepOpening() {
 	case 0x6e:
 		// [0xad1c], the pulse the dialog unit leaves when a line clears and
 		// nothing in the chain follows it.
-		if (!_speech && _queueNext >= _queueCount) {
+		if (!_vm->_speech && _vm->_queueNext >= _vm->_queueCount) {
 			_openingPending = false;
 			_openingStep = 0;
 			CursorMan.showMouse(true);
@@ -90,7 +95,7 @@ void AlienEngine::stepOpening() {
 }
 
 /// Drop the opening, cursor and all: a restored game has already had it.
-void AlienEngine::cancelOpening() {
+void OpeningRoom::cancelOpening() {
 	if (_openingStep)
 		CursorMan.showMouse(true);
 	_openingStep = 0;

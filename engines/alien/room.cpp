@@ -491,11 +491,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// to leave; every other room, and the pod before then, does nothing here.
 	startEnding();
 
-	// And the lab does the same at the other end of the game: a new game opens
-	// with the character talking to himself before the player gets the cursor.
-	startOpening();
-
-
 	// And the rooms' own (rooms/), in the order rooms.cpp gives.
 	for (Room *r : _rooms)
 		r->start();

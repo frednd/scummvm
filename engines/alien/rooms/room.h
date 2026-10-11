@@ -100,7 +100,8 @@ public:
 	virtual void frame() {}
 	/// Every tick, once the camera has followed the walker.
 	virtual void walkPhase() {}
-	/// After the walker: the machines that are not tied to the room's loop.
+	/// Every animation tick, ahead of the walker: the machines that are not
+	/// tied to the room's loop.
 	virtual void machine() {}
 	/// @}
 

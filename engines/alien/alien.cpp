@@ -139,8 +139,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
-		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true), _drawCharacter(true), _characterAnimSlots(0),
+		_endingStep(0), _endingPos(0), _endingLoop(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
@@ -295,7 +294,7 @@ Common::Error AlienEngine::run() {
 	const bool newGame = !ConfMan.hasKey("boot_param") && !(playRun && ConfMan.hasKey("playfrom")) &&
 						 (gDebugLevel <= 0 || playRun);
 	if (!newGame)
-		cancelOpening();
+		skipOpening();
 
 	if (newGame && !playCutscene(kCutscenes[0]))
 		warning("%s is not in the search path, so the intro is being skipped: it ships "
@@ -523,6 +522,20 @@ Common::Error AlienEngine::run() {
 	return Common::kNoError;
 }
 
+/// A room has the input to itself: no click and no hover (rooms/).
+bool AlienEngine::roomHoldsInput() const {
+	for (const Room *r : _rooms)
+		if (r->holdsInput())
+			return true;
+	return false;
+}
+
+/// The game is not starting fresh, so no room opens it (rooms/).
+void AlienEngine::skipOpening() {
+	for (Room *r : _rooms)
+		r->skipOpening();
+}
+
 /// A room has the character to itself, in a machine of its own (rooms/).
 bool AlienEngine::roomHoldsCharacter() const {
 	for (const Room *r : _rooms)
@@ -675,7 +688,8 @@ void AlienEngine::stepClock() {
 	}
 
 	stepEnding();
-	stepOpening();
+	for (Room *r : _rooms)
+		r->machine();
 
 	// The character ticks whether or not he is going anywhere: standing still is
 	// what drives OBJ:sub_098d1's idle machine, which fidgets him and turns him
@@ -689,7 +703,7 @@ void AlienEngine::stepClock() {
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
 	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !roomHoldsCharacter() &&
-						!_endingStep && !_openingStep &&
+						!_endingStep &&
 						!dlgreqRunning());
 
 	_ben.tick(_script.flag(0xa605) != 0);

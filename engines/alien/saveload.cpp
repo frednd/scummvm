@@ -161,7 +161,7 @@ void AlienEngine::syncGame(Common::Serializer &s) {
 		// MAIN clears [0x7dc4] on the branch that has just restored a save, so a
 		// loaded game never opens with the monologue -- and never hides the
 		// cursor for it either.
-		cancelOpening();
+		skipOpening();
 
 		// LOGIC:sub_12b08 zeroes game_mode [0xa880] before it writes the
 		// block, so a restored game comes into its room from nowhere: no way
@@ -529,7 +529,7 @@ bool AlienEngine::importDosSave(const Common::String &file, bool apply) {
 
 		_mode = mode;
 		_heldItem = Inventory::kNoItem;
-		cancelOpening();
+		skipOpening();
 		if (loadRoom(room)) {
 			_ben.place(x, y);
 			_ben.stop();
