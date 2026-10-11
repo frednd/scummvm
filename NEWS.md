@@ -1,6 +1,11 @@
 For a more comprehensive changelog of the latest experimental code, see:
         https://github.com/scummvm/scummvm/commits/
 
+#### 2026.5.0 (XXXX-XX-XX)
+
+ New games:
+   - Added support for Alien Incident.
+
 #### 2026.4.0 "Never-slop" (2026-10-10)
 
  New games:
