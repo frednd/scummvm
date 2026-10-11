@@ -52,6 +52,10 @@
 #include "alien/walk.h"
 #include "alien/rooms/room.h"
 
+namespace Alien {
+class EndingRoom;
+}
+
 struct ADGameDescription;
 
 namespace Alien {
@@ -62,6 +66,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class EndingRoom;
 	friend class OpeningRoom;
 	friend class HallwayRoom;
 	friend class LabRoom;
@@ -238,6 +243,8 @@ public:
 private:
 	/// Every room under rooms/, in the order each hook runs them (rooms.cpp).
 	Common::Array<Room *> _rooms;
+	/// The one the console reaches for by name.
+	EndingRoom *_endingRoom;
 	void registerRooms();
 
 	bool loadRoom(int room, bool secondPlate = false, bool keepPosition = false);
@@ -366,8 +373,6 @@ private:
 	void playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles = nullptr);
 	void drawSubtitle(const CDA2Decoder &video);
 	uint subtitleLanguage() const;
-	void startEnding();
-	void armEnding();
 	void stepRoomClock();
 	uint16 stateWord(uint16 addr) const;
 	void setStateWord(uint16 addr, uint16 value);
@@ -400,10 +405,6 @@ private:
 	bool chatReplyOwed() const;
 
 	void walkHandRoute(int viaX, int viaY, int x, int y, int facing);
-	void stepEnding();
-	void speakEnding(byte code);
-	bool endingLineDone() const;
-	void winGame();
 	bool playLift();
 	bool playCutscene(const char *file);
 	void dumpVideo();
@@ -738,11 +739,6 @@ private:
 	bool _dirty;
 	bool _quit;
 
-	/// Room 59's escape-pod sequence: its step [0xa49f], the timeline [0xa49c]
-	/// one step waits on, the slot-4 cycle [0xa53e] leaves running, and the win
-	/// flag [0x7dc5] the last step sets (ending.cpp).
-	byte _endingStep;
-
 	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
 	bool _restoring;			///< syncGame is reloading the room, not an entry through a door
 
@@ -796,8 +792,7 @@ private:
 	/// Room 7's [0xa8f0]/[0xa8f2]: where the sprite stood last frame (roomtick.cpp).
 	int _darkLastX, _darkLastY;
 
-	uint _endingPos;
-	bool _endingLoop;
+	/// [0x7dc5], the win flag the escape pod's last step sets (ending.cpp).
 	bool _won;
 
 	/// A cutscene owns the screen: no character, no inventory bar, no hover name.

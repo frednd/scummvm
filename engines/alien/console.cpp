@@ -24,6 +24,7 @@
 #include "alien/console.h"
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/ending.h"
 
 namespace Alien {
 
@@ -375,7 +376,7 @@ void AlienEngine::runConsoleActions() {
 			importDosSave(action.file, true);
 			break;
 		case ConsoleAction::kEnding:
-			armEnding();
+			_endingRoom->armEnding();
 			break;
 		default:
 			break;

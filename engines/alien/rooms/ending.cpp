@@ -24,6 +24,7 @@
 #include "alien/alien.h"
 #include "alien/charanim.h"
 #include "alien/detection.h"
+#include "alien/rooms/ending.h"
 
 namespace Alien {
 
@@ -55,6 +56,10 @@ static const byte kEndingLine2 = 0x15;
 static const byte kEndingLine3 = 0x16;
 static const byte kEndingLine4 = 0x17;
 
+EndingRoom::EndingRoom(AlienEngine *vm) : Room(vm),
+		_endingStep(0), _endingPos(0), _endingLoop(false) {
+}
+
 /**
  * Starts the sequence, if this room is the pod and the pod is ready.
  *
@@ -66,13 +71,13 @@ static const byte kEndingLine4 = 0x17;
  * OBJ:sub_02f27), and [0xa4a1] says a conversation is running, so he stands
  * still for it (dlgreqRunning).
  */
-void AlienEngine::startEnding() {
-	if (_room != kEndingRoom || _script.flag(kEndingFlag) != 1)
+void EndingRoom::startEnding() {
+	if (_vm->_room != kEndingRoom || _vm->_script.flag(kEndingFlag) != 1)
 		return;
 
 	CursorMan.showMouse(false);
-	if (!_barHidden)
-		hideBar();
+	if (!_vm->_barHidden)
+		_vm->hideBar();
 
 	_endingStep = 0x32;
 	_endingPos = 0;
@@ -82,29 +87,29 @@ void AlienEngine::startEnding() {
 
 /// Arms the sequence from the console's `ending` command, without the
 /// [0xa7d2] the pod normally needs.
-void AlienEngine::armEnding() {
-	if (_room != kEndingRoom) {
-		warning("console: the ending starts in room %d, not %d", kEndingRoom, _room);
+void EndingRoom::armEnding() {
+	if (_vm->_room != kEndingRoom) {
+		warning("console: the ending starts in room %d, not %d", kEndingRoom, _vm->_room);
 		return;
 	}
 
-	_script.setFlag(kEndingFlag, 1);
+	_vm->_script.setFlag(kEndingFlag, 1);
 	startEnding();
 }
 
 /// [0xad1c]: the line the machine put up has come down and nothing follows it.
-bool AlienEngine::endingLineDone() const {
-	return !_speech && _queueNext >= _queueCount;
+bool EndingRoom::endingLineDone() const {
+	return !_vm->_speech && _vm->_queueNext >= _vm->_queueCount;
 }
 
-void AlienEngine::speakEnding(byte code) {
-	queueOutcome(_tal, code, _ben.walkX(), _ben.walkY() - Walker::kWalkPointY);
+void EndingRoom::speakEnding(byte code) {
+	_vm->queueOutcome(_vm->_tal, code, _vm->_ben.walkX(), _vm->_ben.walkY() - Walker::kWalkPointY);
 }
 
 /**
  * One step of the machine, on the animation tick its per-frame entry ran on.
  */
-void AlienEngine::stepEnding() {
+void EndingRoom::stepEnding() {
 	if (!_endingStep)
 		return;
 
@@ -114,8 +119,8 @@ void AlienEngine::stepEnding() {
 
 	// [0xa53e]: while phase one is up, the room's tick calls MIDAS:0x112d on
 	// slot 4 every frame, which restarts the cycle whenever it has run out.
-	if (_endingLoop && !_anims.isBusy(kEndingSlot))
-		_anims.play(kEndingSlot, 1, 9, 4, 1);
+	if (_endingLoop && !_vm->_anims.isBusy(kEndingSlot))
+		_vm->_anims.play(kEndingSlot, 1, 9, 4, 1);
 
 	switch (_endingStep) {
 	case 0x32:
@@ -141,7 +146,7 @@ void AlienEngine::stepEnding() {
 		if (endingLineDone()) {
 			speakEnding(kEndingLine3);
 			// MIDAS:sub_198fe(1): the pod's engines, left cycling.
-			_anims.play(kEndingSlot, 1, 9, 4, 1);
+			_vm->_anims.play(kEndingSlot, 1, 9, 4, 1);
 			_endingLoop = true;
 			_endingStep = 0x36;
 		}
@@ -151,7 +156,7 @@ void AlienEngine::stepEnding() {
 		if (endingLineDone()) {
 			// sub_198fe(2): the cycle stops on its first frame.
 			_endingLoop = false;
-			_anims.play(kEndingSlot, 1, 1, 0, 1);
+			_vm->_anims.play(kEndingSlot, 1, 1, 0, 1);
 			speakEnding(kEndingLine4);
 			_endingStep = 0x37;
 		}
@@ -160,7 +165,7 @@ void AlienEngine::stepEnding() {
 	case 0x37:
 		if (endingLineDone()) {
 			// sub_198fe(3): the pod leaves.
-			_anims.play(kEndingSlot, 10, 19, 5, 1);
+			_vm->_anims.play(kEndingSlot, 10, 19, 5, 1);
 			_endingPos = 0;
 			_endingStep = 0x38;
 		}
@@ -182,11 +187,11 @@ void AlienEngine::stepEnding() {
 /**
  * [0x7dc5]: the game is won, so the loop stops and the clip plays after it.
  */
-void AlienEngine::winGame() {
+void EndingRoom::winGame() {
 	_endingStep = 0;
-	_won = true;
-	_quit = true;
-	playGameWon();
+	_vm->_won = true;
+	_vm->_quit = true;
+	_vm->playGameWon();
 	debugC(1, kDebugRooms, "ending: won -- GAME.EXE exits with 0x7b here, and "
 						   "AI.COM runs ANIMPLAY on the ending clip");
 }

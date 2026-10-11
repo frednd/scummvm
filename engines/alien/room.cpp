@@ -487,11 +487,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// click that writes it again, so clearing it here loses nothing.
 	_script.setFlag(0xa644, 0);
 
-	// The escape pod runs its own sequence as it opens, once the pod is ready
-	// to leave; every other room, and the pod before then, does nothing here.
-	startEnding();
-
-	// And the rooms' own (rooms/), in the order rooms.cpp gives.
+	// The rooms whose open is a machine of their own (rooms/), in the order
+	// rooms.cpp gives: the escape pod's sequence once it is ready to leave,
+	// room 3's opening monologue, the antique store, and the rest.
 	for (Room *r : _rooms)
 		r->start();
 

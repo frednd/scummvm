@@ -138,8 +138,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_cursorX(0), _cursorY(0), _chatColorsHeld(false), _barHidden(false), _chatOwnsBar(false),
 		_dialogBand(false),
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
-		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
-		_endingStep(0), _endingPos(0), _endingLoop(false), _drawCharacter(true), _characterAnimSlots(0),
+		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
@@ -553,7 +552,7 @@ bool AlienEngine::dlgreqRunning() const {
 	for (const Room *r : _rooms)
 		if (r->conversationRunning())
 			return true;
-	return _endingStep;
+	return false;
 }
 
 uint32 AlienEngine::masterTick() const {
@@ -687,7 +686,6 @@ void AlienEngine::stepClock() {
 		return;
 	}
 
-	stepEnding();
 	for (Room *r : _rooms)
 		r->machine();
 
@@ -703,7 +701,6 @@ void AlienEngine::stepClock() {
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
 	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !roomHoldsCharacter() &&
-						!_endingStep &&
 						!dlgreqRunning());
 
 	_ben.tick(_script.flag(0xa605) != 0);
