@@ -32,7 +32,7 @@ class CliffRoom : public Room {
 public:
 	explicit CliffRoom(AlienEngine *vm);
 
-	void reset() override;
+	void reset(int room) override;
 	void tickPair() override;
 	void walkTarget(byte obj, int roomX, int y, bool action, WalkTarget &target) override;
 	bool busy() const override { return _cliffClimb || _cliffStep; }

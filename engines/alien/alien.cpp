@@ -140,7 +140,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true),
-		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
+		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
 		_playStrict(false), _playBarBusy(false), _playBarClicks(0), _playLastTick(0), _playWaitTicks(0),
 		_playSettleTimeout(0), _playUntilTimer(-1), _playUntilRoom(-1), _playSettling(false), _playFails(0) {
@@ -614,9 +614,8 @@ void AlienEngine::stepClock() {
 		bakeSlots();
 
 		// And the clock a few rooms run beside those calls, in the same part of
-		// the same tick: the library owl, the chimney, the sitting room's UFO
-		// (roomtick.cpp). It reads both gates itself, so it is called under the
-		// finer of the two.
+		// the same tick: the library owl, the chimney, Ben's room's UFO
+		// (roomtick.cpp).
 		stepRoomClock();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.

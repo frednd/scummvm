@@ -334,7 +334,7 @@ void BasementRoom::takeBasementBattery(int obj) {
 }
 
 /// The shared room open drops whatever the last visit left standing.
-void BasementRoom::reset() {
+void BasementRoom::reset(int room) {
 	_basementStep = 0;
 	_basementClimbing = false;
 	_basementWalkOff = false;
@@ -345,6 +345,24 @@ void BasementRoom::afterScript(int obj, byte verb, byte item, int anchorX, int a
 	// slot arrays, which the lifted row cannot.
 	if (!item)
 		takeBasementBattery(obj);
+}
+
+// The drip (ovr_0d_0e6f:0x08f4). Every 0x12d tick pairs, some
+// eight seconds, slot 4 -- BAS_WATE.DL1 -- plays its seventeen frames once,
+// through MIDAS:sub_18810. Nothing reads the counter or the slot; it is the
+// water.
+static const uint16 kDripClock = 0xa6ce;
+static const uint16 kDripLimit = 0x012c;
+
+bool BasementRoom::roomClock() {
+	if (_vm->_room != kBasementRoom)
+		return false;
+	_vm->setStateWord(kDripClock, _vm->stateWord(kDripClock) + 1);
+	if (_vm->stateWord(kDripClock) <= kDripLimit)
+		return false;
+	_vm->setStateWord(kDripClock, 0);
+	_vm->_anims.play(4, 1, 0x11, 2, 4);
+	return false;
 }
 
 } // End of namespace Alien

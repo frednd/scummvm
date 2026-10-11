@@ -395,7 +395,7 @@ void SluggsRoom::tickPair() {
 }
 
 /// The shared room open drops whatever the last visit left standing.
-void SluggsRoom::reset() {
+void SluggsRoom::reset(int room) {
 	_sluggsStep = 0;
 	_sluggsPos = 0;
 	_sluggsLeft = 0;

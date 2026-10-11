@@ -32,7 +32,7 @@ class LivingRoom : public Room {
 public:
 	explicit LivingRoom(AlienEngine *vm);
 
-	void reset() override { _livingStep = 0; }
+	void reset(int room) override { _livingStep = 0; }
 	void tickPair() override;
 	Body body(int obj, byte verb, byte item, int anchorX, int anchorY) override;
 	void afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) override;

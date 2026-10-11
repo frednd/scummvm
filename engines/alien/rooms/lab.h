@@ -33,7 +33,7 @@ class LabRoom : public Room {
 public:
 	explicit LabRoom(AlienEngine *vm);
 
-	void reset() override;
+	void reset(int room) override;
 	void tickPair() override { stepLab(); }
 	void preAction(int obj, byte verb, byte item) override;
 	bool holdsCharacter() const override { return _labStep != 0; }

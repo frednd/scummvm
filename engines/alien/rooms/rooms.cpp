@@ -21,6 +21,8 @@
 
 #include "alien/alien.h"
 #include "alien/rooms/boss.h"
+#include "alien/rooms/ufo.h"
+#include "alien/rooms/chimney.h"
 #include "alien/rooms/cave.h"
 #include "alien/rooms/ending.h"
 #include "alien/rooms/opening.h"
@@ -65,6 +67,8 @@ namespace Alien {
  * here is the one whose code the original runs first.
  */
 void AlienEngine::registerRooms() {
+	_rooms.push_back(new UfoRoom(this));
+	_rooms.push_back(new ChimneyRoom(this));
 	_rooms.push_back(new CaveRoom(this));
 	_endingRoom = new EndingRoom(this);
 	_rooms.push_back(_endingRoom);

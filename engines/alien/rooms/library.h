@@ -32,8 +32,9 @@ class LibraryRoom : public Room {
 public:
 	explicit LibraryRoom(AlienEngine *vm);
 
-	void reset() override { _libraryStep = 0; }
+	void reset(int room) override;
 	void restorePlate(int room) override;
+	bool roomClock() override;
 	void tickPair() override;
 	void frame() override;
 	void walkTarget(byte obj, int roomX, int y, bool action, WalkTarget &target) override;

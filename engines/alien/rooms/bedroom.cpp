@@ -80,7 +80,7 @@ static const byte kClickVolume = 0x40;
 static const int8 kClickPanning = -20;
 
 BedroomRoom::BedroomRoom(AlienEngine *vm) : Room(vm),
-		_bedroomLiftStep(0) {
+		_bedroomLiftStep(0), _darkLastX(-1), _darkLastY(-1) {
 }
 
 /**
@@ -289,6 +289,47 @@ void BedroomRoom::placed(int room) {
 void BedroomRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
 	if (!item && isBedroomSwitch(obj))
 		bedroomSwitch(anchorX, anchorY);
+}
+
+// The room in the dark (ovr_07_0e63:0x0cca, LOGIC:sub_126af). While
+// the light is off ([0xa6fa] == 0) every frame he spends where he was the
+// frame before counts in [0x33aa], and any step puts it back to zero. At
+// 0x1068 -- about a minute -- he says "Standing here in the dark is giving me
+// the creeps" (queue_event 42), and at 0x15e0 "I want to get out of here"
+// (43), which also starts the count again. The port never said either.
+static const uint16 kDarkLight = 0xa6fa;
+static const uint16 kDarkClock = 0x33aa;
+static const uint16 kDarkFirst = 0x1068;
+static const uint16 kDarkSecond = 0x15e0;
+static const byte kDarkLine1 = 42;
+static const byte kDarkLine2 = 43;
+
+bool BedroomRoom::roomClock() {
+	if (_vm->_room != kBedroom || _vm->_script.flag(kDarkLight) != 0)
+		return false;
+	// [0xa8f0]/[0xa8f2], the sprite as it was: the count is "still", not
+	// "idle", so turning on the spot does not reset it.
+	const bool still = _vm->_ben.spriteX() == _darkLastX && _vm->_ben.spriteY() == _darkLastY;
+	_darkLastX = _vm->_ben.spriteX();
+	_darkLastY = _vm->_ben.spriteY();
+	if (!still) {
+		_vm->setStateWord(kDarkClock, 0);
+		return false;
+	}
+	// The original counts every frame and this runs every other one; both
+	// limits are even, so two at a time lands on them.
+	const uint16 count = _vm->stateWord(kDarkClock) + 2;
+	_vm->setStateWord(kDarkClock, count);
+	if (count != kDarkFirst && count != kDarkSecond)
+		return false;
+	int x, y;
+	_vm->characterAnchor(x, y);
+	_vm->queueOutcome(_vm->_tal, count == kDarkFirst ? kDarkLine1 : kDarkLine2, x, y);
+	if (count == kDarkSecond)
+		_vm->setStateWord(kDarkClock, 0);
+	debugC(1, kDebugRooms, "clock: room %d, line %d in the dark", kBedroom,
+		   count == kDarkFirst ? kDarkLine1 : kDarkLine2);
+	return false;
 }
 
 } // End of namespace Alien

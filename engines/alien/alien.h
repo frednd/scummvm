@@ -66,6 +66,8 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class UfoRoom;
+	friend class ChimneyRoom;
 	friend class CaveRoom;
 	friend class EndingRoom;
 	friend class OpeningRoom;
@@ -377,7 +379,6 @@ private:
 	void stepRoomClock();
 	uint16 stateWord(uint16 addr) const;
 	void setStateWord(uint16 addr, uint16 value);
-	void resetRoomClock(int room);
 
 	void openRoomPlate(int room);
 	void dumpPlates();
@@ -784,9 +785,6 @@ private:
 	bool _pendingCutscenes;
 	/// endCutscene's reload: the room is put back, not entered (RoomScript::enterRoom).
 	bool _sceneHandBack;
-	/// Room 7's [0xa8f0]/[0xa8f2]: where the sprite stood last frame (roomtick.cpp).
-	int _darkLastX, _darkLastY;
-
 	/// [0x7dc5], the win flag the escape pod's last step sets (ending.cpp).
 	bool _won;
 

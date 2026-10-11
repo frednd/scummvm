@@ -32,7 +32,7 @@ class SluggsRoom : public Room {
 public:
 	explicit SluggsRoom(AlienEngine *vm);
 
-	void reset() override;
+	void reset(int room) override;
 	void enter(int room) override;
 	void tickPair() override;
 	bool takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) override;

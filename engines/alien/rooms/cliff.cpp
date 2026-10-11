@@ -325,7 +325,7 @@ void CliffRoom::tickPair() {
 }
 
 /// The shared room open drops whatever the last visit left standing.
-void CliffRoom::reset() {
+void CliffRoom::reset(int room) {
 	_cliffStep = 0;
 	_cliffClimb = 0;
 	_cliffPos = 0;

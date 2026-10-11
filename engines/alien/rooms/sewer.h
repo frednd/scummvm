@@ -32,7 +32,7 @@ class SewerRoom : public Room {
 public:
 	explicit SewerRoom(AlienEngine *vm);
 
-	void reset() override { _sewerStep = 0; }
+	void reset(int room) override { _sewerStep = 0; }
 	void enter(int room) override;
 	void tickPair() override;
 	void afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) override;

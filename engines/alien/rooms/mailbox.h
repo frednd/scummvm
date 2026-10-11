@@ -32,7 +32,7 @@ class MailboxRoom : public Room {
 public:
 	explicit MailboxRoom(AlienEngine *vm);
 
-	void reset() override;
+	void reset(int room) override;
 	void enter(int room) override;
 	void tickPair() override;
 	void lineDown() override;

@@ -36,7 +36,9 @@ namespace Alien {
 // fires once it is full. They are what makes a room feel inhabited rather than
 // painted, and the port ran none of them.
 //
-// Four of the five are the same machine and are here. The counter is a word in
+// Four of the five are the same machine, and each is its room's roomClock()
+// (library.cpp, basement.cpp, chimney.cpp, ufo.cpp), beside room 7's count in
+// the dark (bedroom.cpp) and room 40's side flag (cave.cpp). The counter is a word in
 // the state block, kept there at its own address so a savegame holds what the
 // original's does. Rooms 8, 14 and 18 zero theirs as the overlay opens, so it
 // measures time in *this* visit and loadRoom zeroes it the same way; room 13's
@@ -56,63 +58,6 @@ namespace Alien {
 // The counters are words inside the state block that RoomScript holds as bytes;
 // stateWord() and setStateWord() put the two halves together.
 
-// Room 8, the library: the owl (ovr_08_0e67:0x0d93). Sit in the library long
-// enough and the owl on the shelf wakes up -- twelve frames of LIB_OWL.DL1 --
-// and [0x33ac] goes to 1, which is the whole point: the owl's hotspot has three
-// arms and only the one guarded on [0x33ac] == 1 carries the talk verb
-// (hotspots.cpp, obj 4, the arm whose verb comes from the scratch temporary).
-// Until the latch is set the owl can only be looked at.
-//
-// 0x5dc tick pairs is about 43 seconds.
-static const int kOwlRoom = 8;
-static const uint16 kOwlClock = 0xa710;
-static const uint16 kOwlLimit = 0x5dc;
-static const uint16 kOwlLatch = 0x33ac;
-
-// Room 14, the chimney (ovr_0e_0e83:0x0616). Every 160 animation frames -- some
-// nine seconds -- four frames of MAF_CHIM.DL1 play and [0xa740] is set to 0x19,
-// which the room's own hotspot program then counts back down one per frame. It
-// is not a decoration: while [0xa740] is above zero the program writes 5 rather
-// than 4 into the scratch temporary [0x9926] (ovr_0e_0e83:0x0410), so the
-// chimney hotspot answers with a different outcome for those 25 frames.
-static const int kChimneyRoom = 14;
-static const uint16 kChimneyClock = 0xa73e;
-static const uint16 kChimneyLimit = 0x00a0;
-static const uint16 kChimneyFlag = 0xa740;
-static const byte kChimneyReload = 0x19;
-
-// Room 18, the sitting room (ovr_12_0e6b:0x08b7). A UFO crosses the window --
-// UFOFLYBY.DL1, all 78 frames and the erase after them -- once, after 0x157c
-// animation frames, something over five minutes in the one room. [0xa71e] both
-// gates the counter and remembers that it has happened, so it is a once a game
-// event; it is cleared for a new game.
-static const int kUfoRoom = 18;
-static const uint16 kUfoClock = 0xa71c;
-static const uint16 kUfoLimit = 0x157c;
-static const uint16 kUfoFlag = 0xa71e;
-
-// Room 13, the basement (ovr_0d_0e6f:0x08f4). Every 0x12d tick pairs, some
-// eight seconds, slot 4 -- BAS_WATE.DL1 -- plays its seventeen frames once,
-// through MIDAS:sub_18810. Nothing reads the counter or the slot; it is the
-// water.
-static const int kDripRoom = 13;
-static const uint16 kDripClock = 0xa6ce;
-static const uint16 kDripLimit = 0x012c;
-
-// Room 7, the bedroom in the dark (ovr_07_0e63:0x0cca, LOGIC:sub_126af). While
-// the light is off ([0xa6fa] == 0) every frame he spends where he was the
-// frame before counts in [0x33aa], and any step puts it back to zero. At
-// 0x1068 -- about a minute -- he says "Standing here in the dark is giving me
-// the creeps" (queue_event 42), and at 0x15e0 "I want to get out of here"
-// (43), which also starts the count again. The port never said either.
-static const int kDarkRoom = 7;
-static const uint16 kDarkLight = 0xa6fa;
-static const uint16 kDarkClock = 0x33aa;
-static const uint16 kDarkFirst = 0x1068;
-static const uint16 kDarkSecond = 0x15e0;
-static const byte kDarkLine1 = 42;
-static const byte kDarkLine2 = 43;
-
 uint16 AlienEngine::stateWord(uint16 addr) const {
 	return _script.flag(addr) | _script.flag(addr + 1) << 8;
 }
@@ -122,131 +67,11 @@ void AlienEngine::setStateWord(uint16 addr, uint16 value) {
 	_script.setFlag(addr + 1, value >> 8);
 }
 
-void AlienEngine::resetRoomClock(int room) {
-	switch (room) {
-	case kOwlRoom:
-		setStateWord(kOwlClock, 0);
-		break;
-	case kChimneyRoom:
-		setStateWord(kChimneyClock, 0);
-		break;
-	case kUfoRoom:
-		setStateWord(kUfoClock, 0);
-		break;
-	default:
-		break;
-	}
-}
-
 void AlienEngine::stepRoomClock() {
-	// The two gates the rooms count on, in the port's terms: the tick pair is
-	// [0xa5fc] and the animation frame is [0xa5f8], which is the pair divided by
-	// two again.
-	const bool pair = (_tick & 1) == 0;
-	const bool frame = (_tick & 3) == 0;
-
 	// Whether this tick moved something a hotspot guard reads.
 	bool changed = false;
-
 	for (Room *r : _rooms)
 		changed = r->roomClock() || changed;
-
-	switch (_room) {
-	case kDarkRoom: {
-		if (_script.flag(kDarkLight) != 0)
-			return;
-		// [0xa8f0]/[0xa8f2], the sprite as it was: the count is "still", not
-		// "idle", so turning on the spot does not reset it.
-		const bool still = _ben.spriteX() == _darkLastX && _ben.spriteY() == _darkLastY;
-		_darkLastX = _ben.spriteX();
-		_darkLastY = _ben.spriteY();
-		if (!still) {
-			setStateWord(kDarkClock, 0);
-			return;
-		}
-		// The original counts every frame and this runs every other one; both
-		// limits are even, so two at a time lands on them.
-		const uint16 count = stateWord(kDarkClock) + 2;
-		setStateWord(kDarkClock, count);
-		if (count != kDarkFirst && count != kDarkSecond)
-			return;
-		int x, y;
-		characterAnchor(x, y);
-		queueOutcome(_tal, count == kDarkFirst ? kDarkLine1 : kDarkLine2, x, y);
-		if (count == kDarkSecond)
-			setStateWord(kDarkClock, 0);
-		debugC(1, kDebugRooms, "clock: room %d, line %d in the dark", kDarkRoom,
-			   count == kDarkFirst ? kDarkLine1 : kDarkLine2);
-		return;
-	}
-
-	case kOwlRoom:
-		if (!pair)
-			return;
-		// The compare is `jne`, not `jbe`: the counter is zeroed on the way
-		// past, so the owl wakes once per stay however long the stay is.
-		setStateWord(kOwlClock, stateWord(kOwlClock) + 1);
-		if (stateWord(kOwlClock) != kOwlLimit)
-			return;
-		setStateWord(kOwlClock, 0);
-		_anims.play(12, 1, 12, 3, 1);
-		_script.setFlag(kOwlLatch, 1);
-		changed = true;
-		debugC(1, kDebugRooms, "clock: room %d, the owl wakes", kOwlRoom);
-		break;
-
-	case kDripRoom:
-		if (!pair)
-			return;
-		setStateWord(kDripClock, stateWord(kDripClock) + 1);
-		if (stateWord(kDripClock) <= kDripLimit)
-			return;
-		setStateWord(kDripClock, 0);
-		_anims.play(4, 1, 0x11, 2, 4);
-		return;
-
-	case kChimneyRoom: {
-		if (!frame)
-			return;
-		setStateWord(kChimneyClock, stateWord(kChimneyClock) + 1);
-
-		// The countdown the puff loaded, one per frame. Its last step matters
-		// as much as the puff does: it is what puts the chimney's outcome back.
-		const byte held = _script.flag(kChimneyFlag);
-		if (held > 0) {
-			_script.setFlag(kChimneyFlag, held - 1);
-			changed = held == 1;
-		}
-
-		if (stateWord(kChimneyClock) > kChimneyLimit) {
-			_script.setFlag(kChimneyFlag, kChimneyReload);
-			setStateWord(kChimneyClock, 0);
-			_anims.play(0, 1, 4, 4, 1);
-			changed = true;
-			debugC(1, kDebugRooms, "clock: room %d, the chimney puffs", kChimneyRoom);
-		}
-		break;
-	}
-
-	case kUfoRoom:
-		// Unlike the other two the compare sits outside the gate, and both the
-		// count and the fire are held off once the flag is up.
-		if (_script.flag(kUfoFlag))
-			return;
-		if (frame)
-			setStateWord(kUfoClock, stateWord(kUfoClock) + 1);
-		if (stateWord(kUfoClock) <= kUfoLimit)
-			return;
-		_script.setFlag(kUfoFlag, 1);
-		_anims.play(3, 1, 0x4f, 4, 1);
-		changed = true;
-		debugC(1, kDebugRooms, "clock: room %d, the UFO flies by", kUfoRoom);
-		break;
-
-	default:
-		return;
-	}
-
 	if (!changed)
 		return;
 

@@ -229,7 +229,7 @@ void LabRoom::stepLabHole() {
 }
 
 /// The shared room open drops whatever the last visit left standing.
-void LabRoom::reset() {
+void LabRoom::reset(int room) {
 	_labStep = 0;
 	_labPos = 0;
 	_labNearHole = false;

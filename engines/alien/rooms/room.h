@@ -63,8 +63,9 @@ public:
 	virtual void preload(int room) {}
 	/// A plate composed by the room rather than read from the table.
 	virtual bool loadBackground(int room, Graphics::Surface &plate, byte *palette) { return false; }
-	/// OBJ:sub_08567, the shared open: whatever state the visit before left.
-	virtual void reset() {}
+	/// OBJ:sub_08567, the shared open of `room`: whatever state the visit
+	/// before left.
+	virtual void reset(int room) {}
 	/// Before anything draws or registers by the room's view.
 	virtual void chooseView(int room) {}
 	/// After the table's banks are in.

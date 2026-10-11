@@ -53,6 +53,7 @@ MODULE_OBJS = \
 	rooms/cave.o \
 	rooms/cemetery.o \
 	rooms/cliff.o \
+	rooms/chimney.o \
 	rooms/corridor.o \
 	rooms/diving.o \
 	rooms/elevator.o \
@@ -84,6 +85,7 @@ MODULE_OBJS = \
 	rooms/teleport.o \
 	rooms/telescope.o \
 	rooms/terminal.o \
+	rooms/ufo.o \
 	rooms/waiting.o \
 	rooms/yodle.o
 

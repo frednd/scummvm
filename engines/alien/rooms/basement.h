@@ -32,8 +32,9 @@ class BasementRoom : public Room {
 public:
 	explicit BasementRoom(AlienEngine *vm);
 
-	void reset() override;
+	void reset(int room) override;
 	void enter(int room) override;
+	bool roomClock() override;
 	void tickPair() override;
 	void walkPhase() override;
 	void afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) override;

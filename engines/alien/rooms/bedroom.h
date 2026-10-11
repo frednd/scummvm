@@ -32,8 +32,9 @@ class BedroomRoom : public Room {
 public:
 	explicit BedroomRoom(AlienEngine *vm);
 
-	void reset() override { _bedroomLiftStep = 0; }
+	void reset(int room) override { _bedroomLiftStep = 0; }
 	void placed(int room) override;
+	bool roomClock() override;
 	void tickPair() override;
 	void afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) override;
 	bool hijackExit(byte submode) override;
@@ -45,6 +46,9 @@ private:
 
 	/// The walk into the lift car: 0 idle, 1 his line, 2 WALKINC1.
 	byte _bedroomLiftStep;
+
+	/// [0xa8f0]/[0xa8f2]: where the sprite stood last frame, in the dark.
+	int _darkLastX, _darkLastY;
 };
 
 } // End of namespace Alien

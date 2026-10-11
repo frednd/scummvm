@@ -33,7 +33,7 @@ class HippieRoom : public Room {
 public:
 	explicit HippieRoom(AlienEngine *vm);
 
-	void reset() override;
+	void reset(int room) override;
 	void start() override;
 	void tickPair() override;
 	bool takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) override;

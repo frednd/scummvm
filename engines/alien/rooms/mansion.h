@@ -31,7 +31,7 @@ class MansionRoom : public Room {
 public:
 	explicit MansionRoom(AlienEngine *vm);
 
-	void reset() override { _mansionStep = 0; }
+	void reset(int room) override { _mansionStep = 0; }
 	void enter(int room) override;
 	void tickPair() override;
 	bool holdsCharacter() const override { return _mansionStep != 0; }

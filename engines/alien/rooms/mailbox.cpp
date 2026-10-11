@@ -269,7 +269,7 @@ void MailboxRoom::stepTown() {
 }
 
 /// The shared room open drops whatever the last visit left standing.
-void MailboxRoom::reset() {
+void MailboxRoom::reset(int room) {
 	_mailboxStep = 0;
 	_mailboxPos = 0;
 	_townStep = 0;

@@ -472,7 +472,7 @@ void HippieRoom::hippieAnswer() {
 }
 
 /// The shared room open drops whatever the last visit left standing.
-void HippieRoom::reset() {
+void HippieRoom::reset(int room) {
 	_hippieStep = 0;
 	_hippiePos = 0;
 	_hippieReply = 0;

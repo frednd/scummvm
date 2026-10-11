@@ -541,4 +541,37 @@ Room::Body LibraryRoom::body(int obj, byte verb, byte item, int anchorX, int anc
 	return runLibraryBody(obj, item != Inventory::kNoItem) ? kBodyReplaced : kBodyNone;
 }
 
+// The room clock (ovr_08_0e67:0x0d93). Sit in the library long
+// enough and the owl on the shelf wakes up -- twelve frames of LIB_OWL.DL1 --
+// and [0x33ac] goes to 1, which is the whole point: the owl's hotspot has three
+// arms and only the one guarded on [0x33ac] == 1 carries the talk verb
+// (hotspots.cpp, obj 4, the arm whose verb comes from the scratch temporary).
+// Until the latch is set the owl can only be looked at.
+//
+// 0x5dc tick pairs is about 43 seconds.
+static const uint16 kOwlClock = 0xa710;
+static const uint16 kOwlLimit = 0x5dc;
+
+bool LibraryRoom::roomClock() {
+	if (_vm->_room != kLibraryRoom)
+		return false;
+	// The compare is `jne`, not `jbe`: the counter is zeroed on the way past,
+	// so the owl wakes once per stay however long the stay is.
+	_vm->setStateWord(kOwlClock, _vm->stateWord(kOwlClock) + 1);
+	if (_vm->stateWord(kOwlClock) != kOwlLimit)
+		return false;
+	_vm->setStateWord(kOwlClock, 0);
+	_vm->_anims.play(kOwlSlot, 1, kOwlFrames, kOwlRate, 1);
+	_vm->_script.setFlag(kOwlAwake, 1);
+	debugC(1, kDebugRooms, "clock: room %d, the owl wakes", kLibraryRoom);
+	return true;
+}
+
+/// The overlay zeroes its clock as it opens, so a stay is counted afresh.
+void LibraryRoom::reset(int room) {
+	_libraryStep = 0;
+	if (room == kLibraryRoom)
+		_vm->setStateWord(kOwlClock, 0);
+}
+
 } // End of namespace Alien

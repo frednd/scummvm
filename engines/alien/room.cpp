@@ -255,14 +255,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		debugC(1, kDebugSound, "room %d: bank %d %s, %u slots", room, _sound.bankIndex(),
 			   _sound.bank().file().c_str(), _sound.bank().slotCount());
 
-	// The banks the room's animation slots play, from the overlay's own load
-	// calls. Loaded before the script is entered, because entering it runs the
-	// room's opening plays against these slots.
-	// Rooms 8, 14 and 18 zero their clock as the overlay opens, so a room
+	// Whatever the rooms' own machines were in the middle of (rooms/);
+	// rooms 8, 14 and 18 zero their clock as the overlay opens, so a room
 	// re-entered starts counting again (roomtick.cpp).
-	resetRoomClock(room);
 	for (Room *r : _rooms)
-		r->reset();
+		r->reset(room);
 	_chatPickNew = false;
 	_chat.close();
 	_barHidden = false;
