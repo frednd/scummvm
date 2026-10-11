@@ -67,6 +67,7 @@ MODULE_OBJS = \
 	rooms/lift.o \
 	rooms/living.o \
 	rooms/mailbox.o \
+	rooms/mansion.o \
 	rooms/maze.o \
 	rooms/observatory.o \
 	rooms/opening.o \
