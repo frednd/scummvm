@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/mansion.h"
 
 namespace Alien {
 
@@ -39,26 +40,30 @@ static const byte kFromSewer = 35;
 static const uint kManholeSlot = 1;
 static const byte kMansionClimbing = 3;
 
-void AlienEngine::enterMansion(int room) {
-	if (room != kMansionRoom || _mode != kFromSewer)
+MansionRoom::MansionRoom(AlienEngine *vm) : Room(vm),
+		_mansionStep(0) {
+}
+
+void MansionRoom::enter(int room) {
+	if (room != kMansionRoom || _vm->_mode != kFromSewer)
 		return;
 
-	hideCharacter();
+	_vm->hideCharacter();
 	CursorMan.showMouse(false);
 	_mansionStep = kMansionClimbing;
 	debugC(1, kDebugRooms, "mansion: up through the manhole");
 }
 
-void AlienEngine::stepMansion() {
-	if (_room != kMansionRoom || _mansionStep != kMansionClimbing)
+void MansionRoom::tickPair() {
+	if (_vm->_room != kMansionRoom || _mansionStep != kMansionClimbing)
 		return;
 	// The original waits for exactly one frame left; a count already past it
 	// (a slot the scene zeroed) must not strand him either.
-	if (_anims.remaining(kManholeSlot) > 1)
+	if (_vm->_anims.remaining(kManholeSlot) > 1)
 		return;
 
 	_mansionStep = 0;
-	showCharacter();
+	_vm->showCharacter();
 	CursorMan.showMouse(true);
 	debugC(1, kDebugRooms, "mansion: out of the manhole");
 }

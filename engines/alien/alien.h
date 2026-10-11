@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class MansionRoom;
 	friend class LiftRoom;
 	friend class ObservatoryRoom;
 	friend class SewerRoom;
@@ -347,8 +348,6 @@ private:
 	bool hijackBedroomLift(byte submode);
 	void stepBedroomLift();
 	void enterLanding(int room);
-	void enterMansion(int room);
-	void stepMansion();
 	void applyOcclusion();
 	bool triggerCutscene(byte id);
 	void roomCutscenes(int room);
@@ -764,8 +763,6 @@ private:
 	byte _labStep;
 	/// Room 7's walk into the lift car: 0 idle, 1 his line, 2 WALKINC1 (bedroom.cpp).
 	byte _bedroomLiftStep;
-	/// Room 27's [0xa49f]: 3 while the manhole climb has the character (sewer.cpp).
-	byte _mansionStep;
 
 	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
 	bool _restoring;			///< syncGame is reloading the room, not an entry through a door
