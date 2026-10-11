@@ -20,6 +20,7 @@ MODULE_OBJS = \
 	lighting.o \
 	mazetables.o \
 	media.o \
+	metaengine.o \
 	occlusion.o \
 	overlay.o \
 	pack.o \
