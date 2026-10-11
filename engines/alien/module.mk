@@ -7,6 +7,7 @@ MODULE_OBJS = \
 	anims.o \
 	charanim.o \
 	clock.o \
+	cutsceneplay.o \
 	cutscenes.o \
 	dl1.o \
 	fade.o \
@@ -30,6 +31,7 @@ MODULE_OBJS = \
 	roomtick.o \
 	s3m.o \
 	scale.o \
+	script.o \
 	sfx.o \
 	sweeps.o \
 	tables.o \
