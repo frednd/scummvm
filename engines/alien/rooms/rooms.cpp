@@ -20,51 +20,55 @@
  */
 
 #include "alien/alien.h"
-#include "alien/rooms/boss.h"
-#include "alien/rooms/ufo.h"
-#include "alien/rooms/chimney.h"
-#include "alien/rooms/cave.h"
-#include "alien/rooms/ending.h"
-#include "alien/rooms/opening.h"
-#include "alien/rooms/hallway.h"
-#include "alien/rooms/lab.h"
-#include "alien/rooms/bedroom.h"
-#include "alien/rooms/mansion.h"
-#include "alien/rooms/lift.h"
-#include "alien/rooms/observatory.h"
-#include "alien/rooms/sewer.h"
 #include "alien/rooms/basement.h"
+#include "alien/rooms/bedroom.h"
+#include "alien/rooms/boss.h"
+#include "alien/rooms/cave.h"
+#include "alien/rooms/cemetery.h"
+#include "alien/rooms/chimney.h"
 #include "alien/rooms/cliff.h"
+#include "alien/rooms/corridor.h"
+#include "alien/rooms/diving.h"
+#include "alien/rooms/ending.h"
+#include "alien/rooms/forest.h"
+#include "alien/rooms/hallway.h"
+#include "alien/rooms/hippie.h"
+#include "alien/rooms/jail.h"
+#include "alien/rooms/lab.h"
+#include "alien/rooms/library.h"
+#include "alien/rooms/lift.h"
 #include "alien/rooms/living.h"
 #include "alien/rooms/mailbox.h"
-#include "alien/rooms/sluggs.h"
-#include "alien/rooms/cemetery.h"
-#include "alien/rooms/telescope.h"
+#include "alien/rooms/mansion.h"
 #include "alien/rooms/maze.h"
-#include "alien/rooms/shore.h"
-#include "alien/rooms/pool.h"
-#include "alien/rooms/diving.h"
-#include "alien/rooms/steam.h"
+#include "alien/rooms/observatory.h"
+#include "alien/rooms/opening.h"
 #include "alien/rooms/park.h"
-#include "alien/rooms/yodle.h"
-#include "alien/rooms/forest.h"
-#include "alien/rooms/teleport.h"
-#include "alien/rooms/corridor.h"
+#include "alien/rooms/pool.h"
 #include "alien/rooms/scanner.h"
+#include "alien/rooms/sewer.h"
+#include "alien/rooms/shore.h"
+#include "alien/rooms/sluggs.h"
+#include "alien/rooms/steam.h"
 #include "alien/rooms/store.h"
-#include "alien/rooms/hippie.h"
-#include "alien/rooms/library.h"
+#include "alien/rooms/teleport.h"
+#include "alien/rooms/telescope.h"
+#include "alien/rooms/ufo.h"
 #include "alien/rooms/waiting.h"
-#include "alien/rooms/jail.h"
+#include "alien/rooms/yodle.h"
 
 namespace Alien {
 
 /**
  * The rooms, in the order every hook runs them.
  *
- * Each hook answers only for its own rooms, so between files that serve
- * different rooms the order is immaterial. Where two share one, the earlier
- * here is the one whose code the original runs first.
+ * Each hook answers only for its own rooms, so for most of them the order is
+ * immaterial. Where it is not, it is the order the port has always run the
+ * rooms' machines in on a tick pair: a machine that leaves its room mid-tick
+ * lets the machines after it see the room it led to on that same tick, and
+ * moving one changes when the next room's own machine starts. The first five,
+ * which run no machine on the tick pair, are free; the escape pod's machine()
+ * goes ahead of the opening's, as it always has.
  */
 void AlienEngine::registerRooms() {
 	_rooms.push_back(new UfoRoom(this));
