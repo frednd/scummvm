@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class TelescopeRoom;
 	friend class MazeRoom;
 	friend class ShoreRoom;
 	friend class PoolRoom;
@@ -395,14 +396,6 @@ private:
 	void playLiftPanel();
 	bool liftWipe(const Graphics::Surface &to);
 
-	/// Room 28's telescope view and observatory computer, both of which the
-	/// lifted table only ever arms as game_submode = 111 (telescope.cpp).
-	bool runTelescopeScreen(int obj, byte verb, byte submode);
-	/// Room 28's lever, the one writer of [0xa760] (telescope.cpp).
-	void armTelescopeLever(int obj, byte verb);
-	void stepTelescopeLever();
-	void playTelescopeView();
-	void playObservatoryScreen();
 	void stepHallway();
 	void playPeephole();
 

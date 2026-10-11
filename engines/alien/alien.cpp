@@ -662,11 +662,6 @@ void AlienEngine::stepClock() {
 		// counts one more wrong answer (cemetery.cpp).
 		stepCemetery();
 
-		// And room 28's telescope lever, whose [0xa49f] machine is the only
-		// thing that writes [0xa760] -- which is what the observatory
-		// computer saves as co-ordinates 1 or 2 (telescope.cpp).
-		stepTelescopeLever();
-
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
 			r->tickPair();

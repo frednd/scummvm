@@ -28,6 +28,7 @@
 #include "alien/detection.h"
 #include "alien/play.h"
 #include "alien/resources.h"
+#include "alien/rooms/telescope.h"
 
 namespace Alien {
 
@@ -111,13 +112,13 @@ static const int kForward = 1;		///< mode 1: forward, left behind (see anim.h)
  * click MIDAS:0251:6726 copies before [0xa948] takes the cursor away, which is
  * why a screen with no visible pointer can still be dismissed.
  */
-void AlienEngine::playTelescopeView() {
-	const int room = _room;
-	const int benX = _ben.walkX();
-	const int benY = _ben.walkY();
-	const int benFacing = _ben.facing();
+void TelescopeRoom::playTelescopeView() {
+	const int room = _vm->_room;
+	const int benX = _vm->_ben.walkX();
+	const int benY = _vm->_ben.walkY();
+	const int benFacing = _vm->_ben.facing();
 
-	const bool lowered = _script.flag(kLever) == 0;
+	const bool lowered = _vm->_script.flag(kLever) == 0;
 	const char *const plateName = lowered ? kView0Plate : kView1Plate;
 	const char *const bankName = lowered ? kView0Bank : kView1Bank;
 
@@ -129,40 +130,40 @@ void AlienEngine::playTelescopeView() {
 		return;
 	}
 
-	stopSpeech();
-	_cutscene = true;
-	_background.free();
-	_background = plate;
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
+	_vm->stopSpeech();
+	_vm->_cutscene = true;
+	_vm->_background.free();
+	_vm->_background = plate;
+	_vm->_roomWidth = AlienEngine::kScreenWidth;
+	_vm->_scrollX = 0;
 
-	const int clip = _clipBottom;
-	_clipBottom = _screen.h - 1;
-	memcpy(_palette, palette, sizeof(_palette));
+	const int clip = _vm->_clipBottom;
+	_vm->_clipBottom = _vm->_screen.h - 1;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 	// 0x02e3: [0xa948] := 0. Unlike the lift's console this screen is never
 	// clicked at a position -- any click anywhere ends it -- so the cursor
 	// stays away for the whole of it.
 	CursorMan.showMouse(false);
 
 	const char *banks[] = { bankName };
-	_anims.loadBanks(banks, ARRAYSIZE(banks));
-	_anims.play(kViewSlot, 1, lowered ? 0x1d : 9, lowered ? 5 : 4, kForward);
+	_vm->_anims.loadBanks(banks, ARRAYSIZE(banks));
+	_vm->_anims.play(kViewSlot, 1, lowered ? 0x1d : 9, lowered ? 5 : 4, kForward);
 
-	playMusicSlot(lowered ? 10 : 9);
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	_dirty = true;
+	_vm->playMusicSlot(lowered ? 10 : 9);
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
+	_vm->_dirty = true;
 
 	debugC(1, kDebugRooms, "telescope: the view opens, lever %s",
 		   lowered ? "down" : "up");
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = millis();
+	uint32 last = _vm->millis();
 	uint32 tick = 0;
 	bool quit = false;
 	uint scripted = 0;
 	uint shot = 0;
 
-	while (!shouldQuit() && !_quit && !quit) {
+	while (!_vm->shouldQuit() && !_vm->_quit && !quit) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 			if (event.type == Common::EVENT_KEYDOWN &&
@@ -175,17 +176,17 @@ void AlienEngine::playTelescopeView() {
 
 		// A scripted run has no mouse; either kind of click in the play script
 		// ends the view exactly as a real one would.
-		if (_playActive && !quit) {
-			while (_playIndex < _play.commands().size()) {
-				const PlayCommand &cmd = _play.commands()[_playIndex];
+		if (_vm->_playActive && !quit) {
+			while (_vm->_playIndex < _vm->_play.commands().size()) {
+				const PlayCommand &cmd = _vm->_play.commands()[_vm->_playIndex];
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
-					_playIndex++;
+					_vm->_playIndex++;
 					continue;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
 					break;
 
-				_playIndex++;
+				_vm->_playIndex++;
 				scripted = 0;
 				quit = true;
 				debugC(1, kDebugRooms, "telescope: play: %u: click closes the view",
@@ -195,58 +196,58 @@ void AlienEngine::playTelescopeView() {
 
 			if (++scripted > kScriptedGiveUp) {
 				warning("telescope: the script left the view open; closing it");
-				playLeftOpen("the telescope view");
+				_vm->playLeftOpen("the telescope view");
 				quit = true;
 			}
 		}
 
-		const uint32 now = millis();
+		const uint32 now = _vm->millis();
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
-			sceneClockTick();
+			_vm->sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;
 
-			_anims.tick();
+			_vm->_anims.tick();
 
 			if (!lowered)
-				_anims.relaunch(kViewSlot);			// [0xa53a]: TELEVIE1 loops
-			else if (_anims.remaining(kViewSlot) == 0)	// [0xa760]==0 && [0xa4ea]==0
+				_vm->_anims.relaunch(kViewSlot);			// [0xa53a]: TELEVIE1 loops
+			else if (_vm->_anims.remaining(kViewSlot) == 0)	// [0xa760]==0 && [0xa4ea]==0
 				quit = true;
 
 			shot = 1;
-			_dirty = true;
+			_vm->_dirty = true;
 		}
 
-		if (_dirty)
-			redraw();
+		if (_vm->_dirty)
+			_vm->redraw();
 
 		if (shot && debugChannelSet(4, kDebugRooms)) {
-			dumpScreen(Common::String::format("telescope-%u.png", tick));
+			_vm->dumpScreen(Common::String::format("telescope-%u.png", tick));
 			shot = 0;
 		}
 
-		present();
-		sleep(10);
+		_vm->present();
+		_vm->sleep(10);
 	}
 
 	// 0c55:0e11-0e26: the tail every CUTSCENE teardown shares.
-	stopMusic();
-	_cutscene = false;
-	_clipBottom = clip;
-	_script.setFlag(kScenePlayed, 1);
+	_vm->stopMusic();
+	_vm->_cutscene = false;
+	_vm->_clipBottom = clip;
+	_vm->_script.setFlag(kScenePlayed, 1);
 
 	debugC(1, kDebugRooms, "telescope: the view closes");
 
-	if (room > 0 && loadRoom(room)) {
-		_ben.place(benX, benY, benFacing);
-		_pendingCutscenes = false;
+	if (room > 0 && _vm->loadRoom(room)) {
+		_vm->_ben.place(benX, benY, benFacing);
+		_vm->_pendingCutscenes = false;
 	}
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
 	CursorMan.showMouse(true);
-	_dirty = true;
+	_vm->_dirty = true;
 }
 
 // --- The observatory computer: 15f3:sub_165d3 -------------------------------
@@ -335,9 +336,9 @@ static bool inBox(int x, int y, const ScreenBox &box) {
  * playLiftPanel(): a modal that owns the framebuffer and the loop, scriptable,
  * and giving up on its own if a scripted run stops clicking.
  */
-void AlienEngine::playObservatoryScreen() {
-	const int room = _room;
-	const Walker::Spot spot = _ben.spot();
+void TelescopeRoom::playObservatoryScreen() {
+	const int room = _vm->_room;
+	const Walker::Spot spot = _vm->_ben.spot();
 
 	Graphics::Surface plate;
 	byte palette[256 * 3];
@@ -347,51 +348,51 @@ void AlienEngine::playObservatoryScreen() {
 		return;
 	}
 
-	stopSpeech();
-	_cutscene = true;
-	_background.free();
-	_background = plate;
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
+	_vm->stopSpeech();
+	_vm->_cutscene = true;
+	_vm->_background.free();
+	_vm->_background = plate;
+	_vm->_roomWidth = AlienEngine::kScreenWidth;
+	_vm->_scrollX = 0;
 
-	const int clip = _clipBottom;
-	_clipBottom = _screen.h - 1;
-	memcpy(_palette, palette, sizeof(_palette));
+	const int clip = _vm->_clipBottom;
+	_vm->_clipBottom = _vm->_screen.h - 1;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 	CursorMan.showMouse(true);
 
-	ScreenMode mode = _script.flag(kDiskIn) == 0 ? kModeNoDisk : kModeMenu;
+	ScreenMode mode = _vm->_script.flag(kDiskIn) == 0 ? kModeNoDisk : kModeMenu;
 
 	// The room's own slots go: 15f3:sub_165d3 draws only the five it loads,
 	// and the room reloads on the way out. Left running, slot 7 -- OBU_SCRE,
 	// the little monitor in the room, at 62,83 -- drew over the screen's text
 	// as a blue-edged green block.
 	for (uint i = 0; i < AnimSlots::kSlotCount; i++)
-		_anims.takeDown(i);
+		_vm->_anims.takeDown(i);
 
-	_anims.loadBank(kSlotMenu, mode == kModeNoDisk ? kNoDiskBank : kMenuBank);
-	_anims.loadBank(kSlotCursor, kCursorBank);
-	_anims.loadBank(kSlotSaveOk, kSaveOkBank);
-	_anims.loadBank(kSlotSaveEr, kSaveErBank);
+	_vm->_anims.loadBank(kSlotMenu, mode == kModeNoDisk ? kNoDiskBank : kMenuBank);
+	_vm->_anims.loadBank(kSlotCursor, kCursorBank);
+	_vm->_anims.loadBank(kSlotSaveOk, kSaveOkBank);
+	_vm->_anims.loadBank(kSlotSaveEr, kSaveErBank);
 
-	_anims.play(kSlotCursor, 1, 3, 0x0a, kForward);
+	_vm->_anims.play(kSlotCursor, 1, 3, 0x0a, kForward);
 	if (mode == kModeNoDisk)
-		_anims.play(kSlotMenu, 0, ARRAYSIZE(kNoDiskIdleFrames), 2, kTransitionMode,
+		_vm->_anims.play(kSlotMenu, 0, ARRAYSIZE(kNoDiskIdleFrames), 2, kTransitionMode,
 					kNoDiskIdleFrames);
 	else
 		// 15f3:0753, sub_165d3 itself: the instant [0xbf16] settles on 2 it
 		// calls sub_163f5 -- the same "back to the menu" play returnToMenu()
 		// below uses -- to draw the menu the first time. Skipping this left
 		// the plate up with no SCAN/SAVE/EXIT frame ever drawn over it.
-		_anims.play(kSlotMenu, 1, 3, 7, kPersistMode);
+		_vm->_anims.play(kSlotMenu, 1, 3, 7, kPersistMode);
 
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	_dirty = true;
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
+	_vm->_dirty = true;
 
 	debugC(1, kDebugRooms, "telescope: the computer opens, %s",
 		   mode == kModeNoDisk ? "no disk" : "the menu");
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = millis();
+	uint32 last = _vm->millis();
 	uint32 tick = 0;
 
 	bool clicksOn = true;		// [0xa949]
@@ -413,11 +414,11 @@ void AlienEngine::playObservatoryScreen() {
 	// does for free once nothing is left drawing over it -- and the menu bank
 	// plays its three-frame "appear".
 	const auto returnToMenu = [&]() {
-		_anims.takeDown(kSlotSaveOk);
-		_anims.takeDown(kSlotSaveEr);
-		_anims.takeDown(kSlotScan);
-		_anims.loadBank(kSlotMenu, kMenuBank);
-		_anims.play(kSlotMenu, 1, 3, 7, kPersistMode);
+		_vm->_anims.takeDown(kSlotSaveOk);
+		_vm->_anims.takeDown(kSlotSaveEr);
+		_vm->_anims.takeDown(kSlotScan);
+		_vm->_anims.loadBank(kSlotMenu, kMenuBank);
+		_vm->_anims.play(kSlotMenu, 1, 3, 7, kPersistMode);
 		mode = kModeMenu;
 		debugC(1, kDebugRooms, "telescope: back to the menu");
 	};
@@ -443,19 +444,19 @@ void AlienEngine::playObservatoryScreen() {
 			switch (box.mode) {
 			case kModeExiting:
 				mode = kModeExiting;
-				_anims.play(kSlotMenu, 0, ARRAYSIZE(kExitTransition), 1,
+				_vm->_anims.play(kSlotMenu, 0, ARRAYSIZE(kExitTransition), 1,
 							kTransitionMode, kExitTransition);
 				debugC(1, kDebugRooms, "telescope: EXIT clicked");
 				break;
 			case kModeScanning:
 				mode = kModeScanning;
-				_anims.play(kSlotMenu, 0, ARRAYSIZE(kScanTransition), 1,
+				_vm->_anims.play(kSlotMenu, 0, ARRAYSIZE(kScanTransition), 1,
 							kTransitionMode, kScanTransition);
 				debugC(1, kDebugRooms, "telescope: SCAN clicked");
 				break;
 			case kModeSaving:
 				mode = kModeSaving;
-				_anims.play(kSlotMenu, 0, ARRAYSIZE(kSaveTransition), 1,
+				_vm->_anims.play(kSlotMenu, 0, ARRAYSIZE(kSaveTransition), 1,
 							kTransitionMode, kSaveTransition);
 				debugC(1, kDebugRooms, "telescope: SAVE clicked");
 				break;
@@ -466,7 +467,7 @@ void AlienEngine::playObservatoryScreen() {
 		}
 	};
 
-	while (!shouldQuit() && !_quit && !quit) {
+	while (!_vm->shouldQuit() && !_vm->_quit && !quit) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 			if (event.type == Common::EVENT_KEYDOWN &&
@@ -477,30 +478,30 @@ void AlienEngine::playObservatoryScreen() {
 				handleClick(event.mouse.x, event.mouse.y);
 		}
 
-		if (_playActive && !quit && playWaitUntil != 0 && millis() >= playWaitUntil)
+		if (_vm->_playActive && !quit && playWaitUntil != 0 && _vm->millis() >= playWaitUntil)
 			playWaitUntil = 0;
 
-		if (_playActive && !quit && playWaitUntil == 0) {
-			while (_playIndex < _play.commands().size()) {
-				const PlayCommand &cmd = _play.commands()[_playIndex];
+		if (_vm->_playActive && !quit && playWaitUntil == 0) {
+			while (_vm->_playIndex < _vm->_play.commands().size()) {
+				const PlayCommand &cmd = _vm->_play.commands()[_vm->_playIndex];
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
 					// Held for real, roughly as many milliseconds as the
 					// original counts ticks -- close enough to keep the next
 					// click from landing before this one's transition has
 					// even started.
-					_playIndex++;
+					_vm->_playIndex++;
 					scripted = 0;
 					// A wait is in master ticks, as the outer driver and the
 					// original's runner count it; a settle has nothing to watch
 					// here and holds for its timeout in milliseconds.
-					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0) *
-						(cmd.type == PlayCommand::kWait ? kMasterTickMillis : 1);
+					playWaitUntil = _vm->millis() + (uint32)MAX(cmd.a, 0) *
+						(cmd.type == PlayCommand::kWait ? AlienEngine::kMasterTickMillis : 1);
 					break;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
 					break;
 
-				_playIndex++;
+				_vm->_playIndex++;
 				scripted = 0;
 				debugC(1, kDebugRooms, "telescope: play: %u: click %d,%d",
 					   cmd.sourceLine, cmd.a, cmd.b);
@@ -510,21 +511,21 @@ void AlienEngine::playObservatoryScreen() {
 
 			if (++scripted > kScriptedGiveUp) {
 				warning("telescope: the script left the computer open; closing it");
-				playLeftOpen("the telescope computer");
+				_vm->playLeftOpen("the telescope computer");
 				quit = true;
 			}
 		}
 
-		const uint32 now = millis();
+		const uint32 now = _vm->millis();
 		while (now - last >= kTickMillis) {
 			last += kTickMillis;
 			tick++;
-			sceneClockTick();
+			_vm->sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;
 
-			_anims.tick();
+			_vm->_anims.tick();
 
 			// 0x0499, sub_163cc: the monitor's flicker. UTIL:sub_0232c(amount,
 			// 0, 0, 0, 0x50, 0x40) blends the sixty-four entries from 0x50
@@ -534,10 +535,10 @@ void AlienEngine::playObservatoryScreen() {
 			// screen.
 			static const uint kSweepFirst = 0x50, kSweepCount = 0x40;
 			byte swept[256 * 3];
-			memcpy(swept, _palette, sizeof(swept));
+			memcpy(swept, _vm->_palette, sizeof(swept));
 			for (uint i = kSweepFirst; i < kSweepFirst + kSweepCount; i++) {
 				for (uint c = 0; c < 3; c++)
-					swept[i * 3 + c] = (byte)((_palette[i * 3 + c] * (256 - sweep)) >> 8);
+					swept[i * 3 + c] = (byte)((_vm->_palette[i * 3 + c] * (256 - sweep)) >> 8);
 			}
 			g_system->getPaletteManager()->setPalette(swept, 0, 256);
 			sweep += 10;
@@ -553,8 +554,8 @@ void AlienEngine::playObservatoryScreen() {
 			// looping. Reading it first, before relaunching, is what keeps
 			// clicks alive through an idle menu the way the original's own
 			// idle menu takes clicks throughout, not for one tick per cycle.
-			if (_anims.remaining(kSlotMenu) == 1 || _anims.remaining(kSlotSaveOk) == 1 ||
-				_anims.remaining(kSlotSaveEr) == 1 || _anims.remaining(kSlotScan) == 1)
+			if (_vm->_anims.remaining(kSlotMenu) == 1 || _vm->_anims.remaining(kSlotSaveOk) == 1 ||
+				_vm->_anims.remaining(kSlotSaveEr) == 1 || _vm->_anims.remaining(kSlotScan) == 1)
 				clicksOn = true;
 
 			// 0x078a-0x07a6: the loops the screen keeps running. The code
@@ -564,14 +565,14 @@ void AlienEngine::playObservatoryScreen() {
 			// page at one-left and the cursor never leaves the original's
 			// screen. 
 			if (mode == kModeNoDisk || mode == kModeMenu)
-				_anims.relaunch(kSlotMenu);
-			_anims.relaunch(kSlotCursor);
+				_vm->_anims.relaunch(kSlotMenu);
+			_vm->_anims.relaunch(kSlotCursor);
 
 			// 0x07b0-0x07e5: the three payoffs, each one frame before its
 			// transition ends.
-			if (mode == kModeExiting && _anims.remaining(kSlotMenu) == 1) {
+			if (mode == kModeExiting && _vm->_anims.remaining(kSlotMenu) == 1) {
 				quit = true;
-			} else if (mode == kModeSaving && _anims.remaining(kSlotMenu) == 1) {
+			} else if (mode == kModeSaving && _vm->_anims.remaining(kSlotMenu) == 1) {
 				// 15f3:sub_164c0
 				clicksOn = false;
 				// Slot 0's SAVE transition is done and left its last frame
@@ -582,59 +583,59 @@ void AlienEngine::playObservatoryScreen() {
 				// through the OK/error result instead of being replaced by
 				// it. Taking the slot down here is what sub_163f5 already
 				// does the other way, on the way back to the menu.
-				_anims.takeDown(kSlotMenu);
-				if (_script.flag(kLensIn) == 1) {
-					_anims.play(kSlotSaveOk, 0, ARRAYSIZE(kSaveOkFrames), 1,
+				_vm->_anims.takeDown(kSlotMenu);
+				if (_vm->_script.flag(kLensIn) == 1) {
+					_vm->_anims.play(kSlotSaveOk, 0, ARRAYSIZE(kSaveOkFrames), 1,
 								kTransitionMode, kSaveOkFrames);
-					if (_script.flag(kLever) == 0) {
-						_script.setFlag(kTeleportDest, 1);
-						_script.setFlag(kMystery3092, 0x60);
+					if (_vm->_script.flag(kLever) == 0) {
+						_vm->_script.setFlag(kTeleportDest, 1);
+						_vm->_script.setFlag(kMystery3092, 0x60);
 					} else {
-						_script.setFlag(kTeleportDest, 2);
-						_script.setFlag(kMystery3092, 0x61);
+						_vm->_script.setFlag(kTeleportDest, 2);
+						_vm->_script.setFlag(kMystery3092, 0x61);
 					}
 					debugC(1, kDebugRooms,
 						   "telescope: co-ordinates saved, [0x33b6] = %u",
-						   _script.flag(kTeleportDest));
+						   _vm->_script.flag(kTeleportDest));
 				} else {
-					_anims.play(kSlotSaveEr, 0, ARRAYSIZE(kSaveErFrames), 1,
+					_vm->_anims.play(kSlotSaveEr, 0, ARRAYSIZE(kSaveErFrames), 1,
 								kTransitionMode, kSaveErFrames);
 					debugC(1, kDebugRooms, "telescope: no lens, the save fails");
 				}
-			} else if (mode == kModeScanning && _anims.remaining(kSlotMenu) == 1) {
+			} else if (mode == kModeScanning && _vm->_anims.remaining(kSlotMenu) == 1) {
 				// 15f3:sub_16450
 				clicksOn = false;
 				// Same as the SAVE payoff below: slot 0's last SCAN-transition
 				// frame stays behind under kPersistMode and, with the port's
 				// full repaint, kept the menu text showing through the sky.
-				_anims.takeDown(kSlotMenu);
-				const bool lowered = _script.flag(kLever) == 0;
-				_anims.loadBank(kSlotScan, lowered ? kScanBank1 : kScanBank2);
-				_anims.play(kSlotScan, 1, lowered ? 0x29 : 0x25, 2, kPersistMode);
+				_vm->_anims.takeDown(kSlotMenu);
+				const bool lowered = _vm->_script.flag(kLever) == 0;
+				_vm->_anims.loadBank(kSlotScan, lowered ? kScanBank1 : kScanBank2);
+				_vm->_anims.play(kSlotScan, 1, lowered ? 0x29 : 0x25, 2, kPersistMode);
 				debugC(1, kDebugRooms, "telescope: scan shows the sky, lever %s",
 					   lowered ? "down" : "up");
 			}
 
 			shot = 1;
-			_dirty = true;
+			_vm->_dirty = true;
 		}
 
-		if (_dirty)
-			redraw();
+		if (_vm->_dirty)
+			_vm->redraw();
 
 		if (shot && debugChannelSet(4, kDebugRooms)) {
-			dumpScreen(Common::String::format("observatory-%u.png", tick));
+			_vm->dumpScreen(Common::String::format("observatory-%u.png", tick));
 			shot = 0;
 		}
 
-		present();
-		sleep(10);
+		_vm->present();
+		_vm->sleep(10);
 	}
 
-	stopMusic();
-	_cutscene = false;
-	_clipBottom = clip;
-	_script.setFlag(kScenePlayed, 1);
+	_vm->stopMusic();
+	_vm->_cutscene = false;
+	_vm->_clipBottom = clip;
+	_vm->_script.setFlag(kScenePlayed, 1);
 
 	debugC(1, kDebugRooms, "telescope: the computer closes");
 
@@ -642,16 +643,16 @@ void AlienEngine::playObservatoryScreen() {
 	// the room itself when it opens again (OBJ:sub_0879a; the original's trace
 	// reads `room 28 from 28`).
 	if (room > 0)
-		_mode = (byte)room;
-	if (room > 0 && loadRoom(room)) {
+		_vm->_mode = (byte)room;
+	if (room > 0 && _vm->loadRoom(room)) {
 		// Room 28's open places nobody when it is its own way in, so he keeps
 		// the spot he had, fraction and all.
-		_ben.putBack(spot);
-		_pendingCutscenes = false;
+		_vm->_ben.putBack(spot);
+		_vm->_pendingCutscenes = false;
 	}
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
 	CursorMan.showMouse(true);
-	_dirty = true;
+	_vm->_dirty = true;
 }
 
 // --- The telescope lever: the machine that persists [0xa760] ---------------
@@ -730,66 +731,66 @@ static const int kHandover = 3;
  * assumed: a Pull the row refused (no power, wrong dome state) reaches here
  * too, and arming on it would move the lever with no animation under it.
  */
-void AlienEngine::armTelescopeLever(int obj, byte verb) {
-	if (_room != kRoom || obj != kLeverObj || verb != kVerbPull)
+void TelescopeRoom::armTelescopeLever(int obj, byte verb) {
+	if (_vm->_room != kRoom || obj != kLeverObj || verb != kVerbPull)
 		return;
-	if (_script.flag(kLeverReady1) != 1 || _script.flag(kLeverReady2) != 1)
+	if (_vm->_script.flag(kLeverReady1) != 1 || _vm->_script.flag(kLeverReady2) != 1)
 		return;
-	if (_script.flag(0xa49f) != 0)
+	if (_vm->_script.flag(0xa49f) != 0)
 		return;
 
-	const bool raising = _script.flag(kLever) == 0;
-	_script.setFlag(0xa49f, raising ? kLeverRaisePull : kLeverLowerPull);
+	const bool raising = _vm->_script.flag(kLever) == 0;
+	_vm->_script.setFlag(0xa49f, raising ? kLeverRaisePull : kLeverLowerPull);
 	// 0x0286/0x028b and 0x02de/0x02e3: the cursor goes away for the length of
 	// the pull, and the machine's last state is what gives it back. The walker
 	// goes with it: the pull is Ben drawn into slots 1 and 2, and without the
 	// hiding the character both would appear on screen.
 	CursorMan.showMouse(false);
-	hideCharacter();
+	_vm->hideCharacter();
 	debugC(1, kDebugRooms, "telescope: the lever is being %s",
 		   raising ? "raised" : "lowered");
 }
 
 /// The machine itself, stepped from the room tick.
-void AlienEngine::stepTelescopeLever() {
-	if (_room != kRoom)
+void TelescopeRoom::tickPair() {
+	if (_vm->_room != kRoom)
 		return;
 
-	const byte state = (byte)_script.flag(0xa49f);
+	const byte state = (byte)_vm->_script.flag(0xa49f);
 
 	// 0x09d2: three frames before Ben lets go.
 	if (state == kLeverRaisePull) {
-		if (_anims.remaining(kRaisePullSlot) <= kHandover)
-			_script.setFlag(0xa49f, kLeverRaiseMove);
+		if (_vm->_anims.remaining(kRaisePullSlot) <= kHandover)
+			_vm->_script.setFlag(0xa49f, kLeverRaiseMove);
 		return;
 	}
 
 	// 0x09e4: Ben lets go ([0xa94d] = 1), the arm goes up, and the lever is up
 	// from here on.
 	if (state == kLeverRaiseMove) {
-		showCharacter();
-		_anims.play(kLeverArmSlot, kArmFirstUp, kArmFrames, kArmRate, kArmModeUp);
-		_script.setFlag(kLever, 1);
-		_sound.play(kServoSample, kServoRateUp, kServoVolume, kServoPan);
-		_script.setFlag(0xa49f, kLeverRaiseDone);
+		_vm->showCharacter();
+		_vm->_anims.play(kLeverArmSlot, kArmFirstUp, kArmFrames, kArmRate, kArmModeUp);
+		_vm->_script.setFlag(kLever, 1);
+		_vm->_sound.play(kServoSample, kServoRateUp, kServoVolume, kServoPan);
+		_vm->_script.setFlag(0xa49f, kLeverRaiseDone);
 		debugC(1, kDebugRooms, "telescope: the lever is up, [0xa760] = 1");
 		return;
 	}
 
 	// 0x0a0f, the same three frames on the other slot.
 	if (state == kLeverLowerPull) {
-		if (_anims.remaining(kLowerPullSlot) <= kHandover)
-			_script.setFlag(0xa49f, kLeverLowerMove);
+		if (_vm->_anims.remaining(kLowerPullSlot) <= kHandover)
+			_vm->_script.setFlag(0xa49f, kLeverLowerMove);
 		return;
 	}
 
 	// 0x0a21: Ben lets go, and mode 3 runs the arm's frames backward.
 	if (state == kLeverLowerMove) {
-		showCharacter();
-		_anims.play(kLeverArmSlot, kArmFirstDown, kArmFrames, kArmRate, kArmModeDown);
-		_script.setFlag(kLever, 0);
-		_sound.play(kServoSample, kServoRateDown, kServoVolume, kServoPan);
-		_script.setFlag(0xa49f, kLeverLowerDone);
+		_vm->showCharacter();
+		_vm->_anims.play(kLeverArmSlot, kArmFirstDown, kArmFrames, kArmRate, kArmModeDown);
+		_vm->_script.setFlag(kLever, 0);
+		_vm->_sound.play(kServoSample, kServoRateDown, kServoVolume, kServoPan);
+		_vm->_script.setFlag(0xa49f, kLeverLowerDone);
 		debugC(1, kDebugRooms, "telescope: the lever is down, [0xa760] = 0");
 		return;
 	}
@@ -797,8 +798,8 @@ void AlienEngine::stepTelescopeLever() {
 	// 0x09f8 and 0x0a35: both directions end the same way, on the arm slot
 	// running out, and both give the cursor back.
 	if (state == kLeverRaiseDone || state == kLeverLowerDone) {
-		if (_anims.remaining(kLeverArmSlot) == 0) {
-			_script.setFlag(0xa49f, 0);
+		if (_vm->_anims.remaining(kLeverArmSlot) == 0) {
+			_vm->_script.setFlag(0xa49f, 0);
 			CursorMan.showMouse(true);
 		}
 	}
@@ -809,19 +810,25 @@ void AlienEngine::stepTelescopeLever() {
  * takeExit() ever sees it -- the original's arrival test
  * (ovr_1c_0eb7:0x0128, [0xa956] == 0x4e25) is finishAction() itself.
  */
-bool AlienEngine::runTelescopeScreen(int obj, byte verb, byte submode) {
-	if (_room != kRoom || submode != kSelfSubmode)
+bool TelescopeRoom::takeSubmode(int obj, byte verb, byte submode) {
+	if (_vm->_room != kRoom || submode != kSelfSubmode)
 		return false;
 
 	if (obj == kTelescopeObj && verb == kVerbUse) {
 		playTelescopeView();
 		return true;
 	}
-	if (obj == kMonitorObj && verb == kVerbLookAt && _script.flag(kDomeOpen) == 1) {
+	if (obj == kMonitorObj && verb == kVerbLookAt && _vm->_script.flag(kDomeOpen) == 1) {
 		playObservatoryScreen();
 		return true;
 	}
 	return false;
+}
+
+void TelescopeRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The lever, whose Pull the table plays but does not persist.
+	if (!item)
+		armTelescopeLever(obj, verb);
 }
 
 } // End of namespace Alien

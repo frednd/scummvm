@@ -864,11 +864,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armCemeteryStatue(spot.obj, verb);
 
-	// And room 28's lever, whose Pull the table plays but does not persist
-	// (telescope.cpp).
-	if (!item)
-		armTelescopeLever(spot.obj, verb);
-
 	// And room 19's circuit breaker, whose hand on slot 5 draws Ben himself
 	// and whose line waits for it (observatory.cpp).
 	if (!item)
@@ -934,7 +929,7 @@ void AlienEngine::finishAction() {
 		// carry, and this is the arrival test they run under
 		// (ovr_1c_0eb7:0x0128, telescope.cpp).
 		// And room 26's note, the same way (forest.cpp).
-		bool taken = runTelescopeScreen(spot.obj, verb, _script.submodeRequest());
+		bool taken = false;
 		for (Room *r : _rooms)
 			if (!taken)
 				taken = r->takeSubmode(spot.obj, verb, _script.submodeRequest());
