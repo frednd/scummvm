@@ -419,8 +419,7 @@ void AlienEngine::sweepChatTrees() {
 	}
 }
 
-/// The two rooms whose own code speaks a pick's reply (hippie.cpp, yodle.cpp).
-static const int kHippieChatRoom = 23;
+/// The room whose own code speaks a pick's reply (yodle.cpp).
 static const int kYodleChatRoom = 21;
 
 /// The forty rows under the playfield, which the two slides move.
@@ -530,8 +529,7 @@ bool AlienEngine::chatReplyOwed() const {
 		return true;
 	if (_chatPickNew && _chatPickReply)
 		return true;
-	return (_room == kHippieChatRoom && _hippieAnswer)
-		   || (_room == kYodleChatRoom && _yodleAnswer);
+	return _room == kYodleChatRoom && _yodleAnswer;
 }
 
 void AlienEngine::openChat(uint topic) {

@@ -277,12 +277,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_sluggsLeft = 0;
 	_sluggsSpeaking = false;
 	_sluggsTalking = false;
-	_hippieStep = 0;
-	_hippiePos = 0;
-	_hippieReply = 0;
-	_hippieAnswer = false;
-	_hippieHandOff = -1;
-	_hippieTalking = false;
 	for (Room *r : _rooms)
 		r->reset();
 	_chatPickNew = false;
@@ -526,12 +520,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// here rather than with the other arrivals, after the room's own file has
 	// been read (store.cpp).
 	startStore();
-
-	// And room 23, whose hippie stands in one of two loops by whether his game
-	// has already changed hands -- two calls into the handler's own pose
-	// dispatcher, which is not a shape the opening table can carry
-	// (hippie.cpp).
-	startHippie();
 
 	// And the two mazes, whose dialog file the shared overlay's manifest names
 	// wrongly and whose torch the cell may not have (maze.cpp).

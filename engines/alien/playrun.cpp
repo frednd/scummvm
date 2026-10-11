@@ -94,7 +94,7 @@ bool AlienEngine::playIdle() const {
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
 		   !_armed && !_cliffClimb && !_cliffStep && !_divingExit && !_divingStep &&
 		   _scrollVel == 0 && !scrollWouldPan() && !roomBusy() &&
-		   !chatWaiting && !_hippieAnswer && _hippieHandOff < 0 && !shoreArrivalPending() &&
+		   !chatWaiting && !shoreArrivalPending() &&
 		   CursorMan.isVisible();
 }
 

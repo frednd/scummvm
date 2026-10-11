@@ -160,9 +160,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scannerArrest(false), _scannerStep(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
-		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
-		_hippieAnswer(false), _hippieHandOff(-1),
-		_hippieTalking(false),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
 		_chatPickNew(false),
 		_cursorX(0), _cursorY(0), _chatColorsHeld(false), _barHidden(false), _chatOwnsBar(false),
@@ -734,9 +731,6 @@ void AlienEngine::stepClock() {
 		// that is the room's only exit (store.cpp).
 		stepStore();
 
-		// And room 23's, which answers a pick out of the conversation tree and
-		// runs the walkman-for-gameson trade behind it (hippie.cpp).
-		stepHippie();
 
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.

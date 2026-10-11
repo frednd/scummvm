@@ -23,6 +23,7 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
+#include "alien/rooms/hippie.h"
 #include "alien/detection.h"
 
 namespace Alien {
@@ -158,6 +159,11 @@ static const byte kStepSettle = 4;		///< and the wait that gives the cursor back
 /// [0xa49c] > this before the room hands the player back (0x0650).
 static const uint16 kSettleWait = 0x70;
 
+HippieRoom::HippieRoom(AlienEngine *vm) : Room(vm),
+		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
+		_hippieAnswer(false), _hippieHandOff(-1), _hippieTalking(false) {
+}
+
 /**
  * MIDAS:sub_197ee, room 23's own pose dispatcher.
  *
@@ -167,25 +173,25 @@ static const uint16 kSettleWait = 0x70;
  * play that must not be picked up, and it is the one pose that is not in the
  * set.
  */
-void AlienEngine::hippiePose(byte pose) {
+void HippieRoom::hippiePose(byte pose) {
 	const bool loops = pose == kPoseIdle || pose == kPoseTalk || pose == kPoseTraded;
-	_anims.setLoopFlag(kHippieSlot, loops ? 1 : 0);
+	_vm->_anims.setLoopFlag(kHippieSlot, loops ? 1 : 0);
 
 	switch (pose) {
 	case kPoseIdle:
-		_anims.play(kHippieSlot, 0, ARRAYSIZE(kIdleFrames), kPoseRate, kLoopMode,
+		_vm->_anims.play(kHippieSlot, 0, ARRAYSIZE(kIdleFrames), kPoseRate, kLoopMode,
 					kIdleFrames);
 		break;
 	case kPoseTalk:
-		_anims.play(kHippieSlot, 0, ARRAYSIZE(kTalkFrames), kPoseRate, kLoopMode,
+		_vm->_anims.play(kHippieSlot, 0, ARRAYSIZE(kTalkFrames), kPoseRate, kLoopMode,
 					kTalkFrames);
 		break;
 	case kPoseHandOver:
-		_anims.play(kHippieSlot, 0, ARRAYSIZE(kHandFrames), kPoseRate, kHandMode,
+		_vm->_anims.play(kHippieSlot, 0, ARRAYSIZE(kHandFrames), kPoseRate, kHandMode,
 					kHandFrames);
 		break;
 	case kPoseTraded:
-		_anims.play(kHippieSlot, 0, ARRAYSIZE(kTradedFrames), kPoseRate, kLoopMode,
+		_vm->_anims.play(kHippieSlot, 0, ARRAYSIZE(kTradedFrames), kPoseRate, kLoopMode,
 					kTradedFrames);
 		break;
 	default:
@@ -202,8 +208,8 @@ void AlienEngine::hippiePose(byte pose) {
  * room23.tal in the pool and ROOM23.TAL on the disc, which is why the table
  * above spells them the way the overlay does.
  */
-void AlienEngine::loadHippieScript(byte which) {
-	_script.setFlag(kScriptFlag, which);
+void HippieRoom::loadHippieScript(byte which) {
+	_vm->_script.setFlag(kScriptFlag, which);
 	if (which >= kScriptCount)
 		return;
 
@@ -213,7 +219,7 @@ void AlienEngine::loadHippieScript(byte which) {
 		return;
 	}
 
-	_tal.load(path, &_pack);
+	_vm->_tal.load(path, &_vm->_pack);
 	debugC(1, kDebugChat, "hippie: speaking out of %s", kScripts[which]);
 }
 
@@ -224,16 +230,16 @@ void AlienEngine::loadHippieScript(byte which) {
  * lifted row already (roominit.cpp); these two are not, because they are calls
  * into the handler's own dispatcher rather than plays.
  */
-void AlienEngine::startHippie() {
+void HippieRoom::start() {
 	// LOGIC:sub_13346: once the gameson has changed hands, he is gone from the
 	// tree the next time Ben walks into one of these. Rooms 14, 21 and 32 call
 	// it from their openings and room 31 has it inline; the lift carried only
 	// room 31's copy.
-	if ((_room == 14 || _room == 21 || _room == 31 || _room == 32) &&
-		_script.flag(kGiven) == 1)
-		_script.setFlag(kHippieHere, 0);
+	if ((_vm->_room == 14 || _vm->_room == 21 || _vm->_room == 31 || _vm->_room == 32) &&
+		_vm->_script.flag(kGiven) == 1)
+		_vm->_script.setFlag(kHippieHere, 0);
 
-	if (_room != kHippieRoom)
+	if (_vm->_room != kHippieRoom)
 		return;
 
 	_hippieStep = 0;
@@ -243,17 +249,17 @@ void AlienEngine::startHippie() {
 	_hippieHandOff = -1;
 	_hippieTalking = false;
 
-	if (_script.flag(kHippieHere) != 1)
+	if (_vm->_script.flag(kHippieHere) != 1)
 		return;
 
 	// A port addition (setHold()): every pose here already loops with its
 	// guard set (hippiePose()), so this never has to substitute a frame in
 	// practice -- it is belt and braces against a relaunch dropping out, the
 	// same protection given to Sluggs and the salesman.
-	_anims.setHold(kHippieSlot, true);
+	_vm->_anims.setHold(kHippieSlot, true);
 
 	hippiePose(kPoseIdle);
-	if (_script.flag(kGiven) == 1)
+	if (_vm->_script.flag(kGiven) == 1)
 		hippiePose(kPoseTraded);
 }
 
@@ -264,23 +270,23 @@ void AlienEngine::startHippie() {
  * carry. Returns true when the room has taken the click, the way the owl and
  * Sluggs do.
  */
-bool AlienEngine::armHippie(int obj, byte verb, int item) {
-	if (_room != kHippieRoom || obj != kHippie)
+bool HippieRoom::armHippie(int obj, byte verb, int item) {
+	if (_vm->_room != kHippieRoom || obj != kHippie)
 		return false;
 
-	const bool held = _inventory.has(kWalkman);
-	const bool traded = _script.flag(kTraded) == 1;
-	const byte file = (byte)_script.flag(kScriptFlag);
+	const bool held = _vm->_inventory.has(kWalkman);
+	const bool traded = _vm->_script.flag(kTraded) == 1;
+	const byte file = (byte)_vm->_script.flag(kScriptFlag);
 
 	// 0x0038, the item-use half: the walkman itself, once the cassette player
 	// has come up and before the trade has been made.
 	if (item != Inventory::kNoItem) {
-		if (item != kWalkman || _script.flag(kAsked) != 1 || traded)
+		if (item != kWalkman || _vm->_script.flag(kAsked) != 1 || traded)
 			return false;
 
 		loadHippieScript(kFileYes2);
-		openChat(0);
-		holdItem(Inventory::kNoItem);
+		_vm->openChat(0);
+		_vm->holdItem(Inventory::kNoItem);
 		debugC(1, kDebugItems, "hippie: the walkman is offered over");
 		return true;
 	}
@@ -289,16 +295,16 @@ bool AlienEngine::armHippie(int obj, byte verb, int item) {
 		return false;
 
 	// 0x008f, the plain-verb half, in the order the original tests it.
-	if (file == kFileRoom && _script.flag(kAsked) == 0) {
+	if (file == kFileRoom && _vm->_script.flag(kAsked) == 0) {
 		loadHippieScript(kFileRoom);
-		openChat(kOpeningTopic);
+		_vm->openChat(kOpeningTopic);
 		debugC(1, kDebugChat, "hippie: the conversation opens on topic %u", kOpeningTopic);
 		return true;
 	}
 
-	if (_script.flag(kAsked) == 1 && !traded) {
+	if (_vm->_script.flag(kAsked) == 1 && !traded) {
 		loadHippieScript(held ? kFileYes2 : kFileNo2);
-		openChat(0);
+		_vm->openChat(0);
 		debugC(1, kDebugChat, "hippie: asked again, %s the walkman",
 			   held ? "with" : "without");
 		return true;
@@ -306,7 +312,7 @@ bool AlienEngine::armHippie(int obj, byte verb, int item) {
 
 	if (traded) {
 		loadHippieScript(kFileWalk);
-		openChat(0);
+		_vm->openChat(0);
 		debugC(1, kDebugChat, "hippie: nothing left but the song");
 		return true;
 	}
@@ -318,28 +324,28 @@ bool AlienEngine::armHippie(int obj, byte verb, int item) {
  * The answer to a pick, the two hooks that swap the file under it, and the
  * [0xa49f] machine behind the trade.
  */
-void AlienEngine::stepHippie() {
-	if (_room != kHippieRoom)
+void HippieRoom::tickPair() {
+	if (_vm->_room != kHippieRoom)
 		return;
 
 	// 0x0710: the frame a line comes down puts him back in the idle loop,
 	// unless the gameson has gone, in which case he keeps the other one.
-	if (_hippieTalking && speechDone()) {
+	if (_hippieTalking && _vm->speechDone()) {
 		_hippieTalking = false;
-		hippiePose(_script.flag(kGiven) == 1 ? kPoseTraded : kPoseIdle);
+		hippiePose(_vm->_script.flag(kGiven) == 1 ? kPoseTraded : kPoseIdle);
 	}
 
 	// A pick the menu has taken. Both hooks are answered here and now, the way
 	// OBJ answers them: the menu moves on by itself while a reply is still on
 	// the screen, so a hook left until the reply came down would be reading the
 	// topic and option of whatever the tree had reached by then.
-	if (_chatPickNew) {
-		_chatPickNew = false;
+	if (_vm->_chatPickNew) {
+		_vm->_chatPickNew = false;
 		hippiePick();
 	}
 
 	// And the reply itself, once the option's own line is off the screen.
-	if (_hippieAnswer && speechDone()) {
+	if (_hippieAnswer && _vm->speechDone()) {
 		_hippieAnswer = false;
 		hippieAnswer();
 	}
@@ -349,10 +355,10 @@ void AlienEngine::stepHippie() {
 	// come down. On the original topic 0 opens after the reply;
 	// if opened at the pick, its one option would pick itself and its own reply
 	// take the place of this one.
-	if (_hippieHandOff >= 0 && !_hippieAnswer && speechDone()) {
+	if (_hippieHandOff >= 0 && !_hippieAnswer && _vm->speechDone()) {
 		loadHippieScript((byte)_hippieHandOff);
 		_hippieHandOff = -1;
-		openChat(0);
+		_vm->openChat(0);
 	}
 
 	// [0xa49c], which the room advances on the tick pair whether or not a state
@@ -362,23 +368,23 @@ void AlienEngine::stepHippie() {
 	switch (_hippieStep) {
 	case kStepTrade:
 		// 0x0676: the walkman for the gameson, and the thirty frames of it.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
-		_inventory.add(kGamesonToy);
-		_inventory.remove(kWalkman);
-		_script.setFlag(kGiven, 1);
+		_vm->_inventory.add(kGamesonToy);
+		_vm->_inventory.remove(kWalkman);
+		_vm->_script.setFlag(kGiven, 1);
 		hippiePose(kPoseHandOver);
 		_hippieStep = kStepHand;
 		_hippiePos = 0;
 		debugC(1, kDebugItems, "hippie: item %u (%s) for item %u (%s)",
-			   kGamesonToy, _inventory.name(kGamesonToy).c_str(),
-			   kWalkman, _inventory.name(kWalkman).c_str());
+			   kGamesonToy, _vm->_inventory.name(kGamesonToy).c_str(),
+			   kWalkman, _vm->_inventory.name(kWalkman).c_str());
 		break;
 
 	case kStepHand:
 		// 0x0632: [0xa4ea] == 1, the last frame of the handover.
-		if (_anims.remaining(kHippieSlot) > 1)
+		if (_vm->_anims.remaining(kHippieSlot) > 1)
 			break;
 
 		hippiePose(kPoseTraded);
@@ -409,17 +415,17 @@ void AlienEngine::stepHippie() {
  * the option's own line has come down (0x03f6); the hooks run now, which is
  * where sub_046a1 and sub_046f8 run.
  */
-void AlienEngine::hippiePick() {
-	const byte file = (byte)_script.flag(kScriptFlag);
-	const uint topic = _chatPickTopic;
-	const uint choice = _chatPickChoice;
+void HippieRoom::hippiePick() {
+	const byte file = (byte)_vm->_script.flag(kScriptFlag);
+	const uint topic = _vm->_chatPickTopic;
+	const uint choice = _vm->_chatPickChoice;
 
-	if (_chatPickReply) {
-		const TalFile::Entry &entry = _tal.entry(_chatPickReply);
+	if (_vm->_chatPickReply) {
+		const TalFile::Entry &entry = _vm->_tal.entry(_vm->_chatPickReply);
 		if (entry.present) {
 			_hippieReplyEntry = entry;
-			_hippieReplyTicks = speechTicksFor(_tal, _chatPickReply);
-			_hippieReply = _chatPickReply;
+			_hippieReplyTicks = _vm->speechTicksFor(_vm->_tal, _vm->_chatPickReply);
+			_hippieReply = _vm->_chatPickReply;
 			_hippieAnswer = true;
 		}
 	}
@@ -428,7 +434,7 @@ void AlienEngine::hippiePick() {
 	const bool offer = (file == kFileYes && topic == kTradeTopicYes)
 					   || (file == kFileYes2 && topic == kTradeTopicYes2);
 	if (offer && choice == kTradeOption) {
-		_script.setFlag(kTraded, 1);
+		_vm->_script.setFlag(kTraded, 1);
 		_hippieStep = kStepTrade;
 		_hippiePos = 0;
 		CursorMan.showMouse(false);
@@ -439,10 +445,10 @@ void AlienEngine::hippiePick() {
 	// OBJ:sub_046f8: topic 6 is the only one whose options hand the
 	// conversation back to the room, and what the room does with it is swap in
 	// the file that answers it.
-	if (_chatPickNext == TalFile::kChatRoom && topic == kOfferTopic
+	if (_vm->_chatPickNext == TalFile::kChatRoom && topic == kOfferTopic
 			&& file == kFileRoom) {
-		_script.setFlag(kAsked, 1);
-		const bool held = _inventory.has(kWalkman);
+		_vm->_script.setFlag(kAsked, 1);
+		const bool held = _vm->_inventory.has(kWalkman);
 		_hippieHandOff = held ? kFileYes : kFileNo;
 		debugC(1, kDebugChat, "hippie: the cassette player, %s a walkman",
 			   held ? "with" : "without");
@@ -450,19 +456,39 @@ void AlienEngine::hippiePick() {
 }
 
 /// The reply line, in green at his head, with the loop he talks in.
-void AlienEngine::hippieAnswer() {
-	setTextColor(kHippieInk[0], kHippieInk[1], kHippieInk[2]);
-	uploadTextColor();
-	speakEntry(_hippieReplyEntry, kHippieX, kHippieY, _hippieReplyTicks);
+void HippieRoom::hippieAnswer() {
+	_vm->setTextColor(kHippieInk[0], kHippieInk[1], kHippieInk[2]);
+	_vm->uploadTextColor();
+	_vm->speakEntry(_hippieReplyEntry, kHippieX, kHippieY, _hippieReplyTicks);
 
 	// DLGREQ's half of it: he talks while the line stands, unless the gameson
 	// has gone and he has the other loop to keep.
-	if (_script.flag(kGiven) == 0) {
+	if (_vm->_script.flag(kGiven) == 0) {
 		hippiePose(kPoseTalk);
 		_hippieTalking = true;
 	}
 
 	debugC(1, kDebugChat, "hippie: answers with dialog %u", _hippieReply);
+}
+
+/// The shared room open drops whatever the last visit left standing.
+void HippieRoom::reset() {
+	_hippieStep = 0;
+	_hippiePos = 0;
+	_hippieReply = 0;
+	_hippieAnswer = false;
+	_hippieHandOff = -1;
+	_hippieTalking = false;
+}
+
+bool HippieRoom::takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	return armHippie(obj, verb, item);
+}
+
+/// The answer to the last pick, still to speak: the menu must not list the
+/// next topic over it.
+bool HippieRoom::replyOwed() const {
+	return _vm->_room == kHippieRoom && _hippieAnswer;
 }
 
 } // End of namespace Alien

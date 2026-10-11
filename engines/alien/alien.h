@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class HippieRoom;
 	friend class LibraryRoom;
 	friend class WaitingRoom;
 	friend class JailRoom;
@@ -588,17 +589,6 @@ private:
 	void sluggsTalk(byte speaker, byte line, byte count);
 	void sluggsSpeak();
 	void sluggsPose(byte pose);
-
-	/// Room 23's hippie, chained to the tree: the six dialog files
-	/// his conversation swaps between, and the walkman traded for his game
-	/// (hippie.cpp).
-	bool armHippie(int obj, byte verb, int item);
-	void startHippie();
-	void stepHippie();
-	void hippiePick();
-	void hippieAnswer();
-	void hippiePose(byte pose);
-	void loadHippieScript(byte which);
 
 	/// The 24h antique store, which is one long [0xa49f] machine and no
 	/// rectangles at all (store.cpp).
@@ -1185,19 +1175,6 @@ private:
 	int _scrollHold;
 	int _cameraLastX;				///< [0xa8f0], the x room 50 tests a crossing against
 	uint _cameraPlacements;
-
-	/// Room 23's [0xa49f] machine and the answer standing beside it: the step,
-	/// its counter, the dialog id owed to the pick that was just made, whether
-	/// it is still waiting for that pick's own line to come down, and whether
-	/// the hippie has a line standing (hippie.cpp).
-	byte _hippieStep;
-	uint16 _hippiePos;
-	byte _hippieReply;
-	TalFile::Entry _hippieReplyEntry;
-	int _hippieReplyTicks;
-	bool _hippieAnswer;
-	int _hippieHandOff;		///< the file topic 6 swaps in once its reply is down, or -1
-	bool _hippieTalking;
 
 	/// What the conversation menu's last pick was, for the rooms that answer
 	/// one: the reply is the fourth byte of the tree record -- a dialog id,

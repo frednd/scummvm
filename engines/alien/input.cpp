@@ -813,18 +813,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryLook(spot.obj, verb);
 
-	// And room 23's hippie, whose talk and whose walkman both end in the
-	// conversation menu: the lifted rows for the room have the guards and none
-	// of the bodies, because a body that is a call is not an opcode the lift
-	// has (hippie.cpp).
-	if (armHippie(spot.obj, verb, item)) {
-		rebuildHotspots();
-		_hover = -1;
-		const Common::Point crossroads = g_system->getEventManager()->getMousePos();
-		updateHover(crossroads.x, crossroads.y);
-		return;
-	}
-
 	// And room 53's maintenance man and room 57's loudspeaker, whose lifted
 	// rows keep the guards but write their counters flat and drop the calls
 	// that are the bodies: the conversation menu and the line (corridor.cpp).
@@ -858,7 +846,8 @@ void AlienEngine::finishAction() {
 
 	// And the rooms' own (rooms/), whose click must not reach the body either:
 	// room 8's owl, whose other arm the lifted table has without the guards
-	// that keep it off a talk (library.cpp).
+	// that keep it off a talk (library.cpp), and room 23's hippie, whose talk
+	// and walkman both end in the conversation menu (hippie.cpp).
 	for (Room *r : _rooms) {
 		if (r->takeAction(spot.obj, verb, item, anchorX, anchorY)) {
 			rebuildHotspots();
