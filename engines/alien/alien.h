@@ -50,6 +50,7 @@
 #include "alien/tal.h"
 #include "alien/video.h"
 #include "alien/walk.h"
+#include "alien/rooms/room.h"
 
 struct ADGameDescription;
 
@@ -57,6 +58,10 @@ namespace Alien {
 
 class AlienEngine : public Engine {
 	friend class AlienConsole;
+	// The hand-written rooms (rooms/), which are the overlays' own code and
+	// reach into the engine as freely as the overlays reach into the resident
+	// units.
+	friend class BossRoom;
 
 public:
 	static const int kScreenWidth = 320;
@@ -204,6 +209,10 @@ public:
 	byte heldItem() const { return _heldItem; }
 
 private:
+	/// Every room under rooms/, in the order each hook runs them (rooms.cpp).
+	Common::Array<Room *> _rooms;
+	void registerRooms();
+
 	bool loadRoom(int room, bool secondPlate = false, bool keepPosition = false);
 	static int roomWidth(int room);
 	const char *charPaletteFile(int room) const;
@@ -573,13 +582,6 @@ private:
 	void stepWaitingMachine();
 	void speakWaiting(byte code);
 	bool waitingLineDone() const;
-
-	/// Room 60, Jack's room: no overlay at all, and a conversation rather than
-	/// a fight -- the boss hands over his escape pod card (boss.cpp).
-	void startBoss();
-	void stepBoss();
-	void bossSpeak();
-	bool bossWalkTo(int x, int y, int arrivalFacing);
 
 	/// Room 58: the corridor's conversation through the bars and its two
 	/// ways out, and the escape back to the ship, still simplified
@@ -1017,7 +1019,6 @@ private:
 	byte _openingStep;
 	bool _openingPending;
 
-
 	/// Room 3's [0xa49f] machine, less the opening the two steps in opening.cpp
 	/// carry (lab.cpp). Zero when nothing is running.
 	byte _labStep;
@@ -1244,18 +1245,6 @@ private:
 
 	/// [0xa49c] as room 54 reads it, cleared where each of its steps starts.
 	uint16 _waitingPos;
-
-	/// Room 60's [0xa49f] machine and [0xa49c] as it reads it (boss.cpp).
-	byte _bossStep;
-	uint16 _bossPos;
-
-	/// And its conversation: whose turn it is, the outcome standing next, how
-	/// many are left, and whether the boss's talking loop is up.
-	byte _bossSpeaker;
-	byte _bossLine;
-	byte _bossLeft;
-	bool _bossSpeaking;
-	bool _bossTalking;
 
 	/// Room 58's [0xa49f] and [0xa49c], the DLGREQ run the conversation is
 	/// working through (the same runner boss.cpp has), where Ben's lines are

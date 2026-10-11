@@ -72,6 +72,7 @@ MODULE_OBJS = \
 	rooms/opening.o \
 	rooms/park.o \
 	rooms/pool.o \
+	rooms/rooms.o \
 	rooms/scanner.o \
 	rooms/sewer.o \
 	rooms/shore.o \

@@ -22,6 +22,7 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
+#include "alien/rooms/boss.h"
 #include "alien/detection.h"
 
 namespace Alien {
@@ -120,28 +121,33 @@ static const byte kWaitingExitSubmode = 1;	///< transitions.cpp: room 60, submod
 /// through.
 static const int kTopRow = 0xd, kBottomRow = 0x9a, kBarRow = 0x9f;
 
+BossRoom::BossRoom(AlienEngine *vm) : Room(vm),
+		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
+		_bossSpeaking(false), _bossTalking(false) {
+}
+
 /// sub_0e071's prologue and LOGIC:sub_125ec.
-void AlienEngine::startBoss() {
-	if (_room != kBossRoom)
+void BossRoom::start() {
+	if (_vm->_room != kBossRoom)
 		return;
 
-	_inventory.remove(kTicket);
-	_ben.placeSprite(kStartX, kStartY, kStartFacing);
+	_vm->_inventory.remove(kTicket);
+	_vm->_ben.placeSprite(kStartX, kStartY, kStartFacing);
 
 	// The room opens with the bar already off the screen;
 	// JACKROOM.PCX's entries 25-31 are green, not the bar's blues.
-	_barHidden = true;
-	_inventory.setBarAway(true);
+	_vm->_barHidden = true;
+	_vm->_inventory.setBarAway(true);
 
 	for (uint i = 0; i < ARRAYSIZE(kBanks); i++)
-		_anims.loadBank(i, kBanks[i]);
-	_anims.markLooping(kBallSlot);
-	_anims.markLooping(kLightSlot);
-	_anims.markLooping(kBossSlot);
-	_anims.play(kBallSlot, 1, kBallFrames, kBallRate, 1);
-	_anims.play(kLightSlot, 1, kLightFrames, 0, 1);
-	_anims.play(kBossSlot, 1, 1, 0, 1);
-	_anims.play(kDoorSlot, kDoorFrames, 1, 0, 1);
+		_vm->_anims.loadBank(i, kBanks[i]);
+	_vm->_anims.markLooping(kBallSlot);
+	_vm->_anims.markLooping(kLightSlot);
+	_vm->_anims.markLooping(kBossSlot);
+	_vm->_anims.play(kBallSlot, 1, kBallFrames, kBallRate, 1);
+	_vm->_anims.play(kLightSlot, 1, kLightFrames, 0, 1);
+	_vm->_anims.play(kBossSlot, 1, 1, 0, 1);
+	_vm->_anims.play(kDoorSlot, kDoorFrames, 1, 0, 1);
 
 	_bossStep = kStepEnter;
 	_bossPos = 0;
@@ -152,8 +158,8 @@ void AlienEngine::startBoss() {
 }
 
 /// 1021:sub_105fa: straight there, whatever is in the way.
-bool AlienEngine::bossWalkTo(int x, int y, int arrivalFacing) {
-	if (_room != kBossRoom)
+bool BossRoom::walkUnrouted(int x, int y, int arrivalFacing) {
+	if (_vm->_room != kBossRoom)
 		return false;
 
 	if (y < kTopRow)
@@ -161,13 +167,13 @@ bool AlienEngine::bossWalkTo(int x, int y, int arrivalFacing) {
 	else if (y > kBottomRow && y < kBarRow)
 		y = kBottomRow;
 
-	straightWalkTo(x, y, arrivalFacing);
+	_vm->straightWalkTo(x, y, arrivalFacing);
 	return true;
 }
 
 /// DLGREQ:sub_0c432, one pass: the line standing in [0xa4a2], by whoever's
 /// turn it is (sluggs.cpp has the same runner for room 34).
-void AlienEngine::bossSpeak() {
+void BossRoom::bossSpeak() {
 	if (!_bossLeft) {
 		_bossSpeaking = false;
 		return;
@@ -175,12 +181,12 @@ void AlienEngine::bossSpeak() {
 
 	const bool boss = _bossSpeaker == 0;
 	const byte *ink = boss ? kBossInk : kBenInk;
-	setTextColor(ink[0], ink[1], ink[2]);
-	uploadTextColor();
-	queueOutcome(_tal, _bossLine, boss ? kBossX : kBenX, boss ? kBossY : kBenY, !boss);
+	_vm->setTextColor(ink[0], ink[1], ink[2]);
+	_vm->uploadTextColor();
+	_vm->queueOutcome(_vm->_tal, _bossLine, boss ? kBossX : kBenX, boss ? kBossY : kBenY, !boss);
 
 	if (boss) {
-		_anims.play(kBossSlot, 1, kTalkFrames, kTalkRate, 1);
+		_vm->_anims.play(kBossSlot, 1, kTalkFrames, kTalkRate, 1);
 		_bossTalking = true;
 	}
 
@@ -192,20 +198,20 @@ void AlienEngine::bossSpeak() {
 }
 
 /// sub_0e071's loop: the relaunches, the conversation's pass, and [0xa49f].
-void AlienEngine::stepBoss() {
-	if (_room != kBossRoom)
+void BossRoom::tickPair() {
+	if (_vm->_room != kBossRoom)
 		return;
 
 	// MIDAS:snd_func_112d(0) and (2) on every pass, and (1) while [0x293c]
 	// stands -- which OBJ drops as the line comes down (0251:0x23aa).
-	if (_bossTalking && speechDone())
+	if (_bossTalking && _vm->speechDone())
 		_bossTalking = false;
-	_anims.relaunch(kBallSlot);
-	_anims.relaunch(kLightSlot);
+	_vm->_anims.relaunch(kBallSlot);
+	_vm->_anims.relaunch(kLightSlot);
 	if (_bossTalking)
-		_anims.relaunch(kBossSlot);
+		_vm->_anims.relaunch(kBossSlot);
 
-	if (_bossSpeaking && speechDone())
+	if (_bossSpeaking && _vm->speechDone())
 		bossSpeak();
 
 	if (_bossStep == kStepIdle)
@@ -218,9 +224,9 @@ void AlienEngine::stepBoss() {
 	case kStepEnter:
 		if (_bossPos <= kEnterWait)
 			break;
-		walkTo(kInX, kInY, kInFacing);
-		_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, 3);
-		_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanning, kDoorDelay);
+		_vm->walkTo(kInX, kInY, kInFacing);
+		_vm->_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, 3);
+		_vm->_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanning, kDoorDelay);
 		_bossStep = kStepTalk;
 		_bossPos = 0;
 		break;
@@ -240,14 +246,14 @@ void AlienEngine::stepBoss() {
 
 	case kStepTalking:
 		// [0xad3f], the run over and its last line down.
-		if (_bossSpeaking || !speechDone())
+		if (_bossSpeaking || !_vm->speechDone())
 			break;
 		CursorMan.showMouse(true);
 		_bossStep = kStepLeave;
 		break;
 
 	case kStepLeave:
-		walkTo(kOutX, kOutY, kOutFacing);
+		_vm->walkTo(kOutX, kOutY, kOutFacing);
 		_bossPos = 0;
 		_bossStep = kStepDoor;
 		break;
@@ -255,19 +261,19 @@ void AlienEngine::stepBoss() {
 	case kStepDoor:
 		if (_bossPos <= kDoorWait)
 			break;
-		_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, 1);
-		_sound.queue(kDoorOpenSample, kDoorSampleRate, kDoorVolume, kDoorPanning, kDoorDelay);
+		_vm->_anims.play(kDoorSlot, 1, kDoorFrames, kDoorRate, 1);
+		_vm->_sound.queue(kDoorOpenSample, kDoorSampleRate, kDoorVolume, kDoorPanning, kDoorDelay);
 		_bossStep = kStepExit;
 		break;
 
 	case kStepExit:
 		if (_bossPos <= kExitWait)
 			break;
-		_inventory.add(kCard);
+		_vm->_inventory.add(kCard);
 		debugC(1, kDebugItems, "boss: hands over item %u (%s)", kCard,
-			   _inventory.name(kCard).c_str());
+			   _vm->_inventory.name(kCard).c_str());
 		_bossStep = kStepIdle;
-		takeExit(kWaitingExitSubmode);
+		_vm->takeExit(kWaitingExitSubmode);
 		break;
 
 	default:

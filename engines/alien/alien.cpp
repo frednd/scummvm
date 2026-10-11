@@ -160,8 +160,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_terminalStep(0), _hallAlienCount(0), _hallAlienWait(0), _hallAlienLast(1),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
-		_bossStep(0), _bossPos(0), _bossSpeaker(0), _bossLine(0), _bossLeft(0),
-		_bossSpeaking(false), _bossTalking(false),
 		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
 		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
 		_jailClock(0), _jailRedLoaded(false), _jailFieldPhase(0),
@@ -194,6 +192,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 	memset(_queue, 0, sizeof(_queue));
 	memset(_chatPalette, 0, sizeof(_chatPalette));
 
+	registerRooms();
+
 	// The original's film player always shows the subtitle track, so a target
 	// that never set the option gets them too.
 	ConfMan.registerDefault("subtitles", true);
@@ -207,6 +207,8 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 }
 
 AlienEngine::~AlienEngine() {
+	for (Room *room : _rooms)
+		delete room;
 	freeLightMap();
 	_screen.free();
 	_background.free();
@@ -564,7 +566,10 @@ Common::Error AlienEngine::run() {
  * do not start while a conversation is active.
  */
 bool AlienEngine::dlgreqRunning() const {
-	return _sluggsSpeaking || _crystalSpeaking || _yodleSpeaking || _bossSpeaking ||
+	for (const Room *r : _rooms)
+		if (r->conversationRunning())
+			return true;
+	return _sluggsSpeaking || _crystalSpeaking || _yodleSpeaking ||
 		   _jailSpeaking || _endingStep;
 }
 
@@ -739,12 +744,14 @@ void AlienEngine::stepClock() {
 		// to Jack's room once his number is up (waiting.cpp).
 		stepWaitingMachine();
 
-		// And room 60's, the boss and his escape pod card (boss.cpp).
-		stepBoss();
 
 		// And room 58's: the conversation through the bars and the way out
 		// it ends in (jail.cpp).
 		stepJail();
+
+		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
+		for (Room *r : _rooms)
+			r->tickPair();
 
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
 			nextSpeech();

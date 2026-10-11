@@ -556,14 +556,16 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startObservatory();
 
 	// And the ship's four elevator floors (corridor.cpp), the scanner's
-	// robot (scanner.cpp), then the number board, the boss fight and the
-	// jail's escape, simplified the same way (waiting.cpp, boss.cpp,
-	// jail.cpp).
+	// robot (scanner.cpp), then the number board and the jail's escape,
+	// simplified the same way (waiting.cpp, jail.cpp).
 	startCorridor();
 	startScanner();
 	startWaiting();
-	startBoss();
 	startJail();
+
+	// And the rooms' own (rooms/), in the order rooms.cpp gives.
+	for (Room *r : _rooms)
+		r->start();
 
 	// The shared room open clears [0xa6d3] once the room has placed Ben.
 	// Done last so hand-written room opening handlers above still see it.
@@ -871,7 +873,10 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 		// walks him straight to the click (boss.cpp), as the two hallways' and
 		// the jail's walk geometry do with no mask behind it (corridor.cpp,
 		// jail.cpp).
-		if (mazeWalkTo(x, y, arrivalFacing) || bossWalkTo(x, y, arrivalFacing) ||
+		for (Room *r : _rooms)
+			if (r->walkUnrouted(x, y, arrivalFacing))
+				return;
+		if (mazeWalkTo(x, y, arrivalFacing) ||
 			hallwayWalkTo(x, y, arrivalFacing) || jailWalkTo(x, y, arrivalFacing))
 			return;
 
