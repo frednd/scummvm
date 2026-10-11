@@ -48,13 +48,19 @@ MODULE_OBJS = \
 	walkgeom.o \
 	rooms/basement.o \
 	rooms/bedroom.o \
+	rooms/boss.o \
 	rooms/cave.o \
 	rooms/cemetery.o \
 	rooms/cliff.o \
+	rooms/corridor.o \
 	rooms/diving.o \
+	rooms/elevator.o \
+	rooms/ending.o \
 	rooms/forest.o \
 	rooms/hallway.o \
 	rooms/hippie.o \
+	rooms/jail.o \
+	rooms/jailguard.o \
 	rooms/lab.o \
 	rooms/library.o \
 	rooms/lift.o \
@@ -64,13 +70,18 @@ MODULE_OBJS = \
 	rooms/observatory.o \
 	rooms/opening.o \
 	rooms/park.o \
+	rooms/pool.o \
+	rooms/scanner.o \
 	rooms/sewer.o \
 	rooms/shore.o \
 	rooms/sluggs.o \
+	rooms/steam.o \
 	rooms/store.o \
 	rooms/studio.o \
 	rooms/teleport.o \
 	rooms/telescope.o \
+	rooms/terminal.o \
+	rooms/waiting.o \
 	rooms/yodle.o
 
 # This module can be built as a plugin
