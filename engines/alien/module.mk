@@ -31,6 +31,7 @@ MODULE_OBJS = \
 	roomscripts.o \
 	roomtick.o \
 	s3m.o \
+	saveload.o \
 	scale.o \
 	script.o \
 	sfx.o \
