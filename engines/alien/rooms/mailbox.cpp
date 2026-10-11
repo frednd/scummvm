@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/mailbox.h"
 
 namespace Alien {
 
@@ -121,6 +122,10 @@ static const int kTownX = 179, kTownY = 79, kTownFacing = 4;
 static const byte kStepGetUp = 0x0a;
 static const int kGetUpCue = 2;
 
+MailboxRoom::MailboxRoom(AlienEngine *vm) : Room(vm),
+		_mailboxStep(0), _mailboxPos(0), _townStep(0) {
+}
+
 /**
  * The matches have just been used: take the cursor away for the line.
  *
@@ -128,8 +133,8 @@ static const int kGetUpCue = 2;
  * -- outcome 13 and action_handled -- and this is the [0xa948] beside it, which
  * is also what keeps the player from clicking into the machine that follows.
  */
-void AlienEngine::armMailbox(int obj, byte item) {
-	if (_room != kParkRoom || item != kMatches)
+void MailboxRoom::armMailbox(int obj, byte item) {
+	if (_vm->_room != kParkRoom || item != kMatches)
 		return;
 	if (obj != kMailbox && obj != kDynamite)
 		return;
@@ -146,18 +151,18 @@ void AlienEngine::armMailbox(int obj, byte item) {
  * asks whether the queue has just run dry with outcome 13 still standing as
  * the id it was raised with.
  */
-void AlienEngine::stepMailbox() {
-	if (_room != kParkRoom)
+void MailboxRoom::stepMailbox() {
+	if (_vm->_room != kParkRoom)
 		return;
 
 	if (!_mailboxStep) {
-		if (_lastEvent != kLineMatches || !speechDone())
+		if (_vm->_lastEvent != kLineMatches || !_vm->speechDone())
 			return;
 
 		// Any other line would overwrite [0xacf6]; clearing it here is what
 		// keeps the fuse from being lit a second time by the same id.
-		_lastEvent = 0;
-		_anims.play(kFuseSlot, 1, kFuseFrames, kFuseRate, kPlayMode);
+		_vm->_lastEvent = 0;
+		_vm->_anims.play(kFuseSlot, 1, kFuseFrames, kFuseRate, kPlayMode);
 		_mailboxStep = kStepClear;
 		_mailboxPos = 0;
 		CursorMan.showMouse(false);
@@ -171,7 +176,7 @@ void AlienEngine::stepMailbox() {
 	switch (_mailboxStep) {
 	case kStepClear:
 		// 0x06ee: he gets the distance the line said he wanted.
-		walkTo(kClearX, kClearY, kClearFacing);
+		_vm->walkTo(kClearX, kClearY, kClearFacing);
 		_mailboxStep = kStepSpeak;
 		_mailboxPos = 0;
 		break;
@@ -182,8 +187,8 @@ void AlienEngine::stepMailbox() {
 		if (_mailboxPos <= kBlastWait)
 			break;
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kLineBlast, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kLineBlast, anchorX, anchorY);
 		_mailboxStep = kStepBlow;
 		_mailboxPos = 0;
 		break;
@@ -191,16 +196,16 @@ void AlienEngine::stepMailbox() {
 
 	case kStepBlow:
 		// 0x0729: the fuse has burnt all the way down.
-		if (_anims.remaining(kFuseSlot) != 0)
+		if (_vm->_anims.remaining(kFuseSlot) != 0)
 			break;
-		_script.setFlag(kParkGone, 1);
+		_vm->_script.setFlag(kParkGone, 1);
 		// PAL_BLOW's own first frame is Ben standing where the walk put him --
 		// the bank draws him and then blows him up -- so the walker goes away
 		// for the whole play rather than at the original's cue below, which
 		// only works while the two are pixel for pixel the same.
-		playCharacterAnim(kBlowSlot, 1, kBlowFrames, kBlowRate, kPlayMode);
-		_sound.queue(kBlastSample, kBlastRate, kBlastVolume, kBlastPanning, kBlastDelay);
-		_sound.queue(kBlastSample, kBlastRate, kBlastVolume, kBlastPanning, kBlastDelay);
+		_vm->playCharacterAnim(kBlowSlot, 1, kBlowFrames, kBlowRate, kPlayMode);
+		_vm->_sound.queue(kBlastSample, kBlastRate, kBlastVolume, kBlastPanning, kBlastDelay);
+		_vm->_sound.queue(kBlastSample, kBlastRate, kBlastVolume, kBlastPanning, kBlastDelay);
 		_mailboxStep = kStepBlown;
 		debugC(1, kDebugRooms, "mailbox: the mailbox goes up, step 0x%02x", kStepBlown);
 		break;
@@ -209,7 +214,7 @@ void AlienEngine::stepMailbox() {
 		// 0x0772: two frames in, the blast is over him. [0xa94d] is already
 		// down (the play above took it), so this is only the cue the rest of
 		// the machine times itself off.
-		if (_anims.frame(kBlowSlot) <= kBlowCue)
+		if (_vm->_anims.frame(kBlowSlot) <= kBlowCue)
 			break;
 		_mailboxStep = kStepLeave;
 		_mailboxPos = 0;
@@ -220,9 +225,9 @@ void AlienEngine::stepMailbox() {
 		if (_mailboxPos <= kBlastWait)
 			break;
 		_mailboxStep = 0;
-		_script.setFlag(kTownEntry, 1);
+		_vm->_script.setFlag(kTownEntry, 1);
 		debugC(1, kDebugRooms, "mailbox: submode 0x%02x, blown into town", kSubmodeTown);
-		takeExit(kSubmodeTown);
+		_vm->takeExit(kSubmodeTown);
 		break;
 
 	default:
@@ -231,26 +236,26 @@ void AlienEngine::stepMailbox() {
 }
 
 /// Room 33 has just opened: the landing, when the mailbox is what sent him.
-void AlienEngine::enterTown(int room) {
+void MailboxRoom::enter(int room) {
 	// The room being opened is passed in, the way the sewer's open takes it:
 	// _room is still the room being left until loadRoom is through.
-	if (room != kTownRoom || _script.flag(kTownEntry) != 1)
+	if (room != kTownRoom || _vm->_script.flag(kTownEntry) != 1)
 		return;
 
 	// 0x03d5: the latch is a hand-off and is spent on arrival.
-	_script.setFlag(kTownEntry, 0);
+	_vm->_script.setFlag(kTownEntry, 0);
 	CursorMan.showMouse(false);
-	_ben.placeSprite(kTownX, kTownY, kTownFacing);
-	playCharacterAnim(kGetUpSlot, 1, kGetUpFrames, kGetUpRate, kPlayMode);
+	_vm->_ben.placeSprite(kTownX, kTownY, kTownFacing);
+	_vm->playCharacterAnim(kGetUpSlot, 1, kGetUpFrames, kGetUpRate, kPlayMode);
 	_townStep = kStepGetUp;
 	debugC(1, kDebugRooms, "mailbox: down in the road, step 0x%02x", kStepGetUp);
 }
 
 /// And the one state that ends it (ovr_21_0e97:0x04aa).
-void AlienEngine::stepTown() {
-	if (_room != kTownRoom || _townStep != kStepGetUp)
+void MailboxRoom::stepTown() {
+	if (_vm->_room != kTownRoom || _townStep != kStepGetUp)
 		return;
-	if (_anims.remaining(kGetUpSlot) != kGetUpCue)
+	if (_vm->_anims.remaining(kGetUpSlot) != kGetUpCue)
 		return;
 
 	_townStep = 0;
@@ -259,8 +264,33 @@ void AlienEngine::stepTown() {
 	// past its terminator rather than on it: taking the slot down with the
 	// walker is what keeps the frame it stopped on -- Ben down in the road --
 	// from being left behind under the Ben who has just stood up.
-	showCharacter();
+	_vm->showCharacter();
 	debugC(1, kDebugRooms, "mailbox: up off the road, the town is his");
+}
+
+/// The shared room open drops whatever the last visit left standing.
+void MailboxRoom::reset() {
+	_mailboxStep = 0;
+	_mailboxPos = 0;
+	_townStep = 0;
+}
+
+void MailboxRoom::tickPair() {
+	// Room 25's, which the matches on the mailbox start once their line has
+	// come down, and room 33's landing at the end of it.
+	stepMailbox();
+	stepTown();
+}
+
+void MailboxRoom::lineDown() {
+	// Room 25 lights the fuse when the matches' line comes down.
+	stepMailbox();
+}
+
+void MailboxRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The matches on the mailbox take the cursor away for the length of their
+	// line, which is the half of that branch the lift left behind.
+	armMailbox(obj, item);
 }
 
 } // End of namespace Alien

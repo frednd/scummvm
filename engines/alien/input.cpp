@@ -837,10 +837,6 @@ void AlienEngine::finishAction() {
 	if (!item && isBedroomSwitch(spot.obj))
 		bedroomSwitch(anchorX, anchorY);
 
-	// The matches on the mailbox take the cursor away for the length of their
-	// line, which is the half of that branch the lift left behind (mailbox.cpp).
-	armMailbox(spot.obj, item);
-
 	// And room 19's circuit breaker, whose hand on slot 5 draws Ben himself
 	// and whose line waits for it (observatory.cpp).
 	if (!item)

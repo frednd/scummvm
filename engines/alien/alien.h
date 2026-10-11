@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class MailboxRoom;
 	friend class SluggsRoom;
 	friend class CemeteryRoom;
 	friend class TelescopeRoom;
@@ -445,13 +446,6 @@ private:
 	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
 
 	bool chatReplyOwed() const;
-
-	/// The mailbox full of dynamite, and the road it blows him into
-	/// (mailbox.cpp).
-	void armMailbox(int obj, byte item);
-	void stepMailbox();
-	void enterTown(int room);
-	void stepTown();
 
 	void walkHandRoute(int viaX, int viaY, int x, int y, int facing);
 	bool roomHasSharedExit(int room) const;
@@ -870,12 +864,6 @@ private:
 	/// [0xa734] and [0xa736].
 	int _cliffX, _cliffY, _cliffFacing;
 	int _cliffResumeX, _cliffResumeY, _cliffResumeFacing;
-
-	/// Room 25's [0xa49f] machine and the counter it times itself off, and
-	/// room 33's own state for the landing at the other end (mailbox.cpp).
-	byte _mailboxStep;
-	uint16 _mailboxPos;
-	byte _townStep;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

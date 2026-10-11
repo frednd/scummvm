@@ -148,7 +148,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_endingStep(0), _endingPos(0), _endingLoop(false),
 		_openingStep(0), _openingPending(true),
 		_labStep(0), _bedroomLiftStep(0), _mansionStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
-		_cursorWasVisible(true), _mailboxStep(0), _mailboxPos(0), _townStep(0), _sewerStep(0),
+		_cursorWasVisible(true), _sewerStep(0),
 		_basementStep(0), _basementClimbing(false), _basementWalkOff(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
@@ -644,12 +644,6 @@ void AlienEngine::stepClock() {
 		// the dish (living.cpp).
 		stepLiving();
 
-		// And room 25's, which the matches on the mailbox start once their
-		// line has come down, and room 33's landing at the end of it
-		// (mailbox.cpp).
-		stepMailbox();
-		stepTown();
-
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
 			r->tickPair();
@@ -670,9 +664,10 @@ void AlienEngine::stepClock() {
 			// line the look raised has come down (observatory.cpp).
 			stepObservatoryPanel();
 
-			// And room 25's, which lights the fuse when the matches' line
-			// comes down (mailbox.cpp).
-			stepMailbox();
+			// And the rooms' own (rooms/): room 25's, which lights the fuse
+			// when the matches' line comes down (mailbox.cpp).
+			for (Room *r : _rooms)
+				r->lineDown();
 		}
 
 		// OBJ:0x86df drops the talk flag once the line has under 25 half ticks

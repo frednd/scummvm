@@ -274,9 +274,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_cliffStep = 0;
 	_cliffClimb = 0;
 	_cliffPos = 0;
-	_mailboxStep = 0;
-	_mailboxPos = 0;
-	_townStep = 0;
 	for (Room *r : _rooms)
 		r->reset();
 	_chatPickNew = false;
@@ -377,12 +374,9 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// (basement.cpp).
 	enterBasement(room);
 
-	// And room 33's, which is him landing in the road after the mailbox went
-	// up -- the far end of [0x33bc] (mailbox.cpp).
-	enterTown(room);
-
-	// And the rooms' own: room 34's, which puts Sluggs out on the road
-	// (sluggs.cpp).
+	// And the rooms' own: room 33's, which is him landing in the road after
+	// the mailbox went up -- the far end of [0x33bc] (mailbox.cpp) -- and room
+	// 34's, which puts Sluggs out on the road (sluggs.cpp).
 	for (Room *r : _rooms)
 		r->enter(room);
 
