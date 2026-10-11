@@ -27,6 +27,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/yodle.h"
 
 namespace Alien {
 
@@ -215,8 +216,14 @@ static const byte kStepSmallDone = 0x85;	///< YODSHIT2 and 3 do not
 
 static const uint kInsideTicks = 0x87;		///< 0x139f
 
+YodleRoom::YodleRoom(AlienEngine *vm) : Room(vm),
+		_yodleSpeaking(false), _yodleStep(0), _yodlePos(0), _yodleLine(0),
+		_yodleLeft(0), _yodleSpeaker(0), _yodleReply(0), _yodleReplyTicks(0),
+		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false) {
+}
+
 /// OBJ:sub_0461f's shape: the file every line is read out of from here on.
-void AlienEngine::loadYodleScript(byte which) {
+void YodleRoom::loadYodleScript(byte which) {
 	if (which >= kFileCount)
 		return;
 
@@ -226,8 +233,8 @@ void AlienEngine::loadYodleScript(byte which) {
 		return;
 	}
 
-	_tal.load(path, &_pack);
-	_script.setFlag(kRoomFileLoaded, 0);
+	_vm->_tal.load(path, &_vm->_pack);
+	_vm->_script.setFlag(kRoomFileLoaded, 0);
 	debugC(1, kDebugChat, "yodle: speaking out of %s", kScripts[which]);
 }
 
@@ -240,16 +247,16 @@ void AlienEngine::loadYodleScript(byte which) {
  * The room calls this as it opens (0x0c93) and in front of each body that
  * speaks out of the room's own file.
  */
-void AlienEngine::loadYodleRoomScript() {
-	if (_script.flag(kRoomFileLoaded) != 0)
+void YodleRoom::loadYodleRoomScript() {
+	if (_vm->_script.flag(kRoomFileLoaded) != 0)
 		return;
 
 	const Common::Path path(kRoomScript);
 	if (!Common::File::exists(path))
 		return;
 
-	_tal.load(path, &_pack);
-	_script.setFlag(kRoomFileLoaded, 1);
+	_vm->_tal.load(path, &_vm->_pack);
+	_vm->_script.setFlag(kRoomFileLoaded, 1);
 	debugC(1, kDebugChat, "yodle: speaking out of %s", kRoomScript);
 }
 
@@ -260,8 +267,8 @@ void AlienEngine::loadYodleRoomScript() {
  * (0x044e) and anything on the puddle (0x04af), and the plain half's look at
  * the signboard (0x0598).
  */
-void AlienEngine::yodleRoomScriptFor(int obj, byte verb, byte item) {
-	if (_room != kYodleRoom)
+void YodleRoom::yodleRoomScriptFor(int obj, byte verb, byte item) {
+	if (_vm->_room != kYodleRoom)
 		return;
 
 	static const byte kHutDoor = 6, kPuddle = 3, kSignboard = 2;
@@ -270,7 +277,7 @@ void AlienEngine::yodleRoomScriptFor(int obj, byte verb, byte item) {
 	bool reload = false;
 	if (item != Inventory::kNoItem)
 		reload = obj == kYodle || obj == kOldMan || obj == kPuddle ||
-				 (obj == kHutDoor && _script.flag(kStage) == 2);
+				 (obj == kHutDoor && _vm->_script.flag(kStage) == 2);
 	else
 		reload = obj == kSignboard && verb == kVerbLookAt;
 
@@ -279,7 +286,7 @@ void AlienEngine::yodleRoomScriptFor(int obj, byte verb, byte item) {
 }
 
 /// INPUT:sub_01e7a, which three of the poses call.
-void AlienEngine::yodleSounds(byte which) {
+void YodleRoom::yodleSounds(byte which) {
 	const YodleSound *list = nullptr;
 	uint count = 0;
 	switch (which) {
@@ -300,7 +307,7 @@ void AlienEngine::yodleSounds(byte which) {
 	}
 
 	for (uint i = 0; i < count; i++)
-		_sound.queue(list[i].sample, list[i].rate, list[i].volume, kYodlePanning, list[i].delay);
+		_vm->_sound.queue(list[i].sample, list[i].rate, list[i].volume, kYodlePanning, list[i].delay);
 }
 
 /**
@@ -311,34 +318,34 @@ void AlienEngine::yodleSounds(byte which) {
  * byte says 2 (0x0fe6, the room's row in the loop table), so any other pose
  * lets the talk loop finish the list it is on and stop.
  */
-void AlienEngine::yodlePose(byte pose) {
-	_anims.setLoopFlag(kYodleSlot, pose == kPoseTalk ? 1 : 0);
+void YodleRoom::yodlePose(byte pose) {
+	_vm->_anims.setLoopFlag(kYodleSlot, pose == kPoseTalk ? 1 : 0);
 
 	switch (pose) {
 	case kPoseIdle:
-		_anims.play(kYodleSlot, 1, 1, 0, kOnceMode);
+		_vm->_anims.play(kYodleSlot, 1, 1, 0, kOnceMode);
 		break;
 	case kPoseTalk:
-		_anims.play(kYodleSlot, 0, ARRAYSIZE(kTalkFrames), 4, kListMode, kTalkFrames);
+		_vm->_anims.play(kYodleSlot, 0, ARRAYSIZE(kTalkFrames), 4, kListMode, kTalkFrames);
 		break;
 	case kPosePlans:
-		_anims.play(kHandSlot, 0, ARRAYSIZE(kPlansFrames), 4, kListMode, kPlansFrames);
+		_vm->_anims.play(kHandSlot, 0, ARRAYSIZE(kPlansFrames), 4, kListMode, kPlansFrames);
 		break;
 	case kPoseGameson:
-		_anims.play(kHandSlot, 0, ARRAYSIZE(kGamesonFrames), 3, kListMode, kGamesonFrames);
+		_vm->_anims.play(kHandSlot, 0, ARRAYSIZE(kGamesonFrames), 3, kListMode, kGamesonFrames);
 		yodleSounds(1);
 		yodleSounds(2);
 		break;
 	case kPoseRadio:
-		_anims.play(kHandSlot, 0, ARRAYSIZE(kRadioFrames), 3, kListMode, kRadioFrames);
+		_vm->_anims.play(kHandSlot, 0, ARRAYSIZE(kRadioFrames), 3, kListMode, kRadioFrames);
 		yodleSounds(1);
 		yodleSounds(2);
 		break;
 	case kPosePicklock:
-		_anims.play(kHandSlot, 0, ARRAYSIZE(kPicklockFrames), 4, kListMode, kPicklockFrames);
+		_vm->_anims.play(kHandSlot, 0, ARRAYSIZE(kPicklockFrames), 4, kListMode, kPicklockFrames);
 		break;
 	case kPoseInside:
-		_anims.play(kInsideSlot, 1, kInsideFrames, 3, kKeepMode);
+		_vm->_anims.play(kInsideSlot, 1, kInsideFrames, 3, kKeepMode);
 		yodleSounds(3);
 		break;
 	default:
@@ -349,8 +356,8 @@ void AlienEngine::yodlePose(byte pose) {
 }
 
 /// [0xa5eb]: one frame of the puddle every second tick pair (0x0e44).
-void AlienEngine::stepYodleWater() {
-	if (_room != kYodleRoom)
+void YodleRoom::stepYodleWater() {
+	if (_vm->_room != kYodleRoom)
 		return;
 
 	_yodleWaterDue = !_yodleWaterDue;
@@ -359,21 +366,21 @@ void AlienEngine::stepYodleWater() {
 
 	if (++_yodleWater > kWaterFrames)
 		_yodleWater = 1;
-	_dirty = true;
+	_vm->_dirty = true;
 }
 
 /// 0x0e92: MIDAS:sub_180d4 on the frame buffer, over the slots and under Ben.
-void AlienEngine::drawYodleWater(Graphics::Surface &dest) const {
-	if (_room != kYodleRoom || _cutscene)
+void YodleRoom::drawOverSlots(Graphics::Surface &dest) const {
+	if (_vm->_room != kYodleRoom || _vm->_cutscene)
 		return;
-	_anims.drawBankFrame(kWaterSlot, _yodleWater, dest, _scrollX, _clipBottom);
+	_vm->_anims.drawBankFrame(kWaterSlot, _yodleWater, dest, _vm->_scrollX, _vm->_clipBottom);
 }
 
 /**
  * DLGREQ:sub_0c432 / sub_0c384, one pass: the line standing in [0xa4a2], by
  * whoever's turn it is.
  */
-void AlienEngine::yodleSpeak() {
+void YodleRoom::yodleSpeak() {
 	if (!_yodleLeft) {
 		_yodleSpeaking = false;
 		return;
@@ -381,25 +388,25 @@ void AlienEngine::yodleSpeak() {
 
 	// 0x1103: the picklock is handed over as the line it is taken on comes up,
 	// no click involved, and the latch keeps it to one.
-	if (_yodleLine == kPicklockLine && _script.flag(kPicklockGiven) == 0) {
-		_script.setFlag(kPicklockGiven, 1);
-		_inventory.add(kPicklock);
+	if (_yodleLine == kPicklockLine && _vm->_script.flag(kPicklockGiven) == 0) {
+		_vm->_script.setFlag(kPicklockGiven, 1);
+		_vm->_inventory.add(kPicklock);
 		yodlePose(kPosePicklock);
 		debugC(1, kDebugItems, "yodle: hands over item %u (%s)", kPicklock,
-			   _inventory.name(kPicklock).c_str());
+			   _vm->_inventory.name(kPicklock).c_str());
 	}
 
 	const bool yodle = _yodleSpeaker == 0;
 	const byte *ink = yodle ? kYodleInk : kBenInk;
-	setTextColor(ink[0], ink[1], ink[2]);
-	uploadTextColor();
-	queueOutcome(_tal, _yodleLine, yodle ? kYodleX : kBenX,
+	_vm->setTextColor(ink[0], ink[1], ink[2]);
+	_vm->uploadTextColor();
+	_vm->queueOutcome(_vm->_tal, _yodleLine, yodle ? kYodleX : kBenX,
 				 yodle ? kYodleY : kBenY, !yodle);
 
 	// DLGREQ:sub_0c384's handler 0x15 arm: every line he takes while he is out
 	// on the stairs starts the talking loop, and the room stops it again as
 	// the line comes down.
-	if (yodle && _script.flag(kStage) == 1) {
+	if (yodle && _vm->_script.flag(kStage) == 1) {
 		yodlePose(kPoseTalk);
 		_yodleTalking = true;
 	}
@@ -413,7 +420,7 @@ void AlienEngine::yodleSpeak() {
 }
 
 /// DLGREQ:sub_0c4d1: set the run up, and speak the first line of it.
-void AlienEngine::yodleTalk(byte speaker, byte line, byte count) {
+void YodleRoom::yodleTalk(byte speaker, byte line, byte count) {
 	_yodleSpeaker = speaker;
 	_yodleLine = line;
 	_yodleLeft = count;
@@ -423,8 +430,8 @@ void AlienEngine::yodleTalk(byte speaker, byte line, byte count) {
 }
 
 /// Whether the run that is going has said its last line and seen it come down.
-bool AlienEngine::yodleRunDone() const {
-	return !_yodleSpeaking && speechDone();
+bool YodleRoom::yodleRunDone() const {
+	return !_yodleSpeaking && _vm->speechDone();
 }
 
 /**
@@ -434,14 +441,14 @@ bool AlienEngine::yodleRunDone() const {
  * what Ben is carrying against what Yodle already has. The two `pending` bytes
  * it sets are what state 0x0c then takes out of the inventory.
  */
-void AlienEngine::yodleCheckIn(byte &first, byte &count) {
-	_script.setFlag(kGamesonPending, 0);
-	_script.setFlag(kRadioPending, 0);
+void YodleRoom::yodleCheckIn(byte &first, byte &count) {
+	_vm->_script.setFlag(kGamesonPending, 0);
+	_vm->_script.setFlag(kRadioPending, 0);
 
-	const bool hasGameson = _script.flag(kHasGameson) == 1;
-	const bool hasRadio = _script.flag(kHasRadio) == 1;
-	const bool bringsRadio = _inventory.has(kRadio);
-	const bool bringsGameson = _inventory.has(kGameson);
+	const bool hasGameson = _vm->_script.flag(kHasGameson) == 1;
+	const bool hasRadio = _vm->_script.flag(kHasRadio) == 1;
+	const bool bringsRadio = _vm->_inventory.has(kRadio);
+	const bool bringsGameson = _vm->_inventory.has(kGameson);
 
 	first = 1;
 	count = (hasGameson && !hasRadio) ? 2 : 4;
@@ -454,34 +461,34 @@ void AlienEngine::yodleCheckIn(byte &first, byte &count) {
 	if (bringsRadio && !bringsGameson) {
 		first = 0x0a;
 		count = hasGameson ? 2 : count;
-		_script.setFlag(kRadioPending, 1);
+		_vm->_script.setFlag(kRadioPending, 1);
 	} else if (!bringsRadio && bringsGameson) {
 		first = 0x14;
 		if (hasRadio) {
 			first = 0x16;
 			count = 2;
 		}
-		_script.setFlag(kGamesonPending, 1);
+		_vm->_script.setFlag(kGamesonPending, 1);
 	} else if (bringsRadio && bringsGameson) {
 		first = 0x1e;
-		_script.setFlag(kGamesonPending, 1);
-		_script.setFlag(kRadioPending, 1);
+		_vm->_script.setFlag(kGamesonPending, 1);
+		_vm->_script.setFlag(kRadioPending, 1);
 	}
 }
 
 /**
  * ovr0ea7_sub_01d8, the helper all four talk arms go through.
  */
-void AlienEngine::yodleArm(byte which) {
+void YodleRoom::yodleArm(byte which) {
 	switch (which) {
 	case 1:
 		// 0x01dc: the first meeting, and the name that comes with it. The bar
 		// slides away for it (OBJ:sub_02f9b) and is not back until he has
 		// asked for the blueprints.
 		CursorMan.showMouse(false);
-		hideBar();
+		_vm->hideBar();
 		loadYodleScript(kFileTal1);
-		_script.setFlag(kKnown, 1);
+		_vm->_script.setFlag(kKnown, 1);
 		_yodleStep = kStepMeet;
 		_yodlePos = 0;
 		yodleTalk(1, kMeetFirst, kMeetCount);
@@ -489,14 +496,14 @@ void AlienEngine::yodleArm(byte which) {
 
 	case 2: {
 		// 0x0252: the small talk, one file further along each time.
-		const byte which2 = MIN<byte>((byte)_script.flag(kSmallTalk), 2);
-		hideBar();
+		const byte which2 = MIN<byte>((byte)_vm->_script.flag(kSmallTalk), 2);
+		_vm->hideBar();
 		loadYodleScript(kSmallFile[which2]);
 		_yodleStep = which2 == 0 ? kStepSmallMenu : kStepSmallDone;
 		_yodlePos = 0;
 		yodleTalk(1, 1, kSmallCount[which2]);
 		if (which2 < 2)
-			_script.setFlag(kSmallTalk, which2 + 1);
+			_vm->_script.setFlag(kSmallTalk, which2 + 1);
 		break;
 	}
 
@@ -532,8 +539,8 @@ void AlienEngine::yodleArm(byte which) {
  * have for room 21 -- the matches, the puddle, the pipe, the signboard -- are
  * left to it; these are the five it has none of.
  */
-bool AlienEngine::armYodle(int obj, byte verb, int item) {
-	if (_room != kYodleRoom)
+bool YodleRoom::armYodle(int obj, byte verb, int item) {
+	if (_vm->_room != kYodleRoom)
 		return false;
 
 	const bool held = item != Inventory::kNoItem;
@@ -541,14 +548,14 @@ bool AlienEngine::armYodle(int obj, byte verb, int item) {
 	// 0x04e6: the plain verbs. His rectangle is only registered while he is out
 	// on the stairs, but a click in flight as he goes inside would still reach
 	// this.
-	if (!held && verb == kVerbTalkTo && _script.flag(kStage) == 1) {
-		if (obj == kOldMan && _script.flag(kMet) == 0) {
+	if (!held && verb == kVerbTalkTo && _vm->_script.flag(kStage) == 1) {
+		if (obj == kOldMan && _vm->_script.flag(kMet) == 0) {
 			yodleArm(1);
 			return true;
 		}
 
-		if (obj == kYodle && _script.flag(kMet) == 1) {
-			yodleArm(_script.flag(kPlansGiven) == 1 ? 4 : 2);
+		if (obj == kYodle && _vm->_script.flag(kMet) == 1) {
+			yodleArm(_vm->_script.flag(kPlansGiven) == 1 ? 4 : 2);
 			return true;
 		}
 	}
@@ -560,17 +567,17 @@ bool AlienEngine::armYodle(int obj, byte verb, int item) {
 	if (item == kBlueprints) {
 		// He will not take them from a stranger: the first meeting happens
 		// instead, and the blueprints stay in the bag.
-		yodleArm(_script.flag(kMetAlt) == 1 ? 3 : 1);
+		yodleArm(_vm->_script.flag(kMetAlt) == 1 ? 3 : 1);
 		return true;
 	}
 
-	if (_script.flag(kPlansGiven) != 1)
+	if (_vm->_script.flag(kPlansGiven) != 1)
 		return false;
 
 	if (item == kRadio) {
 		// 0x00f9
 		loadYodleScript(kFileTal4);
-		_script.setFlag(kRadioPending, 1);
+		_vm->_script.setFlag(kRadioPending, 1);
 		_yodleStep = kStepHandOver;
 		_yodlePos = 0;
 		yodleTalk(0, kRadioFirst, kHandCount);
@@ -580,7 +587,7 @@ bool AlienEngine::armYodle(int obj, byte verb, int item) {
 	if (item == kGameson) {
 		// 0x014f
 		loadYodleScript(kFileTal4);
-		_script.setFlag(kGamesonPending, 1);
+		_vm->_script.setFlag(kGamesonPending, 1);
 		_yodleStep = kStepHandOver;
 		_yodlePos = 0;
 		yodleTalk(0, kGamesonFirst, kHandCount);
@@ -594,17 +601,17 @@ bool AlienEngine::armYodle(int obj, byte verb, int item) {
  * The menu's pick, which this room reads more of than any other: the option's
  * own reply byte (entry 4, 0x05e9), spoken in his ink over the scroll.
  */
-void AlienEngine::yodlePick() {
-	if (!_chatPickReply)
+void YodleRoom::yodlePick() {
+	if (!_vm->_chatPickReply)
 		return;
 
-	const TalFile::Entry &entry = _tal.entry(_chatPickReply);
+	const TalFile::Entry &entry = _vm->_tal.entry(_vm->_chatPickReply);
 	if (!entry.present)
 		return;
 
 	_yodleReplyEntry = entry;
-	_yodleReplyTicks = speechTicksFor(_tal, _chatPickReply);
-	_yodleReply = _chatPickReply;
+	_yodleReplyTicks = _vm->speechTicksFor(_vm->_tal, _vm->_chatPickReply);
+	_yodleReply = _vm->_chatPickReply;
 	_yodleAnswer = true;
 }
 
@@ -613,23 +620,23 @@ void AlienEngine::yodlePick() {
  * than for the character, so it pans all the way out.
  * The x is the sprite's, [0xa8ec].
  */
-void AlienEngine::stepYodleHold() {
-	if (_room != kYodleRoom)
+void YodleRoom::holdCamera() {
+	if (_vm->_room != kYodleRoom)
 		return;
-	_scrollHold = _ben.spriteX() < kHoldBelowX ? 0 : -1;
+	_vm->_scrollHold = _vm->_ben.spriteX() < kHoldBelowX ? 0 : -1;
 }
 
 /// The room's [0xa49f] machine, and the pass the conversation makes beside it.
-void AlienEngine::stepYodle() {
-	if (_room != kYodleRoom)
+void YodleRoom::stepYodle() {
+	if (_vm->_room != kYodleRoom)
 		return;
 
-	stepYodleHold();
+	holdCamera();
 
 	// [0xad1b], the frame a line comes down: he stops talking with it (0x14f3).
 	// The port has no such pulse, so the flag the line was started with stands
 	// in for it, as Sluggs' does.
-	if (_yodleTalking && speechDone()) {
+	if (_yodleTalking && _vm->speechDone()) {
 		_yodleTalking = false;
 		yodlePose(kPoseIdle);
 	}
@@ -638,23 +645,23 @@ void AlienEngine::stepYodle() {
 		return;
 
 	// A run keeps itself going: one line per line that came down.
-	if (_yodleSpeaking && speechDone())
+	if (_yodleSpeaking && _vm->speechDone())
 		yodleSpeak();
 
 	// The menu moves on by itself, so the pick is read the frame it is made.
-	if (_chatPickNew) {
-		_chatPickNew = false;
+	if (_vm->_chatPickNew) {
+		_vm->_chatPickNew = false;
 		yodlePick();
 	}
 
 	// And the reply, once the option's own line is off the screen (0x03f6).
-	if (_yodleAnswer && speechDone()) {
+	if (_yodleAnswer && _vm->speechDone()) {
 		_yodleAnswer = false;
-		setTextColor(kYodleInk[0], kYodleInk[1], kYodleInk[2]);
-		uploadTextColor();
-		speakEntry(_yodleReplyEntry, _scrollX + kReplyX, kReplyY, _yodleReplyTicks);
+		_vm->setTextColor(kYodleInk[0], kYodleInk[1], kYodleInk[2]);
+		_vm->uploadTextColor();
+		_vm->speakEntry(_yodleReplyEntry, _vm->_scrollX + kReplyX, kReplyY, _yodleReplyTicks);
 		// 0x0e00: and he talks it, while he is out on the stairs.
-		if (_script.flag(kStage) == 1) {
+		if (_vm->_script.flag(kStage) == 1) {
 			yodlePose(kPoseTalk);
 			_yodleTalking = true;
 		}
@@ -677,9 +684,9 @@ void AlienEngine::stepYodle() {
 		// screen fades out (UTIL:sub_021f9), stays black for two seconds
 		// (TPRT:sub_252f8(0x7d0)) and fades back in (util_func_2aa). Then the
 		// two lines it steps the counter back over.
-		fadeOut();
+		_vm->fadeOut();
 		yodleStoryWait();
-		fadeIn(false);
+		_vm->fadeIn(false);
 		_yodleStep = kStepMeetRest;
 		yodleTalk(1, kMeetRest, kMeetLast - kMeetRest + 1);
 		break;
@@ -688,15 +695,15 @@ void AlienEngine::stepYodle() {
 		// 0x10da: the rest of YODTAL1, the picklock in the middle of it.
 		if (!yodleRunDone())
 			break;
-		_script.setFlag(kMet, 1);
-		_script.setFlag(kMetAlt, 1);
+		_vm->_script.setFlag(kMet, 1);
+		_vm->_script.setFlag(kMetAlt, 1);
 		_yodleStep = kStepMenu;
 		break;
 
 	case kStepMenu:
 		// 0x1179: and it ends in the conversation menu.
 		loadYodleScript(kFileCon1);
-		openChat(0);
+		_vm->openChat(0);
 		_yodleStep = kStepMenuWait;
 		break;
 
@@ -704,10 +711,10 @@ void AlienEngine::stepYodle() {
 		// 0x11ac: [0xa60f], the menu closing behind the option taken. The pick
 		// took the cursor away (OBJ:0x8801) and nothing gives it back before
 		// YODCON2's last line (0x1211): there is no gap a click could land in.
-		if (!_chat.isFinished())
+		if (!_vm->_chat.isFinished())
 			break;
 		CursorMan.showMouse(false);
-		if (_yodleAnswer || !speechDone())
+		if (_yodleAnswer || !_vm->speechDone())
 			break;
 		_yodleStep = kStepTheory;
 		break;
@@ -728,7 +735,7 @@ void AlienEngine::stepYodle() {
 			break;
 		_yodleStep = 0;
 		CursorMan.showMouse(true);
-		showBar();
+		_vm->showBar();
 		break;
 
 	case kStepPlans:
@@ -736,9 +743,9 @@ void AlienEngine::stepYodle() {
 		yodleTalk(1, kPlansFirst, kPlansCount);
 		_yodleStep = kStepPlansDone;
 		yodlePose(kPosePlans);
-		_inventory.remove(kBlueprints);
+		_vm->_inventory.remove(kBlueprints);
 		debugC(1, kDebugItems, "yodle: takes item %u (%s)", kBlueprints,
-			   _inventory.name(kBlueprints).c_str());
+			   _vm->_inventory.name(kBlueprints).c_str());
 		break;
 
 	case kStepPlansDone:
@@ -746,7 +753,7 @@ void AlienEngine::stepYodle() {
 		if (!yodleRunDone())
 			break;
 		_yodleStep = 0;
-		_script.setFlag(kPlansGiven, 1);
+		_vm->_script.setFlag(kPlansGiven, 1);
 		CursorMan.showMouse(true);
 		break;
 
@@ -758,27 +765,27 @@ void AlienEngine::stepYodle() {
 		CursorMan.showMouse(false);
 		_yodleStep = kStepThanks;
 
-		if (_script.flag(kGamesonPending) == 1) {
-			_inventory.remove(kGameson);
+		if (_vm->_script.flag(kGamesonPending) == 1) {
+			_vm->_inventory.remove(kGameson);
 			yodlePose(kPoseGameson);
-			_script.setFlag(kHasGameson, 1);
-			_script.setFlag(kGamesonPending, 0);
+			_vm->_script.setFlag(kHasGameson, 1);
+			_vm->_script.setFlag(kGamesonPending, 0);
 			debugC(1, kDebugItems, "yodle: takes item %u (%s)", kGameson,
-				   _inventory.name(kGameson).c_str());
+				   _vm->_inventory.name(kGameson).c_str());
 		}
 
-		if (_script.flag(kRadioPending) == 1) {
-			_inventory.remove(kRadio);
+		if (_vm->_script.flag(kRadioPending) == 1) {
+			_vm->_inventory.remove(kRadio);
 			yodlePose(kPoseRadio);
-			_script.setFlag(kHasRadio, 1);
-			_script.setFlag(kRadioPending, 0);
+			_vm->_script.setFlag(kHasRadio, 1);
+			_vm->_script.setFlag(kRadioPending, 0);
 			debugC(1, kDebugItems, "yodle: takes item %u (%s)", kRadio,
-				   _inventory.name(kRadio).c_str());
+				   _vm->_inventory.name(kRadio).c_str());
 		}
 
 		// 0x12ec: and what he says next is what he is still waiting for.
-		const bool gameson = _script.flag(kHasGameson) == 1;
-		const bool radio = _script.flag(kHasRadio) == 1;
+		const bool gameson = _vm->_script.flag(kHasGameson) == 1;
+		const bool radio = _vm->_script.flag(kHasRadio) == 1;
 		byte line = kThanksNeither;
 		if (gameson && radio)
 			line = kThanksBoth;
@@ -799,14 +806,14 @@ void AlienEngine::stepYodle() {
 		_yodleStep = 0;
 		CursorMan.showMouse(true);
 
-		if (_script.flag(kHasGameson) == 1 && _script.flag(kHasRadio) == 1) {
-			_script.setFlag(kTeleporter, 1);
+		if (_vm->_script.flag(kHasGameson) == 1 && _vm->_script.flag(kHasRadio) == 1) {
+			_vm->_script.setFlag(kTeleporter, 1);
 			yodlePose(kPoseInside);
-			_script.setFlag(kStage, 2);
+			_vm->_script.setFlag(kStage, 2);
 			CursorMan.showMouse(false);
 			_yodleStep = kStepInside;
 			_yodlePos = 0;
-			rebuildHotspots();
+			_vm->rebuildHotspots();
 			debugC(1, kDebugRooms, "yodle: goes inside to build the teleporter");
 		}
 		break;
@@ -816,17 +823,17 @@ void AlienEngine::stepYodle() {
 		if (_yodlePos <= kInsideTicks)
 			break;
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		setTextColor(kBenInk[0], kBenInk[1], kBenInk[2]);
-		uploadTextColor();
-		queueOutcome(_tal, kSporty, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->setTextColor(kBenInk[0], kBenInk[1], kBenInk[2]);
+		_vm->uploadTextColor();
+		_vm->queueOutcome(_vm->_tal, kSporty, anchorX, anchorY);
 		_yodleStep = kStepInsideDone;
 		break;
 	}
 
 	case kStepInsideDone:
 		// 0x13b8
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_yodleStep = 0;
 		CursorMan.showMouse(true);
@@ -836,7 +843,7 @@ void AlienEngine::stepYodle() {
 		// 0x1487: YODSHIT1 has a little tree of its own behind it.
 		if (!yodleRunDone())
 			break;
-		openChat(0);
+		_vm->openChat(0);
 		_yodleStep = kStepSmallWait;
 		break;
 
@@ -844,11 +851,11 @@ void AlienEngine::stepYodle() {
 		// 0x14a6. The menu's own close brings the bar back in the original
 		// (OBJ:sub_0ab84's tail); here the bar was already down when the menu
 		// opened, so the menu does not own it and it is put back here.
-		if (!_chat.isFinished() || _yodleAnswer || !speechDone())
+		if (!_vm->_chat.isFinished() || _yodleAnswer || !_vm->speechDone())
 			break;
 		_yodleStep = 0;
 		CursorMan.showMouse(true);
-		showBar();
+		_vm->showBar();
 		break;
 
 	default:
@@ -857,8 +864,8 @@ void AlienEngine::stepYodle() {
 }
 
 /// The room has opened: nothing of his is left running from the last visit.
-void AlienEngine::startYodle() {
-	if (_room != kYodleRoom)
+void YodleRoom::start() {
+	if (_vm->_room != kYodleRoom)
 		return;
 
 	_yodleStep = 0;
@@ -874,7 +881,7 @@ void AlienEngine::startYodle() {
 	// loader took from the literal pool.
 	_yodleWater = 1;
 	_yodleWaterDue = false;
-	_script.setFlag(kRoomFileLoaded, 0);
+	_vm->_script.setFlag(kRoomFileLoaded, 0);
 	loadYodleRoomScript();
 
 	// 0x0ceb-0x0d2c: the stairs as he left them, stamped over the plate that
@@ -883,33 +890,58 @@ void AlienEngine::startYodle() {
 	// dropped until Ben picks it up, which is also what registers it
 	// ([0xa746]). Gone inside is YOD_GOIN's last frame.
 	bool rebuild = false;
-	if (_script.flag(kStage) == 0) {
-		_anims.stamp(kClearSlot, 1, _background);
-		if (_script.flag(kPipeTaken) == 0) {
-			_script.setFlag(kPipeDown, 1);
-			_anims.stamp(kPipeSlot, 1, _background);
+	if (_vm->_script.flag(kStage) == 0) {
+		_vm->_anims.stamp(kClearSlot, 1, _vm->_background);
+		if (_vm->_script.flag(kPipeTaken) == 0) {
+			_vm->_script.setFlag(kPipeDown, 1);
+			_vm->_anims.stamp(kPipeSlot, 1, _vm->_background);
 			rebuild = true;
 		}
-	} else if (_script.flag(kStage) == 2) {
-		_anims.stamp(kInsideSlot, kInsideFrames, _background);
+	} else if (_vm->_script.flag(kStage) == 2) {
+		_vm->_anims.stamp(kInsideSlot, kInsideFrames, _vm->_background);
 	}
 	if (rebuild)
-		rebuildHotspots();
+		_vm->rebuildHotspots();
 }
 
 /**
  * TPRT:sub_252f8(0x7d0): two seconds with the game loop stopped, the screen
  * black. Events are drained so the window keeps answering.
  */
-void AlienEngine::yodleStoryWait() {
-	const uint32 until = millis() + kStoryMillis;
-	while (!shouldQuit() && millis() < until) {
+void YodleRoom::yodleStoryWait() {
+	const uint32 until = _vm->millis() + kStoryMillis;
+	while (!_vm->shouldQuit() && _vm->millis() < until) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 		}
-		present();
-		sleep(10);
+		_vm->present();
+		_vm->sleep(10);
 	}
+}
+
+void YodleRoom::tickPair() {
+	stepYodle();
+	stepYodleWater();
+}
+
+bool YodleRoom::takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The room puts its own file back before the bodies that speak out of it,
+	// which the lifted row would otherwise read out of a Yodle file.
+	yodleRoomScriptFor(obj, verb, item);
+
+	// And Yodle himself, who hands over the picklock and builds the
+	// teleporter out of the three items brought to him. A click he accepts is
+	// not offered to the generic item responses.
+	if (!armYodle(obj, verb, item))
+		return false;
+	if (item)
+		_vm->holdItem(Inventory::kNoItem);
+	return true;
+}
+
+/// The menu's reply, still to speak once the pick's own line is down.
+bool YodleRoom::replyOwed() const {
+	return _vm->_room == kYodleRoom && _yodleAnswer;
 }
 
 } // End of namespace Alien

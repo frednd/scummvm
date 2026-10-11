@@ -148,9 +148,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_shoreStep(0),
 		_steamStep(0), _steamPos(0), _steamWas(0), _steamRelight(false), _steamBurst(0),
 		_parkStep(0), _parkWait(0), _parkLock(false),
-		_yodleStep(0), _yodlePos(0), _yodleLine(0), _yodleLeft(0),
-		_yodleSpeaker(0), _yodleSpeaking(false), _yodleReply(0), _yodleReplyTicks(0),
-		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -563,7 +560,7 @@ bool AlienEngine::dlgreqRunning() const {
 	for (const Room *r : _rooms)
 		if (r->conversationRunning())
 			return true;
-	return _sluggsSpeaking || _crystalSpeaking || _yodleSpeaking || _endingStep;
+	return _sluggsSpeaking || _crystalSpeaking || _endingStep;
 }
 
 uint32 AlienEngine::masterTick() const {
@@ -705,8 +702,6 @@ void AlienEngine::stepClock() {
 		// And room 22's arrival scene: the voice in the booth, and the wreck
 		// it leaves behind (park.cpp).
 		stepPark();
-		stepYodle();
-		stepYodleWater();
 
 
 

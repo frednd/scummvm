@@ -178,8 +178,10 @@ void AlienEngine::redraw() {
 	// character walks in front of them.
 	_anims.draw(_screen, _scrollX, _clipBottom);
 
-	// Room 21's puddle, which its tick draws by hand over the slots (yodle.cpp).
-	drawYodleWater(_screen);
+	// What the rooms draw by hand over the slots: room 21's puddle
+	// (yodle.cpp).
+	for (const Room *r : _rooms)
+		r->drawOverSlots(_screen);
 
 	// A cutscene is the record's plate and its own slots and nothing else: the
 	// character is not in it, and the original hides the bar for its duration.

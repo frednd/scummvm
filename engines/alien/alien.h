@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class YodleRoom;
 	friend class ForestRoom;
 	friend class TeleportRoom;
 	friend class CorridorRoom;
@@ -486,25 +487,6 @@ private:
 	byte shoreRefusal(byte view, byte obj) const;
 	void stepShore();
 
-	/// Room 21's Yodle: the picklock, the menu, and the teleporter he builds
-	/// out of what is brought to him (yodle.cpp).
-	void startYodle();
-	bool armYodle(int obj, byte verb, int item);
-	void yodleArm(byte which);
-	void yodleCheckIn(byte &first, byte &count);
-	void loadYodleScript(byte which);
-	void yodleTalk(byte speaker, byte line, byte count);
-	void yodleSpeak();
-	void yodlePick();
-	bool yodleRunDone() const;
-	void yodlePose(byte pose);
-	void yodleSounds(byte which);
-	void loadYodleRoomScript();
-	void yodleRoomScriptFor(int obj, byte verb, byte item);
-	void stepYodle();
-	void stepYodleWater();
-	void yodleStoryWait();
-	void drawYodleWater(Graphics::Surface &dest) const;
 	bool dlgreqRunning() const;
 	bool roomHoldsCharacter() const;
 
@@ -1045,22 +1027,6 @@ private:
 	uint _parkWait;
 	bool _parkLock;				///< [0xa8a4]: the scene holds the camera
 
-	/// Room 21's Yodle: the step of his machine, [0xa49c] beside it, the run
-	/// standing in [0xa4a2] and the menu reply owed (yodle.cpp).
-	byte _yodleStep;
-	uint _yodlePos;
-	byte _yodleLine;
-	byte _yodleLeft;
-	byte _yodleSpeaker;
-	bool _yodleSpeaking;
-	byte _yodleReply;
-	TalFile::Entry _yodleReplyEntry;
-	int _yodleReplyTicks;
-	bool _yodleAnswer;
-	bool _yodleTalking;			///< his talk loop is up until the line comes down
-	byte _yodleWater;			///< [0xa5eb], the puddle's frame, 1..30
-	bool _yodleWaterDue;		///< [0xa5f9], the tick pair it waits out between frames
-
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
 	int _scrollHold;
@@ -1163,7 +1129,6 @@ private:
 	void restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick);
 	bool scrollWouldPan() const;
 	void stepParkHold();
-	void stepYodleHold();
 	void writePlayCamera(Common::WriteStream *out) const;
 	void readPlayCamera(Common::SeekableReadStream *in);
 	void writeFailureState(uint line);

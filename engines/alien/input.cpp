@@ -797,24 +797,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryLook(spot.obj, verb);
 
-	// Room 21 puts its own file back before the bodies that speak out of it,
-	// which the lifted row would otherwise read out of a Yodle file (yodle.cpp).
-	yodleRoomScriptFor(spot.obj, verb, item);
-
-	// And room 21's Yodle, who hands over the picklock and builds the
-	// teleporter out of the three items brought to him (yodle.cpp). A click
-	// he accepts is handled directly rather than falling through to generic
-	// item responses.
-	if (armYodle(spot.obj, verb, item)) {
-		if (item)
-			holdItem(Inventory::kNoItem);
-		rebuildHotspots();
-		_hover = -1;
-		const Common::Point hut = g_system->getEventManager()->getMousePos();
-		updateHover(hut.x, hut.y);
-		return;
-	}
-
 	// And the rooms' own (rooms/), whose click must not reach the body either:
 	// room 8's owl, whose other arm the lifted table has without the guards
 	// that keep it off a talk (library.cpp), room 23's hippie, whose talk and
@@ -822,7 +804,7 @@ void AlienEngine::finishAction() {
 	// maintenance man and room 57's loudspeaker, whose lifted rows keep the
 	// guards but drop the calls that are the bodies (corridor.cpp), and room
 	// 22's phone, whose dial and the teleporter it fires are the room's own
-	// machine (teleport.cpp).
+	// machine (teleport.cpp), and room 21's Yodle (yodle.cpp).
 	for (Room *r : _rooms) {
 		if (r->takeAction(spot.obj, verb, item, anchorX, anchorY)) {
 			rebuildHotspots();
