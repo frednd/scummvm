@@ -1,0 +1,3950 @@
+{
+ "arms": [
+  {
+   "count": 2,
+   "first": 121,
+   "guards": [],
+   "id": 1,
+   "latch": 13205,
+   "records": [
+    1,
+    2
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 123,
+   "guards": [],
+   "id": 2,
+   "latch": 13206,
+   "records": [
+    13
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 123,
+   "guards": [
+    {
+     "addr": 42932,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "id": 3,
+   "latch": 13268,
+   "records": [
+    12
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 123,
+   "guards": [],
+   "id": 4,
+   "latch": 0,
+   "records": [
+    14
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 123,
+   "guards": [],
+   "id": 5,
+   "latch": 13209,
+   "records": [
+    3
+   ],
+   "studio": false
+  },
+  {
+   "count": 2,
+   "first": 123,
+   "guards": [],
+   "id": 6,
+   "latch": 13210,
+   "records": [
+    11
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [],
+   "id": 7,
+   "latch": 13211,
+   "records": [
+    8
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [],
+   "id": 8,
+   "latch": 13212,
+   "records": [
+    5
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [],
+   "id": 9,
+   "latch": 13213,
+   "records": [
+    4
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [],
+   "id": 10,
+   "latch": 13214,
+   "records": [
+    10
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [],
+   "id": 11,
+   "latch": 13215,
+   "records": [
+    7
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [],
+   "id": 12,
+   "latch": 13216,
+   "records": [
+    6
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [
+    {
+     "addr": 42980,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "id": 13,
+   "latch": 13217,
+   "records": [
+    9
+   ],
+   "studio": false
+  },
+  {
+   "count": 0,
+   "first": 125,
+   "guards": [],
+   "id": 14,
+   "latch": 13218,
+   "records": [],
+   "studio": true
+  }
+ ],
+ "effects": [
+  {
+   "args": [
+    0,
+    1,
+    6,
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 1, 6, 4)"
+  },
+  {
+   "args": [
+    42298,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 1)"
+  },
+  {
+   "args": [
+    1,
+    0,
+    12,
+    3,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(1, 0, 12, 3, 0)"
+  },
+  {
+   "args": [
+    42299,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53b, 1)"
+  },
+  {
+   "args": [
+    42298,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 0)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42299,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53b, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(1, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    6,
+    14,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 6, 14, 3)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 16,
+   "shown": "music_play_slot(5)"
+  },
+  {
+   "args": [
+    1,
+    5,
+    22,
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(1, 5, 22, 4)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 13b8:0f76(140)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 1, 1, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(1, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    63,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 63, 2)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    0,
+    5,
+    3,
+    12
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42136,
+     "kind": 2,
+     "negate": true,
+     "value": 7
+    }
+   ],
+   "op": 21,
+   "shown": "anim_play_mode8(0, 0, 5, 3, 12)"
+  },
+  {
+   "args": [
+    0,
+    0,
+    24,
+    3,
+    17
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42136,
+     "kind": 0,
+     "negate": false,
+     "value": 8
+    }
+   ],
+   "op": 21,
+   "shown": "anim_play_mode8(0, 0, 24, 3, 17)"
+  },
+  {
+   "args": [
+    0,
+    7,
+    26,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42136,
+     "kind": 0,
+     "negate": false,
+     "value": 9
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 7, 26, 3)"
+  },
+  {
+   "args": [
+    2,
+    12,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 12, 1, 0)"
+  },
+  {
+   "args": [
+    5,
+    21,
+    19,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(5, 21, 19, 2)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    27,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 1, 27, 3)"
+  },
+  {
+   "args": [
+    7,
+    20,
+    8,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 20, 8, 3)"
+  },
+  {
+   "args": [
+    42305,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa541, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    33,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 33, 2)"
+  },
+  {
+   "args": [
+    42298,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    3,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 3, 0)"
+  },
+  {
+   "args": [
+    42299,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53b, 1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    15,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 15, 2)"
+  },
+  {
+   "args": [
+    42304,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    33,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 33, 2)"
+  },
+  {
+   "args": [
+    42298,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    3,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 3, 0)"
+  },
+  {
+   "args": [
+    42299,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53b, 1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    15,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 15, 2)"
+  },
+  {
+   "args": [
+    42304,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    33,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 33, 2)"
+  },
+  {
+   "args": [
+    42298,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    3,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 3, 0)"
+  },
+  {
+   "args": [
+    42299,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53b, 1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    15,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 15, 2)"
+  },
+  {
+   "args": [
+    42304,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 1)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(3, 1, 1, 0)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    33,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 33, 2)"
+  },
+  {
+   "args": [
+    42298,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    3,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 3, 0)"
+  },
+  {
+   "args": [
+    42299,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53b, 1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    15,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 15, 2)"
+  },
+  {
+   "args": [
+    42304,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    12,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 12, 3)"
+  },
+  {
+   "args": [
+    42300,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53c, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42300,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53c, 0)"
+  },
+  {
+   "args": [
+    5,
+    0,
+    17,
+    4,
+    41
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(5, 0, 17, 4, 41)"
+  },
+  {
+   "args": [
+    42303,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53f, 1)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42303,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53f, 0)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13372,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42222,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    13372,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13372,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42222,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0x343c, 0)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    41,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 1, 41, 2)"
+  },
+  {
+   "args": [
+    4,
+    1,
+    25,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 1, 25, 2)"
+  },
+  {
+   "args": [
+    13372,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0x343c, 3)"
+  },
+  {
+   "args": [
+    13372,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0x343c, 3)"
+  },
+  {
+   "args": [
+    42140,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa49c, 0)"
+  },
+  {
+   "args": [
+    13372,
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13372,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42140,
+     "kind": 2,
+     "negate": false,
+     "value": 30
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0x343c, 5)"
+  },
+  {
+   "args": [
+    42300,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13372,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42140,
+     "kind": 2,
+     "negate": false,
+     "value": 30
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa53c, 0)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    41,
+    4,
+    58
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13372,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42140,
+     "kind": 2,
+     "negate": false,
+     "value": 30
+    }
+   ],
+   "op": 21,
+   "shown": "anim_play_mode8(2, 0, 41, 4, 58)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 1, 3)"
+  },
+  {
+   "args": [
+    42300,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53c, 0)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    14,
+    3,
+    99
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(2, 0, 14, 3, 99)"
+  },
+  {
+   "args": [
+    42300,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53c, 1)"
+  },
+  {
+   "args": [
+    2,
+    6,
+    40,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 6, 40, 3)"
+  },
+  {
+   "args": [
+    3,
+    0,
+    25,
+    4,
+    113
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(3, 0, 25, 4, 113)"
+  },
+  {
+   "args": [
+    42301,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53d, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    21,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 21, 2)"
+  },
+  {
+   "args": [
+    42298,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    3,
+    0,
+    25,
+    4,
+    138
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(3, 0, 25, 4, 138)"
+  },
+  {
+   "args": [
+    42301,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53d, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42300,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53c, 0)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    13,
+    3,
+    163
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(2, 0, 13, 3, 163)"
+  },
+  {
+   "args": [
+    42300,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53c, 1)"
+  },
+  {
+   "args": [
+    3,
+    17,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(3, 17, 1, 0)"
+  },
+  {
+   "args": [
+    42301,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53d, 0)"
+  },
+  {
+   "args": [
+    3,
+    7,
+    11,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42136,
+     "kind": 2,
+     "negate": true,
+     "value": 12
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(3, 7, 11, 3)"
+  },
+  {
+   "args": [
+    42301,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42136,
+     "kind": 2,
+     "negate": true,
+     "value": 12
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa53d, 1)"
+  },
+  {
+   "args": [
+    3,
+    17,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42136,
+     "kind": 2,
+     "negate": false,
+     "value": 12
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(3, 17, 1, 0)"
+  },
+  {
+   "args": [
+    42301,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42136,
+     "kind": 2,
+     "negate": false,
+     "value": 12
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa53d, 0)"
+  },
+  {
+   "args": [
+    2,
+    4,
+    58,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 4, 58, 2)"
+  },
+  {
+   "args": [
+    6,
+    10,
+    5,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(6, 10, 5, 3)"
+  },
+  {
+   "args": [
+    42304,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 1)"
+  },
+  {
+   "args": [
+    7,
+    9,
+    9,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 9, 9, 3)"
+  },
+  {
+   "args": [
+    42305,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa541, 1)"
+  },
+  {
+   "args": [
+    6,
+    10,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(6, 10, 1, 0)"
+  },
+  {
+   "args": [
+    42304,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 0)"
+  },
+  {
+   "args": [
+    7,
+    9,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 9, 1, 0)"
+  },
+  {
+   "args": [
+    42305,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa541, 0)"
+  },
+  {
+   "args": [
+    1,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42777,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42773,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 3, 1, 0)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42777,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42773,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 1, 0)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42774,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42778,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    6,
+    0,
+    5,
+    7,
+    176
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(6, 0, 5, 7, 176)"
+  },
+  {
+   "args": [
+    42304,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    5,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(6, 1, 5, 3)"
+  },
+  {
+   "args": [
+    42304,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa540, 0)"
+  },
+  {
+   "args": [
+    6,
+    5,
+    9,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(6, 5, 9, 3)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    9,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    },
+    {
+     "addr": 13370,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 1, 9, 3)"
+  },
+  {
+   "args": [
+    1,
+    0,
+    37,
+    3,
+    181
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 21,
+   "shown": "anim_play_mode8(1, 0, 37, 3, 181)"
+  },
+  {
+   "args": [
+    42299,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53b, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    17,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 17, 2)"
+  },
+  {
+   "args": [
+    42298,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa53a, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    53,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 53, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    11,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(0, 1, 11, 3)"
+  },
+  {
+   "args": [
+    42827,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa74b, 0)"
+  },
+  {
+   "args": [
+    13256,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33c8, 1)"
+  },
+  {
+   "args": [
+    42710,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6d6, 0)"
+  },
+  {
+   "args": [
+    42711,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6d7, 1)"
+  }
+ ],
+ "frame_lists": [
+  1,
+  2,
+  3,
+  4,
+  2,
+  3,
+  1,
+  2,
+  3,
+  4,
+  3,
+  0,
+  1,
+  2,
+  3,
+  2,
+  3,
+  5,
+  6,
+  7,
+  6,
+  5,
+  7,
+  6,
+  7,
+  5,
+  6,
+  5,
+  6,
+  7,
+  6,
+  5,
+  6,
+  5,
+  6,
+  7,
+  6,
+  7,
+  5,
+  6,
+  7,
+  1,
+  2,
+  3,
+  4,
+  5,
+  4,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  5,
+  7,
+  8,
+  4,
+  0,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  22,
+  23,
+  24,
+  23,
+  22,
+  21,
+  20,
+  19,
+  18,
+  19,
+  20,
+  21,
+  22,
+  22,
+  23,
+  24,
+  23,
+  22,
+  24,
+  23,
+  24,
+  22,
+  21,
+  20,
+  19,
+  18,
+  17,
+  16,
+  15,
+  14,
+  13,
+  1,
+  2,
+  3,
+  4,
+  2,
+  3,
+  4,
+  1,
+  2,
+  1,
+  2,
+  3,
+  4,
+  0,
+  1,
+  2,
+  1,
+  1,
+  2,
+  1,
+  2,
+  1,
+  2,
+  1,
+  2,
+  2,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  1,
+  1,
+  2,
+  1,
+  1,
+  2,
+  1,
+  2,
+  1,
+  2,
+  1,
+  2,
+  2,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  1,
+  1,
+  2,
+  3,
+  2,
+  1,
+  3,
+  3,
+  2,
+  1,
+  2,
+  3,
+  2,
+  0,
+  1,
+  1,
+  1,
+  2,
+  0,
+  1,
+  2,
+  3,
+  4,
+  1,
+  5,
+  6,
+  7,
+  6,
+  8,
+  9,
+  10,
+  10,
+  10,
+  6,
+  7,
+  8,
+  9,
+  10,
+  10,
+  10,
+  10,
+  10,
+  10,
+  11,
+  12,
+  11,
+  12,
+  11,
+  12,
+  11,
+  10,
+  9,
+  7,
+  6,
+  5,
+  0
+ ],
+ "procs": [
+  {
+   "addr": 3730,
+   "count": 0,
+   "first": 0
+  },
+  {
+   "addr": 3735,
+   "count": 2,
+   "first": 0
+  },
+  {
+   "addr": 3758,
+   "count": 2,
+   "first": 2
+  },
+  {
+   "addr": 3786,
+   "count": 2,
+   "first": 4
+  },
+  {
+   "addr": 3809,
+   "count": 2,
+   "first": 6
+  },
+  {
+   "addr": 3832,
+   "count": 3,
+   "first": 8
+  },
+  {
+   "addr": 3885,
+   "count": 3,
+   "first": 11
+  },
+  {
+   "addr": 3924,
+   "count": 1,
+   "first": 14
+  },
+  {
+   "addr": 3942,
+   "count": 1,
+   "first": 15
+  },
+  {
+   "addr": 3960,
+   "count": 3,
+   "first": 16
+  },
+  {
+   "addr": 4035,
+   "count": 5,
+   "first": 19
+  },
+  {
+   "addr": 4119,
+   "count": 6,
+   "first": 24
+  },
+  {
+   "addr": 4178,
+   "count": 8,
+   "first": 30
+  },
+  {
+   "addr": 4213,
+   "count": 8,
+   "first": 38
+  },
+  {
+   "addr": 4248,
+   "count": 8,
+   "first": 46
+  },
+  {
+   "addr": 4283,
+   "count": 2,
+   "first": 54
+  },
+  {
+   "addr": 4306,
+   "count": 2,
+   "first": 56
+  },
+  {
+   "addr": 4329,
+   "count": 2,
+   "first": 58
+  },
+  {
+   "addr": 4357,
+   "count": 2,
+   "first": 60
+  },
+  {
+   "addr": 4380,
+   "count": 2,
+   "first": 62
+  },
+  {
+   "addr": 4418,
+   "count": 3,
+   "first": 64
+  },
+  {
+   "addr": 4470,
+   "count": 2,
+   "first": 67
+  },
+  {
+   "addr": 4494,
+   "count": 3,
+   "first": 69
+  },
+  {
+   "addr": 4543,
+   "count": 2,
+   "first": 72
+  },
+  {
+   "addr": 4566,
+   "count": 2,
+   "first": 74
+  },
+  {
+   "addr": 4594,
+   "count": 1,
+   "first": 76
+  },
+  {
+   "addr": 4620,
+   "count": 2,
+   "first": 77
+  },
+  {
+   "addr": 4648,
+   "count": 5,
+   "first": 79
+  },
+  {
+   "addr": 4688,
+   "count": 2,
+   "first": 84
+  },
+  {
+   "addr": 4711,
+   "count": 2,
+   "first": 86
+  },
+  {
+   "addr": 4739,
+   "count": 2,
+   "first": 88
+  },
+  {
+   "addr": 4762,
+   "count": 4,
+   "first": 90
+  },
+  {
+   "addr": 4798,
+   "count": 1,
+   "first": 94
+  },
+  {
+   "addr": 4824,
+   "count": 2,
+   "first": 95
+  },
+  {
+   "addr": 4847,
+   "count": 2,
+   "first": 97
+  },
+  {
+   "addr": 4870,
+   "count": 2,
+   "first": 99
+  },
+  {
+   "addr": 4893,
+   "count": 2,
+   "first": 101
+  },
+  {
+   "addr": 4916,
+   "count": 6,
+   "first": 103
+  },
+  {
+   "addr": 4949,
+   "count": 4,
+   "first": 109
+  },
+  {
+   "addr": 5020,
+   "count": 4,
+   "first": 113
+  },
+  {
+   "addr": 5066,
+   "count": 1,
+   "first": 117
+  },
+  {
+   "addr": 5084,
+   "count": 1,
+   "first": 118
+  },
+  {
+   "addr": 5102,
+   "count": 1,
+   "first": 119
+  },
+  {
+   "addr": 5120,
+   "count": 1,
+   "first": 120
+  }
+ ],
+ "records": [
+  {
+   "banks": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "main": 0,
+   "music": -1,
+   "number": 0,
+   "pcx": null,
+   "points": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "steps": [],
+   "subs": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tal": null
+  },
+  {
+   "banks": [
+    "MW92SHUT.DL1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "main": 7,
+   "music": 4,
+   "number": 1,
+   "pcx": "MW92BGR.PCX",
+   "points": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "steps": [
+    [
+     0,
+     100
+    ],
+    [
+     0,
+     5
+    ]
+   ],
+   "subs": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tal": null
+  },
+  {
+   "banks": [
+    "MW9_YODL.DL1",
+    "MW9_ALIE.DL1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    40,
+    40,
+    63,
+    55,
+    63,
+    55
+   ],
+   "main": 6,
+   "music": 4,
+   "number": 2,
+   "pcx": "MW9_BGR.PCX",
+   "points": [
+    161,
+    73,
+    196,
+    112
+   ],
+   "steps": [
+    [
+     0,
+     27
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     1,
+     20
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     1,
+     21
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     1,
+     22
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     25
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     100
+    ],
+    [
+     0,
+     5
+    ]
+   ],
+   "subs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    0,
+    0
+   ],
+   "tal": "MW9.TAL"
+  },
+  {
+   "banks": [
+    "MW4_GSM.DL1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    55,
+    63,
+    55,
+    0,
+    0,
+    0
+   ],
+   "main": 8,
+   "music": 4,
+   "number": 3,
+   "pcx": "MW4_BGR.PCX",
+   "points": [
+    83,
+    72,
+    0,
+    0
+   ],
+   "steps": [
+    [
+     0,
+     20
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     1,
+     9
+    ],
+    [
+     1,
+     10
+    ],
+    [
+     1,
+     11
+    ],
+    [
+     1,
+     12
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    9,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tal": "MW4.TAL"
+  },
+  {
+   "banks": [
+    "BOSSBALL.DL1",
+    "BOS_LIGH.DL1",
+    "BOS_ALI2.DL1",
+    null,
+    null,
+    "BOS_BOS1.DL1",
+    "BOS_GAM1.DL1",
+    "BOS_MONI.DL1",
+    null,
+    null
+   ],
+   "colors": [
+    58,
+    58,
+    63,
+    40,
+    63,
+    40
+   ],
+   "main": 12,
+   "music": 6,
+   "number": 4,
+   "pcx": "BOSSROOM.PCX",
+   "points": [
+    96,
+    78,
+    248,
+    69
+   ],
+   "steps": [
+    [
+     0,
+     10
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     40
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     25
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     50
+    ],
+    [
+     2,
+     10
+    ],
+    [
+     0,
+     20
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    15,
+    17,
+    16,
+    18,
+    10,
+    0,
+    0
+   ],
+   "tal": "mw3.tal"
+  },
+  {
+   "banks": [
+    "BOSSBALL.DL1",
+    "BOS_LIGH.DL1",
+    "BOS_ALI2.DL1",
+    null,
+    null,
+    "BOS_BOS1.DL1",
+    "BOS_GAM1.DL1",
+    "BOS_MONI.DL1",
+    null,
+    null
+   ],
+   "colors": [
+    58,
+    58,
+    63,
+    40,
+    63,
+    40
+   ],
+   "main": 12,
+   "music": 6,
+   "number": 5,
+   "pcx": "BOSSROOM.PCX",
+   "points": [
+    96,
+    78,
+    248,
+    69
+   ],
+   "steps": [
+    [
+     0,
+     10
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     30
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     31
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     32
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     2,
+     33
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     2,
+     34
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     35
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     2,
+     36
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     2,
+     37
+    ],
+    [
+     1,
+     9
+    ],
+    [
+     0,
+     30
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    15,
+    17,
+    16,
+    18,
+    0,
+    0,
+    0
+   ],
+   "tal": "mw2.tal"
+  },
+  {
+   "banks": [
+    "BOSSBALL.DL1",
+    "BOS_LIGH.DL1",
+    "BOS_ALI2.DL1",
+    "BOS_FIST.DL1",
+    "BOS_ALWA.DL1",
+    "BOS_BOS1.DL1",
+    "BOS_GAM1.DL1",
+    "BOS_MONI.DL1",
+    null,
+    null
+   ],
+   "colors": [
+    58,
+    58,
+    63,
+    40,
+    63,
+    40
+   ],
+   "main": 13,
+   "music": 6,
+   "number": 6,
+   "pcx": "BOSSROOM.PCX",
+   "points": [
+    96,
+    78,
+    248,
+    69
+   ],
+   "steps": [
+    [
+     0,
+     25
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     50
+    ],
+    [
+     2,
+     20
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     35
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     21
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     22
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     23
+    ],
+    [
+     0,
+     20
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    15,
+    17,
+    16,
+    18,
+    20,
+    0,
+    19
+   ],
+   "tal": "mw8.tal"
+  },
+  {
+   "banks": [
+    "BOSSBALL.DL1",
+    "BOS_LIGH.DL1",
+    "BOS_ALI2.DL1",
+    null,
+    null,
+    "BOS_BOS1.DL1",
+    "BOS_GAM1.DL1",
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    58,
+    58,
+    63,
+    40,
+    63,
+    40
+   ],
+   "main": 12,
+   "music": 6,
+   "number": 7,
+   "pcx": "BOSSROOM.PCX",
+   "points": [
+    96,
+    78,
+    248,
+    69
+   ],
+   "steps": [
+    [
+     0,
+     20
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     0,
+     20
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    15,
+    17,
+    16,
+    18,
+    0,
+    0,
+    0
+   ],
+   "tal": "mw10.tal"
+  },
+  {
+   "banks": [
+    "BOSSBALL.DL1",
+    "BOS_LIGH.DL1",
+    "BOS_ALI2.DL1",
+    null,
+    null,
+    "BOS_BOS1.DL1",
+    "BOS_GAM1.DL1",
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    58,
+    58,
+    63,
+    40,
+    63,
+    40
+   ],
+   "main": 12,
+   "music": 6,
+   "number": 8,
+   "pcx": "BOSSROOM.PCX",
+   "points": [
+    96,
+    78,
+    248,
+    69
+   ],
+   "steps": [
+    [
+     0,
+     20
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     30
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     31
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     32
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     2,
+     33
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     2,
+     34
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     35
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     2,
+     36
+    ],
+    [
+     0,
+     20
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    15,
+    17,
+    16,
+    18,
+    21,
+    0,
+    22
+   ],
+   "tal": "mw1.tal"
+  },
+  {
+   "banks": [
+    "BOSSBALL.DL1",
+    "BOS_LIGH.DL1",
+    "BOS_MAIN.DL1",
+    null,
+    null,
+    "BOS_BOS1.DL1",
+    "BOS_GAM1.DL1",
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    40,
+    40,
+    63,
+    40,
+    63,
+    40
+   ],
+   "main": 14,
+   "music": 6,
+   "number": 9,
+   "pcx": "BOSSROOM.PCX",
+   "points": [
+    108,
+    40,
+    248,
+    69
+   ],
+   "steps": [
+    [
+     2,
+     20
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     21
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     22
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     23
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     2,
+     24
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     2,
+     25
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     100
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    24,
+    17,
+    23,
+    18,
+    25,
+    0,
+    0
+   ],
+   "tal": "mw11.tal"
+  },
+  {
+   "banks": [
+    "TOR_STUF.DL1",
+    null,
+    "TOR_ALIE.DL1",
+    "TOR_UNCL.DL1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    51,
+    51,
+    63,
+    63,
+    63,
+    63
+   ],
+   "main": 27,
+   "music": 4,
+   "number": 10,
+   "pcx": "TORTURE.PCX",
+   "points": [
+    187,
+    91,
+    255,
+    93
+   ],
+   "steps": [
+    [
+     0,
+     60
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     20
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     21
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     22
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     2,
+     23
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     2,
+     24
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     25
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     100
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    29,
+    31,
+    28,
+    26,
+    32,
+    0,
+    0
+   ],
+   "tal": "mw7.tal"
+  },
+  {
+   "banks": [
+    null,
+    "CABINET.DL1",
+    "HAMMER.DL1",
+    null,
+    null,
+    "BEN_WALK.DL1",
+    "MW5_ALI1.DL1",
+    "MW5_ALI2.DL1",
+    null,
+    null
+   ],
+   "colors": [
+    63,
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "main": 37,
+   "music": 4,
+   "number": 11,
+   "pcx": "GAME18.PCX",
+   "points": [
+    79,
+    102,
+    261,
+    71
+   ],
+   "steps": [
+    [
+     0,
+     65
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     25
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     30
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     30
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     1,
+     10
+    ],
+    [
+     0,
+     15
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    33,
+    34,
+    35,
+    36,
+    38,
+    0,
+    0
+   ],
+   "tal": "mw5.tal"
+  },
+  {
+   "banks": [
+    "WAI_FAN.DL1",
+    "MW12_GUA.DL1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    63,
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "main": 39,
+   "music": 4,
+   "number": 12,
+   "pcx": "MW12.PCX",
+   "points": [
+    79,
+    102,
+    261,
+    71
+   ],
+   "steps": [
+    [
+     0,
+     180
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tal": null
+  },
+  {
+   "banks": [
+    "MW5_SHUT.DL1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    63,
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "main": 40,
+   "music": 7,
+   "number": 13,
+   "pcx": "MW5_II.PCX",
+   "points": [
+    79,
+    102,
+    261,
+    71
+   ],
+   "steps": [
+    [
+     0,
+     5
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     80
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    0,
+    0,
+    0,
+    0,
+    41,
+    0,
+    0
+   ],
+   "tal": null
+  },
+  {
+   "banks": [
+    "MW_CLIFF.DL1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    63,
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "main": 42,
+   "music": -1,
+   "number": 14,
+   "pcx": "MW_CLIFF.PCX",
+   "points": [
+    79,
+    102,
+    261,
+    71
+   ],
+   "steps": [
+    [
+     0,
+     8
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     0,
+     35
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    0,
+    0,
+    0,
+    0,
+    43,
+    0,
+    0
+   ],
+   "tal": null
+  },
+  {
+   "banks": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "colors": [
+    63,
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "main": 0,
+   "music": 0,
+   "number": 15,
+   "pcx": "ALIESHP1.PCX",
+   "points": [
+    79,
+    102,
+    261,
+    71
+   ],
+   "steps": [
+    [
+     0,
+     75
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "subs": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tal": null
+  }
+ ],
+ "triggers": [
+  {
+   "guards": [
+    {
+     "addr": 14,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "room": 3,
+   "scene": 9
+  },
+  {
+   "guards": [
+    {
+     "addr": 43136,
+     "kind": 0,
+     "negate": false,
+     "value": 7
+    },
+    {
+     "addr": 17,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "room": 6,
+   "scene": 7
+  },
+  {
+   "guards": [
+    {
+     "addr": 42760,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "room": 6,
+   "scene": 8
+  },
+  {
+   "guards": [
+    {
+     "addr": 8,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "room": 13,
+   "scene": 10
+  },
+  {
+   "guards": [],
+   "room": 23,
+   "scene": 12
+  },
+  {
+   "guards": [],
+   "room": 27,
+   "scene": 2
+  },
+  {
+   "guards": [
+    {
+     "addr": 42877,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "room": 31,
+   "scene": 14
+  },
+  {
+   "guards": [
+    {
+     "addr": 43136,
+     "kind": 0,
+     "negate": false,
+     "value": 35
+    },
+    {
+     "addr": 43134,
+     "kind": 0,
+     "negate": false,
+     "value": 20
+    }
+   ],
+   "room": 35,
+   "scene": 6
+  },
+  {
+   "guards": [
+    {
+     "addr": 43136,
+     "kind": 0,
+     "negate": false,
+     "value": 13
+    },
+    {
+     "addr": 43134,
+     "kind": 0,
+     "negate": false,
+     "value": 10
+    }
+   ],
+   "room": 35,
+   "scene": 4
+  },
+  {
+   "guards": [],
+   "room": 35,
+   "scene": 5
+  },
+  {
+   "guards": [
+    {
+     "addr": 42877,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "room": 40,
+   "scene": 14
+  },
+  {
+   "guards": [],
+   "room": 51,
+   "scene": 3
+  },
+  {
+   "guards": [],
+   "room": 51,
+   "scene": 13
+  },
+  {
+   "guards": [],
+   "room": 53,
+   "scene": 13
+  },
+  {
+   "guards": [],
+   "room": 55,
+   "scene": 13
+  }
+ ]
+}

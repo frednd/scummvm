@@ -39,6 +39,12 @@ create_japanesemacfonts.sh
     SCUMM and WAGE engines).
 
 
+create_alien
+------------
+    Creates alien.dat, which holds the cutscene and room script tables
+    of Alien Incident, from the JSON in devtools/create_alien/lift.
+
+
 create_cryo
 -----------
     Creates cryo.dat file which contains a lot of hardcoded tables used

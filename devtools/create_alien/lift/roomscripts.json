@@ -1,0 +1,12552 @@
+{
+ "blocks": [
+  {
+   "addr": 206,
+   "conds": [],
+   "count": 1,
+   "first": 0,
+   "index": 0,
+   "item": 12,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 229,
+   "conds": [],
+   "count": 5,
+   "first": 1,
+   "index": 1,
+   "item": 16,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 318,
+   "conds": [],
+   "count": 7,
+   "first": 6,
+   "index": 2,
+   "item": 6,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 16,
+   "verb": -1
+  },
+  {
+   "addr": 405,
+   "conds": [
+    {
+     "addr": 42721,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 4,
+   "first": 13,
+   "index": 3,
+   "item": 14,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 481,
+   "conds": [
+    {
+     "addr": 42715,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 4,
+   "first": 17,
+   "index": 4,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 570,
+   "conds": [],
+   "count": 5,
+   "first": 21,
+   "index": 5,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 3,
+   "verb": -1
+  },
+  {
+   "addr": 629,
+   "conds": [],
+   "count": 4,
+   "first": 26,
+   "index": 6,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 4,
+   "verb": -1
+  },
+  {
+   "addr": 666,
+   "conds": [],
+   "count": 3,
+   "first": 30,
+   "index": 7,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 12,
+   "verb": -1
+  },
+  {
+   "addr": 711,
+   "conds": [],
+   "count": 4,
+   "first": 33,
+   "index": 8,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 20,
+   "verb": -1
+  },
+  {
+   "addr": 748,
+   "conds": [],
+   "count": 5,
+   "first": 37,
+   "index": 9,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 793,
+   "conds": [],
+   "count": 5,
+   "first": 42,
+   "index": 10,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 15,
+   "verb": -1
+  },
+  {
+   "addr": 852,
+   "conds": [],
+   "count": 4,
+   "first": 47,
+   "index": 11,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 16,
+   "verb": -1
+  },
+  {
+   "addr": 889,
+   "conds": [],
+   "count": 6,
+   "first": 51,
+   "index": 12,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 17,
+   "verb": -1
+  },
+  {
+   "addr": 937,
+   "conds": [],
+   "count": 1,
+   "first": 57,
+   "index": 13,
+   "item": -1,
+   "label": "Room 3 - Uncle's Lab",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 73,
+   "conds": [],
+   "count": 4,
+   "first": 58,
+   "index": 14,
+   "item": 4,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 140,
+   "conds": [],
+   "count": 5,
+   "first": 62,
+   "index": 15,
+   "item": 13,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 140,
+   "conds": [],
+   "count": 5,
+   "first": 62,
+   "index": 16,
+   "item": 16,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 140,
+   "conds": [],
+   "count": 5,
+   "first": 62,
+   "index": 17,
+   "item": 23,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 209,
+   "conds": [
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 67,
+   "index": 18,
+   "item": 13,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 246,
+   "conds": [],
+   "count": 5,
+   "first": 69,
+   "index": 19,
+   "item": 9,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 301,
+   "conds": [],
+   "count": 6,
+   "first": 74,
+   "index": 20,
+   "item": 9,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 423,
+   "conds": [],
+   "count": 2,
+   "first": 80,
+   "index": 21,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 2,
+   "verb": 4
+  },
+  {
+   "addr": 423,
+   "conds": [],
+   "count": 2,
+   "first": 80,
+   "index": 22,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 2,
+   "verb": 3
+  },
+  {
+   "addr": 423,
+   "conds": [],
+   "count": 2,
+   "first": 80,
+   "index": 23,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 1,
+   "verb": 4
+  },
+  {
+   "addr": 423,
+   "conds": [],
+   "count": 2,
+   "first": 80,
+   "index": 24,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 1,
+   "verb": 3
+  },
+  {
+   "addr": 423,
+   "conds": [],
+   "count": 2,
+   "first": 80,
+   "index": 25,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 4,
+   "verb": 4
+  },
+  {
+   "addr": 423,
+   "conds": [],
+   "count": 2,
+   "first": 80,
+   "index": 26,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 4,
+   "verb": 3
+  },
+  {
+   "addr": 465,
+   "conds": [],
+   "count": 2,
+   "first": 82,
+   "index": 27,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 2,
+   "verb": 3
+  },
+  {
+   "addr": 497,
+   "conds": [],
+   "count": 2,
+   "first": 84,
+   "index": 28,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 2,
+   "verb": 4
+  },
+  {
+   "addr": 529,
+   "conds": [],
+   "count": 2,
+   "first": 86,
+   "index": 29,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 1,
+   "verb": 3
+  },
+  {
+   "addr": 561,
+   "conds": [],
+   "count": 2,
+   "first": 88,
+   "index": 30,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 1,
+   "verb": 4
+  },
+  {
+   "addr": 593,
+   "conds": [],
+   "count": 2,
+   "first": 90,
+   "index": 31,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 4,
+   "verb": 3
+  },
+  {
+   "addr": 625,
+   "conds": [],
+   "count": 2,
+   "first": 92,
+   "index": 32,
+   "item": -1,
+   "label": "Room 6 - Upstairs Landing",
+   "obj": 4,
+   "verb": 4
+  },
+  {
+   "addr": 577,
+   "conds": [],
+   "count": 6,
+   "first": 94,
+   "index": 33,
+   "item": 18,
+   "label": "Room 7 - Bedroom",
+   "obj": 23,
+   "verb": -1
+  },
+  {
+   "addr": 577,
+   "conds": [],
+   "count": 6,
+   "first": 94,
+   "index": 34,
+   "item": 18,
+   "label": "Room 7 - Bedroom",
+   "obj": 24,
+   "verb": -1
+  },
+  {
+   "addr": 669,
+   "conds": [
+    {
+     "addr": 42750,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42751,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 5,
+   "first": 100,
+   "index": 35,
+   "item": 19,
+   "label": "Room 7 - Bedroom",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 738,
+   "conds": [
+    {
+     "addr": 42750,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42751,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 3,
+   "first": 105,
+   "index": 36,
+   "item": 19,
+   "label": "Room 7 - Bedroom",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 800,
+   "conds": [],
+   "count": 3,
+   "first": 108,
+   "index": 37,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 852,
+   "conds": [],
+   "count": 2,
+   "first": 111,
+   "index": 38,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 16,
+   "verb": -1
+  },
+  {
+   "addr": 877,
+   "conds": [],
+   "count": 3,
+   "first": 113,
+   "index": 39,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 18,
+   "verb": -1
+  },
+  {
+   "addr": 909,
+   "conds": [],
+   "count": 3,
+   "first": 116,
+   "index": 40,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 20,
+   "verb": -1
+  },
+  {
+   "addr": 941,
+   "conds": [],
+   "count": 4,
+   "first": 119,
+   "index": 41,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 23,
+   "verb": -1
+  },
+  {
+   "addr": 1001,
+   "conds": [],
+   "count": 3,
+   "first": 123,
+   "index": 42,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 24,
+   "verb": -1
+  },
+  {
+   "addr": 1033,
+   "conds": [],
+   "count": 3,
+   "first": 126,
+   "index": 43,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 25,
+   "verb": -1
+  },
+  {
+   "addr": 1079,
+   "conds": [
+    {
+     "addr": 42750,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42751,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 4,
+   "first": 129,
+   "index": 44,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 1130,
+   "conds": [
+    {
+     "addr": 42750,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 4,
+   "first": 133,
+   "index": 45,
+   "item": -1,
+   "label": "Room 7 - Bedroom",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 73,
+   "conds": [],
+   "count": 4,
+   "first": 137,
+   "index": 46,
+   "item": 11,
+   "label": "Room 8 - Library",
+   "obj": 25,
+   "verb": -1
+  },
+  {
+   "addr": 142,
+   "conds": [],
+   "count": 5,
+   "first": 141,
+   "index": 47,
+   "item": 15,
+   "label": "Room 8 - Library",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 142,
+   "conds": [],
+   "count": 5,
+   "first": 141,
+   "index": 48,
+   "item": 16,
+   "label": "Room 8 - Library",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 198,
+   "conds": [
+    {
+     "addr": 13228,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 146,
+   "index": 49,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 4,
+   "verb": -1
+  },
+  {
+   "addr": 224,
+   "conds": [],
+   "count": 7,
+   "first": 148,
+   "index": 50,
+   "item": 17,
+   "label": "Room 8 - Library",
+   "obj": 40,
+   "verb": -1
+  },
+  {
+   "addr": 467,
+   "conds": [],
+   "count": 4,
+   "first": 155,
+   "index": 51,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 517,
+   "conds": [],
+   "count": 3,
+   "first": 159,
+   "index": 52,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 554,
+   "conds": [],
+   "count": 2,
+   "first": 162,
+   "index": 53,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 25,
+   "verb": -1
+  },
+  {
+   "addr": 573,
+   "conds": [],
+   "count": 6,
+   "first": 164,
+   "index": 54,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 12,
+   "verb": -1
+  },
+  {
+   "addr": 640,
+   "conds": [],
+   "count": 5,
+   "first": 170,
+   "index": 55,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 13,
+   "verb": -1
+  },
+  {
+   "addr": 700,
+   "conds": [],
+   "count": 5,
+   "first": 175,
+   "index": 56,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 20,
+   "verb": -1
+  },
+  {
+   "addr": 751,
+   "conds": [
+    {
+     "addr": 42763,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 6,
+   "first": 180,
+   "index": 57,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 847,
+   "conds": [],
+   "count": 1,
+   "first": 186,
+   "index": 58,
+   "item": -1,
+   "label": "Room 8 - Library",
+   "obj": 4,
+   "verb": 6
+  },
+  {
+   "addr": 73,
+   "conds": [],
+   "count": 7,
+   "first": 187,
+   "index": 59,
+   "item": 16,
+   "label": "Room 10 - Kitchen",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 169,
+   "conds": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 5,
+   "first": 194,
+   "index": 60,
+   "item": 4,
+   "label": "Room 10 - Kitchen",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 260,
+   "conds": [],
+   "count": 5,
+   "first": 199,
+   "index": 61,
+   "item": -1,
+   "label": "Room 10 - Kitchen",
+   "obj": 1,
+   "verb": 3
+  },
+  {
+   "addr": 342,
+   "conds": [],
+   "count": 5,
+   "first": 204,
+   "index": 62,
+   "item": -1,
+   "label": "Room 10 - Kitchen",
+   "obj": 1,
+   "verb": 4
+  },
+  {
+   "addr": 417,
+   "conds": [],
+   "count": 5,
+   "first": 209,
+   "index": 63,
+   "item": -1,
+   "label": "Room 10 - Kitchen",
+   "obj": 20,
+   "verb": -1
+  },
+  {
+   "addr": 473,
+   "conds": [],
+   "count": 4,
+   "first": 214,
+   "index": 64,
+   "item": -1,
+   "label": "Room 10 - Kitchen",
+   "obj": 21,
+   "verb": -1
+  },
+  {
+   "addr": 524,
+   "conds": [],
+   "count": 3,
+   "first": 218,
+   "index": 65,
+   "item": -1,
+   "label": "Room 10 - Kitchen",
+   "obj": 25,
+   "verb": -1
+  },
+  {
+   "addr": 556,
+   "conds": [],
+   "count": 4,
+   "first": 221,
+   "index": 66,
+   "item": -1,
+   "label": "Room 10 - Kitchen",
+   "obj": 29,
+   "verb": -1
+  },
+  {
+   "addr": 595,
+   "conds": [],
+   "count": 3,
+   "first": 225,
+   "index": 67,
+   "item": -1,
+   "label": "Room 10 - Kitchen",
+   "obj": 40,
+   "verb": -1
+  },
+  {
+   "addr": 279,
+   "conds": [],
+   "count": 4,
+   "first": 228,
+   "index": 68,
+   "item": 25,
+   "label": "Room 11 - Living Room",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 401,
+   "conds": [],
+   "count": 4,
+   "first": 232,
+   "index": 69,
+   "item": -1,
+   "label": "Room 11 - Living Room",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 438,
+   "conds": [],
+   "count": 4,
+   "first": 236,
+   "index": 70,
+   "item": -1,
+   "label": "Room 11 - Living Room",
+   "obj": 9,
+   "verb": -1
+  },
+  {
+   "addr": 475,
+   "conds": [],
+   "count": 3,
+   "first": 240,
+   "index": 71,
+   "item": -1,
+   "label": "Room 11 - Living Room",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 507,
+   "conds": [],
+   "count": 3,
+   "first": 243,
+   "index": 72,
+   "item": -1,
+   "label": "Room 11 - Living Room",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 539,
+   "conds": [],
+   "count": 2,
+   "first": 246,
+   "index": 73,
+   "item": -1,
+   "label": "Room 11 - Living Room",
+   "obj": 5,
+   "verb": -1
+  },
+  {
+   "addr": 167,
+   "conds": [
+    {
+     "addr": 42734,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 4,
+   "first": 248,
+   "index": 74,
+   "item": 8,
+   "label": "Room 13 - Basement",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 211,
+   "conds": [],
+   "count": 7,
+   "first": 252,
+   "index": 75,
+   "item": 26,
+   "label": "Room 13 - Basement",
+   "obj": 11,
+   "verb": -1
+  },
+  {
+   "addr": 314,
+   "conds": [],
+   "count": 4,
+   "first": 259,
+   "index": 76,
+   "item": -1,
+   "label": "Room 13 - Basement",
+   "obj": 3,
+   "verb": -1
+  },
+  {
+   "addr": 351,
+   "conds": [],
+   "count": 5,
+   "first": 263,
+   "index": 77,
+   "item": -1,
+   "label": "Room 13 - Basement",
+   "obj": 12,
+   "verb": -1
+  },
+  {
+   "addr": 105,
+   "conds": [],
+   "count": 4,
+   "first": 268,
+   "index": 78,
+   "item": -1,
+   "label": "Room 14 - Path Overlooking the Mansion",
+   "obj": 6,
+   "verb": 5
+  },
+  {
+   "addr": 158,
+   "conds": [
+    {
+     "addr": 42567,
+     "kind": 0,
+     "negate": false,
+     "value": 5
+    }
+   ],
+   "count": 1,
+   "first": 272,
+   "index": 79,
+   "item": -1,
+   "label": "Room 14 - Path Overlooking the Mansion",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 134,
+   "conds": [
+    {
+     "addr": 42711,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42710,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 273,
+   "index": 80,
+   "item": -1,
+   "label": "Room 15 - Entrance Hall (Sali)",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 168,
+   "conds": [],
+   "count": 10,
+   "first": 275,
+   "index": 81,
+   "item": -1,
+   "label": "Room 15 - Entrance Hall (Sali)",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 352,
+   "conds": [
+    {
+     "addr": 42710,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 3,
+   "first": 285,
+   "index": 82,
+   "item": -1,
+   "label": "Room 15 - Entrance Hall (Sali)",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 359,
+   "conds": [
+    {
+     "addr": 42710,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 3,
+   "first": 288,
+   "index": 83,
+   "item": -1,
+   "label": "Room 15 - Entrance Hall (Sali)",
+   "obj": -1,
+   "verb": 3
+  },
+  {
+   "addr": 418,
+   "conds": [
+    {
+     "addr": 13222,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 291,
+   "index": 84,
+   "item": -1,
+   "label": "Room 15 - Entrance Hall (Sali)",
+   "obj": 20,
+   "verb": -1
+  },
+  {
+   "addr": 88,
+   "conds": [
+    {
+     "addr": 42851,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 7,
+   "first": 293,
+   "index": 85,
+   "item": 31,
+   "label": "Room 17 - Observatory Entrance",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 169,
+   "conds": [
+    {
+     "addr": 42851,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 300,
+   "index": 86,
+   "item": 31,
+   "label": "Room 17 - Observatory Entrance",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 233,
+   "conds": [],
+   "count": 5,
+   "first": 302,
+   "index": 87,
+   "item": -1,
+   "label": "Room 17 - Observatory Entrance",
+   "obj": 1,
+   "verb": 3
+  },
+  {
+   "addr": 304,
+   "conds": [],
+   "count": 3,
+   "first": 307,
+   "index": 88,
+   "item": -1,
+   "label": "Room 17 - Observatory Entrance",
+   "obj": 1,
+   "verb": 4
+  },
+  {
+   "addr": 70,
+   "conds": [],
+   "count": 6,
+   "first": 310,
+   "index": 89,
+   "item": 25,
+   "label": "Room 18 - Ben's Room",
+   "obj": 13,
+   "verb": -1
+  },
+  {
+   "addr": 164,
+   "conds": [],
+   "count": 5,
+   "first": 316,
+   "index": 90,
+   "item": -1,
+   "label": "Room 18 - Ben's Room",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 222,
+   "conds": [],
+   "count": 4,
+   "first": 321,
+   "index": 91,
+   "item": -1,
+   "label": "Room 18 - Ben's Room",
+   "obj": 13,
+   "verb": 3
+  },
+  {
+   "addr": 280,
+   "conds": [],
+   "count": 3,
+   "first": 325,
+   "index": 92,
+   "item": -1,
+   "label": "Room 18 - Ben's Room",
+   "obj": 13,
+   "verb": 4
+  },
+  {
+   "addr": 312,
+   "conds": [],
+   "count": 4,
+   "first": 328,
+   "index": 93,
+   "item": -1,
+   "label": "Room 18 - Ben's Room",
+   "obj": 16,
+   "verb": -1
+  },
+  {
+   "addr": 351,
+   "conds": [],
+   "count": 3,
+   "first": 332,
+   "index": 94,
+   "item": -1,
+   "label": "Room 18 - Ben's Room",
+   "obj": 20,
+   "verb": -1
+  },
+  {
+   "addr": 393,
+   "conds": [],
+   "count": 7,
+   "first": 335,
+   "index": 95,
+   "item": -1,
+   "label": "Room 18 - Ben's Room",
+   "obj": -1,
+   "verb": 7
+  },
+  {
+   "addr": 461,
+   "conds": [],
+   "count": 6,
+   "first": 342,
+   "index": 96,
+   "item": -1,
+   "label": "Room 18 - Ben's Room",
+   "obj": -1,
+   "verb": 8
+  },
+  {
+   "addr": 282,
+   "conds": [
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42840,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 7,
+   "first": 348,
+   "index": 97,
+   "item": 6,
+   "label": "Room 19 - Observatory Interior",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 282,
+   "conds": [
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42840,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 7,
+   "first": 348,
+   "index": 98,
+   "item": 6,
+   "label": "Room 19 - Observatory Interior",
+   "obj": 9,
+   "verb": -1
+  },
+  {
+   "addr": 392,
+   "conds": [],
+   "count": 1,
+   "first": 355,
+   "index": 99,
+   "item": -1,
+   "label": "Room 19 - Observatory Interior",
+   "obj": 3,
+   "verb": 5
+  },
+  {
+   "addr": 450,
+   "conds": [
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 3,
+   "first": 356,
+   "index": 100,
+   "item": -1,
+   "label": "Room 19 - Observatory Interior",
+   "obj": 3,
+   "verb": 9
+  },
+  {
+   "addr": 524,
+   "conds": [
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 6,
+   "first": 359,
+   "index": 101,
+   "item": -1,
+   "label": "Room 19 - Observatory Interior",
+   "obj": 11,
+   "verb": 1
+  },
+  {
+   "addr": 596,
+   "conds": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 6,
+   "first": 365,
+   "index": 102,
+   "item": -1,
+   "label": "Room 19 - Observatory Interior",
+   "obj": 1,
+   "verb": 10
+  },
+  {
+   "addr": 706,
+   "conds": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 4,
+   "first": 371,
+   "index": 103,
+   "item": -1,
+   "label": "Room 19 - Observatory Interior",
+   "obj": 1,
+   "verb": 10
+  },
+  {
+   "addr": 974,
+   "conds": [],
+   "count": 2,
+   "first": 375,
+   "index": 104,
+   "item": 1,
+   "label": "Room 21 - Yodle's Tree Hut (Outside)",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 1102,
+   "conds": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42827,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "count": 2,
+   "first": 377,
+   "index": 105,
+   "item": -1,
+   "label": "Room 21 - Yodle's Tree Hut (Outside)",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 1199,
+   "conds": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 379,
+   "index": 106,
+   "item": -1,
+   "label": "Room 21 - Yodle's Tree Hut (Outside)",
+   "obj": 3,
+   "verb": -1
+  },
+  {
+   "addr": 1375,
+   "conds": [],
+   "count": 5,
+   "first": 381,
+   "index": 107,
+   "item": -1,
+   "label": "Room 21 - Yodle's Tree Hut (Outside)",
+   "obj": 7,
+   "verb": 1
+  },
+  {
+   "addr": 1432,
+   "conds": [],
+   "count": 2,
+   "first": 386,
+   "index": 108,
+   "item": -1,
+   "label": "Room 21 - Yodle's Tree Hut (Outside)",
+   "obj": 2,
+   "verb": 5
+  },
+  {
+   "addr": 95,
+   "conds": [
+    {
+     "addr": 42793,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 1,
+   "first": 388,
+   "index": 109,
+   "item": 40,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 5,
+   "verb": -1
+  },
+  {
+   "addr": 95,
+   "conds": [
+    {
+     "addr": 42793,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 1,
+   "first": 388,
+   "index": 110,
+   "item": 40,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 133,
+   "conds": [
+    {
+     "addr": 42793,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 389,
+   "index": 111,
+   "item": 40,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 9,
+   "verb": -1
+  },
+  {
+   "addr": 133,
+   "conds": [
+    {
+     "addr": 42793,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 389,
+   "index": 112,
+   "item": 40,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 166,
+   "conds": [],
+   "count": 4,
+   "first": 391,
+   "index": 113,
+   "item": 35,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 166,
+   "conds": [],
+   "count": 4,
+   "first": 391,
+   "index": 114,
+   "item": 35,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 248,
+   "conds": [],
+   "count": 2,
+   "first": 395,
+   "index": 115,
+   "item": -1,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 5,
+   "verb": 10
+  },
+  {
+   "addr": 322,
+   "conds": [],
+   "count": 2,
+   "first": 397,
+   "index": 116,
+   "item": -1,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 9,
+   "verb": 1
+  },
+  {
+   "addr": 358,
+   "conds": [],
+   "count": 9,
+   "first": 399,
+   "index": 117,
+   "item": -1,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 20,
+   "verb": 1
+  },
+  {
+   "addr": 487,
+   "conds": [],
+   "count": 3,
+   "first": 408,
+   "index": 118,
+   "item": -1,
+   "label": "Room 22 - Park / Teleport",
+   "obj": 30,
+   "verb": 1
+  },
+  {
+   "addr": 84,
+   "conds": [
+    {
+     "addr": 42855,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42854,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 411,
+   "index": 119,
+   "item": 33,
+   "label": "Room 23 - Crossroads",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 143,
+   "conds": [],
+   "count": 6,
+   "first": 413,
+   "index": 120,
+   "item": -1,
+   "label": "Room 23 - Crossroads",
+   "obj": 1,
+   "verb": 6
+  },
+  {
+   "addr": 115,
+   "conds": [],
+   "count": 2,
+   "first": 419,
+   "index": 121,
+   "item": 1,
+   "label": "Room 25 - Sluggs' House / Mailbox",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 115,
+   "conds": [],
+   "count": 2,
+   "first": 419,
+   "index": 122,
+   "item": 1,
+   "label": "Room 25 - Sluggs' House / Mailbox",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 146,
+   "conds": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 3,
+   "first": 421,
+   "index": 123,
+   "item": -1,
+   "label": "Room 25 - Sluggs' House / Mailbox",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 215,
+   "conds": [],
+   "count": 1,
+   "first": 424,
+   "index": 124,
+   "item": -1,
+   "label": "Room 25 - Sluggs' House / Mailbox",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 103,
+   "conds": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 3,
+   "first": 425,
+   "index": 125,
+   "item": -1,
+   "label": "Room 26 - Yodle's Hut (Inside)",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 170,
+   "conds": [
+    {
+     "addr": 42834,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 1,
+   "first": 428,
+   "index": 126,
+   "item": 3,
+   "label": "Room 26 - Yodle's Hut (Inside)",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 261,
+   "conds": [],
+   "count": 5,
+   "first": 429,
+   "index": 127,
+   "item": -1,
+   "label": "Room 26 - Yodle's Hut (Inside)",
+   "obj": 18,
+   "verb": 1
+  },
+  {
+   "addr": 312,
+   "conds": [],
+   "count": 1,
+   "first": 434,
+   "index": 128,
+   "item": -1,
+   "label": "Room 26 - Yodle's Hut (Inside)",
+   "obj": 20,
+   "verb": 5
+  },
+  {
+   "addr": 346,
+   "conds": [],
+   "count": 3,
+   "first": 435,
+   "index": 129,
+   "item": -1,
+   "label": "Room 26 - Yodle's Hut (Inside)",
+   "obj": 22,
+   "verb": 5
+  },
+  {
+   "addr": 160,
+   "conds": [],
+   "count": 8,
+   "first": 438,
+   "index": 130,
+   "item": 30,
+   "label": "Room 28 - Telescope Room",
+   "obj": 3,
+   "verb": -1
+  },
+  {
+   "addr": 244,
+   "conds": [],
+   "count": 4,
+   "first": 446,
+   "index": 131,
+   "item": 20,
+   "label": "Room 28 - Telescope Room",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 333,
+   "conds": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 7,
+   "first": 450,
+   "index": 132,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 6,
+   "verb": 13
+  },
+  {
+   "addr": 432,
+   "conds": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 5,
+   "first": 457,
+   "index": 133,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 6,
+   "verb": 13
+  },
+  {
+   "addr": 489,
+   "conds": [],
+   "count": 3,
+   "first": 462,
+   "index": 134,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 5,
+   "verb": 1
+  },
+  {
+   "addr": 528,
+   "conds": [],
+   "count": 3,
+   "first": 465,
+   "index": 135,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 11,
+   "verb": 1
+  },
+  {
+   "addr": 567,
+   "conds": [],
+   "count": 2,
+   "first": 468,
+   "index": 136,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 9,
+   "verb": 13
+  },
+  {
+   "addr": 628,
+   "conds": [
+    {
+     "addr": 42848,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 470,
+   "index": 137,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 9,
+   "verb": 13
+  },
+  {
+   "addr": 716,
+   "conds": [
+    {
+     "addr": 42848,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 472,
+   "index": 138,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 9,
+   "verb": 13
+  },
+  {
+   "addr": 776,
+   "conds": [],
+   "count": 1,
+   "first": 474,
+   "index": 139,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 4,
+   "verb": 10
+  },
+  {
+   "addr": 817,
+   "conds": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 1,
+   "first": 475,
+   "index": 140,
+   "item": -1,
+   "label": "Room 28 - Telescope Room",
+   "obj": 2,
+   "verb": 5
+  },
+  {
+   "addr": 120,
+   "conds": [
+    {
+     "addr": 42798,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 4,
+   "first": 476,
+   "index": 141,
+   "item": -1,
+   "label": "Room 32 - Cemetery",
+   "obj": 2,
+   "verb": 6
+  },
+  {
+   "addr": 184,
+   "conds": [],
+   "count": 1,
+   "first": 480,
+   "index": 142,
+   "item": -1,
+   "label": "Room 32 - Cemetery",
+   "obj": 2,
+   "verb": 5
+  },
+  {
+   "addr": 213,
+   "conds": [],
+   "count": 1,
+   "first": 481,
+   "index": 143,
+   "item": -1,
+   "label": "Room 32 - Cemetery",
+   "obj": 3,
+   "verb": 11
+  },
+  {
+   "addr": 81,
+   "conds": [],
+   "count": 2,
+   "first": 482,
+   "index": 144,
+   "item": 31,
+   "label": "Room 34 - Hippie / Pal Area",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 107,
+   "conds": [],
+   "count": 4,
+   "first": 484,
+   "index": 145,
+   "item": 15,
+   "label": "Room 34 - Hippie / Pal Area",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 195,
+   "conds": [],
+   "count": 3,
+   "first": 488,
+   "index": 146,
+   "item": -1,
+   "label": "Room 35 - Sewer",
+   "obj": 1,
+   "verb": 1
+  },
+  {
+   "addr": 234,
+   "conds": [],
+   "count": 7,
+   "first": 491,
+   "index": 147,
+   "item": -1,
+   "label": "Room 35 - Sewer",
+   "obj": 2,
+   "verb": 12
+  },
+  {
+   "addr": 339,
+   "conds": [],
+   "count": 1,
+   "first": 498,
+   "index": 148,
+   "item": -1,
+   "label": "Room 35 - Sewer",
+   "obj": 3,
+   "verb": 10
+  },
+  {
+   "addr": 364,
+   "conds": [],
+   "count": 1,
+   "first": 499,
+   "index": 149,
+   "item": -1,
+   "label": "Room 35 - Sewer",
+   "obj": 4,
+   "verb": -1
+  },
+  {
+   "addr": 383,
+   "conds": [],
+   "count": 1,
+   "first": 500,
+   "index": 150,
+   "item": -1,
+   "label": "Room 35 - Sewer",
+   "obj": 10,
+   "verb": 10
+  },
+  {
+   "addr": 102,
+   "conds": [],
+   "count": 3,
+   "first": 501,
+   "index": 151,
+   "item": -1,
+   "label": "Room 40 - Cave Entrance",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 152,
+   "conds": [
+    {
+     "addr": 13271,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 3,
+   "first": 504,
+   "index": 152,
+   "item": 27,
+   "label": "Room 40 - Cave Entrance",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 197,
+   "conds": [
+    {
+     "addr": 13273,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 3,
+   "first": 507,
+   "index": 153,
+   "item": 1,
+   "label": "Room 40 - Cave Entrance",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 102,
+   "conds": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 510,
+   "index": 154,
+   "item": 39,
+   "label": "Room 41 - Shore / Underwater Entry",
+   "obj": 8,
+   "verb": -1
+  },
+  {
+   "addr": 102,
+   "conds": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 510,
+   "index": 155,
+   "item": 39,
+   "label": "Room 41 - Shore / Underwater Entry",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 102,
+   "conds": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 510,
+   "index": 156,
+   "item": 39,
+   "label": "Room 41 - Shore / Underwater Entry",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 261,
+   "conds": [],
+   "count": 7,
+   "first": 512,
+   "index": 157,
+   "item": -1,
+   "label": "Room 41 - Shore / Underwater Entry",
+   "obj": 2,
+   "verb": 3
+  },
+  {
+   "addr": 261,
+   "conds": [],
+   "count": 7,
+   "first": 512,
+   "index": 158,
+   "item": -1,
+   "label": "Room 41 - Shore / Underwater Entry",
+   "obj": 2,
+   "verb": 4
+  },
+  {
+   "addr": 123,
+   "conds": [],
+   "count": 3,
+   "first": 519,
+   "index": 159,
+   "item": -1,
+   "label": "Rooms 43/44/45 - Maze + Crystal Entry",
+   "obj": 11,
+   "verb": 1
+  },
+  {
+   "addr": 78,
+   "conds": [],
+   "count": 2,
+   "first": 522,
+   "index": 160,
+   "item": 37,
+   "label": "Room 46 - Diving Area / Underwater",
+   "obj": 1,
+   "verb": -1
+  },
+  {
+   "addr": 149,
+   "conds": [
+    {
+     "addr": 42888,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 4,
+   "first": 524,
+   "index": 161,
+   "item": -1,
+   "label": "Room 46 - Diving Area / Underwater",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 78,
+   "conds": [],
+   "count": 6,
+   "first": 528,
+   "index": 162,
+   "item": 38,
+   "label": "Room 48 - Cavern Pool",
+   "obj": 2,
+   "verb": -1
+  },
+  {
+   "addr": 116,
+   "conds": [],
+   "count": 7,
+   "first": 534,
+   "index": 163,
+   "item": -1,
+   "label": "Room 49 - Engine Room",
+   "obj": 3,
+   "verb": 13
+  },
+  {
+   "addr": 227,
+   "conds": [],
+   "count": 4,
+   "first": 541,
+   "index": 164,
+   "item": -1,
+   "label": "Room 49 - Engine Room",
+   "obj": 4,
+   "verb": 12
+  },
+  {
+   "addr": 85,
+   "conds": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 545,
+   "index": 165,
+   "item": -1,
+   "label": "Room 50 - Steam Room",
+   "obj": 6,
+   "verb": -1
+  },
+  {
+   "addr": 146,
+   "conds": [],
+   "count": 5,
+   "first": 547,
+   "index": 166,
+   "item": -1,
+   "label": "Room 50 - Steam Room",
+   "obj": 6,
+   "verb": 13
+  },
+  {
+   "addr": 88,
+   "conds": [
+    {
+     "addr": 42928,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 3,
+   "first": 552,
+   "index": 167,
+   "item": 42,
+   "label": "Rooms 53/57 - Hallways",
+   "obj": 4,
+   "verb": -1
+  },
+  {
+   "addr": 166,
+   "conds": [],
+   "count": 2,
+   "first": 555,
+   "index": 168,
+   "item": 41,
+   "label": "Rooms 53/57 - Hallways",
+   "obj": 4,
+   "verb": -1
+  },
+  {
+   "addr": 166,
+   "conds": [],
+   "count": 2,
+   "first": 555,
+   "index": 169,
+   "item": 42,
+   "label": "Rooms 53/57 - Hallways",
+   "obj": 4,
+   "verb": -1
+  },
+  {
+   "addr": 166,
+   "conds": [],
+   "count": 2,
+   "first": 555,
+   "index": 170,
+   "item": 43,
+   "label": "Rooms 53/57 - Hallways",
+   "obj": 4,
+   "verb": -1
+  },
+  {
+   "addr": 192,
+   "conds": [],
+   "count": 7,
+   "first": 557,
+   "index": 171,
+   "item": 43,
+   "label": "Rooms 53/57 - Hallways",
+   "obj": 5,
+   "verb": -1
+  },
+  {
+   "addr": 336,
+   "conds": [],
+   "count": 4,
+   "first": 564,
+   "index": 172,
+   "item": -1,
+   "label": "Rooms 53/57 - Hallways",
+   "obj": 3,
+   "verb": 6
+  },
+  {
+   "addr": 405,
+   "conds": [],
+   "count": 3,
+   "first": 568,
+   "index": 173,
+   "item": -1,
+   "label": "Rooms 53/57 - Hallways",
+   "obj": 8,
+   "verb": 5
+  },
+  {
+   "addr": 81,
+   "conds": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 571,
+   "index": 174,
+   "item": -1,
+   "label": "Room 54 - Waiting Room",
+   "obj": 9,
+   "verb": -1
+  },
+  {
+   "addr": 132,
+   "conds": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 573,
+   "index": 175,
+   "item": -1,
+   "label": "Room 54 - Waiting Room",
+   "obj": 10,
+   "verb": -1
+  },
+  {
+   "addr": 184,
+   "conds": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "count": 2,
+   "first": 575,
+   "index": 176,
+   "item": -1,
+   "label": "Room 54 - Waiting Room",
+   "obj": 16,
+   "verb": -1
+  },
+  {
+   "addr": 334,
+   "conds": [
+    {
+     "addr": 42976,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 1,
+   "first": 577,
+   "index": 177,
+   "item": -1,
+   "label": "Room 54 - Waiting Room",
+   "obj": 12,
+   "verb": 12
+  },
+  {
+   "addr": 522,
+   "conds": [],
+   "count": 6,
+   "first": 578,
+   "index": 178,
+   "item": -1,
+   "label": "Room 54 - Waiting Room",
+   "obj": 13,
+   "verb": 1
+  },
+  {
+   "addr": 609,
+   "conds": [],
+   "count": 1,
+   "first": 584,
+   "index": 179,
+   "item": -1,
+   "label": "Room 54 - Waiting Room",
+   "obj": 4,
+   "verb": 5
+  },
+  {
+   "addr": 677,
+   "conds": [],
+   "count": 4,
+   "first": 585,
+   "index": 180,
+   "item": -1,
+   "label": "Room 54 - Waiting Room",
+   "obj": 18,
+   "verb": 1
+  },
+  {
+   "addr": 109,
+   "conds": [],
+   "count": 3,
+   "first": 589,
+   "index": 181,
+   "item": -1,
+   "label": "Room 56 - Transporter Chamber",
+   "obj": 8,
+   "verb": 1
+  },
+  {
+   "addr": 158,
+   "conds": [],
+   "count": 7,
+   "first": 592,
+   "index": 182,
+   "item": 41,
+   "label": "Room 58 - Jail",
+   "obj": 13,
+   "verb": -1
+  },
+  {
+   "addr": 158,
+   "conds": [],
+   "count": 7,
+   "first": 592,
+   "index": 183,
+   "item": 42,
+   "label": "Room 58 - Jail",
+   "obj": 13,
+   "verb": -1
+  },
+  {
+   "addr": 158,
+   "conds": [],
+   "count": 7,
+   "first": 592,
+   "index": 184,
+   "item": 43,
+   "label": "Room 58 - Jail",
+   "obj": 13,
+   "verb": -1
+  },
+  {
+   "addr": 247,
+   "conds": [
+    {
+     "addr": 42923,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 2,
+   "first": 599,
+   "index": 185,
+   "item": 48,
+   "label": "Room 58 - Jail",
+   "obj": 21,
+   "verb": -1
+  },
+  {
+   "addr": 280,
+   "conds": [
+    {
+     "addr": 42923,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "count": 4,
+   "first": 601,
+   "index": 186,
+   "item": 48,
+   "label": "Room 58 - Jail",
+   "obj": 21,
+   "verb": -1
+  },
+  {
+   "addr": 412,
+   "conds": [
+    {
+     "addr": 42923,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "count": 1,
+   "first": 605,
+   "index": 187,
+   "item": -1,
+   "label": "Room 58 - Jail",
+   "obj": 20,
+   "verb": 5
+  },
+  {
+   "addr": 431,
+   "conds": [],
+   "count": 2,
+   "first": 606,
+   "index": 188,
+   "item": -1,
+   "label": "Room 58 - Jail",
+   "obj": 5,
+   "verb": 6
+  },
+  {
+   "addr": 489,
+   "conds": [],
+   "count": 3,
+   "first": 608,
+   "index": 189,
+   "item": -1,
+   "label": "Room 58 - Jail",
+   "obj": 6,
+   "verb": 6
+  },
+  {
+   "addr": 576,
+   "conds": [],
+   "count": 1,
+   "first": 611,
+   "index": 190,
+   "item": -1,
+   "label": "Room 58 - Jail",
+   "obj": 12,
+   "verb": 5
+  },
+  {
+   "addr": 595,
+   "conds": [],
+   "count": 2,
+   "first": 612,
+   "index": 191,
+   "item": -1,
+   "label": "Room 58 - Jail",
+   "obj": 14,
+   "verb": 1
+  },
+  {
+   "addr": 88,
+   "conds": [],
+   "count": 2,
+   "first": 614,
+   "index": 192,
+   "item": 41,
+   "label": "Room 59 - Escape Pod",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 88,
+   "conds": [],
+   "count": 2,
+   "first": 614,
+   "index": 193,
+   "item": 42,
+   "label": "Room 59 - Escape Pod",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 114,
+   "conds": [],
+   "count": 5,
+   "first": 616,
+   "index": 194,
+   "item": 43,
+   "label": "Room 59 - Escape Pod",
+   "obj": 7,
+   "verb": -1
+  },
+  {
+   "addr": 217,
+   "conds": [],
+   "count": 1,
+   "first": 621,
+   "index": 195,
+   "item": -1,
+   "label": "Room 59 - Escape Pod",
+   "obj": 9,
+   "verb": 5
+  }
+ ],
+ "flags": [
+  {
+   "addr": 42686,
+   "value": 0
+  },
+  {
+   "addr": 42549,
+   "value": 0
+  },
+  {
+   "addr": 42500,
+   "value": 0
+  },
+  {
+   "addr": 42501,
+   "value": 0
+  },
+  {
+   "addr": 42508,
+   "value": 0
+  },
+  {
+   "addr": 42510,
+   "value": 0
+  },
+  {
+   "addr": 42509,
+   "value": 0
+  },
+  {
+   "addr": 42512,
+   "value": 0
+  },
+  {
+   "addr": 42513,
+   "value": 0
+  },
+  {
+   "addr": 42514,
+   "value": 0
+  },
+  {
+   "addr": 42515,
+   "value": 0
+  },
+  {
+   "addr": 42516,
+   "value": 0
+  },
+  {
+   "addr": 42517,
+   "value": 0
+  },
+  {
+   "addr": 42518,
+   "value": 0
+  },
+  {
+   "addr": 42519,
+   "value": 0
+  },
+  {
+   "addr": 42547,
+   "value": 0
+  },
+  {
+   "addr": 42688,
+   "value": 20
+  },
+  {
+   "addr": 42689,
+   "value": 0
+  },
+  {
+   "addr": 42690,
+   "value": 20
+  },
+  {
+   "addr": 42691,
+   "value": 0
+  },
+  {
+   "addr": 42693,
+   "value": 0
+  },
+  {
+   "addr": 42695,
+   "value": 0
+  },
+  {
+   "addr": 42696,
+   "value": 0
+  },
+  {
+   "addr": 42579,
+   "value": 0
+  },
+  {
+   "addr": 42497,
+   "value": 0
+  },
+  {
+   "addr": 42699,
+   "value": 0
+  },
+  {
+   "addr": 42700,
+   "value": 0
+  },
+  {
+   "addr": 42698,
+   "value": 0
+  },
+  {
+   "addr": 42702,
+   "value": 0
+  },
+  {
+   "addr": 42703,
+   "value": 0
+  },
+  {
+   "addr": 42708,
+   "value": 0
+  },
+  {
+   "addr": 42706,
+   "value": 0
+  },
+  {
+   "addr": 42707,
+   "value": 0
+  },
+  {
+   "addr": 42710,
+   "value": 1
+  },
+  {
+   "addr": 42711,
+   "value": 0
+  },
+  {
+   "addr": 42712,
+   "value": 0
+  },
+  {
+   "addr": 42713,
+   "value": 1
+  },
+  {
+   "addr": 42749,
+   "value": 0
+  },
+  {
+   "addr": 42714,
+   "value": 0
+  },
+  {
+   "addr": 42715,
+   "value": 12
+  },
+  {
+   "addr": 42720,
+   "value": 1
+  },
+  {
+   "addr": 42718,
+   "value": 1
+  },
+  {
+   "addr": 42719,
+   "value": 1
+  },
+  {
+   "addr": 42716,
+   "value": 1
+  },
+  {
+   "addr": 42717,
+   "value": 0
+  },
+  {
+   "addr": 42721,
+   "value": 0
+  },
+  {
+   "addr": 42753,
+   "value": 0
+  },
+  {
+   "addr": 42728,
+   "value": 1
+  },
+  {
+   "addr": 42729,
+   "value": 1
+  },
+  {
+   "addr": 42730,
+   "value": 1
+  },
+  {
+   "addr": 42731,
+   "value": 1
+  },
+  {
+   "addr": 42732,
+   "value": 1
+  },
+  {
+   "addr": 42733,
+   "value": 1
+  },
+  {
+   "addr": 42722,
+   "value": 0
+  },
+  {
+   "addr": 42723,
+   "value": 0
+  },
+  {
+   "addr": 42724,
+   "value": 1
+  },
+  {
+   "addr": 42725,
+   "value": 1
+  },
+  {
+   "addr": 42726,
+   "value": 1
+  },
+  {
+   "addr": 42727,
+   "value": 1
+  },
+  {
+   "addr": 42738,
+   "value": 0
+  },
+  {
+   "addr": 42734,
+   "value": 0
+  },
+  {
+   "addr": 42735,
+   "value": 1
+  },
+  {
+   "addr": 42736,
+   "value": 1
+  },
+  {
+   "addr": 42737,
+   "value": 0
+  },
+  {
+   "addr": 42742,
+   "value": 1
+  },
+  {
+   "addr": 42741,
+   "value": 1
+  },
+  {
+   "addr": 42740,
+   "value": 1
+  },
+  {
+   "addr": 42744,
+   "value": 1
+  },
+  {
+   "addr": 42745,
+   "value": 1
+  },
+  {
+   "addr": 42743,
+   "value": 0
+  },
+  {
+   "addr": 42746,
+   "value": 0
+  },
+  {
+   "addr": 42748,
+   "value": 0
+  },
+  {
+   "addr": 42751,
+   "value": 1
+  },
+  {
+   "addr": 42750,
+   "value": 1
+  },
+  {
+   "addr": 42752,
+   "value": 1
+  },
+  {
+   "addr": 42759,
+   "value": 1
+  },
+  {
+   "addr": 42760,
+   "value": 0
+  },
+  {
+   "addr": 42763,
+   "value": 1
+  },
+  {
+   "addr": 42761,
+   "value": 1
+  },
+  {
+   "addr": 42762,
+   "value": 1
+  },
+  {
+   "addr": 42764,
+   "value": 1
+  },
+  {
+   "addr": 42765,
+   "value": 1
+  },
+  {
+   "addr": 42766,
+   "value": 0
+  },
+  {
+   "addr": 42767,
+   "value": 0
+  },
+  {
+   "addr": 42739,
+   "value": 0
+  },
+  {
+   "addr": 42770,
+   "value": 0
+  },
+  {
+   "addr": 42771,
+   "value": 1
+  },
+  {
+   "addr": 42773,
+   "value": 1
+  },
+  {
+   "addr": 42772,
+   "value": 0
+  },
+  {
+   "addr": 42774,
+   "value": 1
+  },
+  {
+   "addr": 42775,
+   "value": 1
+  },
+  {
+   "addr": 42776,
+   "value": 0
+  },
+  {
+   "addr": 42777,
+   "value": 1
+  },
+  {
+   "addr": 42782,
+   "value": 0
+  },
+  {
+   "addr": 42778,
+   "value": 1
+  },
+  {
+   "addr": 42784,
+   "value": 0
+  },
+  {
+   "addr": 42785,
+   "value": 0
+  },
+  {
+   "addr": 42786,
+   "value": 0
+  },
+  {
+   "addr": 42787,
+   "value": 0
+  },
+  {
+   "addr": 42788,
+   "value": 1
+  },
+  {
+   "addr": 42789,
+   "value": 0
+  },
+  {
+   "addr": 42790,
+   "value": 1
+  },
+  {
+   "addr": 42792,
+   "value": 0
+  },
+  {
+   "addr": 42793,
+   "value": 1
+  },
+  {
+   "addr": 42800,
+   "value": 0
+  },
+  {
+   "addr": 42794,
+   "value": 0
+  },
+  {
+   "addr": 42796,
+   "value": 0
+  },
+  {
+   "addr": 42797,
+   "value": 0
+  },
+  {
+   "addr": 42798,
+   "value": 1
+  },
+  {
+   "addr": 42799,
+   "value": 0
+  },
+  {
+   "addr": 42809,
+   "value": 1
+  },
+  {
+   "addr": 42817,
+   "value": 0
+  },
+  {
+   "addr": 42827,
+   "value": 1
+  },
+  {
+   "addr": 42820,
+   "value": 0
+  },
+  {
+   "addr": 42821,
+   "value": 0
+  },
+  {
+   "addr": 42822,
+   "value": 0
+  },
+  {
+   "addr": 42828,
+   "value": 0
+  },
+  {
+   "addr": 42823,
+   "value": 0
+  },
+  {
+   "addr": 42824,
+   "value": 0
+  },
+  {
+   "addr": 42829,
+   "value": 0
+  },
+  {
+   "addr": 42830,
+   "value": 0
+  },
+  {
+   "addr": 42831,
+   "value": 0
+  },
+  {
+   "addr": 42832,
+   "value": 0
+  },
+  {
+   "addr": 42833,
+   "value": 0
+  },
+  {
+   "addr": 42835,
+   "value": 1
+  },
+  {
+   "addr": 42834,
+   "value": 1
+  },
+  {
+   "addr": 42836,
+   "value": 1
+  },
+  {
+   "addr": 42837,
+   "value": 0
+  },
+  {
+   "addr": 42838,
+   "value": 0
+  },
+  {
+   "addr": 42839,
+   "value": 0
+  },
+  {
+   "addr": 42840,
+   "value": 1
+  },
+  {
+   "addr": 42841,
+   "value": 0
+  },
+  {
+   "addr": 42842,
+   "value": 0
+  },
+  {
+   "addr": 42843,
+   "value": 0
+  },
+  {
+   "addr": 42844,
+   "value": 0
+  },
+  {
+   "addr": 42846,
+   "value": 0
+  },
+  {
+   "addr": 42847,
+   "value": 0
+  },
+  {
+   "addr": 42848,
+   "value": 0
+  },
+  {
+   "addr": 42849,
+   "value": 0
+  },
+  {
+   "addr": 42850,
+   "value": 0
+  },
+  {
+   "addr": 42851,
+   "value": 1
+  },
+  {
+   "addr": 42852,
+   "value": 1
+  },
+  {
+   "addr": 42853,
+   "value": 0
+  },
+  {
+   "addr": 42854,
+   "value": 0
+  },
+  {
+   "addr": 42855,
+   "value": 0
+  },
+  {
+   "addr": 42856,
+   "value": 0
+  },
+  {
+   "addr": 42857,
+   "value": 0
+  },
+  {
+   "addr": 42858,
+   "value": 0
+  },
+  {
+   "addr": 42859,
+   "value": 0
+  },
+  {
+   "addr": 42860,
+   "value": 1
+  },
+  {
+   "addr": 42861,
+   "value": 0
+  },
+  {
+   "addr": 42867,
+   "value": 0
+  },
+  {
+   "addr": 42862,
+   "value": 1
+  },
+  {
+   "addr": 42863,
+   "value": 0
+  },
+  {
+   "addr": 42864,
+   "value": 0
+  },
+  {
+   "addr": 42865,
+   "value": 0
+  },
+  {
+   "addr": 42866,
+   "value": 0
+  },
+  {
+   "addr": 42868,
+   "value": 0
+  },
+  {
+   "addr": 42869,
+   "value": 0
+  },
+  {
+   "addr": 42870,
+   "value": 1
+  },
+  {
+   "addr": 42871,
+   "value": 0
+  },
+  {
+   "addr": 42872,
+   "value": 0
+  },
+  {
+   "addr": 42873,
+   "value": 0
+  },
+  {
+   "addr": 42874,
+   "value": 0
+  },
+  {
+   "addr": 42884,
+   "value": 0
+  },
+  {
+   "addr": 42876,
+   "value": 0
+  },
+  {
+   "addr": 42878,
+   "value": 1
+  },
+  {
+   "addr": 42879,
+   "value": 0
+  },
+  {
+   "addr": 42880,
+   "value": 0
+  },
+  {
+   "addr": 42881,
+   "value": 1
+  },
+  {
+   "addr": 42882,
+   "value": 0
+  },
+  {
+   "addr": 42883,
+   "value": 0
+  },
+  {
+   "addr": 42877,
+   "value": 0
+  },
+  {
+   "addr": 42885,
+   "value": 1
+  },
+  {
+   "addr": 42886,
+   "value": 1
+  },
+  {
+   "addr": 42887,
+   "value": 0
+  },
+  {
+   "addr": 42888,
+   "value": 1
+  },
+  {
+   "addr": 42889,
+   "value": 1
+  },
+  {
+   "addr": 42893,
+   "value": 0
+  },
+  {
+   "addr": 42896,
+   "value": 1
+  },
+  {
+   "addr": 42904,
+   "value": 1
+  },
+  {
+   "addr": 42905,
+   "value": 0
+  },
+  {
+   "addr": 42906,
+   "value": 0
+  },
+  {
+   "addr": 42907,
+   "value": 0
+  },
+  {
+   "addr": 42911,
+   "value": 0
+  },
+  {
+   "addr": 42913,
+   "value": 0
+  },
+  {
+   "addr": 42918,
+   "value": 3
+  },
+  {
+   "addr": 42919,
+   "value": 1
+  },
+  {
+   "addr": 42920,
+   "value": 0
+  },
+  {
+   "addr": 42923,
+   "value": 0
+  },
+  {
+   "addr": 42924,
+   "value": 0
+  },
+  {
+   "addr": 42925,
+   "value": 0
+  },
+  {
+   "addr": 42926,
+   "value": 0
+  },
+  {
+   "addr": 42928,
+   "value": 1
+  },
+  {
+   "addr": 42929,
+   "value": 2
+  },
+  {
+   "addr": 42930,
+   "value": 1
+  },
+  {
+   "addr": 42931,
+   "value": 0
+  },
+  {
+   "addr": 42932,
+   "value": 1
+  },
+  {
+   "addr": 42937,
+   "value": 0
+  },
+  {
+   "addr": 42935,
+   "value": 0
+  },
+  {
+   "addr": 42939,
+   "value": 0
+  },
+  {
+   "addr": 42940,
+   "value": 0
+  },
+  {
+   "addr": 42945,
+   "value": 0
+  },
+  {
+   "addr": 42946,
+   "value": 0
+  },
+  {
+   "addr": 42947,
+   "value": 0
+  },
+  {
+   "addr": 42948,
+   "value": 0
+  },
+  {
+   "addr": 42950,
+   "value": 0
+  },
+  {
+   "addr": 42951,
+   "value": 0
+  },
+  {
+   "addr": 42952,
+   "value": 1
+  },
+  {
+   "addr": 42954,
+   "value": 20
+  },
+  {
+   "addr": 42955,
+   "value": 0
+  },
+  {
+   "addr": 42956,
+   "value": 1
+  },
+  {
+   "addr": 42958,
+   "value": 30
+  },
+  {
+   "addr": 42959,
+   "value": 0
+  },
+  {
+   "addr": 42960,
+   "value": 1
+  },
+  {
+   "addr": 42961,
+   "value": 1
+  },
+  {
+   "addr": 42962,
+   "value": 0
+  },
+  {
+   "addr": 42963,
+   "value": 0
+  },
+  {
+   "addr": 42964,
+   "value": 0
+  },
+  {
+   "addr": 42965,
+   "value": 50
+  },
+  {
+   "addr": 42966,
+   "value": 1
+  },
+  {
+   "addr": 42967,
+   "value": 0
+  },
+  {
+   "addr": 42968,
+   "value": 40
+  },
+  {
+   "addr": 42970,
+   "value": 0
+  },
+  {
+   "addr": 42971,
+   "value": 0
+  },
+  {
+   "addr": 42972,
+   "value": 1
+  },
+  {
+   "addr": 42973,
+   "value": 1
+  },
+  {
+   "addr": 42974,
+   "value": 0
+  },
+  {
+   "addr": 42976,
+   "value": 0
+  },
+  {
+   "addr": 42977,
+   "value": 0
+  },
+  {
+   "addr": 42978,
+   "value": 0
+  },
+  {
+   "addr": 42979,
+   "value": 0
+  },
+  {
+   "addr": 42980,
+   "value": 0
+  },
+  {
+   "addr": 42933,
+   "value": 0
+  },
+  {
+   "addr": 42983,
+   "value": 0
+  },
+  {
+   "addr": 42981,
+   "value": 1
+  },
+  {
+   "addr": 42982,
+   "value": 1
+  },
+  {
+   "addr": 42984,
+   "value": 0
+  },
+  {
+   "addr": 42985,
+   "value": 0
+  },
+  {
+   "addr": 42986,
+   "value": 0
+  },
+  {
+   "addr": 42987,
+   "value": 0
+  },
+  {
+   "addr": 42988,
+   "value": 0
+  },
+  {
+   "addr": 42551,
+   "value": 0
+  },
+  {
+   "addr": 42554,
+   "value": 0
+  },
+  {
+   "addr": 42552,
+   "value": 0
+  },
+  {
+   "addr": 42553,
+   "value": 0
+  },
+  {
+   "addr": 42556,
+   "value": 0
+  },
+  {
+   "addr": 42557,
+   "value": 0
+  },
+  {
+   "addr": 42496,
+   "value": 0
+  },
+  {
+   "addr": 42564,
+   "value": 0
+  },
+  {
+   "addr": 42499,
+   "value": 1
+  },
+  {
+   "addr": 42502,
+   "value": 0
+  },
+  {
+   "addr": 42908,
+   "value": 0
+  },
+  {
+   "addr": 42909,
+   "value": 1
+  },
+  {
+   "addr": 42550,
+   "value": 1
+  },
+  {
+   "addr": 13188,
+   "value": 10
+  },
+  {
+   "addr": 13222,
+   "value": 1
+  },
+  {
+   "addr": 13224,
+   "value": 1
+  },
+  {
+   "addr": 13232,
+   "value": 22
+  },
+  {
+   "addr": 13236,
+   "value": 1
+  },
+  {
+   "addr": 13240,
+   "value": 1
+  },
+  {
+   "addr": 13242,
+   "value": 1
+  },
+  {
+   "addr": 13246,
+   "value": 1
+  },
+  {
+   "addr": 13262,
+   "value": 1
+  },
+  {
+   "addr": 13286,
+   "value": 1
+  },
+  {
+   "addr": 13308,
+   "value": 86
+  },
+  {
+   "addr": 13310,
+   "value": 104
+  }
+ ],
+ "room_effects": [
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42716,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6dc, 0)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    89,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 1, 89, 3)"
+  },
+  {
+   "args": [
+    14,
+    0,
+    8000,
+    64,
+    0,
+    86
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(14, 0, 8000, 64, 0, 86)"
+  },
+  {
+   "args": [
+    13,
+    0,
+    13000,
+    64,
+    0,
+    137
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(13, 0, 13000, 64, 0, 137)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42746,
+    42747
+   ],
+   "bias": 0,
+   "dyn_args": 2,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fa, flag:0xa6fb)"
+  },
+  {
+   "args": [
+    42749,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fd, 1)"
+  },
+  {
+   "args": [
+    3,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 3, 1, 0)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(6)"
+  },
+  {
+   "args": [
+    19
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42748,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(19)"
+  },
+  {
+   "args": [
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42748,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(20)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42721,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e1, 1)"
+  },
+  {
+   "args": [
+    4,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 2, 1, 0)"
+  },
+  {
+   "args": [
+    14
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(14)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42715,
+    42571
+   ],
+   "bias": 0,
+   "dyn_args": 2,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6db, flag:0xa64b)"
+  },
+  {
+   "args": [
+    42571
+   ],
+   "bias": 0,
+   "dyn_args": 1,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(flag:0xa64b)"
+  },
+  {
+   "args": [
+    8
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(8)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42719,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6df, 0)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42718,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 1, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42718,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 1, 0)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(10)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42718,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6de, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 1, 0)"
+  },
+  {
+   "args": [
+    8
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(8)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42720,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e0, 0)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    40,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 40, 3)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42721,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e1, 0)"
+  },
+  {
+   "args": [
+    4,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 1, 1, 0)"
+  },
+  {
+   "args": [
+    14
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(14)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42714,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6da, 1)"
+  },
+  {
+   "args": [
+    42715
+   ],
+   "bias": 0,
+   "dyn_args": 1,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(flag:0xa6db)"
+  },
+  {
+   "args": [
+    42715,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6db, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    9
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(9)"
+  },
+  {
+   "args": [
+    42713,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6d9, 0)"
+  },
+  {
+   "args": [
+    3,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42749,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 2, 1, 0)"
+  },
+  {
+   "args": [
+    3,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42749,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 3, 1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(10)"
+  },
+  {
+   "args": [
+    42713,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6d9, 1)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 1, 1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    11
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(11)"
+  },
+  {
+   "args": [
+    42749,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fd, 0)"
+  },
+  {
+   "args": [
+    42747,
+    42746
+   ],
+   "bias": 0,
+   "dyn_args": 2,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fb, flag:0xa6fa)"
+  },
+  {
+   "args": [
+    42746,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fa, 0)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(6)"
+  },
+  {
+   "args": [
+    3,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 2, 1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42717,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6dd, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    12,
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 12, 4)"
+  },
+  {
+   "args": [
+    42722,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e2, 1)"
+  },
+  {
+   "args": [
+    4,
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 12,
+   "shown": "inv_replace(4, 5)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42723,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa6e3, 1)"
+  },
+  {
+   "args": [
+    4,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 1, 1, 0)"
+  },
+  {
+   "args": [
+    19
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(19)"
+  },
+  {
+   "args": [
+    21
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 10,
+   "shown": "inv_add(21)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    40
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(40)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(6)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    6,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 6, 2)"
+  },
+  {
+   "args": [
+    42727,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e7, 0)"
+  },
+  {
+   "args": [
+    42726,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e6, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    2,
+    4,
+    4,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42726,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(2, 4, 4, 2)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42726,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 8,
+   "shown": "sound(5)"
+  },
+  {
+   "args": [
+    42727,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e7, 1)"
+  },
+  {
+   "args": [
+    42726,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e6, 1)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(13)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 43044,
+     "kind": 0,
+     "negate": true,
+     "value": 3
+    }
+   ],
+   "op": 8,
+   "shown": "sound(5)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 43044,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    }
+   ],
+   "op": 8,
+   "shown": "sound(6)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    6,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 1, 6, 2)"
+  },
+  {
+   "args": [
+    42725,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e5, 0)"
+  },
+  {
+   "args": [
+    3,
+    4,
+    4,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(3, 4, 4, 2)"
+  },
+  {
+   "args": [
+    42725,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e5, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    6,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 6, 2)"
+  },
+  {
+   "args": [
+    42726,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e6, 0)"
+  },
+  {
+   "args": [
+    2,
+    4,
+    4,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(2, 4, 4, 2)"
+  },
+  {
+   "args": [
+    42726,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e6, 1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    3,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 3, 2)"
+  },
+  {
+   "args": [
+    42724,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e4, 0)"
+  },
+  {
+   "args": [
+    1,
+    3,
+    3,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(1, 3, 3, 2)"
+  },
+  {
+   "args": [
+    42724,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e4, 1)"
+  },
+  {
+   "args": [
+    42741,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f5, 1)"
+  },
+  {
+   "args": [
+    2,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42572,
+     "kind": 0,
+     "negate": false,
+     "value": 24
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 3, 1, 0)"
+  },
+  {
+   "args": [
+    2,
+    2,
+    3,
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42572,
+     "kind": 0,
+     "negate": false,
+     "value": 23
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 2, 3, 10)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42572,
+     "kind": 0,
+     "negate": false,
+     "value": 23
+    }
+   ],
+   "op": 8,
+   "shown": "sound(6)"
+  },
+  {
+   "args": [
+    18
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(18)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42751,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ff, 0)"
+  },
+  {
+   "args": [
+    42750,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fe, 0)"
+  },
+  {
+   "args": [
+    3,
+    0,
+    7,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 0, 7, 1)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(6)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42751,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ff, 1)"
+  },
+  {
+   "args": [
+    25
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(25)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42745,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f9, 0)"
+  },
+  {
+   "args": [
+    0,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42744,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 2, 1, 0)"
+  },
+  {
+   "args": [
+    0,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42744,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 3, 1, 0)"
+  },
+  {
+   "args": [
+    42745,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f9, 1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42744,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f8, 0)"
+  },
+  {
+   "args": [
+    0,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 3, 1, 0)"
+  },
+  {
+   "args": [
+    17
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(17)"
+  },
+  {
+   "args": [
+    42740,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f4, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 1, 0)"
+  },
+  {
+   "args": [
+    7
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(7)"
+  },
+  {
+   "args": [
+    42742,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f6, 0)"
+  },
+  {
+   "args": [
+    2,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42741,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42741,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 3, 1, 0)"
+  },
+  {
+   "args": [
+    2,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42741,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 2, 1, 0)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(10)"
+  },
+  {
+   "args": [
+    42742,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f6, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    11
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(11)"
+  },
+  {
+   "args": [
+    42741,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f5, 0)"
+  },
+  {
+   "args": [
+    2,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 2, 1, 0)"
+  },
+  {
+   "args": [
+    18
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(18)"
+  },
+  {
+   "args": [
+    3,
+    0,
+    7,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 0, 7, 1)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(6)"
+  },
+  {
+   "args": [
+    42750,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fe, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    3,
+    6,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(3, 6, 6, 1)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(5)"
+  },
+  {
+   "args": [
+    42750,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6fe, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    13,
+    1,
+    10,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(13, 1, 10, 3)"
+  },
+  {
+   "args": [
+    42762,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa70a, 0)"
+  },
+  {
+   "args": [
+    42761,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa709, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(1)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    12,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 1, 12, 3)"
+  },
+  {
+   "args": [
+    42766,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa70e, 1)"
+  },
+  {
+   "args": [
+    42767,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa70f, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    81
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(81)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    30
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(30)"
+  },
+  {
+   "args": [
+    17
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(17)"
+  },
+  {
+   "args": [
+    9,
+    1,
+    14,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(9, 1, 14, 1)"
+  },
+  {
+   "args": [
+    4,
+    0,
+    27000,
+    64,
+    62,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(4, 0, 27000, 64, 62, 0)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    9000,
+    64,
+    62,
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(2, 0, 9000, 64, 62, 10)"
+  },
+  {
+   "args": [
+    42763,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa70b, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    7,
+    7,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(7, 7, 1)"
+  },
+  {
+   "args": [
+    3,
+    0,
+    15000,
+    64,
+    62,
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(3, 0, 15000, 64, 62, 6)"
+  },
+  {
+   "args": [
+    42761,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa709, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1,
+    7,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 7, 1)"
+  },
+  {
+   "args": [
+    42761,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa709, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(13)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6,
+    7,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42765,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 7, 1, 0)"
+  },
+  {
+   "args": [
+    2,
+    7,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42765,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 7, 1, 0)"
+  },
+  {
+   "args": [
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(20)"
+  },
+  {
+   "args": [
+    14
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(14)"
+  },
+  {
+   "args": [
+    42764,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa70c, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    7,
+    7,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42764,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 7, 1, 0)"
+  },
+  {
+   "args": [
+    2,
+    7,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42764,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 7, 1, 0)"
+  },
+  {
+   "args": [
+    19
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(19)"
+  },
+  {
+   "args": [
+    42765,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa70d, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    3,
+    13,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 13, 1, 0)"
+  },
+  {
+   "args": [
+    23
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(23)"
+  },
+  {
+   "args": [
+    42767,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa70f, 0)"
+  },
+  {
+   "args": [
+    9
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(9)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    10,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(10, 1, 1, 0)"
+  },
+  {
+   "args": [
+    8,
+    1,
+    9,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(8, 1, 9, 3)"
+  },
+  {
+   "args": [
+    5,
+    0,
+    11000,
+    64,
+    50,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(5, 0, 11000, 64, 50, 0)"
+  },
+  {
+   "args": [
+    6,
+    0,
+    5000,
+    64,
+    50,
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(6, 0, 5000, 64, 50, 20)"
+  },
+  {
+   "args": [
+    42760,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa708, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "queue_event()"
+  },
+  {
+   "args": [
+    42729,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa6e9, 1)"
+  },
+  {
+   "args": [
+    1,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 6, 1, 0)"
+  },
+  {
+   "args": [
+    3,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 6, 1, 0)"
+  },
+  {
+   "args": [
+    16
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 11,
+   "shown": "inv_remove(16)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(5)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42728,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42730,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ea, 1)"
+  },
+  {
+   "args": [
+    2,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 6, 1, 0)"
+  },
+  {
+   "args": [
+    3,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 6, 1, 0)"
+  },
+  {
+   "args": [
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(4)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 6, 1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 6, 1)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 6, 1)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 1, 6, 1)"
+  },
+  {
+   "args": [
+    42728,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e8, 0)"
+  },
+  {
+   "args": [
+    0,
+    6,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(0, 6, 6, 1)"
+  },
+  {
+   "args": [
+    1,
+    6,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(1, 6, 6, 1)"
+  },
+  {
+   "args": [
+    2,
+    6,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(2, 6, 6, 1)"
+  },
+  {
+   "args": [
+    3,
+    6,
+    6,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(3, 6, 6, 1)"
+  },
+  {
+   "args": [
+    42728,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e8, 1)"
+  },
+  {
+   "args": [
+    42729,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6e9, 0)"
+  },
+  {
+   "args": [
+    16
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(16)"
+  },
+  {
+   "args": [
+    42712,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6d8, 1)"
+  },
+  {
+   "args": [
+    0,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 6, 1, 0)"
+  },
+  {
+   "args": [
+    2,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42730,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 6, 1, 0)"
+  },
+  {
+   "args": [
+    42730,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ea, 0)"
+  },
+  {
+   "args": [
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(4)"
+  },
+  {
+   "args": [
+    0,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 6, 1, 0)"
+  },
+  {
+   "args": [
+    1,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42729,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 6, 1, 0)"
+  },
+  {
+   "args": [
+    42731,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6eb, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(1)"
+  },
+  {
+   "args": [
+    4,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 2, 1, 0)"
+  },
+  {
+   "args": [
+    42733,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ed, 0)"
+  },
+  {
+   "args": [
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(3)"
+  },
+  {
+   "args": [
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(3)"
+  },
+  {
+   "args": [
+    6,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 2, 1, 0)"
+  },
+  {
+   "args": [
+    13224,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33a8, 0)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(6)"
+  },
+  {
+   "args": [
+    7,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 2, 1, 0)"
+  },
+  {
+   "args": [
+    42785,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa721, 1)"
+  },
+  {
+   "args": [
+    25
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(25)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    7,
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 1, 7, 5)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    4,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 1, 1, 0)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(13)"
+  },
+  {
+   "args": [
+    42788,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa724, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    34
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(34)"
+  },
+  {
+   "args": [
+    42790,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa726, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42784,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa720, 0)"
+  },
+  {
+   "args": [
+    32
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(32)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 1, 0)"
+  },
+  {
+   "args": [
+    42785,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa721, 0)"
+  },
+  {
+   "args": [
+    25
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(25)"
+  },
+  {
+   "args": [
+    7,
+    7,
+    7,
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(7, 7, 7, 5)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "queue_event()"
+  },
+  {
+   "args": [
+    13232,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 14,
+   "shown": "add_flag(13232, 1)"
+  },
+  {
+   "args": [
+    42734,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ee, 1)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    8,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 8, 2)"
+  },
+  {
+   "args": [
+    8
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(8)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42736,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f0, 1)"
+  },
+  {
+   "args": [
+    42735,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ef, 0)"
+  },
+  {
+   "args": [
+    26
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(26)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    7,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 1, 7, 3)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    13,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 1, 13, 3)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42734,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6ee, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 1, 0)"
+  },
+  {
+   "args": [
+    8
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(8)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 2, 1, 0)"
+  },
+  {
+   "args": [
+    42736,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f0, 0)"
+  },
+  {
+   "args": [
+    42739,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa6f3, 1)"
+  },
+  {
+   "args": [
+    8,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(8, 1, 1, 0)"
+  },
+  {
+   "args": [
+    26
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(26)"
+  },
+  {
+   "args": [
+    42811,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 14,
+   "shown": "add_flag(42811, 1)"
+  },
+  {
+   "args": [
+    42812,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 14,
+   "shown": "add_flag(42812, 1)"
+  },
+  {
+   "args": [
+    42811,
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa73b, 10)"
+  },
+  {
+   "args": [
+    42811,
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa73b, 20)"
+  },
+  {
+   "args": [
+    42817,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa741, 1)"
+  },
+  {
+   "args": [
+    16
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(16)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "call 0166:01aa(1)"
+  },
+  {
+   "args": [
+    42301,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42771,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa53d, 0)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42771,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 1, 1, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    11,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42771,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(1, 1, 11, 2)"
+  },
+  {
+   "args": [
+    42771,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42771,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa713, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42771,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1,
+    11,
+    11,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42771,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(1, 11, 11, 2)"
+  },
+  {
+   "args": [
+    42771,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42771,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa713, 1)"
+  },
+  {
+   "args": [
+    21
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42737,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(21)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 43044,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42711,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "call 2567:184c(3)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 43044,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42711,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "queue_event()"
+  },
+  {
+   "args": [
+    15
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 43044,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    },
+    {
+     "addr": 42711,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(15)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42711,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "call 2567:184c(3)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42711,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "queue_event()"
+  },
+  {
+   "args": [
+    15
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42711,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(15)"
+  },
+  {
+   "args": [
+    13222,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33a6, 0)"
+  },
+  {
+   "args": [
+    11
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(11)"
+  },
+  {
+   "args": [
+    42852,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa764, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(3)"
+  },
+  {
+   "args": [
+    42853,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa765, 1)"
+  },
+  {
+   "args": [
+    42852,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa764, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(5)"
+  },
+  {
+   "args": [
+    0,
+    1,
+    8,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 1, 8, 3)"
+  },
+  {
+   "args": [
+    1,
+    0,
+    11000,
+    64,
+    65516,
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 9,
+   "shown": "play_sample(1, 0, 11000, 64, -20, 4)"
+  },
+  {
+   "args": [
+    42851,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa763, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42852,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(4)"
+  },
+  {
+   "args": [
+    0,
+    8,
+    8,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(0, 8, 8, 3)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    8000,
+    64,
+    65516,
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(2, 0, 8000, 64, -20, 20)"
+  },
+  {
+   "args": [
+    42851,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa763, 1)"
+  },
+  {
+   "args": [
+    42773,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa715, 1)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 1, 0)"
+  },
+  {
+   "args": [
+    25
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(25)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42777,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 8,
+   "shown": "sound(6)"
+  },
+  {
+   "args": [
+    42777,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa719, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42773,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa715, 0)"
+  },
+  {
+   "args": [
+    25
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(25)"
+  },
+  {
+   "args": [
+    1,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 3, 1, 0)"
+  },
+  {
+   "args": [
+    18
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42772,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(18)"
+  },
+  {
+   "args": [
+    42772,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa714, 1)"
+  },
+  {
+   "args": [
+    42777,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa719, 0)"
+  },
+  {
+   "args": [
+    1,
+    3,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42773,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 3, 1, 0)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42773,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 1, 0)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(10)"
+  },
+  {
+   "args": [
+    42777,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa719, 1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 1, 0)"
+  },
+  {
+   "args": [
+    11
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(11)"
+  },
+  {
+   "args": [
+    42774,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa716, 0)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    15
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(15)"
+  },
+  {
+   "args": [
+    12
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(12)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42778,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa71a, 0)"
+  },
+  {
+   "args": [
+    33
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(33)"
+  },
+  {
+   "args": [
+    7
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 16,
+   "shown": "music_play_slot(7)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    5,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 5, 2)"
+  },
+  {
+   "args": [
+    42304,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 1)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    5,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 1, 5, 2)"
+  },
+  {
+   "args": [
+    42305,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa541, 1)"
+  },
+  {
+   "args": [
+    8,
+    1,
+    2,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(8, 1, 2, 0)"
+  },
+  {
+   "args": [
+    13230,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33ae, 1)"
+  },
+  {
+   "args": [
+    13230,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33ae, 0)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42304,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa540, 0)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 1, 1, 0)"
+  },
+  {
+   "args": [
+    42305,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa541, 0)"
+  },
+  {
+   "args": [
+    8,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(8, 1, 1, 0)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(5)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 11,
+   "shown": "inv_remove(6)"
+  },
+  {
+   "args": [
+    42841,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa759, 1)"
+  },
+  {
+   "args": [
+    0,
+    6,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 6, 1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(13)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(10)"
+  },
+  {
+   "args": [
+    42840,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa758, 1)"
+  },
+  {
+   "args": [
+    3,
+    0,
+    9000,
+    64,
+    0,
+    7
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(3, 0, 9000, 64, 0, 7)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42841,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa759, 0)"
+  },
+  {
+   "args": [
+    42847,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa75f, 0)"
+  },
+  {
+   "args": [
+    0,
+    4,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 4, 1, 0)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 10,
+   "shown": "inv_add(6)"
+  },
+  {
+   "args": [
+    14
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(14)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    39,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 39, 2)"
+  },
+  {
+   "args": [
+    4,
+    0,
+    21400,
+    30,
+    65506,
+    41
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(4, 0, 21400, 30, -30, 41)"
+  },
+  {
+   "args": [
+    5,
+    0,
+    13000,
+    50,
+    65506,
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(5, 0, 13000, 50, -30, 20)"
+  },
+  {
+   "args": [
+    5,
+    3,
+    16,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 3, 16, 3)"
+  },
+  {
+   "args": [
+    42842,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa75a, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    5,
+    17,
+    16,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 7,
+   "shown": "anim_play_mode3(5, 17, 16, 3)"
+  },
+  {
+   "args": [
+    5,
+    0,
+    13000,
+    50,
+    65506,
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(5, 0, 13000, 50, -30, 20)"
+  },
+  {
+   "args": [
+    42842,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa75a, 0)"
+  },
+  {
+   "args": [
+    42847,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa75f, 0)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0c25:0025(37)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "queue_event()"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    15
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(15)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 1, 0)"
+  },
+  {
+   "args": [
+    7,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 2, 1, 0)"
+  },
+  {
+   "args": [
+    27
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(27)"
+  },
+  {
+   "args": [
+    42821,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa745, 1)"
+  },
+  {
+   "args": [
+    42822,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa746, 0)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(13)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    54
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(54)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    10,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(10, 1, 1, 0)"
+  },
+  {
+   "args": [
+    13235,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33b3, 1)"
+  },
+  {
+   "args": [
+    35
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(35)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    25
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 40,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(25)"
+  },
+  {
+   "args": [
+    13234,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 14,
+   "shown": "add_flag(13234, 1)"
+  },
+  {
+   "args": [
+    42793,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa729, 0)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 17a9:22ca(1)"
+  },
+  {
+   "args": [
+    56
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(56)"
+  },
+  {
+   "args": [
+    13236,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0x33b4, 0)"
+  },
+  {
+   "args": [
+    22
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 10,
+   "shown": "inv_add(22)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 22,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 1, 1, 0)"
+  },
+  {
+   "args": [
+    13236,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0x33b4, 0)"
+  },
+  {
+   "args": [
+    57
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(57)"
+  },
+  {
+   "args": [
+    21
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 11,
+   "shown": "inv_remove(21)"
+  },
+  {
+   "args": [
+    22
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 10,
+   "shown": "inv_add(22)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 21,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 6,
+   "shown": "anim_play_mode2(7, 1, 1, 0)"
+  },
+  {
+   "args": [
+    10,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 6,
+   "shown": "anim_play_mode2(10, 2, 1, 0)"
+  },
+  {
+   "args": [
+    35
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(35)"
+  },
+  {
+   "args": [
+    13235,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33b3, 0)"
+  },
+  {
+   "args": [
+    42856,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa768, 3)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0251:716e(0)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42856,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42855,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 0,
+   "shown": "call 0251:716e(7)"
+  },
+  {
+   "args": [
+    42856,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42855,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42854,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 33,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa768, 3)"
+  },
+  {
+   "args": [
+    42856,
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42855,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42854,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 33,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa768, 4)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42855,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42854,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 0,
+   "shown": "call 0251:716e(0)"
+  },
+  {
+   "args": [
+    42856,
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42854,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa768, 5)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42854,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "call 0251:716e(0)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(13)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(6)"
+  },
+  {
+   "args": [
+    42869,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa775, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42571,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42869,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa775, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42834,
+     "kind": 0,
+     "negate": true,
+     "value": 3
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    28
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42834,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(28)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42834,
+     "kind": 0,
+     "negate": false,
+     "value": 3
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    37
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(37)"
+  },
+  {
+   "args": [
+    42836,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa754, 0)"
+  },
+  {
+   "args": [
+    35
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(35)"
+  },
+  {
+   "args": [
+    1,
+    16,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 16, 1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    111
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 3,
+   "shown": "set_game_submode(111)"
+  },
+  {
+   "args": [
+    40
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42796,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(40)"
+  },
+  {
+   "args": [
+    39
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42796,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(39)"
+  },
+  {
+   "args": [
+    42796,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa72c, 1)"
+  },
+  {
+   "args": [
+    30
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 11,
+   "shown": "inv_remove(30)"
+  },
+  {
+   "args": [
+    42846,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa75e, 1)"
+  },
+  {
+   "args": [
+    4,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 2, 1, 0)"
+  },
+  {
+   "args": [
+    11
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42850,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(11)"
+  },
+  {
+   "args": [
+    42850,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa762, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    12
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(12)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42847,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(20)"
+  },
+  {
+   "args": [
+    5,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 2, 1, 0)"
+  },
+  {
+   "args": [
+    42849,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa761, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    8
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(8)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 1, 0)"
+  },
+  {
+   "args": [
+    7,
+    1,
+    21,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 1, 21, 1)"
+  },
+  {
+   "args": [
+    42305,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa541, 1)"
+  },
+  {
+   "args": [
+    42847,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa75f, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(1)"
+  },
+  {
+   "args": [
+    6,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 2, 1, 0)"
+  },
+  {
+   "args": [
+    7,
+    21,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(7, 21, 1, 0)"
+  },
+  {
+   "args": [
+    42305,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa541, 0)"
+  },
+  {
+   "args": [
+    42847,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa75f, 0)"
+  },
+  {
+   "args": [
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(2)"
+  },
+  {
+   "args": [
+    4,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 1, 1, 0)"
+  },
+  {
+   "args": [
+    30
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(30)"
+  },
+  {
+   "args": [
+    42846,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa75e, 0)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 1, 1, 0)"
+  },
+  {
+   "args": [
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(20)"
+  },
+  {
+   "args": [
+    42849,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa761, 0)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(10)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42842,
+     "kind": 0,
+     "negate": true,
+     "value": 0
+    },
+    {
+     "addr": 42841,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    21,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 21, 3)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    10000,
+    64,
+    45,
+    27
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(2, 0, 10000, 64, 45, 27)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    21,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 21, 3)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    9500,
+    64,
+    45,
+    38
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(2, 0, 9500, 64, 45, 38)"
+  },
+  {
+   "args": [
+    111
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 3,
+   "shown": "set_game_submode(111)"
+  },
+  {
+   "args": [
+    111
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 3,
+   "shown": "set_game_submode(111)"
+  },
+  {
+   "args": [
+    42795,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa72b, 0)"
+  },
+  {
+   "args": [
+    42795,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42796,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42797,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa72b, 1)"
+  },
+  {
+   "args": [
+    42795,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42796,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa72b, 2)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0251:716e(flag:0xa72b)"
+  },
+  {
+   "args": [
+    42794,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa72a, 1)"
+  },
+  {
+   "args": [
+    42797,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa72d, 1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0c25:0025(60)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42865,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42865,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "call 0c25:0281(0, 61, 2, 131, 58, 45, 45, 63, 87, 57, 63, 63, 63)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42865,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 0,
+   "shown": "call 0c25:0281(0, 63, 4, 131, 58, 45, 45, 63, 87, 57, 63, 63, 63)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42865,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 14,
+   "shown": "add_flag(42865, 1)"
+  },
+  {
+   "args": [
+    29
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(29)"
+  },
+  {
+   "args": [
+    42870,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa776, 0)"
+  },
+  {
+   "args": [
+    0,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(0, 2, 1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 8,
+   "shown": "sound(1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    29,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42871,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 29, 2)"
+  },
+  {
+   "args": [
+    42871,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42871,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa777, 1)"
+  },
+  {
+   "args": [
+    42873,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42871,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa779, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42871,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6,
+    29,
+    29,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42871,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(6, 29, 29, 2)"
+  },
+  {
+   "args": [
+    42871,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42871,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa777, 0)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    42,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 42, 3)"
+  },
+  {
+   "args": [
+    42872,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa778, 1)"
+  },
+  {
+   "args": [
+    13247,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0x33bf, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 11f3:0577(8)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 11f3:0577(7)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0251:716e(0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 11f3:0577(9)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0251:716e(0)"
+  },
+  {
+   "args": [
+    24
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(24)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(0)"
+  },
+  {
+   "args": [
+    8,
+    1,
+    4,
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42881,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(8, 1, 4, 6)"
+  },
+  {
+   "args": [
+    42881,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42881,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa781, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42881,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    8,
+    4,
+    4,
+    6
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42881,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 7,
+   "shown": "anim_play_mode3(8, 4, 4, 6)"
+  },
+  {
+   "args": [
+    42881,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42881,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa781, 1)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": true,
+     "value": 1
+    },
+    {
+     "addr": 42879,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(10)"
+  },
+  {
+   "args": [
+    42878,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa77e, 0)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    39
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(39)"
+  },
+  {
+   "args": [
+    9
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(9)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42888,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa788, 0)"
+  },
+  {
+   "args": [
+    38
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(38)"
+  },
+  {
+   "args": [
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(2)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    8
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(8)"
+  },
+  {
+   "args": [
+    42896,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa790, 0)"
+  },
+  {
+   "args": [
+    38
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 11,
+   "shown": "inv_remove(38)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    5,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 5, 2)"
+  },
+  {
+   "args": [
+    3,
+    0,
+    11000,
+    60,
+    65496,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 9,
+   "shown": "play_sample(3, 0, 11000, 60, -40, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(0)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    12000,
+    64,
+    20,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 9,
+   "shown": "play_sample(2, 0, 12000, 64, 20, 1)"
+  },
+  {
+   "args": [
+    4,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 1, 1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42904,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa798, 0)"
+  },
+  {
+   "args": [
+    1,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 2, 1, 0)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(5)"
+  },
+  {
+   "args": [
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(0)"
+  },
+  {
+   "args": [
+    42905,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42905,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa799, 1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42905,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42905,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42905,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa799, 0)"
+  },
+  {
+   "args": [
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(3)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42889,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(13)"
+  },
+  {
+   "args": [
+    42889,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42889,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa789, 0)"
+  },
+  {
+   "args": [
+    1,
+    1,
+    28,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42889,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(1, 1, 28, 2)"
+  },
+  {
+   "args": [
+    2,
+    0,
+    10000,
+    64,
+    30,
+    23
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42889,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 9,
+   "shown": "play_sample(2, 0, 10000, 64, 30, 23)"
+  },
+  {
+   "args": [
+    7
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42904,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(7)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    5
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42924,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(5)"
+  },
+  {
+   "args": [
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42924,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(3)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    13
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(13)"
+  },
+  {
+   "args": [
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(0)"
+  },
+  {
+   "args": [
+    4,
+    1,
+    10,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42969,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(4, 1, 10, 1)"
+  },
+  {
+   "args": [
+    1,
+    0,
+    11000,
+    55,
+    50,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42969,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 9,
+   "shown": "play_sample(1, 0, 11000, 55, 50, 1)"
+  },
+  {
+   "args": [
+    42969,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42969,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7d9, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42969,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    10
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42969,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(10)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42968,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42967,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 14,
+   "shown": "add_flag(42968, 1)"
+  },
+  {
+   "args": [
+    42968,
+    40
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42967,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7d8, 40)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0251:716e(0)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 17a9:2163(1)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "call 0ae2:081a(flag:0xa7d5, 173, 72)"
+  },
+  {
+   "args": [
+    42965,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 14,
+   "shown": "add_flag(42965, 1)"
+  },
+  {
+   "args": [
+    42965,
+    50
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7d5, 50)"
+  },
+  {
+   "args": [
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(20)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    20
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(20)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    51
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(51)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    31
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(31)"
+  },
+  {
+   "args": [
+    42976,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7e0, 0)"
+  },
+  {
+   "args": [
+    2,
+    1,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 1, 1, 0)"
+  },
+  {
+   "args": [
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(0)"
+  },
+  {
+   "args": [
+    45
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 45,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 10,
+   "shown": "inv_add(45)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 45,
+     "kind": 1,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    45,
+    46
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 45,
+     "kind": 1,
+     "negate": false,
+     "value": 1
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 12,
+   "shown": "inv_replace(45, 46)"
+  },
+  {
+   "args": [],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 0,
+   "shown": "queue_event()"
+  },
+  {
+   "args": [
+    48
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(48)"
+  },
+  {
+   "args": [
+    42971,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7db, 0)"
+  },
+  {
+   "args": [
+    42306,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa542, 0)"
+  },
+  {
+   "args": [
+    8,
+    5,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(8, 5, 1, 0)"
+  },
+  {
+   "args": [
+    42919,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7a7, 0)"
+  },
+  {
+   "args": [
+    2,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(2, 2, 1, 0)"
+  },
+  {
+   "args": [
+    41
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 10,
+   "shown": "inv_add(41)"
+  },
+  {
+   "args": [
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(0)"
+  },
+  {
+   "args": [
+    3,
+    1,
+    22,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42938,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(3, 1, 22, 1)"
+  },
+  {
+   "args": [
+    1,
+    0,
+    11000,
+    55,
+    50,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42938,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 9,
+   "shown": "play_sample(1, 0, 11000, 55, 50, 1)"
+  },
+  {
+   "args": [
+    42938,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42938,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7ba, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42938,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    52
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42938,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    },
+    {
+     "addr": 42498,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(52)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    86
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(86)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    5,
+    1,
+    6,
+    4
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(5, 1, 6, 4)"
+  },
+  {
+   "args": [
+    42923,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7ab, 1)"
+  },
+  {
+   "args": [
+    87
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(87)"
+  },
+  {
+   "args": [
+    42924,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7ac, 1)"
+  },
+  {
+   "args": [
+    42944,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42929,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7c0, 3)"
+  },
+  {
+   "args": [
+    42941,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42929,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7bd, 0)"
+  },
+  {
+   "args": [
+    42944,
+    2
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42929,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7c0, 2)"
+  },
+  {
+   "args": [
+    42941,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42929,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7bd, 0)"
+  },
+  {
+   "args": [
+    42941,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42929,
+     "kind": 0,
+     "negate": false,
+     "value": 2
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7bd, 0)"
+  },
+  {
+   "args": [
+    42933,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7b5, 1)"
+  },
+  {
+   "args": [
+    42937,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7b9, 0)"
+  },
+  {
+   "args": [
+    6,
+    2,
+    1,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 2, 1, 0)"
+  },
+  {
+   "args": [
+    7
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 4,
+   "shown": "queue_event(7)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    15
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42961,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 4,
+   "shown": "queue_event(15)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42961,
+     "kind": 0,
+     "negate": false,
+     "value": 0
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    6,
+    1,
+    22,
+    3
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42961,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 5,
+   "shown": "anim_play_mode1(6, 1, 22, 3)"
+  },
+  {
+   "args": [
+    42961,
+    0
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42961,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 1,
+   "shown": "set_flag(0xa7d1, 0)"
+  },
+  {
+   "args": [
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [
+    {
+     "addr": 42961,
+     "kind": 0,
+     "negate": false,
+     "value": 1
+    }
+   ],
+   "op": 2,
+   "shown": "set_action_handled(1)"
+  },
+  {
+   "args": [
+    42963,
+    1
+   ],
+   "bias": 0,
+   "dyn_args": 0,
+   "guards": [],
+   "op": 1,
+   "shown": "set_flag(0xa7d3, 1)"
+  }
+ ],
+ "rooms": [
+  {
+   "count": 14,
+   "first": 0,
+   "label": "Room 3 - Uncle's Lab",
+   "room": 3
+  },
+  {
+   "count": 19,
+   "first": 14,
+   "label": "Room 6 - Upstairs Landing",
+   "room": 6
+  },
+  {
+   "count": 13,
+   "first": 33,
+   "label": "Room 7 - Bedroom",
+   "room": 7
+  },
+  {
+   "count": 13,
+   "first": 46,
+   "label": "Room 8 - Library",
+   "room": 8
+  },
+  {
+   "count": 9,
+   "first": 59,
+   "label": "Room 10 - Kitchen",
+   "room": 10
+  },
+  {
+   "count": 6,
+   "first": 68,
+   "label": "Room 11 - Living Room",
+   "room": 11
+  },
+  {
+   "count": 4,
+   "first": 74,
+   "label": "Room 13 - Basement",
+   "room": 13
+  },
+  {
+   "count": 2,
+   "first": 78,
+   "label": "Room 14 - Path Overlooking the Mansion",
+   "room": 14
+  },
+  {
+   "count": 5,
+   "first": 80,
+   "label": "Room 15 - Entrance Hall (Sali)",
+   "room": 15
+  },
+  {
+   "count": 4,
+   "first": 85,
+   "label": "Room 17 - Observatory Entrance",
+   "room": 17
+  },
+  {
+   "count": 8,
+   "first": 89,
+   "label": "Room 18 - Ben's Room",
+   "room": 18
+  },
+  {
+   "count": 7,
+   "first": 97,
+   "label": "Room 19 - Observatory Interior",
+   "room": 19
+  },
+  {
+   "count": 5,
+   "first": 104,
+   "label": "Room 21 - Yodle's Tree Hut (Outside)",
+   "room": 21
+  },
+  {
+   "count": 10,
+   "first": 109,
+   "label": "Room 22 - Park / Teleport",
+   "room": 22
+  },
+  {
+   "count": 2,
+   "first": 119,
+   "label": "Room 23 - Crossroads",
+   "room": 23
+  },
+  {
+   "count": 4,
+   "first": 121,
+   "label": "Room 25 - Sluggs' House / Mailbox",
+   "room": 25
+  },
+  {
+   "count": 5,
+   "first": 125,
+   "label": "Room 26 - Yodle's Hut (Inside)",
+   "room": 26
+  },
+  {
+   "count": 11,
+   "first": 130,
+   "label": "Room 28 - Telescope Room",
+   "room": 28
+  },
+  {
+   "count": 3,
+   "first": 141,
+   "label": "Room 32 - Cemetery",
+   "room": 32
+  },
+  {
+   "count": 2,
+   "first": 144,
+   "label": "Room 34 - Hippie / Pal Area",
+   "room": 34
+  },
+  {
+   "count": 5,
+   "first": 146,
+   "label": "Room 35 - Sewer",
+   "room": 35
+  },
+  {
+   "count": 3,
+   "first": 151,
+   "label": "Room 40 - Cave Entrance",
+   "room": 40
+  },
+  {
+   "count": 5,
+   "first": 154,
+   "label": "Room 41 - Shore / Underwater Entry",
+   "room": 41
+  },
+  {
+   "count": 1,
+   "first": 159,
+   "label": "Rooms 43/44/45 - Maze + Crystal Entry",
+   "room": 43
+  },
+  {
+   "count": 1,
+   "first": 159,
+   "label": "Rooms 43/44/45 - Maze + Crystal Entry",
+   "room": 44
+  },
+  {
+   "count": 1,
+   "first": 159,
+   "label": "Rooms 43/44/45 - Maze + Crystal Entry",
+   "room": 45
+  },
+  {
+   "count": 2,
+   "first": 160,
+   "label": "Room 46 - Diving Area / Underwater",
+   "room": 46
+  },
+  {
+   "count": 1,
+   "first": 162,
+   "label": "Room 48 - Cavern Pool",
+   "room": 48
+  },
+  {
+   "count": 2,
+   "first": 163,
+   "label": "Room 49 - Engine Room",
+   "room": 49
+  },
+  {
+   "count": 2,
+   "first": 165,
+   "label": "Room 50 - Steam Room",
+   "room": 50
+  },
+  {
+   "count": 7,
+   "first": 167,
+   "label": "Rooms 53/57 - Hallways",
+   "room": 53
+  },
+  {
+   "count": 7,
+   "first": 174,
+   "label": "Room 54 - Waiting Room",
+   "room": 54
+  },
+  {
+   "count": 1,
+   "first": 181,
+   "label": "Room 56 - Transporter Chamber",
+   "room": 56
+  },
+  {
+   "count": 7,
+   "first": 167,
+   "label": "Rooms 53/57 - Hallways",
+   "room": 57
+  },
+  {
+   "count": 10,
+   "first": 182,
+   "label": "Room 58 - Jail",
+   "room": 58
+  },
+  {
+   "count": 4,
+   "first": 192,
+   "label": "Room 59 - Escape Pod",
+   "room": 59
+  }
+ ]
+}

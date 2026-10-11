@@ -7,6 +7,10 @@ This file contains game resource data used by the Access engine.
 achievements.dat:
 This file contains Achievements and Statistics IDs and localization from Steam and GOG.
 
+alien.dat:
+This file contains the cutscene and room script tables used by the Alien
+Incident engine. To generate it, use devtools/create_alien/create_alien.py.
+
 bagel.dat:
 This file contains essential game data used by the BAGEL engine.
 

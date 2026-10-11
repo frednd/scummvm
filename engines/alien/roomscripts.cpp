@@ -1,0 +1,61 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+// The room scripts: the guarded bodies every room runs on a click, the
+// effects they run, and the state a new game starts in. That is the gating
+// layer -- which flags have to hold before a door opens or an item can be
+// taken. The script data is stored in the data pack (ALIEN.DAT), and what
+// is here is the reader the engine uses.
+
+#include "alien/pack.h"
+#include "alien/roomscripts.h"
+
+namespace Alien {
+
+static const AlienPack *g_pack = nullptr;
+
+void setRoomScriptPack(const AlienPack *pack) {
+	g_pack = pack;
+}
+
+bool roomScriptsLoaded() {
+	return g_pack && g_pack->hasRoomScripts();
+}
+
+const ScriptBlock *scriptForRoom(int room, uint &count) {
+	count = 0;
+	if (!g_pack)
+		return nullptr;
+	return g_pack->blocksForRoom(room, count);
+}
+
+const ScriptEffect *scriptEffect(uint index) {
+	if (!g_pack || index >= g_pack->roomEffects().size())
+		return nullptr;
+	return &g_pack->roomEffects()[index];
+}
+
+const ScriptFlagInit *initialFlags(uint &count) {
+	count = g_pack ? g_pack->flags().size() : 0;
+	return count ? &g_pack->flags()[0] : nullptr;
+}
+
+} // End of namespace Alien

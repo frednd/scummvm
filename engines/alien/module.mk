@@ -2,10 +2,13 @@ MODULE := engines/alien
 
 MODULE_OBJS = \
 	animfont.o \
+	cutscenes.o \
 	dl1.o \
 	font.o \
 	overlay.o \
+	pack.o \
 	resources.o \
+	roomscripts.o \
 	s3m.o \
 	sfx.o \
 	tables.o \

@@ -1,0 +1,193 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef ALIEN_ROOMSCRIPTS_H
+#define ALIEN_ROOMSCRIPTS_H
+
+#include "common/scummsys.h"
+#include "common/util.h"
+
+namespace Alien {
+
+/**
+ * What a room does with a click on its own account.
+ *
+ * A click resolves into an (object, verb) pair and an outcome code. The code
+ * drives the dialog, and is handled by the generic path shared by every room
+ * (see TalFile and AlienEngine::queueOutcome). Everything else a click does --
+ * opening a door, taking an object off the wall, arming a puzzle flag -- lives
+ * in the room's own overlay, as a chain of guarded bodies that the overlay
+ * walks after the generic path has run.
+ *
+ * The original stores those bodies as code, decoded into these tables.
+ * The blocks of a room are in the overlay's own order, and the interpreter
+ * runs the first one whose object, verb, held item and preconditions all match,
+ * which is how the original behaves once a body sets action_handled.
+ *
+ * Bodies that could not be fully recovered carry kOpUnsupported, and so do
+ * effects whose arguments were lost to a register: an effect that cannot be run
+ * with the original arguments is not run at all, rather than run with
+ * guesses. One shape of register argument is recoverable: a read
+ * that re-reads a byte inside the state block (see RoomScript::_flags).
+ * Such an argument is known at run time even though it was not an
+ * immediate, and is marked in ScriptEffect::dynArgs rather than dropped.
+ */
+enum ScriptOpcode {
+	kOpUnsupported = 0,	///< recovered as code, not as arguments; skipped
+	kOpSetFlag,			///< args: state address (0xa6xx/0xa7xx), value
+	kOpActionHandled,	///< args: value of [0xa602]
+	kOpSubmode,			///< args: value of game_submode [0xa87e]
+	kOpQueueEvent,		///< args: outcome code -> the TAL dialog chain
+	kOpAnimPlay1,		///< args: slot, first frame, frame count, rate
+	kOpAnimPlay2,		///< as mode 1, then back to the frame it started on
+	kOpAnimPlay3,		///< as mode 1, but backward through the count
+	kOpSound,			///< args: sample -- INPUT:0x194, centred, full, 11000 Hz
+	kOpPlaySample,		///< args: sample, rate high, rate low, volume, panning
+						///< (signed), delay in ticks -- INPUT:0x55E, the queue
+	kOpInvAdd,			///< args: item id -- OBJ:0x69d5, append to the inventory
+	kOpInvRemove,		///< args: item id -- OBJ:0x6a71, close the gap behind it
+	kOpInvReplace,		///< args: old item, new item -- OBJ:0x6a28, which scans the
+						///< same list for the first and writes the second over it where
+						///< it stands, so the item keeps its slot in the bar
+	kOpInvHas,			///< args: item id -- OBJ:0x6add; a test, and its answer went
+						///< into a register the decoder could not follow
+	kOpAddFlag,			///< args: state address, how much to add -- an `inc` in place
+	kOpCharPlace,		///< args: x high, x low, y high, y low, facing -- CHARANIM:0x4e,
+						///< in the order the original pushes them: the two
+						///< coordinates are longs, and their high words are always
+						///< zero. Where a room stands the character as it opens.
+	kOpMusic,			///< args: music slot -- INPUT:0x53c, which resolves the slot
+						///< into a module and a starting order of its own
+						///<
+						///< A room's `cutscene_trigger` calls are deliberately not
+						///< an opcode: they are lifted into a table of their own
+						///< (see cutscenes.h) because a scene plays over the room
+						///< rather than as one of its opening effects.
+
+	// MIDAS has five more play routines, and they take the same first four
+	// arguments as the three above. Modes 4 and 5 are 1 and 3 without the flag
+	// that bakes the finished animation into the background page, so what they
+	// play is taken away again when the range runs out. Modes 6, 7 and 8 push
+	// two words more, a far pointer to a *frame list*: they step a cursor into
+	// it and draw the byte they find, so the first argument is that cursor and
+	// the third is how long the list is. A fifth argument carries where the
+	// list starts in the pool the effect's table keeps (cutscenes.h for the
+	// scenes, roominit.h for a room's opening).
+	kOpAnimPlay4,		///< as mode 1, but not left behind when it ends
+	kOpAnimPlay5,		///< as mode 3, but not left behind when it ends
+	kOpAnimPlay6,		///< as mode 1, over a frame list
+	kOpAnimPlay7,		///< as mode 4, over a frame list
+	kOpAnimPlay8		///< as mode 2, over a frame list
+};
+
+/**
+ * What a guard reads.
+ *
+ * Nearly every one is a byte of the state block, which is a plain load. The
+ * exception is the inventory: the original asks OBJ:0x6add whether an item is
+ * carried and branches on the answer in AL, so the address field holds an item
+ * id rather than an address. Room 3's cutscene trigger is the case that forced
+ * this -- it plays only while Ben is holding item 14.
+ */
+enum ScriptCondKind {
+	kCondFlag = 0,		///< [addr] == value, in the state or the latch block
+	kCondItem,			///< inv_has(addr) == value, a call rather than a load
+	kCondAbove,			///< [addr] > value, reading [addr] as a word: the one
+						///< ordering guard in the vocabulary (`cmp` / `jbe`),
+						///< and the only shape that is not an equality. A
+						///< cutscene procedure uses it to wait on the scene
+						///< clock, which counts past 255, so the byte the
+						///< equality guards read would not do
+	kCondAboveByte		///< the same test on a byte: a room's enter routine
+						///< wraps a visit counter with `cmp byte` / `jbe`
+						///< (room 31's [0xa730], ovr_1f_0e87:0x041b)
+};
+
+/** One byte of the state block as a new game leaves it. */
+struct ScriptFlagInit {
+	uint16 addr;
+	byte value;
+};
+
+/** One `[address] == value` guard, as the overlay's `cmp`/`jne` pair. */
+struct ScriptCond {
+	uint16 addr;		///< a state address, or an item id when kind is kCondItem
+	byte value;
+	bool negate;
+	byte kind;			///< a ScriptCondKind; zero, and so a flag test, by default
+};
+
+/** One effect, with the branch arms it sits under inside its body. */
+struct ScriptEffect {
+	byte op;
+	byte argCount;
+	uint16 args[6];		///< flag addresses reach 0xa7ff, so these are unsigned
+	byte dynArgs;		///< bit i set: args[i] is a state address, read at run time
+	byte bias;			///< added to that byte once it is read: three call sites turn
+						///< a counter into an outcome code, and no effect has more
+						///< than one dynamic argument for it to be ambiguous about
+	byte guardCount;
+	ScriptCond guards[3];
+};
+
+/** One guarded body: an (object, verb, item) key in a given puzzle state. */
+struct ScriptBlock {
+	int16 obj;			///< -1 = any object
+	int16 verb;			///< -1 = any verb
+	int16 item;			///< -1 = any; otherwise the item being used on the object
+	byte condCount;
+	ScriptCond conds[4];
+	uint16 first;		///< first effect
+	uint16 count;
+};
+
+class AlienPack;
+
+/**
+ * Where these tables come from.
+ *
+ * They are read out of ALIEN.DAT. The engine hands the pack over once, as it starts.
+ */
+void setRoomScriptPack(const AlienPack *pack);
+
+/** Whether the pack that was handed over actually carries the scripts. */
+bool roomScriptsLoaded();
+
+/**
+ * A room's script blocks in overlay order, or null with a count of zero for a
+ * room whose overlay has no (object, verb) code at all -- seven rooms leave
+ * every click to the generic outcome path.
+ */
+const ScriptBlock *scriptForRoom(int room, uint &count);
+
+/** One effect out of the shared pool ScriptBlock::first indexes. */
+const ScriptEffect *scriptEffect(uint index);
+
+/**
+ * The state a new game starts in, in the order MAIN writes it: which doors are
+ * shut, which objects are still in place. The state block is uninitialised data
+ * in the original, so without this every flag would start at zero.
+ */
+const ScriptFlagInit *initialFlags(uint &count);
+
+} // End of namespace Alien
+
+#endif
