@@ -754,12 +754,9 @@ void AlienEngine::finishAction() {
 		_useLastObj = spot.obj;
 	}
 
-	// One room's arms have to be read *before* its body, because one of them is
-	// guarded on a flag the body sets (lab.cpp).
-	armLab(spot.obj, item != Inventory::kNoItem);
-
-	// And the rooms' own (rooms/): room 8's safe, which is armed the same way
-	// and for the same reason.
+	// The rooms' arms that have to be read *before* the body, because they are
+	// guarded on a flag the body sets: room 3's (lab.cpp) and room 8's safe
+	// (library.cpp).
 	for (Room *r : _rooms)
 		r->preAction(spot.obj, verb, item);
 

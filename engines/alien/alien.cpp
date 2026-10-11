@@ -140,8 +140,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_speech(false), _speechTicks(0), _speechX(kAnchorX), _speechY(kAnchorY),
 		_dirty(true), _quit(false), _cutscene(false), _cutsceneFast(false),
 		_endingStep(0), _endingPos(0), _endingLoop(false),
-		_openingStep(0), _openingPending(true),
-		_labStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
+		_openingStep(0), _openingPending(true), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
@@ -608,10 +607,6 @@ void AlienEngine::stepClock() {
 		// finer of the two.
 		stepRoomClock();
 
-		// And room 35's own machine, which is the water it starts full of and
-		// the hatch that ends it (sewer.cpp).
-		stepLab();
-
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
 			r->tickPair();
@@ -696,7 +691,7 @@ void AlienEngine::stepClock() {
 	// it back at the step that ends the machine, and the dialog unit holds
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
-	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !roomHoldsCharacter() && !_labStep &&
+	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !roomHoldsCharacter() &&
 						!_endingStep && !_openingStep &&
 						!dlgreqRunning());
 

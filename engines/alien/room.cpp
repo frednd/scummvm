@@ -261,9 +261,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// Rooms 8, 14 and 18 zero their clock as the overlay opens, so a room
 	// re-entered starts counting again (roomtick.cpp).
 	resetRoomClock(room);
-	_labStep = 0;
-	_labPos = 0;
-	_labNearHole = false;
 	for (Room *r : _rooms)
 		r->reset();
 	_chatPickNew = false;

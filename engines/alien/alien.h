@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class LabRoom;
 	friend class BedroomRoom;
 	friend class MansionRoom;
 	friend class LiftRoom;
@@ -371,9 +372,6 @@ private:
 	uint16 stateWord(uint16 addr) const;
 	void setStateWord(uint16 addr, uint16 value);
 	void resetRoomClock(int room);
-	void armLab(int obj, bool item);
-	void stepLab();
-	void stepLabHole();
 
 	void stepHallway();
 	void playPeephole();
@@ -753,20 +751,8 @@ private:
 	byte _openingStep;
 	bool _openingPending;
 
-	/// Room 3's [0xa49f] machine, less the opening the two steps in opening.cpp
-	/// carry (lab.cpp). Zero when nothing is running.
-	byte _labStep;
-
 	byte _stairsDescents;		///< trips down from room 28, for the port's own fall (saved)
 	bool _restoring;			///< syncGame is reloading the room, not an entry through a door
-
-	/// [0xa49c] as room 3 keeps it: a free-running counter its tick advances on
-	/// every tick pair, which two of that room's steps time themselves off.
-	uint16 _labPos;
-
-	/// [0xa7a4]/[0xa7a5]: whether the character stood inside room 3's creak
-	/// rectangle on the last tick, which is the edge the two samples fire on.
-	bool _labNearHole;
 
 	/// [0xa94d]: whether the character is drawn at all. Every room's tick tests
 	/// it before calling OBJ:sub_06466, and a room clears it while it plays the

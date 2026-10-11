@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/lab.h"
 
 namespace Alien {
 
@@ -100,6 +101,10 @@ static const uint kHoleSample = 14;
 static const uint32 kHoleEnterRate = 0xfa0, kHoleLeaveRate = 0x125c;
 static const byte kHoleVolume = 0x32;
 
+LabRoom::LabRoom(AlienEngine *vm) : Room(vm),
+		_labStep(0), _labPos(0), _labNearHole(false) {
+}
+
 /**
  * A click body is about to run: start the machine if it is one of these four.
  *
@@ -109,8 +114,8 @@ static const byte kHoleVolume = 0x32;
  * animation plays belong to the body, and the state is not looked at until the
  * next tick either way.
  */
-void AlienEngine::armLab(int obj, bool item) {
-	if (_room != kLabRoom)
+void LabRoom::armLab(int obj, bool item) {
+	if (_vm->_room != kLabRoom)
 		return;
 
 	// The two sections of the room's click dispatch: [0xa956] == 0x4e22 is the
@@ -123,13 +128,13 @@ void AlienEngine::armLab(int obj, bool item) {
 		// the hole alone, no Ben -- mode 1 runs them out and leaves the last,
 		// the key lying in the hole, in the plate. Taking the slot down there
 		// dropped it, and the boarded-up plank stayed on screen (#20).
-		hideCharacter();
+		_vm->hideCharacter();
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "lab: the plank comes off, step %d", kStepPlank);
 		return;
 	}
 
-	if (item && obj == kLabTerminal && _script.flag(kTerminalUsed) == 0) {
+	if (item && obj == kLabTerminal && _vm->_script.flag(kTerminalUsed) == 0) {
 		_labStep = kStepTerminal;
 		_labPos = 0;
 		CursorMan.showMouse(false);
@@ -140,15 +145,15 @@ void AlienEngine::armLab(int obj, bool item) {
 	if (!item && obj == kLabKey) {
 		_labStep = kStepKey;
 		// Likewise: LAB_TKEY 39/40 are the emptied hole, which has to bake.
-		hideCharacter();
+		_vm->hideCharacter();
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "lab: the key, step 0x%02x", kStepKey);
 		return;
 	}
 }
 
-void AlienEngine::stepLab() {
-	if (_room != kLabRoom)
+void LabRoom::stepLab() {
+	if (_vm->_room != kLabRoom)
 		return;
 
 	// ovr_03_0e57:0x0c09, which the room does whether or not anything is
@@ -157,9 +162,9 @@ void AlienEngine::stepLab() {
 
 	switch (_labStep) {
 	case kStepPlank:
-		if (_anims.remaining(kPlankSlot) != 2)
+		if (_vm->_anims.remaining(kPlankSlot) != 2)
 			break;
-		showCharacter();
+		_vm->showCharacter();
 		_labStep = kStepPlankSpeak;
 		_labPos = 0;
 		break;
@@ -170,19 +175,19 @@ void AlienEngine::stepLab() {
 		_labStep = 0;
 		CursorMan.showMouse(true);
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kPlankLine, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kPlankLine, anchorX, anchorY);
 		debugC(1, kDebugRooms, "lab: outcome %d, the plank is off", kPlankLine);
 		break;
 	}
 
 	case kStepKey:
-		if (_anims.remaining(kKeySlot) != 2)
+		if (_vm->_anims.remaining(kKeySlot) != 2)
 			break;
 		CursorMan.showMouse(true);
-		showCharacter();
+		_vm->showCharacter();
 		_labStep = 0;
-		_inventory.add(kBigKey);
+		_vm->_inventory.add(kBigKey);
 		debugC(1, kDebugRooms, "lab: item %d taken", kBigKey);
 		break;
 
@@ -191,7 +196,7 @@ void AlienEngine::stepLab() {
 			break;
 		_labStep = 0;
 		CursorMan.showMouse(true);
-		_anims.play(kTerminalSlot, 2, 24, 2, 1);
+		_vm->_anims.play(kTerminalSlot, 2, 24, 2, 1);
 		debugC(1, kDebugRooms, "lab: the terminal answers");
 		break;
 
@@ -206,21 +211,34 @@ void AlienEngine::stepLab() {
  * The creak by the boarded-up hole: ovr_03_0e57:0x0b3e, run at the end of the
  * room's tick while the plank is still on.
  */
-void AlienEngine::stepLabHole() {
-	if (_script.flag(kHoleBoarded) != 1)
+void LabRoom::stepLabHole() {
+	if (_vm->_script.flag(kHoleBoarded) != 1)
 		return;
 
-	const int x = _ben.spriteX(), y = _ben.spriteY();
+	const int x = _vm->_ben.spriteX(), y = _vm->_ben.spriteY();
 	const bool inside = x > kHoleX1 && y > kHoleY1 && x < kHoleX2 && y < kHoleY2;
 	// The edge where the original keeps it, which a save holds.
-	_script.setFlag(kHoleWas, _labNearHole ? 1 : 0);
-	_script.setFlag(kHoleNow, inside ? 1 : 0);
+	_vm->_script.setFlag(kHoleWas, _labNearHole ? 1 : 0);
+	_vm->_script.setFlag(kHoleNow, inside ? 1 : 0);
 	if (inside == _labNearHole)
 		return;
 
 	_labNearHole = inside;
-	_sound.queue(kHoleSample, inside ? kHoleEnterRate : kHoleLeaveRate, kHoleVolume, 0, 0);
+	_vm->_sound.queue(kHoleSample, inside ? kHoleEnterRate : kHoleLeaveRate, kHoleVolume, 0, 0);
 	debugC(1, kDebugRooms, "lab: the hole %s at %d,%d", inside ? "creaks" : "settles", x, y);
+}
+
+/// The shared room open drops whatever the last visit left standing.
+void LabRoom::reset() {
+	_labStep = 0;
+	_labPos = 0;
+	_labNearHole = false;
+}
+
+/// Read *before* the room's body, because one of the arms is guarded on a flag
+/// the body sets.
+void LabRoom::preAction(int obj, byte verb, byte item) {
+	armLab(obj, item != Inventory::kNoItem);
 }
 
 } // End of namespace Alien
