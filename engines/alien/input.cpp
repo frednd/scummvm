@@ -869,8 +869,10 @@ void AlienEngine::finishAction() {
 		return;
 	}
 
-	// Room 58's LCD reads [0xa7ab] before the ring's row raises it (jail.cpp).
-	armJailLcd(spot.obj, item);
+	// And the rooms' own (rooms/): room 58's LCD reads [0xa7ab] before the
+	// ring's row raises it (jail.cpp).
+	for (Room *r : _rooms)
+		r->beforeScript(spot.obj, verb, item);
 
 	const bool libraryHandled = runLibraryBody(spot.obj, item != Inventory::kNoItem);
 
@@ -929,19 +931,6 @@ void AlienEngine::finishAction() {
 	// screen opens once it is down (corridor.cpp).
 	armHallwayCard(spot.obj, item);
 
-	// And room 58's prisoners, whose talk is the conversation the corridor
-	// runs on its own when Ben comes in with the force field down (jail.cpp).
-	if (!item)
-		armJailTalk(spot.obj, verb);
-
-	// And the loose shackle in the cell, which opens the shaft out (jail.cpp).
-	if (!item)
-		armJailShackle(spot.obj, verb);
-
-	// And the red card the guard leaves in the corridor's slot (jailguard.cpp).
-	if (!item)
-		armJailCard(spot.obj, verb);
-
 	// And room 48's pool, which the diving suit answers with a machine of its
 	// own rather than a script row (pool.cpp).
 	armPool(spot.obj, item);
@@ -974,6 +963,10 @@ void AlienEngine::finishAction() {
 	// into the slot arrays, which the lifted row cannot (basement.cpp).
 	if (!item)
 		takeBasementBattery(spot.obj);
+
+	// And the rooms' own (rooms/): room 58's prisoners, shackle and card.
+	for (Room *r : _rooms)
+		r->afterScript(spot.obj, verb, item, anchorX, anchorY);
 	if (_script.queuedEvent() != RoomScript::kNoEvent)
 		queueOutcome(_tal, _script.queuedEvent(), anchorX, anchorY);
 

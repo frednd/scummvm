@@ -556,12 +556,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startObservatory();
 
 	// And the ship's four elevator floors (corridor.cpp), the scanner's
-	// robot (scanner.cpp), then the number board and the jail's escape,
-	// simplified the same way (waiting.cpp, jail.cpp).
+	// robot (scanner.cpp), then the number board, simplified the same way
+	// (waiting.cpp).
 	startCorridor();
 	startScanner();
 	startWaiting();
-	startJail();
 
 	// And the rooms' own (rooms/), in the order rooms.cpp gives.
 	for (Room *r : _rooms)
@@ -876,8 +875,7 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 		for (Room *r : _rooms)
 			if (r->walkUnrouted(x, y, arrivalFacing))
 				return;
-		if (mazeWalkTo(x, y, arrivalFacing) ||
-			hallwayWalkTo(x, y, arrivalFacing) || jailWalkTo(x, y, arrivalFacing))
+		if (mazeWalkTo(x, y, arrivalFacing) || hallwayWalkTo(x, y, arrivalFacing))
 			return;
 
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);
@@ -931,9 +929,11 @@ void AlienEngine::rebuildHotspots(int room) {
 	// outright (maze.cpp).
 	buildMazeHotspots(room < 0 ? _room : room);
 
-	// Room 58's two prisoners are registered by code the lift cannot carry
-	// either: a computed guard and a rectangle that moves (jailguard.cpp).
-	buildJailHotspots(room < 0 ? _room : room);
+	// And the rooms' own, which the lift cannot carry either: room 58's two
+	// prisoners, behind a computed guard and in a rectangle that moves
+	// (jailguard.cpp).
+	for (Room *r : _rooms)
+		r->buildHotspots(room < 0 ? _room : room);
 
 	// The table can be shorter than it was -- an item taken out of it, or a
 	// maze cell with fewer ways out than the last -- and what was hovered is an

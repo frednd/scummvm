@@ -21,6 +21,7 @@
 
 #include "alien/alien.h"
 #include "alien/rooms/boss.h"
+#include "alien/rooms/jail.h"
 
 namespace Alien {
 
@@ -33,6 +34,7 @@ namespace Alien {
  */
 void AlienEngine::registerRooms() {
 	_rooms.push_back(new BossRoom(this));
+	_rooms.push_back(new JailRoom(this));
 }
 
 } // End of namespace Alien

@@ -22,6 +22,7 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
+#include "alien/rooms/jail.h"
 #include "alien/detection.h"
 
 namespace Alien {
@@ -219,10 +220,16 @@ static const int kFaceFrame = 0xe;
 static const uint16 kJailClockPos = 0xa7be;
 static const int kHoldMode = 2;
 
+JailRoom::JailRoom(AlienEngine *vm) : Room(vm),
+		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
+		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
+		_jailClock(0), _jailRedLoaded(false), _jailFieldPhase(0) {
+}
+
 /// The prologue's arms: both prisoners' idle poses (0x0778, 0x079a), and the
 /// way in with the field down (0x08c2).
-void AlienEngine::startJail() {
-	if (_room != kJailRoom)
+void JailRoom::start() {
+	if (_vm->_room != kJailRoom)
 		return;
 
 	_jailStep = kStepIdle;
@@ -233,17 +240,17 @@ void AlienEngine::startJail() {
 
 	// The prologue's first writes (0x06bf-0x06ce): the next of the cell talk's
 	// lines, 0x78 on, and the two states the guard's patrol keeps.
-	_script.setFlag(0xa7aa, 0x78);
-	_script.setFlag(0xa7bd, 0);
-	_script.setFlag(0xa7c0, 0);
+	_vm->_script.setFlag(0xa7aa, 0x78);
+	_vm->_script.setFlag(0xa7bd, 0);
+	_vm->_script.setFlag(0xa7c0, 0);
 
 	// 0x087d: the way in from the lobby is through the corridor door, which the
 	// room places him at and draws open; the open also raises its edge
 	// and clears [0xa7ba], so the door shuts behind him as he steps out of it
 	// (stepJailDoor).
-	if (_mode == kLobbyRoom) {
-		_script.setFlag(0xa7a2, 1);
-		_script.setFlag(0xa7ba, 0);
+	if (_vm->_mode == kLobbyRoom) {
+		_vm->_script.setFlag(0xa7a2, 1);
+		_vm->_script.setFlag(0xa7ba, 0);
 	}
 
 	jailYodlePose(kPoseIdle);
@@ -251,7 +258,7 @@ void AlienEngine::startJail() {
 	jailUnclePose(kPoseIdle);
 
 	// The char_place beside it is a lifted row (roominit.cpp).
-	if (_script.flag(kView) == kCorridor && _script.flag(kForceField) == 0) {
+	if (_vm->_script.flag(kView) == kCorridor && _vm->_script.flag(kForceField) == 0) {
 		CursorMan.showMouse(false);
 		_jailStep = kStepArrive;
 		jailUnclePose(kPoseFace);
@@ -260,29 +267,29 @@ void AlienEngine::startJail() {
 }
 
 /// MIDAS:sub_19caa: the uncle's pose byte and the list or hold it plays.
-void AlienEngine::jailUnclePose(byte pose) {
+void JailRoom::jailUnclePose(byte pose) {
 	_jailUncle = pose;
 
 	// A port addition (anim.h's setHold()), as sluggs.cpp has for the same
 	// shape: the tick pair between two poses never shows him blank.
-	_anims.setHold(kUncleSlot, true);
+	_vm->_anims.setHold(kUncleSlot, true);
 
 	switch (pose) {
 	case kPoseIdle:
-		_anims.play(kUncleSlot, 0, ARRAYSIZE(kUncleIdle), kListRate, kListMode, kUncleIdle);
-		_anims.setLoopFlag(kUncleSlot, 1);
+		_vm->_anims.play(kUncleSlot, 0, ARRAYSIZE(kUncleIdle), kListRate, kListMode, kUncleIdle);
+		_vm->_anims.setLoopFlag(kUncleSlot, 1);
 		break;
 	case kPoseTalk:
-		_anims.play(kUncleSlot, 0, ARRAYSIZE(kUncleTalk), kListRate, kListMode, kUncleTalk);
-		_anims.setLoopFlag(kUncleSlot, 1);
+		_vm->_anims.play(kUncleSlot, 0, ARRAYSIZE(kUncleTalk), kListRate, kListMode, kUncleTalk);
+		_vm->_anims.setLoopFlag(kUncleSlot, 1);
 		break;
 	case kPoseSettle:
-		_anims.play(kUncleSlot, kSettleFirst, kSettleCount, kSettleRate, kHoldMode);
-		_anims.setLoopFlag(kUncleSlot, 0);
+		_vm->_anims.play(kUncleSlot, kSettleFirst, kSettleCount, kSettleRate, kHoldMode);
+		_vm->_anims.setLoopFlag(kUncleSlot, 0);
 		break;
 	case kPoseFace:
-		_anims.play(kUncleSlot, kFaceFrame, 1, 0, kHoldMode);
-		_anims.setLoopFlag(kUncleSlot, 0);
+		_vm->_anims.play(kUncleSlot, kFaceFrame, 1, 0, kHoldMode);
+		_vm->_anims.setLoopFlag(kUncleSlot, 0);
 		break;
 	default:
 		break;
@@ -290,51 +297,51 @@ void AlienEngine::jailUnclePose(byte pose) {
 }
 
 /// MIDAS:sub_19d1e: Yodle's, whose slot the room relaunches unguarded.
-void AlienEngine::jailYodlePose(byte pose) {
+void JailRoom::jailYodlePose(byte pose) {
 	_jailYodle = pose;
-	_anims.setHold(kYodleSlot, true);
+	_vm->_anims.setHold(kYodleSlot, true);
 
 	if (pose == kPoseIdle)
-		_anims.play(kYodleSlot, 0, ARRAYSIZE(kYodleIdle), kListRate, kListMode, kYodleIdle);
+		_vm->_anims.play(kYodleSlot, 0, ARRAYSIZE(kYodleIdle), kListRate, kListMode, kYodleIdle);
 	else if (pose == kPoseTalk)
-		_anims.play(kYodleSlot, 0, ARRAYSIZE(kYodleTalk), kListRate, kListMode, kYodleTalk);
+		_vm->_anims.play(kYodleSlot, 0, ARRAYSIZE(kYodleTalk), kListRate, kListMode, kYodleTalk);
 }
 
 /// 10c9:sub_11d3b: which conversation, out of which file, and the step it
 /// leaves [0xa49f] on.
-void AlienEngine::jailConversation() {
+void JailRoom::jailConversation() {
 	byte line = 0, count = 0;
-	const bool card = _inventory.has(kCard);
+	const bool card = _vm->_inventory.has(kCard);
 
-	if (_script.flag(kForceField) == 1) {
+	if (_vm->_script.flag(kForceField) == 1) {
 		_jailStep = kStepTalk;
 		line = 0x64;
 		count = 6;
-		if (_script.flag(kTalked) == 1) {
+		if (_vm->_script.flag(kTalked) == 1) {
 			line = 0x3c;
 			count = 4;
 		}
-		_script.setFlag(kTalked, 1);
+		_vm->_script.setFlag(kTalked, 1);
 	} else {
 		_jailStep = kStepEscape;
-		_tal.load(Common::Path(kCorridorTal), &_pack);
+		_vm->_tal.load(Common::Path(kCorridorTal), &_vm->_pack);
 
 		// [0xa602], the "one branch has spoken" latch the three tests share.
 		bool chosen = false;
-		if (_script.flag(kTalked) == 0) {
+		if (_vm->_script.flag(kTalked) == 0) {
 			chosen = true;
 			if (!card) {
 				line = 0x50;
 				count = 0xd;
-				_script.setFlag(kTalked, 1);
-				_script.setFlag(kTalkedAgain, 1);
+				_vm->_script.setFlag(kTalked, 1);
+				_vm->_script.setFlag(kTalkedAgain, 1);
 			} else {
 				line = 0x64;
 				count = 0xb;
-				_script.setFlag(kHasCard, 1);
+				_vm->_script.setFlag(kHasCard, 1);
 			}
 		}
-		if (_script.flag(kTalkedAgain) == 1 && !chosen) {
+		if (_vm->_script.flag(kTalkedAgain) == 1 && !chosen) {
 			chosen = true;
 			if (!card) {
 				line = 0x78;
@@ -342,18 +349,18 @@ void AlienEngine::jailConversation() {
 			} else {
 				line = 0x82;
 				count = 5;
-				_script.setFlag(kHasCard, 1);
+				_vm->_script.setFlag(kHasCard, 1);
 			}
 		}
-		if (_script.flag(kTalked) == 1 && _script.flag(kTalkedAgain) == 0 && !chosen) {
+		if (_vm->_script.flag(kTalked) == 1 && _vm->_script.flag(kTalkedAgain) == 0 && !chosen) {
 			if (!card) {
 				line = 1;
 				count = 0xb;
-				_script.setFlag(kTalkedAgain, 1);
+				_vm->_script.setFlag(kTalkedAgain, 1);
 			} else {
 				line = 0x14;
 				count = 9;
-				_script.setFlag(kHasCard, 1);
+				_vm->_script.setFlag(kHasCard, 1);
 			}
 		}
 	}
@@ -361,18 +368,18 @@ void AlienEngine::jailConversation() {
 	// DLGREQ:sub_0c4d1 takes the run and the cursor; Ben's lines are anchored
 	// on his box as it stands now (0x11e9: the midpoint of [0xa97a]/[0xa97e]).
 	CursorMan.showMouse(false);
-	characterAnchor(_jailBenX, _jailBenY);
+	_vm->characterAnchor(_jailBenX, _jailBenY);
 	_jailSpeaker = 1;
 	_jailLine = line;
 	_jailLeft = count;
 	_jailSpeaking = true;
 	debugC(1, kDebugRooms, "jail: conversation 0x%02x, %u lines%s", line, count,
-		   _script.flag(kHasCard) ? ", with the card" : "");
+		   _vm->_script.flag(kHasCard) ? ", with the card" : "");
 	jailSpeak();
 }
 
 /// DLGREQ:sub_0c432, one pass (boss.cpp has the same runner).
-void AlienEngine::jailSpeak() {
+void JailRoom::jailSpeak() {
 	if (!_jailLeft) {
 		_jailSpeaking = false;
 		return;
@@ -380,9 +387,9 @@ void AlienEngine::jailSpeak() {
 
 	const bool uncle = _jailSpeaker == 0;
 	const byte *ink = uncle ? kUncleInk : kBenInk;
-	setTextColor(ink[0], ink[1], ink[2]);
-	uploadTextColor();
-	queueOutcome(_tal, _jailLine, uncle ? kUncleX : _jailBenX, uncle ? kUncleY : _jailBenY,
+	_vm->setTextColor(ink[0], ink[1], ink[2]);
+	_vm->uploadTextColor();
+	_vm->queueOutcome(_vm->_tal, _jailLine, uncle ? kUncleX : _jailBenX, uncle ? kUncleY : _jailBenY,
 				 !uncle);
 
 	// DLGREQ:sub_0c384, handler 0x3a.
@@ -395,10 +402,10 @@ void AlienEngine::jailSpeak() {
 }
 
 /// Entry 3: talking to either prisoner from the corridor.
-bool AlienEngine::armJailTalk(int obj, byte verb) {
-	if (_room != kJailRoom || verb != kVerbTalkTo || (obj != kYodleObj && obj != kUncleObj))
+bool JailRoom::armJailTalk(int obj, byte verb) {
+	if (_vm->_room != kJailRoom || verb != kVerbTalkTo || (obj != kYodleObj && obj != kUncleObj))
 		return false;
-	if (_script.flag(kView) != kCorridor)
+	if (_vm->_script.flag(kView) != kCorridor)
 		return false;
 
 	_jailClock = 0;
@@ -409,8 +416,8 @@ bool AlienEngine::armJailTalk(int obj, byte verb) {
 
 /// Entry 3, 0x021a: the loose shackle. Its line is the click's own outcome;
 /// the machine waits for it to come down.
-bool AlienEngine::armJailShackle(int obj, byte verb) {
-	if (_room != kJailRoom || obj != kShackleObj || verb != kVerbShackle)
+bool JailRoom::armJailShackle(int obj, byte verb) {
+	if (_vm->_room != kJailRoom || obj != kShackleObj || verb != kVerbShackle)
 		return false;
 
 	_jailStep = kStepShackle;
@@ -421,10 +428,10 @@ bool AlienEngine::armJailShackle(int obj, byte verb) {
 /// Entry 3, 0x0103: the ring on the LCD the first time. The row lights the
 /// screen and raises [0xa7ab]; this is its last write, [0xa49f] = 0xc8, so it
 /// has to read the flag before the row runs.
-void AlienEngine::armJailLcd(int obj, byte item) {
-	if (_room != kJailRoom || obj != kLcdObj || item != kItemRing)
+void JailRoom::armJailLcd(int obj, byte item) {
+	if (_vm->_room != kJailRoom || obj != kLcdObj || item != kItemRing)
 		return;
-	if (_script.flag(kLcdLit) != 0)
+	if (_vm->_script.flag(kLcdLit) != 0)
 		return;
 
 	_jailStep = kStepLcd;
@@ -432,15 +439,15 @@ void AlienEngine::armJailLcd(int obj, byte item) {
 
 /// CHARANIM:sub_1514b's last test: a walk in the cell that ended with the click
 /// that started it still latched on the open shaft.
-void AlienEngine::jailShaftArrival() {
-	if (_jailStep != kStepIdle || _script.flag(kView) != kCell)
+void JailRoom::jailShaftArrival() {
+	if (_jailStep != kStepIdle || _vm->_script.flag(kView) != kCell)
 		return;
-	if (_script.flag(kClickedObj) != kShaftObj)
+	if (_vm->_script.flag(kClickedObj) != kShaftObj)
 		return;
-	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+	if (_vm->_ben.isWalking() || _vm->_ben.isTurning() || !_vm->speechDone())
 		return;
 
-	_script.setFlag(kClickedObj, 0);
+	_vm->_script.setFlag(kClickedObj, 0);
 	CursorMan.showMouse(false);
 	_jailStep = kStepShaft;
 	debugC(1, kDebugRooms, "jail: into the air shaft");
@@ -454,7 +461,7 @@ void AlienEngine::jailShaftArrival() {
  * with the door open plays the door shut and sets [0xa7ba], which takes the
  * way out (object 10, walkgeom) away until a card opens it again.
  */
-void AlienEngine::stepJailDoor() {
+void JailRoom::stepJailDoor() {
 	static const uint16 kInDoorway = 0xa7a2, kWasInDoorway = 0xa7a3, kDoorShut = 0xa7ba;
 	static const int kDoorwayX = 0x233, kDoorwayY = 0x4f;
 	static const uint kDoorSlot = 3, kDoorFrames = 0x16, kDoorRate = 2;
@@ -465,35 +472,35 @@ void AlienEngine::stepJailDoor() {
 	static const uint16 kDoorShutDelay = 1;
 	static const int kPlayBackward = 3;	///< anim_play_mode3
 
-	_script.setFlag(kWasInDoorway, _script.flag(kInDoorway));
-	const bool inDoorway = _ben.spriteX() > kDoorwayX && _ben.spriteY() < kDoorwayY;
-	_script.setFlag(kInDoorway, inDoorway ? 1 : 0);
-	if (inDoorway || _script.flag(kInDoorway) == _script.flag(kWasInDoorway)
-			|| _script.flag(kDoorShut) != 0)
+	_vm->_script.setFlag(kWasInDoorway, _vm->_script.flag(kInDoorway));
+	const bool inDoorway = _vm->_ben.spriteX() > kDoorwayX && _vm->_ben.spriteY() < kDoorwayY;
+	_vm->_script.setFlag(kInDoorway, inDoorway ? 1 : 0);
+	if (inDoorway || _vm->_script.flag(kInDoorway) == _vm->_script.flag(kWasInDoorway)
+			|| _vm->_script.flag(kDoorShut) != 0)
 		return;
 
-	_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, kPlayBackward);
-	_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPan, kDoorShutDelay);
-	_script.setFlag(kDoorShut, 1);
-	traceEvent("door shut at %d", _scrollX);
+	_vm->_anims.play(kDoorSlot, kDoorFrames, kDoorFrames, kDoorRate, kPlayBackward);
+	_vm->_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPan, kDoorShutDelay);
+	_vm->_script.setFlag(kDoorShut, 1);
+	traceEvent("door shut at %d", _vm->_scrollX);
 	debugC(1, kDebugRooms, "jail: the corridor door shuts behind him");
 }
 
-void AlienEngine::stepJail() {
-	if (_room != kJailRoom)
+void JailRoom::tickPair() {
+	if (_vm->_room != kJailRoom)
 		return;
 
 	stepJailDoor();
 
 	// [0xa49c] and [0xa7be] both move on the animation frame (0x09c0).
-	const bool frame = (_tick & 3) == 0;
+	const bool frame = (_vm->_tick & 3) == 0;
 
 	// The guard, his machine and the field, which run before the room's own
 	// [0xa49f] in the tick (jailguard.cpp).
 	stepJailGuard();
 
 	// 0x106b and 0x1080: a line down puts a talking prisoner back.
-	if (speechDone()) {
+	if (_vm->speechDone()) {
 		if (_jailUncle == kPoseTalk)
 			jailUnclePose(kPoseSettle);
 		if (_jailYodle == kPoseTalk)
@@ -502,13 +509,13 @@ void AlienEngine::stepJail() {
 
 	// 0x1037: [0xa7be], counted by LOGIC alongside [0xa49c].
 	if (frame)
-		setStateWord(kJailClockPos, stateWord(kJailClockPos) + 1);
-	if (_jailClock == kClockSettle && stateWord(kJailClockPos) > kSettleWait) {
+		_vm->setStateWord(kJailClockPos, _vm->stateWord(kJailClockPos) + 1);
+	if (_jailClock == kClockSettle && _vm->stateWord(kJailClockPos) > kSettleWait) {
 		jailUnclePose(kPoseIdle);
 		_jailClock = 0;
 	}
 
-	if (_jailSpeaking && speechDone())
+	if (_jailSpeaking && _vm->speechDone())
 		jailSpeak();
 
 	jailShaftArrival();
@@ -521,16 +528,16 @@ void AlienEngine::stepJail() {
 
 	switch (_jailStep) {
 	case kStepShackle:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_jailStep = kStepCoverOff;
 		break;
 
 	case kStepCoverOff:
-		_anims.play(kCoverSlot, 1, 1, 0, 2);
-		_sound.queue(kCoverSample, kCoverRateHz, kCoverVolume, kCoverPanning, kCoverDelay);
-		_script.setFlag(kShaftShut, 0);
-		rebuildHotspots();
+		_vm->_anims.play(kCoverSlot, 1, 1, 0, 2);
+		_vm->_sound.queue(kCoverSample, kCoverRateHz, kCoverVolume, kCoverPanning, kCoverDelay);
+		_vm->_script.setFlag(kShaftShut, 0);
+		_vm->rebuildHotspots();
 		_jailStep = kStepShaftOpen;
 		_jailPos = 0;
 		debugC(1, kDebugRooms, "jail: the shackle pulls the shaft's cover off");
@@ -541,8 +548,8 @@ void AlienEngine::stepJail() {
 			break;
 		{
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, kOutcomeShaftOpen, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, kOutcomeShaftOpen, anchorX, anchorY);
 		}
 		CursorMan.showMouse(true);
 		_jailStep = kStepIdle;
@@ -553,12 +560,12 @@ void AlienEngine::stepJail() {
 		break;
 
 	case kStepCrawl:
-		playCharacterAnim(kCrawlSlot, 1, kCrawlFrames, kCrawlRate, 1);
+		_vm->playCharacterAnim(kCrawlSlot, 1, kCrawlFrames, kCrawlRate, 1);
 		_jailStep = kStepCrawling;
 		break;
 
 	case kStepCrawling:
-		if (_anims.remaining(kCrawlSlot) != 0)
+		if (_vm->_anims.remaining(kCrawlSlot) != 0)
 			break;
 		_jailStep = kStepCrawled;
 		break;
@@ -566,10 +573,10 @@ void AlienEngine::stepJail() {
 	case kStepCrawled:
 		_jailStep = kStepIdle;
 		debugC(1, kDebugRooms, "jail: through the shaft, back to the ship");
-		takeExit(kShipExitSubmode);
+		_vm->takeExit(kShipExitSubmode);
 		break;
 	case kStepTalk:
-		if (_anims.shownFrame(kUncleSlot) < kTalkFrame)
+		if (_vm->_anims.shownFrame(kUncleSlot) < kTalkFrame)
 			break;
 		jailUnclePose(kPoseFace);
 		jailConversation();
@@ -578,12 +585,12 @@ void AlienEngine::stepJail() {
 
 	case kStepTalking:
 		// [0xad3f], the run over and its last line down.
-		if (_jailSpeaking || !speechDone())
+		if (_jailSpeaking || !_vm->speechDone())
 			break;
 		CursorMan.showMouse(true);
 		_jailStep = kStepIdle;
 		_jailClock = kClockSettle;
-		setStateWord(kJailClockPos, 0);
+		_vm->setStateWord(kJailClockPos, 0);
 		break;
 
 	case kStepArrive:
@@ -593,13 +600,13 @@ void AlienEngine::stepJail() {
 		break;
 
 	case kStepEscape:
-		if (_jailSpeaking || !speechDone())
+		if (_jailSpeaking || !_vm->speechDone())
 			break;
-		_jailStep = _script.flag(kHasCard) == 1 ? kStepPod : kStepLeave;
+		_jailStep = _vm->_script.flag(kHasCard) == 1 ? kStepPod : kStepLeave;
 		break;
 
 	case kStepLeave:
-		walkTo(kLeaveX, kLeaveY, kLeaveFacing);
+		_vm->walkTo(kLeaveX, kLeaveY, kLeaveFacing);
 		_jailStep = kStepLeaving;
 		_jailPos = 0;
 		break;
@@ -608,23 +615,23 @@ void AlienEngine::stepJail() {
 		if (_jailPos <= kLeaveWait)
 			break;
 		_jailStep = kStepIdle;
-		takeExit(kLobbySubmode);
+		_vm->takeExit(kLobbySubmode);
 		break;
 
 	case kStepLcd:
 		// 0x101a: [0xa4ef] == 2, the lighting up two frames from its end.
-		if (_anims.remaining(kLcdSlot) != 2)
+		if (_vm->_anims.remaining(kLcdSlot) != 2)
 			break;
-		_anims.play(kLcdSlot, kLcdLoopFirst, kLcdLoopCount, kLcdLoopRate, 1);
+		_vm->_anims.play(kLcdSlot, kLcdLoopFirst, kLcdLoopCount, kLcdLoopRate, 1);
 		_jailStep = kStepIdle;
 		debugC(1, kDebugRooms, "jail: the LCD runs on");
 		break;
 
 	case kStepPod:
-		_script.setFlag(kPodReady, 1);
+		_vm->_script.setFlag(kPodReady, 1);
 		debugC(1, kDebugRooms, "jail: the pod is ready, off to room 59");
 		_jailStep = kStepIdle;
-		takeExit(kPodSubmode);
+		_vm->takeExit(kPodSubmode);
 		break;
 
 	default:
@@ -637,12 +644,29 @@ void AlienEngine::stepJail() {
  * like the hallways (corridor.cpp). Entry 0's clamps, one set a view, keep Ben
  * on the floor, so the click it resolved is walked to in a straight line.
  */
-bool AlienEngine::jailWalkTo(int x, int y, int arrivalFacing) {
-	if (_room != kJailRoom)
+bool JailRoom::walkUnrouted(int x, int y, int arrivalFacing) {
+	if (_vm->_room != kJailRoom)
 		return false;
 
-	straightWalkTo(x, y, arrivalFacing);
+	_vm->straightWalkTo(x, y, arrivalFacing);
 	return true;
+}
+
+void JailRoom::beforeScript(int obj, byte verb, byte item) {
+	// The LCD reads [0xa7ab] before the ring's row raises it.
+	armJailLcd(obj, item);
+}
+
+void JailRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	if (item)
+		return;
+	// The prisoners, whose talk is the conversation the corridor runs on its
+	// own when Ben comes in with the force field down; the loose shackle in
+	// the cell, which opens the shaft out; and the red card the guard leaves
+	// in the corridor's slot (jailguard.cpp).
+	armJailTalk(obj, verb);
+	armJailShackle(obj, verb);
+	armJailCard(obj, verb);
 }
 
 } // End of namespace Alien

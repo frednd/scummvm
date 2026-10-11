@@ -44,6 +44,14 @@ bool AlienEngine::loadPlayScript(const Common::String &path) {
 	return true;
 }
 
+/// A room in the middle of something of its own (rooms/).
+bool AlienEngine::roomBusy() const {
+	for (const Room *r : _rooms)
+		if (r->busy())
+			return true;
+	return false;
+}
+
 bool AlienEngine::playIdle() const {
 	// The speech queue counts as well as the line standing on screen: a body
 	// that queued two lines is between them for a tick or two, and a click
@@ -85,7 +93,7 @@ bool AlienEngine::playIdle() const {
 	return !_ben.isWalking() && !_ben.isTurning() && !_speech &&
 		   _queueNext >= _queueCount && !_anims.isBusyOnce() && _pending < 0 &&
 		   !_armed && !_cliffClimb && !_cliffStep && !_divingExit && !_divingStep &&
-		   _scrollVel == 0 && !scrollWouldPan() && !jailGuardBusy() &&
+		   _scrollVel == 0 && !scrollWouldPan() && !roomBusy() &&
 		   !chatWaiting && !_hippieAnswer && _hippieHandOff < 0 && !shoreArrivalPending() &&
 		   CursorMan.isVisible();
 }

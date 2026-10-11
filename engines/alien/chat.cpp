@@ -523,7 +523,10 @@ void AlienEngine::showBar() {
  * its reply to topic 10's "Ok. Never mind." that way.
  */
 bool AlienEngine::chatReplyOwed() const {
-	if (jailGuardHoldsChat() || hallwayOwesReply())
+	for (const Room *r : _rooms)
+		if (r->replyOwed())
+			return true;
+	if (hallwayOwesReply())
 		return true;
 	if (_chatPickNew && _chatPickReply)
 		return true;

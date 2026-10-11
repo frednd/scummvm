@@ -197,9 +197,10 @@ void AlienEngine::redraw() {
 
 		// [0xa94d]: while a room plays the character's own action on one of its
 		// slots, the walker is not drawn at all (lab.cpp).
-		// Room 58's force field goes under him in the corridor (jailguard.cpp).
-		if (!jailFieldOverBen())
-			drawJailField(_screen);
+		// What the rooms draw under him: room 58's force field, in the
+		// corridor (jailguard.cpp).
+		for (const Room *r : _rooms)
+			r->drawUnderCharacter(_screen);
 
 		if (_drawCharacter) {
 			// OBJ:sub_06466 reads [0xa73a] on every draw: room 31's cliff and
@@ -220,11 +221,9 @@ void AlienEngine::redraw() {
 		if (_drawCharacter)
 			applyOcclusion();
 
-		// And over him in the cell, and the guard after both, which is the
-		// order room 58's tick draws them in.
-		if (jailFieldOverBen())
-			drawJailField(_screen);
-		drawJailGuard(_screen);
+		// And over him: room 58's field in the cell, and its guard.
+		for (const Room *r : _rooms)
+			r->drawOverCharacter(_screen);
 
 		// Room 46's bubbles over all of that, and then the water, which moves
 		// the whole playfield (diving.cpp).

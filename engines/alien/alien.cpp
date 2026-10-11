@@ -160,9 +160,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_terminalStep(0), _hallAlienCount(0), _hallAlienWait(0), _hallAlienLast(1),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scannerArrest(false), _scannerStep(0), _waitingStep(0), _waitingPos(0),
-		_jailStep(0), _jailPos(0), _jailSpeaker(0), _jailLine(0), _jailLeft(0),
-		_jailSpeaking(false), _jailBenX(0), _jailBenY(0), _jailUncle(0), _jailYodle(0),
-		_jailClock(0), _jailRedLoaded(false), _jailFieldPhase(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_hippieStep(0), _hippiePos(0), _hippieReply(0), _hippieReplyTicks(0),
 		_hippieAnswer(false), _hippieHandOff(-1),
@@ -569,8 +566,7 @@ bool AlienEngine::dlgreqRunning() const {
 	for (const Room *r : _rooms)
 		if (r->conversationRunning())
 			return true;
-	return _sluggsSpeaking || _crystalSpeaking || _yodleSpeaking ||
-		   _jailSpeaking || _endingStep;
+	return _sluggsSpeaking || _crystalSpeaking || _yodleSpeaking || _endingStep;
 }
 
 uint32 AlienEngine::masterTick() const {
@@ -745,11 +741,9 @@ void AlienEngine::stepClock() {
 		stepWaitingMachine();
 
 
-		// And room 58's: the conversation through the bars and the way out
-		// it ends in (jail.cpp).
-		stepJail();
-
-		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
+		// And the rooms' own machines (rooms/), in the order rooms.cpp gives:
+		// room 60's boss, and room 58's conversation through the bars and the
+		// way out it ends in.
 		for (Room *r : _rooms)
 			r->tickPair();
 
