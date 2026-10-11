@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class StoreRoom;
 	friend class HippieRoom;
 	friend class LibraryRoom;
 	friend class WaitingRoom;
@@ -590,15 +591,7 @@ private:
 	void sluggsSpeak();
 	void sluggsPose(byte pose);
 
-	/// The 24h antique store, which is one long [0xa49f] machine and no
-	/// rectangles at all (store.cpp).
-	void startStore();
-	void stepStore();
-	void storeSpeak(byte code);
-	void storeSalesmanLine(byte code);
-	void storePose(byte pose);
 	void walkHandRoute(int viaX, int viaY, int x, int y, int facing);
-	void loadStoreScript(const char *name);
 	bool roomHasSharedExit(int room) const;
 	void cancelOpening();
 	void stepEnding();
@@ -1186,19 +1179,6 @@ private:
 	uint _chatPickTopic;
 	uint _chatPickChoice;
 	bool _chatPickNew;
-
-	/// Room 30's own machine: the step, its counter, the line the two speakers
-	/// are taking turns over and whose turn it is, and the item the player has
-	/// offered over the counter (store.cpp). The line survives the room, the
-	/// way [0xa4a2] does: the return visit with the suit picks up where the
-	/// trade's own banter stopped.
-	byte _storeStep;
-	uint16 _storePos;
-	byte _storeLine;
-	byte _storeSpeaker;
-	byte _storeOffer;
-	bool _storeWalked;
-	bool _storeTalking;
 
 	/// GFX:sub_26ebc, the resident random the store picks its refusal with.
 	Common::RandomSource _rnd;

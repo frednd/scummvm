@@ -23,6 +23,7 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
+#include "alien/rooms/store.h"
 #include "alien/detection.h"
 
 namespace Alien {
@@ -205,10 +206,15 @@ static uint poseSlot(byte pose, bool behindCounter) {
 	}
 }
 
-void AlienEngine::storePose(byte pose) {
+StoreRoom::StoreRoom(AlienEngine *vm) : Room(vm),
+		_storeStep(0), _storePos(0), _storeLine(1), _storeSpeaker(0), _storeOffer(0),
+		_storeWalked(false), _storeTalking(false) {
+}
+
+void StoreRoom::storePose(byte pose) {
 	// [0xa53e] = 0 at the top of every call: the talking loop only runs while
 	// the case that started it says so.
-	_anims.setLoopFlag(kTalkSlotCounter, 0);
+	_vm->_anims.setLoopFlag(kTalkSlotCounter, 0);
 
 	// He is on one slot at a time. The original gets that for free -- a mode 4
 	// or 7 play leaves nothing behind once it has run -- but the port holds
@@ -216,38 +222,38 @@ void AlienEngine::storePose(byte pose) {
 	// was in stays on the screen beside, or over, the one he is in now: the
 	// fetch and the hand-over played under his resting still. Every other one of
 	// his slots goes as a pose starts.
-	const uint keep = poseSlot(pose, _script.flag(kBehindCounter) != 0);
+	const uint keep = poseSlot(pose, _vm->_script.flag(kBehindCounter) != 0);
 	for (uint slot : kSalesmanSlots) {
 		if (slot == keep)
 			continue;
-		_anims.takeDown(slot);
-		_anims.setHold(slot, true);
+		_vm->_anims.takeDown(slot);
+		_vm->_anims.setHold(slot, true);
 	}
 
 	switch (pose) {
 	case kPoseStopCase:
-		_anims.setLoopFlag(kTalkSlotFloor, 0);
-		_anims.play(keep, 1, 1, 0, 4);
+		_vm->_anims.setLoopFlag(kTalkSlotFloor, 0);
+		_vm->_anims.play(keep, 1, 1, 0, 4);
 		break;
 	case kPoseTurnCase:
-		_anims.play(0, 0, ARRAYSIZE(kPoseTurn), 3, kPoseMode, kPoseTurn);
+		_vm->_anims.play(0, 0, ARRAYSIZE(kPoseTurn), 3, kPoseMode, kPoseTurn);
 		break;
 	case kPoseHandCase:
-		_anims.play(3, 0, ARRAYSIZE(kPoseHandOver), 4, kPoseMode, kPoseHandOver);
+		_vm->_anims.play(3, 0, ARRAYSIZE(kPoseHandOver), 4, kPoseMode, kPoseHandOver);
 		break;
 	case kPoseTalkCase:
-		_anims.play(kTalkSlotCounter, 0, ARRAYSIZE(kPoseTalk), 4, kPoseMode, kPoseTalk);
-		_anims.setLoopFlag(kTalkSlotCounter, 1);
+		_vm->_anims.play(kTalkSlotCounter, 0, ARRAYSIZE(kPoseTalk), 4, kPoseMode, kPoseTalk);
+		_vm->_anims.setLoopFlag(kTalkSlotCounter, 1);
 		break;
 	case kPoseFetchCase:
-		_anims.play(5, 0, ARRAYSIZE(kPoseFetch), 4, kPoseMode, kPoseFetch);
+		_vm->_anims.play(5, 0, ARRAYSIZE(kPoseFetch), 4, kPoseMode, kPoseFetch);
 		break;
 	case kPoseGreetCase:
-		_anims.play(0, 0, ARRAYSIZE(kPoseGreet), 3, kPoseMode, kPoseGreet);
+		_vm->_anims.play(0, 0, ARRAYSIZE(kPoseGreet), 3, kPoseMode, kPoseGreet);
 		break;
 	case kPoseFloorCase:
-		_anims.play(kTalkSlotFloor, 0, ARRAYSIZE(kPoseTalk), 4, kPoseMode, kPoseTalk);
-		_anims.setLoopFlag(kTalkSlotFloor, 1);
+		_vm->_anims.play(kTalkSlotFloor, 0, ARRAYSIZE(kPoseTalk), 4, kPoseMode, kPoseTalk);
+		_vm->_anims.setLoopFlag(kTalkSlotFloor, 1);
 		break;
 	default:
 		break;
@@ -260,9 +266,9 @@ void AlienEngine::storePose(byte pose) {
  * DLGREQ:sub_0c275 as room 30 reaches it: the salesman's line, in his colour,
  * at his anchor, with the pose that goes with it.
  */
-void AlienEngine::storeSalesmanLine(byte code) {
+void StoreRoom::storeSalesmanLine(byte code) {
 	byte pose = kPoseTalkCase;
-	if (_script.flag(kBehindCounter) == 0)
+	if (_vm->_script.flag(kBehindCounter) == 0)
 		pose = kPoseFloorCase;
 	if (_storeStep == kStepTrade && _storeLine == kFetchLine)
 		pose = kPoseFetchCase;
@@ -270,13 +276,13 @@ void AlienEngine::storeSalesmanLine(byte code) {
 		pose = kPoseHandCase;
 		// He comes out from behind the counter with the suit and stays there:
 		// every line after this one talks from the other bank.
-		_script.setFlag(kBehindCounter, 0);
+		_vm->_script.setFlag(kBehindCounter, 0);
 	}
 
 	storePose(pose);
-	setTextColor(kSalesInk[0], kSalesInk[1], kSalesInk[2]);
-	uploadTextColor();
-	queueOutcome(_tal, code, kSalesX, kSalesY, false);
+	_vm->setTextColor(kSalesInk[0], kSalesInk[1], kSalesInk[2]);
+	_vm->uploadTextColor();
+	_vm->queueOutcome(_vm->_tal, code, kSalesX, kSalesY, false);
 	_storeTalking = true;
 
 	debugC(1, kDebugRooms, "store: the salesman says outcome 0x%02x", code);
@@ -289,50 +295,28 @@ void AlienEngine::storeSalesmanLine(byte code) {
  * is spoken by whoever's turn it is: the salesman through DLGREQ, Ben in white
  * from the door.
  */
-void AlienEngine::storeSpeak(byte code) {
+void StoreRoom::storeSpeak(byte code) {
 	if (_storeSpeaker == 0) {
 		storeSalesmanLine(code);
 	} else {
-		setTextColor(0x3f, 0x3f, 0x3f);
-		uploadTextColor();
-		queueOutcome(_tal, code, kBenX, kBenY);
+		_vm->setTextColor(0x3f, 0x3f, 0x3f);
+		_vm->uploadTextColor();
+		_vm->queueOutcome(_vm->_tal, code, kBenX, kBenY);
 		debugC(1, kDebugRooms, "store: Ben says outcome 0x%02x", code);
 	}
 
 	_storeSpeaker = _storeSpeaker ? 0 : 1;
 }
 
-/**
- * 1021:sub_1023c, the hand-built route.
- *
- * The room has no walk mask, so nothing can be routed through it: the original
- * writes two points into the walk arrays itself and lets the walker run them.
- * The port's walker takes a route the same way, with the character's own
- * position as the first point and the target appended by `follow`.
- */
-void AlienEngine::walkHandRoute(int viaX, int viaY, int x, int y, int facing) {
-	WalkRoute route;
-	route.points[0].x = (int16)_ben.walkX();
-	route.points[0].y = (int16)_ben.walkY();
-	route.points[1].x = (int16)viaX;
-	route.points[1].y = (int16)viaY;
-	route.count = 2;
-	_ben.follow(route, x, y, facing);
-	_dirty = true;
-
-	debugC(1, kDebugRooms, "store: walks %d,%d -> %d,%d -> %d,%d facing %d",
-		   _ben.walkX(), _ben.walkY(), viaX, viaY, x, y, facing);
-}
-
 /// The dialog file the machine swaps under itself mid-scene.
-void AlienEngine::loadStoreScript(const char *name) {
+void StoreRoom::loadStoreScript(const char *name) {
 	const Common::Path path(name);
 	if (!Common::File::exists(path)) {
 		debugC(1, kDebugRooms, "store: %s is missing", name);
 		return;
 	}
 
-	_tal.load(path, &_pack);
+	_vm->_tal.load(path, &_vm->_pack);
 	debugC(1, kDebugRooms, "store: speaking out of %s", name);
 }
 
@@ -344,12 +328,12 @@ void AlienEngine::loadStoreScript(const char *name) {
  * until further down.
  */
 
-void AlienEngine::startStore() {
-	if (_room != kStoreRoom)
+void StoreRoom::start() {
+	if (_vm->_room != kStoreRoom)
 		return;
 
 	for (uint slot : kSalesmanSlots)
-		_anims.setHold(slot, true);
+		_vm->_anims.setHold(slot, true);
 
 	_storeStep = 0;
 	_storePos = 0;
@@ -361,9 +345,9 @@ void AlienEngine::startStore() {
 	// gives it back when the menu opens.
 	CursorMan.showMouse(false);
 
-	if (_script.flag(kVisited) == 0 && _script.flag(kTraded) == 0) {
+	if (_vm->_script.flag(kVisited) == 0 && _vm->_script.flag(kTraded) == 0) {
 		// 0x0280, the first visit.
-		_script.setFlag(kVisited, 1);
+		_vm->_script.setFlag(kVisited, 1);
 		loadStoreScript(kOpeningScript);
 		_storeStep = kStepOpening;
 		_storeLine = 1;
@@ -373,7 +357,7 @@ void AlienEngine::startStore() {
 		return;
 	}
 
-	if (_script.flag(kTraded) == 1) {
+	if (_vm->_script.flag(kTraded) == 1) {
 		// 0x02c7: he has the suit, so the store has five more lines and no menu.
 		// [0xa4a2] is not reset here: it is left where the trade's own banter
 		// stopped, which is nine, and sales3.tal is numbered to follow on.
@@ -393,14 +377,14 @@ void AlienEngine::startStore() {
 	debugC(1, kDebugRooms, "store: back without the suit, step 0x%02x", kStepUntraded);
 }
 
-void AlienEngine::stepStore() {
-	if (_room != kStoreRoom || !_storeStep)
+void StoreRoom::tickPair() {
+	if (_vm->_room != kStoreRoom || !_storeStep)
 		return;
 
 	// [0xad1b]: the frame a line comes down the room stops the talking loop
 	// (0x08f1). The port has no such pulse, so the flag the line was started
 	// with stands in for it.
-	if (_storeTalking && speechDone()) {
+	if (_storeTalking && _vm->speechDone()) {
 		_storeTalking = false;
 		storePose(kPoseStopCase);
 	}
@@ -414,14 +398,14 @@ void AlienEngine::stepStore() {
 		// clock.
 		if (_storePos == kArrivalWait) {
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, kArrivalLine, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, kArrivalLine, anchorX, anchorY);
 			debugC(1, kDebugRooms, "store: walks in on outcome 0x%02x", kArrivalLine);
 		}
 
-		if (!_storeWalked && _storePos > kArrivalWait && speechDone()) {
+		if (!_storeWalked && _storePos > kArrivalWait && _vm->speechDone()) {
 			_storeWalked = true;
-			walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
+			_vm->walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
 		}
 
 		if (_storePos == kTurnWait)
@@ -439,7 +423,7 @@ void AlienEngine::stepStore() {
 
 	case kStepBanter:
 		// 0x05ca: one line per line that came down, until the twelfth.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
 		_storeLine++;
@@ -454,10 +438,10 @@ void AlienEngine::stepStore() {
 	case kStepMenu:
 		// 0x0647: the cursor comes back and the menu opens on topic 0.
 		CursorMan.showMouse(true);
-		if (_chat.isActive())
+		if (_vm->_chat.isActive())
 			break;
 
-		openChat(0);
+		_vm->openChat(0);
 		_storeStep = kStepWait;
 		_storePos = 0;
 		debugC(1, kDebugChat, "store: the menu opens, step %d", kStepWait);
@@ -467,7 +451,7 @@ void AlienEngine::stepStore() {
 		// 0x0670, the wait the whole room hangs on. Two things end it. The
 		// state's own [0xa892] = 1, which it writes every frame it stands, is
 		// left out: nothing in the port reads that byte.
-		if (_chat.choice() == kLeaveOption) {
+		if (_vm->_chat.choice() == kLeaveOption) {
 			_storeStep = kStepGoodbye;
 			_storePos = 0;
 			CursorMan.showMouse(false);
@@ -475,12 +459,12 @@ void AlienEngine::stepStore() {
 			break;
 		}
 
-		if (_heldItem) {
+		if (_vm->_heldItem) {
 			// [0xa825] == 2 with [0xa6bb] set: an item out of the bar is what
 			// an offer is in a room with nothing to click on. OBJ:sub_09700
 			// empties the hand either way.
-			_storeOffer = _heldItem;
-			holdItem(Inventory::kNoItem);
+			_storeOffer = _vm->_heldItem;
+			_vm->holdItem(Inventory::kNoItem);
 			_storeStep = kStepOffer;
 			_storePos = 0;
 			CursorMan.showMouse(false);
@@ -488,11 +472,11 @@ void AlienEngine::stepStore() {
 			// 0x06dc / 0x06fc: the menu slides off the bottom of the screen
 			// (OBJ:sub_02f27), whichever way the offer goes, and the bar stays
 			// away until the store is done with him.
-			_chatOwnsBar = false;
-			_chat.close();
-			hideBar();
+			_vm->_chatOwnsBar = false;
+			_vm->_chat.close();
+			_vm->hideBar();
 			debugC(1, kDebugItems, "store: offered item %u (%s)", _storeOffer,
-				   _inventory.name(_storeOffer).c_str());
+				   _vm->_inventory.name(_storeOffer).c_str());
 		}
 		break;
 
@@ -500,9 +484,9 @@ void AlienEngine::stepStore() {
 		// 0x06b3: the arrow is the trade and everything else is a refusal.
 		_storeSpeaker = 1;
 		if (_storeOffer == kArrow) {
-			_script.setFlag(kTraded, 1);
-			_inventory.add(kDivingSuit);
-			_inventory.remove(kArrow);
+			_vm->_script.setFlag(kTraded, 1);
+			_vm->_inventory.add(kDivingSuit);
+			_vm->_inventory.remove(kArrow);
 			_storeStep = kStepTrade;
 			_storePos = 0;
 			_storeLine = 1;
@@ -515,7 +499,7 @@ void AlienEngine::stepStore() {
 		{
 			// GFX:sub_26ebc(2), the resident random: two refusals, two lines
 			// each.
-			const uint which = _rnd.getRandomNumber(1);
+			const uint which = _vm->_rnd.getRandomNumber(1);
 			_storeStep = kStepRefuse;
 			_storePos = 0;
 			_storeLine = kRefuseFirst[which];
@@ -527,7 +511,7 @@ void AlienEngine::stepStore() {
 
 	case kStepTrade:
 		// 0x073c
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
 		_storeLine++;
@@ -540,7 +524,7 @@ void AlienEngine::stepStore() {
 
 	case kStepRefuse:
 		// 0x0764
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
 		_storeLine++;
@@ -554,10 +538,10 @@ void AlienEngine::stepStore() {
 	case kStepAgain:
 		// 0x07f0: the menu comes back, on the topic after the one he used.
 		CursorMan.showMouse(true);
-		if (_chat.isActive())
+		if (_vm->_chat.isActive())
 			break;
 
-		openChat(1);
+		_vm->openChat(1);
 		_storeStep = kStepWait;
 		_storePos = 0;
 		break;
@@ -565,7 +549,7 @@ void AlienEngine::stepStore() {
 	case kStepGoodbye:
 		// 0x0793: the option's own line has to come down before the answer.
 		CursorMan.showMouse(false);
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
 		storeSalesmanLine(kFarewell);
@@ -576,23 +560,23 @@ void AlienEngine::stepStore() {
 	case kStepClose:
 		// 0x07b7: the menu goes, and with it the cursor, and the bar comes
 		// back up -- with the suit in it, if that is how it went (sub_030f4).
-		_chatOwnsBar = false;
-		if (_chat.isActive()) {
-			_chat.close();
+		_vm->_chatOwnsBar = false;
+		if (_vm->_chat.isActive()) {
+			_vm->_chat.close();
 			CursorMan.showMouse(false);
-			_dirty = true;
+			_vm->_dirty = true;
 		}
-		showBar();
+		_vm->showBar();
 
 		_storeStep = kStepLeaving;
 		_storePos = 0;
-		walkHandRoute(kDoorX, kDoorY, kLeaveX, kLeaveY, kLeaveFacing);
+		_vm->walkHandRoute(kDoorX, kDoorY, kLeaveX, kLeaveY, kLeaveFacing);
 		break;
 
 	case kStepReturn:
 		// 0x0814, the visit with the suit already bought.
 		if (_storePos == kReturnWait)
-			walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
+			_vm->walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
 
 		if (_storePos > kArrivalWait) {
 			_storeStep = kStepReturnLines;
@@ -603,7 +587,7 @@ void AlienEngine::stepStore() {
 
 	case kStepReturnLines:
 		// 0x0845
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
 		_storeLine++;
@@ -616,10 +600,10 @@ void AlienEngine::stepStore() {
 
 	case kStepReturnDone:
 		// 0x086d
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
-		_script.setFlag(kToldAgain, 1);
+		_vm->_script.setFlag(kToldAgain, 1);
 		_storeStep = kStepClose;
 		_storePos = 0;
 		break;
@@ -632,12 +616,12 @@ void AlienEngine::stepStore() {
 		_storeStep = kStepUntradedLine;
 		_storePos = 0;
 		storeSalesmanLine(kReturnLine);
-		walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
+		_vm->walkHandRoute(kDoorX, kDoorY, kCounterX, kCounterY, kCounterFacing);
 		break;
 
 	case kStepUntradedLine:
 		// 0x08b1
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 
 		_storeStep = kStepMenu;
@@ -649,12 +633,12 @@ void AlienEngine::stepStore() {
 		// said. The original tests two runtime globals more -- [0xa8f4] and
 		// [0xa808] -- which are the walk system's own and have no counterpart
 		// here; the walker being idle is what they come to.
-		if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+		if (_vm->_ben.isWalking() || _vm->_ben.isTurning() || !_vm->speechDone())
 			break;
 
 		_storeStep = 0;
 		debugC(1, kDebugRooms, "store: submode %d, back out into town", kSubmodeTown);
-		takeExit(kSubmodeTown);
+		_vm->takeExit(kSubmodeTown);
 		return;
 
 	default:

@@ -124,9 +124,7 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_charPaletteAltLoaded(false), _lightLevel(0), _lightPrev(0), _lightArmed(false), _musicSlot(-1), _liftPlayed(false), _subtitles(true), _showWalk(false), _showSpots(false), _lastTick(0), _tick(0),
 		_timescale(1), _virtualMillis(0), _clockRealBase(0), _clockVirtualBase(0), _presentLast(0),
 		_hotspotStamp(0), _pausedMillis(0), _pauseStart(0), _clockPaused(false),
-		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false),
-		_storeStep(0), _storePos(0), _storeLine(1), _storeSpeaker(0), _storeOffer(0),
-		_storeWalked(false), _storeTalking(false), _rnd("alien"),
+		_hover(-1), _hoverSlot(-1), _hoverArrow(Inventory::kArrowNone), _hoverMenu(false), _menuRequest(false), _inMenu(false), _rnd("alien"),
 		_heldItem(Inventory::kNoItem), _pendingItem(Inventory::kNoItem),
 		_pending(-1), _pendingOutcome(0),
 		_armed(0), _armedX(0), _armedY(0), _armedFacing(Walker::kFacingKeep), _mode(0),
@@ -726,10 +724,6 @@ void AlienEngine::stepClock() {
 		// And room 52's robot, once the scan has found no mask (scanner.cpp).
 		stepScanner();
 
-		// And room 30's, which is the whole of the antique store: the
-		// conversation, the arrow traded for the diving suit, and the walk out
-		// that is the room's only exit (store.cpp).
-		stepStore();
 
 
 

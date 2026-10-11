@@ -515,12 +515,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// with the character talking to himself before the player gets the cursor.
 	startOpening();
 
-	// And the antique store, whose whole scene is a machine of its own: the way
-	// in picks which of three dialog files the room speaks out of, so it runs
-	// here rather than with the other arrivals, after the room's own file has
-	// been read (store.cpp).
-	startStore();
-
 	// And the two mazes, whose dialog file the shared overlay's manifest names
 	// wrongly and whose torch the cell may not have (maze.cpp).
 	startMaze();
@@ -893,6 +887,28 @@ void AlienEngine::straightWalkTo(int x, int y, int arrivalFacing) {
 	_ben.setLedgePace(_script.flag(0xa73a) == 1);
 	_ben.follow(_route, x, y, arrivalFacing);
 	_dirty = true;
+}
+
+/**
+ * 1021:sub_1023c, the hand-built route.
+ *
+ * The antique store has no walk mask, so nothing can be routed through it: the original
+ * writes two points into the walk arrays itself and lets the walker run them.
+ * The port's walker takes a route the same way, with the character's own
+ * position as the first point and the target appended by `follow`.
+ */
+void AlienEngine::walkHandRoute(int viaX, int viaY, int x, int y, int facing) {
+	WalkRoute route;
+	route.points[0].x = (int16)_ben.walkX();
+	route.points[0].y = (int16)_ben.walkY();
+	route.points[1].x = (int16)viaX;
+	route.points[1].y = (int16)viaY;
+	route.count = 2;
+	_ben.follow(route, x, y, facing);
+	_dirty = true;
+
+	debugC(1, kDebugRooms, "store: walks %d,%d -> %d,%d -> %d,%d facing %d",
+		   _ben.walkX(), _ben.walkY(), viaX, viaY, x, y, facing);
 }
 
 /**
