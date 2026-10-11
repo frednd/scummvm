@@ -28,6 +28,7 @@
 #include "alien/detection.h"
 #include "alien/play.h"
 #include "alien/resources.h"
+#include "alien/rooms/corridor.h"
 
 namespace Alien {
 
@@ -135,7 +136,7 @@ static const uint kScriptedGiveUp = 3000;
  * The panel, as 15f3:sub_16895 runs it. Blocks like playObservatoryScreen(),
  * and ends by taking the exit LOGIC:sub_1265c would have armed.
  */
-void AlienEngine::playElevatorPanel() {
+void CorridorRoom::playElevatorPanel() {
 	Graphics::Surface plate;
 	byte palette[256 * 3];
 	if (!loadGamePCX(Common::Path(kPlate), plate, palette)) {
@@ -144,28 +145,28 @@ void AlienEngine::playElevatorPanel() {
 		return;
 	}
 
-	stopSpeech();
-	_cutscene = true;
-	_background.free();
-	_background = plate;
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
+	_vm->stopSpeech();
+	_vm->_cutscene = true;
+	_vm->_background.free();
+	_vm->_background = plate;
+	_vm->_roomWidth = AlienEngine::kScreenWidth;
+	_vm->_scrollX = 0;
 
-	const int clip = _clipBottom;
-	_clipBottom = _screen.h - 1;
-	memcpy(_palette, palette, sizeof(_palette));
+	const int clip = _vm->_clipBottom;
+	_vm->_clipBottom = _vm->_screen.h - 1;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 	// 0x0977: [0xa948] and [0xa949], the cursor and the clicks both on.
 	CursorMan.showMouse(true);
 
-	_anims.loadBanks(kBanks, ARRAYSIZE(kBanks));
+	_vm->_anims.loadBanks(kBanks, ARRAYSIZE(kBanks));
 	// 0x09ee: the readout, relaunched every pass below.
-	_anims.play(kSlotRead, 1, 3, 6, kForward);
+	_vm->_anims.play(kSlotRead, 1, 3, 6, kForward);
 
 	// 0x09fb..0x0a2e: sprite_find_slot for each card.
 	bool held[3];
 	bool noCard = true;
 	for (uint i = 0; i < 3; i++) {
-		held[i] = _inventory.has(kCardItems[i]);
+		held[i] = _vm->_inventory.has(kCardItems[i]);
 		noCard = noCard && !held[i];
 	}
 
@@ -179,27 +180,27 @@ void AlienEngine::playElevatorPanel() {
 
 	// sub_16814: the floor lights for the card in the slot, one held frame.
 	const auto showFloors = [&](uint c) {
-		_anims.play(kSlotFloors, (int)c + 1, 1, 0, kReturn);
+		_vm->_anims.play(kSlotFloors, (int)c + 1, 1, 0, kReturn);
 	};
 	// sub_167d3: the cards still on the tray.
 	const auto showCards = [&]() {
 		for (uint i = 0; i < 3; i++)
 			if (held[i])
-				_anims.play(kSlotCard1 + i, 1, 1, 0, kForward);
+				_vm->_anims.play(kSlotCard1 + i, 1, 1, 0, kForward);
 	};
 	// sub_167a7: all three lifted off the tray.
 	const auto hideCards = [&]() {
 		for (uint i = 0; i < 3; i++)
-			_anims.play(kSlotCard1 + i, 2, 1, 0, kForward);
+			_vm->_anims.play(kSlotCard1 + i, 2, 1, 0, kForward);
 	};
 
 	showFloors(0);
 	showCards();
 
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	_dirty = true;
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
+	_vm->_dirty = true;
 
-	debugC(1, kDebugRooms, "elevator: the panel opens in room %d, cards %d%d%d", _room,
+	debugC(1, kDebugRooms, "elevator: the panel opens in room %d, cards %d%d%d", _vm->_room,
 		   held[0], held[1], held[2]);
 
 	const auto handleClick = [&](int x, int y) {
@@ -215,12 +216,12 @@ void AlienEngine::playElevatorPanel() {
 			if (inPanelBox(x, y, kEjectBox)) {
 				// 0x0b8f
 				showCards();
-				_anims.play(kSlotSlot, 1, 1, 0, kForward);
+				_vm->_anims.play(kSlotSlot, 1, 1, 0, kForward);
 				clicks = kClicksCard;
 				card = 0;
 				showFloors(0);
 				loopPress = false;
-				_anims.play(kSlotPress, 0x0b, 8, 1, kForward);
+				_vm->_anims.play(kSlotPress, 0x0b, 8, 1, kForward);
 				step = kStepEjected;
 				debugC(1, kDebugRooms, "elevator: card ejected");
 			}
@@ -234,7 +235,7 @@ void AlienEngine::playElevatorPanel() {
 			if (!held[i] || !inPanelBox(x, y, kCardBoxes[i]))
 				continue;
 			// 0x0bf1 / 0x0c39 / 0x0c81
-			_anims.play(kSlotSlot, (int)i + 2, 1, 0, kForward);
+			_vm->_anims.play(kSlotSlot, (int)i + 2, 1, 0, kForward);
 			hideCards();
 			clicks = kClicksFloor;
 			card = i + 1;
@@ -247,12 +248,12 @@ void AlienEngine::playElevatorPanel() {
 	};
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = millis();
+	uint32 last = _vm->millis();
 	uint32 tick = 0;
 	uint scripted = 0;
 	uint32 playWaitUntil = 0;
 
-	while (!shouldQuit() && !_quit && !done) {
+	while (!_vm->shouldQuit() && !_vm->_quit && !done) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 			if (event.type == Common::EVENT_LBUTTONDOWN ||
@@ -262,26 +263,26 @@ void AlienEngine::playElevatorPanel() {
 
 		// The same scripted reader as the observatory computer's: waits are
 		// held for real, a click of either kind is a click on the panel.
-		if (_playActive && playWaitUntil != 0 && millis() >= playWaitUntil)
+		if (_vm->_playActive && playWaitUntil != 0 && _vm->millis() >= playWaitUntil)
 			playWaitUntil = 0;
 
-		if (_playActive && playWaitUntil == 0) {
-			while (_playIndex < _play.commands().size()) {
-				const PlayCommand &cmd = _play.commands()[_playIndex];
+		if (_vm->_playActive && playWaitUntil == 0) {
+			while (_vm->_playIndex < _vm->_play.commands().size()) {
+				const PlayCommand &cmd = _vm->_play.commands()[_vm->_playIndex];
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
-					_playIndex++;
+					_vm->_playIndex++;
 					scripted = 0;
 					// A wait is in master ticks, as the outer driver and the
 					// original's runner count it; a settle has nothing to watch
 					// here and holds for its timeout in milliseconds.
-					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0) *
-						(cmd.type == PlayCommand::kWait ? kMasterTickMillis : 1);
+					playWaitUntil = _vm->millis() + (uint32)MAX(cmd.a, 0) *
+						(cmd.type == PlayCommand::kWait ? AlienEngine::kMasterTickMillis : 1);
 					break;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
 					break;
 
-				_playIndex++;
+				_vm->_playIndex++;
 				scripted = 0;
 				debugC(1, kDebugRooms, "elevator: play: %u: click %d,%d", cmd.sourceLine,
 					   cmd.a, cmd.b);
@@ -294,7 +295,7 @@ void AlienEngine::playElevatorPanel() {
 				// A port-only guard, as the observatory computer has one: the
 				// original panel has no way out but a floor.
 				warning("elevator: the script left the panel open; taking the first floor a card allows");
-				playLeftOpen("the elevator panel");
+				_vm->playLeftOpen("the elevator panel");
 				for (uint i = 0; i < 3 && !card; i++)
 					if (held[i])
 						card = i + 1;
@@ -305,22 +306,22 @@ void AlienEngine::playElevatorPanel() {
 			}
 		}
 
-		const uint32 now = millis();
+		const uint32 now = _vm->millis();
 		while (now - last >= kTickMillis && !done) {
 			last += kTickMillis;
 			tick++;
-			sceneClockTick();
+			_vm->sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;
 
 			pos++;
-			_anims.tick();
+			_vm->_anims.tick();
 
 			// 0x0a95..0x0aa5: the readout always loops, the press when told.
-			_anims.relaunch(kSlotRead);
+			_vm->_anims.relaunch(kSlotRead);
 			if (loopPress)
-				_anims.relaunch(kSlotPress);
+				_vm->_anims.relaunch(kSlotPress);
 
 			switch (step) {
 			case kStepCardIn:
@@ -330,35 +331,35 @@ void AlienEngine::playElevatorPanel() {
 				// recomposites every slot every pass, and a stopped mode-1
 				// slot would keep "PLEASE INSERT YOUR SECURITY CARD" on top of
 				// the card's own text. Taking it down is the same picture.
-				_anims.takeDown(kSlotRead);
-				_anims.play(kSlotPress, 1, 0x0a, 2, kForward);
+				_vm->_anims.takeDown(kSlotRead);
+				_vm->_anims.play(kSlotPress, 1, 0x0a, 2, kForward);
 				step = kStepCardRead;
 				break;
 			case kStepCardRead:
 				// 0x0cca: [0xa4ef] == 2
-				if (_anims.remaining(kSlotPress) == 2) {
+				if (_vm->_anims.remaining(kSlotPress) == 2) {
 					loopPress = true;
-					_anims.play(kSlotPress, 9, 3, 6, kForward);
+					_vm->_anims.play(kSlotPress, 9, 3, 6, kForward);
 					step = kStepIdle;
 				}
 				break;
 			case kStepEjected:
 				// 0x0cee: [0xa4ef] == 0
-				if (_anims.remaining(kSlotPress) == 0) {
-					_anims.play(kSlotRead, 1, 3, 6, kForward);
+				if (_vm->_anims.remaining(kSlotPress) == 0) {
+					_vm->_anims.play(kSlotRead, 1, 3, 6, kForward);
 					step = kStepIdle;
 				}
 				break;
 			case kStepFloor:
 				// 0x0d0d
 				loopPress = false;
-				_anims.play(kSlotPress, 0x0b, 8, 1, kForward);
+				_vm->_anims.play(kSlotPress, 0x0b, 8, 1, kForward);
 				step = kStepClosing;
 				clicks = kClicksNone;
 				break;
 			case kStepClosing:
 				// 0x0d2e
-				if (_anims.remaining(kSlotPress) == 0)
+				if (_vm->_anims.remaining(kSlotPress) == 0)
 					done = true;
 				break;
 			case kStepNoCard:
@@ -372,30 +373,30 @@ void AlienEngine::playElevatorPanel() {
 				break;
 			}
 
-			_dirty = true;
+			_vm->_dirty = true;
 		}
 
-		if (_dirty)
-			redraw();
+		if (_vm->_dirty)
+			_vm->redraw();
 
 		if (debugChannelSet(4, kDebugRooms) && (tick & 0x3f) == 0)
-			dumpScreen(Common::String::format("elevator-%u.png", tick));
+			_vm->dumpScreen(Common::String::format("elevator-%u.png", tick));
 
-		present();
-		sleep(10);
+		_vm->present();
+		_vm->sleep(10);
 	}
 
 	// 0x0d5e: CUTSCENE:sub_0c5c9, the shared teardown, then [0xa7a1].
-	_cutscene = false;
-	_clipBottom = clip;
-	_script.setFlag(kScenePlayed, 1);
-	_script.setFlag(kElevatorArrival, 1);
-	_script.setFlag(kFloorPicked, floor);
+	_vm->_cutscene = false;
+	_vm->_clipBottom = clip;
+	_vm->_script.setFlag(kScenePlayed, 1);
+	_vm->_script.setFlag(kElevatorArrival, 1);
+	_vm->_script.setFlag(kFloorPicked, floor);
 
 	// LOGIC:sub_1265c, reached through [0xa79f] and the room's loop ending.
 	byte submode;
 	if (floor == kFloorNoCard) {
-		_script.setFlag(kNoCardLine, 1);
+		_vm->_script.setFlag(kNoCardLine, 1);
 		submode = kSubmodeNoCard;
 	} else {
 		submode = (byte)(kSubmodeFirstFloor + floor - 1);
@@ -404,13 +405,13 @@ void AlienEngine::playElevatorPanel() {
 	debugC(1, kDebugRooms, "elevator: the panel closes on floor %u, submode %u", floor,
 		   submode);
 
-	const int room = _room;
-	if (!takeExit(submode) && room > 0)
-		loadRoom(room, false, true);
+	const int room = _vm->_room;
+	if (!_vm->takeExit(submode) && room > 0)
+		_vm->loadRoom(room, false, true);
 
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
 	CursorMan.showMouse(true);
-	_dirty = true;
+	_vm->_dirty = true;
 }
 
 } // End of namespace Alien

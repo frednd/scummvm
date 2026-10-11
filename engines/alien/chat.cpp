@@ -525,8 +525,6 @@ bool AlienEngine::chatReplyOwed() const {
 	for (const Room *r : _rooms)
 		if (r->replyOwed())
 			return true;
-	if (hallwayOwesReply())
-		return true;
 	if (_chatPickNew && _chatPickReply)
 		return true;
 	return _room == kYodleChatRoom && _yodleAnswer;

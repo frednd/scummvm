@@ -132,10 +132,11 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		for (Room *r : _rooms)
 			room = r->redirect(room);
 
-	// And room 57's alarm, which its own entry plays in front of the room the
+	// And the way in, which room 57's alarm plays in front of the room the
 	// first time it is entered with the force field down (corridor.cpp).
 	if (!keepPosition)
-		hallwayScene(room);
+		for (Room *r : _rooms)
+			r->approach(room);
 
 	// Before anything is read: the two mazes take their position from the way
 	// in, and their plate and their rectangles are both read from it
@@ -540,9 +541,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	startForest();
 	startObservatory();
 
-	// And the ship's four elevator floors (corridor.cpp), the scanner's
-	// robot (scanner.cpp).
-	startCorridor();
 
 	// And the rooms' own (rooms/), in the order rooms.cpp gives.
 	for (Room *r : _rooms)
@@ -857,7 +855,7 @@ void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 		for (Room *r : _rooms)
 			if (r->walkUnrouted(x, y, arrivalFacing))
 				return;
-		if (mazeWalkTo(x, y, arrivalFacing) || hallwayWalkTo(x, y, arrivalFacing))
+		if (mazeWalkTo(x, y, arrivalFacing))
 			return;
 
 		debugC(1, kDebugGraphics, "walk to %d,%d: room %d has no walk mask", x, y, _room);

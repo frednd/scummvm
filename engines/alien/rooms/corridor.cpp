@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/corridor.h"
 
 namespace Alien {
 
@@ -283,9 +284,13 @@ static bool isElevatorRoom(int room) {
 		   room == kCorridorRoom;
 }
 
+CorridorRoom::CorridorRoom(AlienEngine *vm) : Room(vm),
+		_terminalStep(0), _hallAlienCount(0), _hallAlienWait(0), _hallAlienLast(1) {
+}
+
 /// The prologues' flag writes, which the lift leaves to hand code (see this
 /// file's header), and room 53's man.
-void AlienEngine::startCorridor() {
+void CorridorRoom::start() {
 	_hallMan = HallMan();
 	_terminalStep = 0;
 	_hallAlienCount = 0;
@@ -295,101 +300,101 @@ void AlienEngine::startCorridor() {
 	// ovr_38_0f92:0x0499: room 56 drops its door's edge on every way in, and
 	// the way in from the scanner (0x0634) is through the door, drawn open by
 	// a lifted row.
-	if (_room == kChamberRoom) {
-		_script.setFlag(kDoorB, 0);
-		_script.setFlag(kDoorBWas, 0);
-		if (_mode == kScannerRoom)
-			_script.setFlag(kDoorB, 1);
+	if (_vm->_room == kChamberRoom) {
+		_vm->_script.setFlag(kDoorB, 0);
+		_vm->_script.setFlag(kDoorBWas, 0);
+		if (_vm->_mode == kScannerRoom)
+			_vm->_script.setFlag(kDoorB, 1);
 	}
 
 	// Room 59 the same, through the pod door from room 53.
-	if (_room == kPodRoom) {
-		_script.setFlag(kDoorB, 0);
-		_script.setFlag(kDoorBWas, 0);
-		if (_mode == kHallwayRoomA)
-			_script.setFlag(kDoorB, 1);
+	if (_vm->_room == kPodRoom) {
+		_vm->_script.setFlag(kDoorB, 0);
+		_vm->_script.setFlag(kDoorBWas, 0);
+		if (_vm->_mode == kHallwayRoomA)
+			_vm->_script.setFlag(kDoorB, 1);
 	}
 
-	if (!isElevatorRoom(_room))
+	if (!isElevatorRoom(_vm->_room))
 		return;
 
 	// ovr_37_0f9a:0x0284: room 55 drops both its doors' edges, and the way in
 	// from the scanner (0x0401) is through door A, drawn open by a lifted row.
-	if (_room == kCorridorRoom) {
-		_script.setFlag(kDoorA, 0);
-		_script.setFlag(kDoorAWas, 0);
-		_script.setFlag(kDoorB, 0);
-		_script.setFlag(kDoorBWas, 0);
-		if (_mode == kScannerRoom)
-			_script.setFlag(kDoorA, 1);
+	if (_vm->_room == kCorridorRoom) {
+		_vm->_script.setFlag(kDoorA, 0);
+		_vm->_script.setFlag(kDoorAWas, 0);
+		_vm->_script.setFlag(kDoorB, 0);
+		_vm->_script.setFlag(kDoorBWas, 0);
+		if (_vm->_mode == kScannerRoom)
+			_vm->_script.setFlag(kDoorA, 1);
 	}
 
 	// ovr_33_0faa:0x0290: the lobby drops its corridor door's edge, and the way
 	// in from the jail (0x038f) is through that door, drawn open by a lifted
 	// row.
-	if (_room == kLobbyRoom) {
-		_script.setFlag(kDoorB, 0);
-		_script.setFlag(kDoorBWas, 0);
-		if (_mode == kJailRoom)
-			_script.setFlag(kDoorB, 1);
+	if (_vm->_room == kLobbyRoom) {
+		_vm->_script.setFlag(kDoorB, 0);
+		_vm->_script.setFlag(kDoorBWas, 0);
+		if (_vm->_mode == kJailRoom)
+			_vm->_script.setFlag(kDoorB, 1);
 	}
 
-	if (_room == kHallwayRoomB)
-		_script.setFlag(kPumpPlayed, 1);
+	if (_vm->_room == kHallwayRoomB)
+		_vm->_script.setFlag(kPumpPlayed, 1);
 
 	// 0x0270 / 0x0258 / 0x05f2: with the badge handed over, the man is gone
 	// the next time any other floor is entered.
-	if (_room != kHallwayRoomA && _script.flag(kBadge) == 1 && _script.flag(kManThere) != 0) {
-		_script.setFlag(kManThere, 0);
+	if (_vm->_room != kHallwayRoomA && _vm->_script.flag(kBadge) == 1 && _vm->_script.flag(kManThere) != 0) {
+		_vm->_script.setFlag(kManThere, 0);
 		debugC(1, kDebugRooms, "corridor: the maintenance man has left room 53");
 	}
 
 	// 0x0be3: room 53 locks the pod door on every way in, and drops both its
 	// door pairs; the way back from the pod opens it again (0x0d3d).
-	if (_room == kHallwayRoomA) {
-		_script.setFlag(kPodLocked, 1);
-		_script.setFlag(kDoorA, 0);
-		_script.setFlag(kDoorAWas, 0);
-		_script.setFlag(kDoorB, 0);
-		_script.setFlag(kDoorBWas, 0);
-		if (_mode == kPodRoom) {
-			_script.setFlag(kDoorA, 1);
-			_script.setFlag(kDoorAWas, 1);
-			_script.setFlag(kPodLocked, 0);
+	if (_vm->_room == kHallwayRoomA) {
+		_vm->_script.setFlag(kPodLocked, 1);
+		_vm->_script.setFlag(kDoorA, 0);
+		_vm->_script.setFlag(kDoorAWas, 0);
+		_vm->_script.setFlag(kDoorB, 0);
+		_vm->_script.setFlag(kDoorBWas, 0);
+		if (_vm->_mode == kPodRoom) {
+			_vm->_script.setFlag(kDoorA, 1);
+			_vm->_script.setFlag(kDoorAWas, 1);
+			_vm->_script.setFlag(kPodLocked, 0);
 		}
 	}
 
-	if (_script.flag(kElevatorArrival) == 1) {
-		_script.setFlag(kElevatorArrival, 0);
-		if (_room == kLobbyRoom) {
-			_script.setFlag(kDoorA, 1);
-			_script.setFlag(kDoorAWas, 1);
+	if (_vm->_script.flag(kElevatorArrival) == 1) {
+		_vm->_script.setFlag(kElevatorArrival, 0);
+		if (_vm->_room == kLobbyRoom) {
+			_vm->_script.setFlag(kDoorA, 1);
+			_vm->_script.setFlag(kDoorAWas, 1);
 		} else {
-			_script.setFlag(kDoorB, 1);
-			_script.setFlag(kDoorBWas, 1);
+			_vm->_script.setFlag(kDoorB, 1);
+			_vm->_script.setFlag(kDoorBWas, 1);
 		}
-		debugC(1, kDebugRooms, "corridor: out of the elevator into room %d", _room);
+		debugC(1, kDebugRooms, "corridor: out of the elevator into room %d", _vm->_room);
 	}
 
 	// 0x087d: back from the terminal, whose placement is a lifted row.
-	if (_room == kHallwayRoomB)
-		_script.setFlag(kTerminalReturn, 0);
+	if (_vm->_room == kHallwayRoomB)
+		_vm->_script.setFlag(kTerminalReturn, 0);
 
-	if (_room == kHallwayRoomA) {
-		if (_script.flag(kManThere) == 1) {
+	if (_vm->_room == kHallwayRoomA) {
+		if (_vm->_script.flag(kManThere) == 1) {
 			// 0x0dbb: DLGREQ:sub_0c250 is only the anchor and colour his
 			// answers are drawn in (kManX, kManInk), and he is at work.
 			hallManPose(kPoseWork);
 		} else {
-			_script.setFlag(kManGone, 1);
+			_vm->_script.setFlag(kManGone, 1);
 		}
 	}
 
-	if (_room == kCorridorRoom && _script.flag(kNoCardLine) == 1) {
-		_script.setFlag(kNoCardLine, 0);
+	if (_vm->_room == kCorridorRoom && _vm->_script.flag(kNoCardLine) == 1) {
+		_vm->_script.setFlag(kNoCardLine, 0);
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOutcomeNoCard, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeNoCard, anchorX, anchorY);
 		debugC(1, kDebugRooms, "corridor: back without a card");
 	}
 }
@@ -401,47 +406,47 @@ void AlienEngine::startCorridor() {
  * body, so it also fires in room 57 the moment the terminal takes the field
  * down, not only on the next way in.
  */
-bool AlienEngine::hallwayScene(int room) {
-	if ((room != kHallwayRoomA && room != kHallwayRoomB) || _script.flag(kAlarmLatch) != 0 ||
-		_script.flag(kFieldUp) != 0)
+bool CorridorRoom::hallwayScene(int room) {
+	if ((room != kHallwayRoomA && room != kHallwayRoomB) || _vm->_script.flag(kAlarmLatch) != 0 ||
+		_vm->_script.flag(kFieldUp) != 0)
 		return false;
 
-	_script.setFlag(kAlarmLatch, 1);
+	_vm->_script.setFlag(kAlarmLatch, 1);
 	debugC(1, kDebugRooms, "corridor: the alarm, with the force field down");
-	playDl2Clip("HAL_MONS.DL2", "HAL_MONS.PCX", kAlarmMusic, "alarm");
+	_vm->playDl2Clip("HAL_MONS.DL2", "HAL_MONS.PCX", kAlarmMusic, "alarm");
 	for (uint i = 0; i < ARRAYSIZE(kWaitingFlags); i++)
-		_script.setFlag(kWaitingFlags[i], 0);
-	_script.setFlag(kAlarmPlayed, 1);
+		_vm->_script.setFlag(kWaitingFlags[i], 0);
+	_vm->_script.setFlag(kAlarmPlayed, 1);
 	return true;
 }
 
 /// CHARANIM:sub_150f4 / sub_151bc: a walk that ended at the elevator door; and
 /// in room 53 sub_15120, one that ended at the pod door while it is locked.
-void AlienEngine::corridorArrival() {
-	if (!isElevatorRoom(_room))
+void CorridorRoom::corridorArrival() {
+	if (!isElevatorRoom(_vm->_room))
 		return;
-	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+	if (_vm->_ben.isWalking() || _vm->_ben.isTurning() || !_vm->speechDone())
 		return;
 
-	if (_room == kHallwayRoomA && _script.flag(kClickedObj) == kPodDoor &&
-		_script.flag(kPodLocked) == 1) {
-		_script.setFlag(kClickedObj, 0);
+	if (_vm->_room == kHallwayRoomA && _vm->_script.flag(kClickedObj) == kPodDoor &&
+		_vm->_script.flag(kPodLocked) == 1) {
+		_vm->_script.setFlag(kClickedObj, 0);
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOutcomePodLocked, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomePodLocked, anchorX, anchorY);
 		return;
 	}
 
-	if (_script.flag(kClickedObj) != kElevatorObj)
+	if (_vm->_script.flag(kClickedObj) != kElevatorObj)
 		return;
 
 	// 0x158a: the latch is spent as the panel opens.
-	_script.setFlag(kClickedObj, 0);
+	_vm->_script.setFlag(kClickedObj, 0);
 	playElevatorPanel();
 }
 
 /// MIDAS:sub_19bf3: the man's pose byte and the list it plays.
-void AlienEngine::hallManPose(byte pose) {
+void CorridorRoom::hallManPose(byte pose) {
 	if (pose < kPoseTurnIn || pose > kPoseWork)
 		return;
 
@@ -450,9 +455,9 @@ void AlienEngine::hallManPose(byte pose) {
 
 	// A port addition, as jail.cpp has for the uncle: the tick pair between
 	// two poses never shows him blank.
-	_anims.setHold(kManSlot, true);
-	_anims.play(kManSlot, 0, p.count, p.rate, kListMode, p.frames);
-	_anims.setLoopFlag(kManSlot, p.loop ? 1 : 0);
+	_vm->_anims.setHold(kManSlot, true);
+	_vm->_anims.play(kManSlot, 0, p.count, p.rate, kListMode, p.frames);
+	_vm->_anims.setLoopFlag(kManSlot, p.loop ? 1 : 0);
 }
 
 /**
@@ -461,41 +466,41 @@ void AlienEngine::hallManPose(byte pose) {
  * the menu -- is a call it cannot carry, and the loudspeaker, the same twice
  * over (entry 4, 0x013d and 0x0187).
  */
-bool AlienEngine::armHallway(int obj, byte verb, int item) {
+bool CorridorRoom::armHallway(int obj, byte verb, int item) {
 	if (item)
 		return false;
 
-	if (_room == kHallwayRoomA && obj == kMaintenanceMan && verb == kVerbTalkTo &&
-		_script.flag(kManThere) == 1) {
+	if (_vm->_room == kHallwayRoomA && obj == kMaintenanceMan && verb == kVerbTalkTo &&
+		_vm->_script.flag(kManThere) == 1) {
 		uint topic = 0;
-		if (_script.flag(kBadge) == 1) {
-			topic = _script.flag(kManTopic);
+		if (_vm->_script.flag(kBadge) == 1) {
+			topic = _vm->_script.flag(kManTopic);
 			byte next = (byte)(topic + 1);
 			if (next > kManTopicLast)
 				next = kManTopicFirst;
-			_script.setFlag(kManTopic, next);
+			_vm->_script.setFlag(kManTopic, next);
 		}
 
-		openChat(topic);
+		_vm->openChat(topic);
 		_hallMan.step = kStepListening;
 		hallManPose(kPoseTurnIn);
 		debugC(1, kDebugChat, "corridor: the maintenance man, topic %u", topic);
 		return true;
 	}
 
-	if (_room == kHallwayRoomB && obj == kLoudspeaker && verb == kVerbLookAt) {
-		const byte line = (byte)_script.flag(kSpeakerLine);
-		const TalFile::Entry &entry = _tal.entry(line);
+	if (_vm->_room == kHallwayRoomB && obj == kLoudspeaker && verb == kVerbLookAt) {
+		const byte line = (byte)_vm->_script.flag(kSpeakerLine);
+		const TalFile::Entry &entry = _vm->_tal.entry(line);
 		if (entry.present) {
-			setTextColor(kSpeakerInk[0], kSpeakerInk[1], kSpeakerInk[2]);
-			uploadTextColor();
-			speakEntry(entry, kSpeakerX, kSpeakerY, speechTicksFor(_tal, line));
+			_vm->setTextColor(kSpeakerInk[0], kSpeakerInk[1], kSpeakerInk[2]);
+			_vm->uploadTextColor();
+			_vm->speakEntry(entry, kSpeakerX, kSpeakerY, _vm->speechTicksFor(_vm->_tal, line));
 		}
 
 		byte next = (byte)(line + 1);
 		if (next > kSpeakerLast)
 			next = kSpeakerFirst;
-		_script.setFlag(kSpeakerLine, next);
+		_vm->_script.setFlag(kSpeakerLine, next);
 		debugC(1, kDebugRooms, "corridor: the loudspeaker, dialog %u", line);
 		return true;
 	}
@@ -508,10 +513,10 @@ bool AlienEngine::armHallway(int obj, byte verb, int item) {
  * password known (the lifted row's outcome 3) the room takes the cursor and
  * waits for it to come down (0x0072).
  */
-void AlienEngine::armHallwayCard(int obj, int item) {
-	if (_room != kHallwayRoomB || obj != kTerminal || item != kItemRedCard)
+void CorridorRoom::armHallwayCard(int obj, int item) {
+	if (_vm->_room != kHallwayRoomB || obj != kTerminal || item != kItemRedCard)
 		return;
-	if (_script.flag(kFieldUp) != 1 || _script.flag(kPasswordKnown) != 1)
+	if (_vm->_script.flag(kFieldUp) != 1 || _vm->_script.flag(kPasswordKnown) != 1)
 		return;
 
 	_terminalStep = kStepCardLine;
@@ -520,39 +525,39 @@ void AlienEngine::armHallwayCard(int obj, int item) {
 }
 
 /// Whether the man still has the answer to the last pick to give (chat.cpp).
-bool AlienEngine::hallwayOwesReply() const {
-	return _room == kHallwayRoomA && _hallMan.answer;
+bool CorridorRoom::replyOwed() const {
+	return _vm->_room == kHallwayRoomA && _hallMan.answer;
 }
 
 /**
  * Room 53's tick: CHARANIM:sub_151e8 and DIALOG:sub_0bfb4, the answer to a
  * pick, and the room's [0xa49f] machine around them (0x0feb).
  */
-void AlienEngine::stepHallMan() {
+void CorridorRoom::stepHallMan() {
 	// [0xad1a]: a line has just come down, or a pick has just been made
 	// (OBJ:0x5fc7 and 0x23a0).
-	const bool speaking = !speechDone();
+	const bool speaking = !_vm->speechDone();
 	bool settled = _hallMan.speaking && !speaking;
 	_hallMan.speaking = speaking;
 	if (settled) {
-		setTextColor(0x3f, 0x3f, 0x3f);
-		uploadTextColor();
+		_vm->setTextColor(0x3f, 0x3f, 0x3f);
+		_vm->uploadTextColor();
 	}
 
-	if (_chatPickNew) {
-		_chatPickNew = false;
+	if (_vm->_chatPickNew) {
+		_vm->_chatPickNew = false;
 		settled = true;
 
 		// [0xa60f]: the option picked ends the conversation.
-		_hallMan.ended = _chatPickNext == TalFile::kChatEnd;
+		_hallMan.ended = _vm->_chatPickNext == TalFile::kChatEnd;
 
-		if (_chatPickReply) {
-			const TalFile::Entry &entry = _tal.entry(_chatPickReply);
+		if (_vm->_chatPickReply) {
+			const TalFile::Entry &entry = _vm->_tal.entry(_vm->_chatPickReply);
 			if (entry.present) {
 				_hallMan.replyEntry = entry;
-				_hallMan.replyTicks = speechTicksFor(_tal, _chatPickReply);
-				_hallMan.reply = _chatPickReply;
-				_hallMan.replyTopic = _chatPickTopic;
+				_hallMan.replyTicks = _vm->speechTicksFor(_vm->_tal, _vm->_chatPickReply);
+				_hallMan.reply = _vm->_chatPickReply;
+				_hallMan.replyTopic = _vm->_chatPickTopic;
 				_hallMan.answer = true;
 			}
 		}
@@ -560,11 +565,11 @@ void AlienEngine::stepHallMan() {
 
 	// sub_151e8: the pick's own line is down, so he answers it; sub_0bfb4
 	// speaks the reply byte and, on three topics, hands the badge over.
-	if (_hallMan.answer && speechDone()) {
+	if (_hallMan.answer && _vm->speechDone()) {
 		_hallMan.answer = false;
-		setTextColor(kManInk[0], kManInk[1], kManInk[2]);
-		uploadTextColor();
-		speakEntry(_hallMan.replyEntry, kManX, kManY, _hallMan.replyTicks);
+		_vm->setTextColor(kManInk[0], kManInk[1], kManInk[2]);
+		_vm->uploadTextColor();
+		_vm->speakEntry(_hallMan.replyEntry, kManX, kManY, _hallMan.replyTicks);
 		_hallMan.speaking = true;
 		if (_hallMan.pose != kPoseWork)
 			hallManPose(kPoseTalk);
@@ -585,11 +590,11 @@ void AlienEngine::stepHallMan() {
 
 	case kStepBadge:
 		hallManPose(kPoseHandOver);
-		_inventory.add(kItemBadge);
-		_script.setFlag(kBadge, 1);
+		_vm->_inventory.add(kItemBadge);
+		_vm->_script.setFlag(kBadge, 1);
 		_hallMan.step = kStepListening;
 		debugC(1, kDebugItems, "corridor: item %u (%s), the maintenance man's badge",
-			   kItemBadge, _inventory.name(kItemBadge).c_str());
+			   kItemBadge, _vm->_inventory.name(kItemBadge).c_str());
 		break;
 
 	case kStepTurnAway:
@@ -598,7 +603,7 @@ void AlienEngine::stepHallMan() {
 		break;
 
 	case kStepTurning:
-		if (_anims.remaining(kManSlot) == 0) {
+		if (_vm->_anims.remaining(kManSlot) == 0) {
 			hallManPose(kPoseWork);
 			_hallMan.step = kStepIdle;
 		}
@@ -619,11 +624,11 @@ void AlienEngine::stepHallMan() {
  * in a straight line. Without this, plotRoute would refuse every click and
  * Ben could not move in either hallway.
  */
-bool AlienEngine::hallwayWalkTo(int x, int y, int arrivalFacing) {
-	if (_room != kHallwayRoomA && _room != kHallwayRoomB)
+bool CorridorRoom::walkUnrouted(int x, int y, int arrivalFacing) {
+	if (_vm->_room != kHallwayRoomA && _vm->_room != kHallwayRoomB)
 		return false;
 
-	straightWalkTo(x, y, arrivalFacing);
+	_vm->straightWalkTo(x, y, arrivalFacing);
 	return true;
 }
 
@@ -631,41 +636,41 @@ bool AlienEngine::hallwayWalkTo(int x, int y, int arrivalFacing) {
  * CHARANIM:sub_14ed3 (room 57) and sub_14f9e (room 53): the doors answering
  * Ben's position, on the edge of each rectangle.
  */
-void AlienEngine::stepHallwayDoors() {
-	if (_room != kHallwayRoomA && _room != kHallwayRoomB)
+void CorridorRoom::stepHallwayDoors() {
+	if (_vm->_room != kHallwayRoomA && _vm->_room != kHallwayRoomB)
 		return;
 
-	const int x = _ben.spriteX(), y = _ben.spriteY();
-	const uint liftSlot = _room == kHallwayRoomA ? kLiftDoorSlotA : kLiftDoorSlotB;
+	const int x = _vm->_ben.spriteX(), y = _vm->_ben.spriteY();
+	const uint liftSlot = _vm->_room == kHallwayRoomA ? kLiftDoorSlotA : kLiftDoorSlotB;
 
-	_script.setFlag(kDoorBWas, _script.flag(kDoorB));
+	_vm->_script.setFlag(kDoorBWas, _vm->_script.flag(kDoorB));
 	const bool atLift = x > kLiftDoorX1 && y < kLiftDoorY2 && x < kLiftDoorX2;
-	_script.setFlag(kDoorB, atLift ? 1 : 0);
-	if (_script.flag(kDoorB) != _script.flag(kDoorBWas)) {
+	_vm->_script.setFlag(kDoorB, atLift ? 1 : 0);
+	if (_vm->_script.flag(kDoorB) != _vm->_script.flag(kDoorBWas)) {
 		if (atLift) {
-			_anims.play(liftSlot, 1, kLiftDoorFrames, kLiftDoorRate, kForward);
-			_sound.queue(kDoorOpenSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorDelay);
+			_vm->_anims.play(liftSlot, 1, kLiftDoorFrames, kLiftDoorRate, kForward);
+			_vm->_sound.queue(kDoorOpenSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorDelay);
 		} else {
-			_anims.play(liftSlot, kLiftDoorFrames, kLiftDoorFrames, kLiftDoorRate, kBackward);
-			_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorDelay);
+			_vm->_anims.play(liftSlot, kLiftDoorFrames, kLiftDoorFrames, kLiftDoorRate, kBackward);
+			_vm->_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanLeft, kDoorDelay);
 		}
 		debugC(1, kDebugRooms, "corridor: the elevator door %s at %d,%d", atLift ? "opens" : "shuts", x, y);
 	}
 
-	if (_room != kHallwayRoomA || _script.flag(kManThere) != 0)
+	if (_vm->_room != kHallwayRoomA || _vm->_script.flag(kManThere) != 0)
 		return;
 
 	// 0x148c: only the way out of the rectangle does anything, and only once
 	// the slot has taken the card.
-	_script.setFlag(kDoorAWas, _script.flag(kDoorA));
+	_vm->_script.setFlag(kDoorAWas, _vm->_script.flag(kDoorA));
 	const bool atPod = x > kPodDoorX1 && y < kPodDoorY2;
-	_script.setFlag(kDoorA, atPod ? 1 : 0);
-	if (atPod || _script.flag(kDoorA) == _script.flag(kDoorAWas) || _script.flag(kPodLocked) != 0)
+	_vm->_script.setFlag(kDoorA, atPod ? 1 : 0);
+	if (atPod || _vm->_script.flag(kDoorA) == _vm->_script.flag(kDoorAWas) || _vm->_script.flag(kPodLocked) != 0)
 		return;
 
-	_anims.play(kPodDoorSlot, kPodDoorFrames, kPodDoorFrames, kPodDoorRate, kBackward);
-	_script.setFlag(kPodLocked, 1);
-	_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanRight, kDoorDelay);
+	_vm->_anims.play(kPodDoorSlot, kPodDoorFrames, kPodDoorFrames, kPodDoorRate, kBackward);
+	_vm->_script.setFlag(kPodLocked, 1);
+	_vm->_sound.queue(kDoorShutSample, kDoorSampleRate, kDoorVolume, kDoorPanRight, kDoorDelay);
 	debugC(1, kDebugRooms, "corridor: the pod door shuts and locks at %d,%d", x, y);
 }
 
@@ -673,26 +678,26 @@ void AlienEngine::stepHallwayDoors() {
  * Rooms 51, 52, 55, 56 and 59's doors: open as Ben's sprite steps into the rectangle in
  * front of one, shut as it steps out, each with the shared door sample.
  */
-void AlienEngine::stepShipDoors() {
-	const int x = _ben.spriteX(), y = _ben.spriteY();
+void CorridorRoom::stepShipDoors() {
+	const int x = _vm->_ben.spriteX(), y = _vm->_ben.spriteY();
 	for (uint i = 0; i < ARRAYSIZE(kShipDoors); i++) {
 		const ShipDoor &d = kShipDoors[i];
-		if (d.room != _room)
+		if (d.room != _vm->_room)
 			continue;
 
-		_script.setFlag(d.was, _script.flag(d.flag));
+		_vm->_script.setFlag(d.was, _vm->_script.flag(d.flag));
 		const bool in = (d.x1 < 0 || x > d.x1) && (d.y1 < 0 || y > d.y1) &&
 						(d.x2 < 0 || x < d.x2) && (d.y2 < 0 || y < d.y2);
-		_script.setFlag(d.flag, in ? 1 : 0);
-		if (_script.flag(d.flag) == _script.flag(d.was))
+		_vm->_script.setFlag(d.flag, in ? 1 : 0);
+		if (_vm->_script.flag(d.flag) == _vm->_script.flag(d.was))
 			continue;
 
 		if (in)
-			_anims.play(d.slot, 1, d.frames, kLiftDoorRate, kForward);
+			_vm->_anims.play(d.slot, 1, d.frames, kLiftDoorRate, kForward);
 		else
-			_anims.play(d.slot, d.frames, d.frames, kLiftDoorRate, kBackward);
-		_sound.queue(in ? kDoorOpenSample : kDoorShutSample, kDoorSampleRate, kDoorVolume, d.pan, kDoorDelay);
-		debugC(1, kDebugRooms, "corridor: room %d door %u %s at %d,%d", _room, d.slot, in ? "opens" : "shuts", x, y);
+			_vm->_anims.play(d.slot, d.frames, d.frames, kLiftDoorRate, kBackward);
+		_vm->_sound.queue(in ? kDoorOpenSample : kDoorShutSample, kDoorSampleRate, kDoorVolume, d.pan, kDoorDelay);
+		debugC(1, kDebugRooms, "corridor: room %d door %u %s at %d,%d", _vm->_room, d.slot, in ? "opens" : "shuts", x, y);
 	}
 }
 
@@ -726,35 +731,35 @@ static const LobbyCamera kLobbyCameras[] = {
 static const int kCameraFrames = 0x20;
 static const uint16 kCameraDelay = 1;
 
-void AlienEngine::stepLobbyCameras() {
-	if (_room != kLobbyRoom)
+void CorridorRoom::stepLobbyCameras() {
+	if (_vm->_room != kLobbyRoom)
 		return;
 
 	for (uint i = 0; i < ARRAYSIZE(kLobbyCameras); i++) {
 		const LobbyCamera &c = kLobbyCameras[i];
-		if (_anims.remaining(c.slot) != 0)
+		if (_vm->_anims.remaining(c.slot) != 0)
 			continue;
 		// The original counts every frame and this runs on the tick pair.
-		const uint16 count = stateWord(c.count) + 2;
-		setStateWord(c.count, count);
+		const uint16 count = _vm->stateWord(c.count) + 2;
+		_vm->setStateWord(c.count, count);
 		if (count <= c.limit)
 			continue;
 
-		byte dir = _script.flag(c.dir) + 1;
+		byte dir = _vm->_script.flag(c.dir) + 1;
 		if (dir == 2) {
 			dir = 0;
-			setStateWord(c.count, 0);
+			_vm->setStateWord(c.count, 0);
 		}
-		_script.setFlag(c.dir, dir);
+		_vm->_script.setFlag(c.dir, dir);
 
 		if (dir == 1)
-			_anims.play(c.slot, kCameraFrames, kCameraFrames, c.rate, kBackward);
+			_vm->_anims.play(c.slot, kCameraFrames, kCameraFrames, c.rate, kBackward);
 		else
-			_anims.play(c.slot, 1, kCameraFrames, c.rate, kForward);
+			_vm->_anims.play(c.slot, 1, kCameraFrames, c.rate, kForward);
 		if (c.sample)
-			_sound.queue(c.sample, dir == 1 ? c.backRate : c.foreRate, c.volume, c.pan,
+			_vm->_sound.queue(c.sample, dir == 1 ? c.backRate : c.foreRate, c.volume, c.pan,
 						 kCameraDelay);
-		_dirty = true;
+		_vm->_dirty = true;
 	}
 }
 
@@ -787,26 +792,26 @@ static const uint32 kHallAlienSampleRate = 0x2ee0;
 static const byte kHallAlienVolume = 0xc;
 static const int8 kHallAlienPan = 0x14;
 
-void AlienEngine::stepHallAliens() {
-	if (_room != kHallwayRoomB)
+void CorridorRoom::stepHallAliens() {
+	if (_vm->_room != kHallwayRoomB)
 		return;
 
 	if (++_hallAlienCount <= _hallAlienWait)
 		return;
 	_hallAlienCount = 0;
-	_hallAlienWait = (uint16)_rnd.getRandomNumber(kHallAlienWaitRange - 1) + kHallAlienWaitBase;
+	_hallAlienWait = (uint16)_vm->_rnd.getRandomNumber(kHallAlienWaitRange - 1) + kHallAlienWaitBase;
 
 	byte pick;
 	do
-		pick = (byte)_rnd.getRandomNumber(ARRAYSIZE(kHallAliens) - 1) + 1;
+		pick = (byte)_vm->_rnd.getRandomNumber(ARRAYSIZE(kHallAliens) - 1) + 1;
 	while (pick == _hallAlienLast);
 	_hallAlienLast = pick;
 
 	const HallAlien &a = kHallAliens[pick - 1];
-	_anims.play(a.slot, 1, a.frames, kHallAlienRate, kForward);
-	_sound.queue(1, kHallAlienSampleRate, kHallAlienVolume, kHallAlienPan, a.delay1);
-	_sound.queue(2, kHallAlienSampleRate, kHallAlienVolume, kHallAlienPan, a.delay2);
-	_dirty = true;
+	_vm->_anims.play(a.slot, 1, a.frames, kHallAlienRate, kForward);
+	_vm->_sound.queue(1, kHallAlienSampleRate, kHallAlienVolume, kHallAlienPan, a.delay1);
+	_vm->_sound.queue(2, kHallAlienSampleRate, kHallAlienVolume, kHallAlienPan, a.delay2);
+	_vm->_dirty = true;
 	debugC(1, kDebugRooms, "corridor: alien %u goes by, the next in %u", pick, _hallAlienWait);
 }
 
@@ -814,32 +819,50 @@ void AlienEngine::stepHallAliens() {
  * The rooms' ticks: the elevator door and the pod door, room 53's man, and
  * room 57's card line opening the terminal (0x0b29).
  */
-void AlienEngine::stepCorridor() {
+void CorridorRoom::tickPair() {
 	stepHallwayDoors();
 	stepShipDoors();
 	stepLobbyCameras();
 	stepHallAliens();
 	corridorArrival();
 
-	if (_room == kHallwayRoomA)
+	if (_vm->_room == kHallwayRoomA)
 		stepHallMan();
 
 	// The alarm over a hallway that is already up: the clip has taken the
 	// screen, so the room is put back where he stands.
-	if (hallwayScene(_room)) {
-		_sceneHandBack = true;
-		loadRoom(_room, _secondPlate, true);
-		_sceneHandBack = false;
+	if (hallwayScene(_vm->_room)) {
+		_vm->_sceneHandBack = true;
+		_vm->loadRoom(_vm->_room, _vm->_secondPlate, true);
+		_vm->_sceneHandBack = false;
 		return;
 	}
 
-	if (_room != kHallwayRoomB || _terminalStep != kStepCardLine || !speechDone())
+	if (_vm->_room != kHallwayRoomB || _terminalStep != kStepCardLine || !_vm->speechDone())
 		return;
 
 	_terminalStep = 0;
 	CursorMan.showMouse(true);
 	playNetTerminal();
-	takeExit(kTerminalSubmode);
+	_vm->takeExit(kTerminalSubmode);
+}
+
+bool CorridorRoom::takeAction(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	if (!armHallway(obj, verb, item))
+		return false;
+	if (item)
+		_vm->holdItem(Inventory::kNoItem);
+	return true;
+}
+
+void CorridorRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// Room 57's terminal, whose card line the table speaks and whose screen
+	// opens once it is down.
+	armHallwayCard(obj, item);
+}
+
+void CorridorRoom::approach(int room) {
+	hallwayScene(room);
 }
 
 } // End of namespace Alien

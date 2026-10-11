@@ -154,7 +154,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_yodleAnswer(false), _yodleTalking(false), _yodleWater(1), _yodleWaterDue(false),
 		_teleportStep(0), _teleportWait(0), _shipStep(0), _shipWait(0),
 		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false),
-		_terminalStep(0), _hallAlienCount(0), _hallAlienWait(0), _hallAlienLast(1),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -715,10 +714,6 @@ void AlienEngine::stepClock() {
 		// lands in (teleport.cpp).
 		stepTeleport();
 		stepShip();
-
-		// And the ship's elevator door, room 53's maintenance man and room
-		// 57's terminal (corridor.cpp, elevator.cpp, terminal.cpp).
-		stepCorridor();
 
 
 

@@ -813,19 +813,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armObservatoryLook(spot.obj, verb);
 
-	// And room 53's maintenance man and room 57's loudspeaker, whose lifted
-	// rows keep the guards but write their counters flat and drop the calls
-	// that are the bodies: the conversation menu and the line (corridor.cpp).
-	if (armHallway(spot.obj, verb, item)) {
-		if (item)
-			holdItem(Inventory::kNoItem);
-		rebuildHotspots();
-		_hover = -1;
-		const Common::Point hall = g_system->getEventManager()->getMousePos();
-		updateHover(hall.x, hall.y);
-		return;
-	}
-
 	// Room 21 puts its own file back before the bodies that speak out of it,
 	// which the lifted row would otherwise read out of a Yodle file (yodle.cpp).
 	yodleRoomScriptFor(spot.obj, verb, item);
@@ -846,8 +833,10 @@ void AlienEngine::finishAction() {
 
 	// And the rooms' own (rooms/), whose click must not reach the body either:
 	// room 8's owl, whose other arm the lifted table has without the guards
-	// that keep it off a talk (library.cpp), and room 23's hippie, whose talk
-	// and walkman both end in the conversation menu (hippie.cpp).
+	// that keep it off a talk (library.cpp), room 23's hippie, whose talk and
+	// walkman both end in the conversation menu (hippie.cpp), and room 53's
+	// maintenance man and room 57's loudspeaker, whose lifted rows keep the
+	// guards but drop the calls that are the bodies (corridor.cpp).
 	for (Room *r : _rooms) {
 		if (r->takeAction(spot.obj, verb, item, anchorX, anchorY)) {
 			rebuildHotspots();
@@ -924,10 +913,6 @@ void AlienEngine::finishAction() {
 	// wants is a brush-off and whose reaction to that is a machine of its own,
 	// neither of them an opcode the lift has (forest.cpp).
 	armForestParrot(spot.obj, verb, item);
-
-	// And room 57's terminal, whose card line the table speaks and whose
-	// screen opens once it is down (corridor.cpp).
-	armHallwayCard(spot.obj, item);
 
 	// And room 48's pool, which the diving suit answers with a machine of its
 	// own rather than a script row (pool.cpp).

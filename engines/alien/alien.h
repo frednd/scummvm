@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class CorridorRoom;
 	friend class ScannerRoom;
 	friend class StoreRoom;
 	friend class HippieRoom;
@@ -545,25 +546,6 @@ private:
 	void stepShipFlash();
 	void shipFromJail();
 
-	/// Rooms 51/53/55/57, the ship's four elevator floors: room 53's
-	/// maintenance man and his badge, room 57's loudspeaker and the network
-	/// terminal behind its card slot (corridor.cpp, terminal.cpp).
-	void startCorridor();
-	bool hallwayScene(int room);
-	void stepLobbyCameras();
-	void corridorArrival();
-	void playElevatorPanel();
-	bool armHallway(int obj, byte verb, int item);
-	void armHallwayCard(int obj, int item);
-	bool hallwayOwesReply() const;
-	void stepCorridor();
-	void stepShipDoors();
-	void stepHallMan();
-	void stepHallwayDoors();
-	void stepHallAliens();
-	void hallManPose(byte pose);
-	void playNetTerminal();
-	bool hallwayWalkTo(int x, int y, int arrivalFacing);
 	bool shoreWalkTo(int x, int y, int arrivalFacing);
 
 	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
@@ -1123,35 +1105,6 @@ private:
 	uint _shipFlashCount;
 	bool _shipFlashDue;
 	byte _shipFlashSource[256 * 3];
-
-	/// Room 53's maintenance man: the room's [0xa49f] machine, his pose byte
-	/// [0xa52c], and the answer owed to the conversation's last pick, which
-	/// waits for the pick's own line to come down (corridor.cpp).
-	struct HallMan {
-		byte step;
-		byte pose;
-		byte reply;
-		TalFile::Entry replyEntry;
-		int replyTicks;
-		uint replyTopic;
-		bool answer;
-		bool ended;				///< [0xa60f]: the pick ended the conversation
-		bool speaking;			///< a line was up last tick, for [0xad1a]
-
-		HallMan() : step(0), pose(0), reply(0), replyTicks(0), replyTopic(0),
-					answer(false), ended(false), speaking(false) {}
-	};
-	HallMan _hallMan;
-
-	/// Room 57's [0xa49f]: the card has gone into the terminal's slot and its
-	/// line is up; the terminal opens once it is down (corridor.cpp).
-	byte _terminalStep;
-
-	/// Room 57's passing aliens, locals of its tick (ovr_35_0f9e:0x08bc): the
-	/// tick pairs since the last one, the count the next waits for, and which
-	/// of the six went by last (corridor.cpp).
-	uint16 _hallAlienCount, _hallAlienWait;
-	byte _hallAlienLast;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

@@ -30,6 +30,7 @@
 #include "alien/font.h"
 #include "alien/play.h"
 #include "alien/resources.h"
+#include "alien/rooms/corridor.h"
 
 namespace Alien {
 
@@ -242,7 +243,7 @@ struct NetScreen {
  * and leaves [0xa7d4] for room 57 to put Ben back at it; the room's exit is
  * the caller's (corridor.cpp).
  */
-void AlienEngine::playNetTerminal() {
+void CorridorRoom::playNetTerminal() {
 	NetScreen screen;
 	{
 		Common::File f;
@@ -275,28 +276,28 @@ void AlienEngine::playNetTerminal() {
 	if (!face.load(Font::kSpeech, kSheet))
 		warning("terminal: could not load the face out of %s", kSheet);
 
-	stopSpeech();
-	_cutscene = true;
-	_background.free();
-	_background.copyFrom(plate);
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
+	_vm->stopSpeech();
+	_vm->_cutscene = true;
+	_vm->_background.free();
+	_vm->_background.copyFrom(plate);
+	_vm->_roomWidth = AlienEngine::kScreenWidth;
+	_vm->_scrollX = 0;
 
-	const int clip = _clipBottom;
-	_clipBottom = _screen.h - 1;
-	memcpy(_palette, palette, sizeof(_palette));
+	const int clip = _vm->_clipBottom;
+	_vm->_clipBottom = _vm->_screen.h - 1;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 	// The glow is the cursor: OBJ draws no pointer while the scene runs.
 	CursorMan.showMouse(false);
 
-	_anims.loadBanks(kBanks, ARRAYSIZE(kBanks));
+	_vm->_anims.loadBanks(kBanks, ARRAYSIZE(kBanks));
 	// 0x14fb: the screen coming on.
-	_anims.play(kSlotScreen, 1, 0x0c, 2, kForward);
+	_vm->_anims.play(kSlotScreen, 1, 0x0c, 2, kForward);
 
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	_dirty = true;
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
+	_vm->_dirty = true;
 
 	screen.plate = &plate;
-	screen.frame = &_background;
+	screen.frame = &_vm->_background;
 
 	int zoomA = 0, zoomB = kZoomFocus;			// [0xbf08], [0xbf0a]
 	int nodeA = 0x30, nodeB = kLastNode;		// [0xbf0c], [0xbf0d]
@@ -311,15 +312,15 @@ void AlienEngine::playNetTerminal() {
 	int cursorX = kCursorLeft, cursorY = kCursorTop;
 
 	const auto nodeLit = [&](int node) -> byte {
-		return node == kFieldNode ? (byte)_script.flag(kFieldUp) : 1;
+		return node == kFieldNode ? (byte)_vm->_script.flag(kFieldUp) : 1;
 	};
 
 	// sub_171fa: the five switches and the lamp of the node shown.
 	const auto showButtons = [&]() {
 		const uint32 at = (uint32)shown * kNodeSize + kNodeSwitches;
 		for (uint i = 0; i < kSwitchCount; i++)
-			_anims.play(i, screen.data[at + i] + 1, 1, 0, kForward);
-		_anims.play(kSlotLit, nodeLit(shown) + 1, 1, 0, kForward);
+			_vm->_anims.play(i, screen.data[at + i] + 1, 1, 0, kForward);
+		_vm->_anims.play(kSlotLit, nodeLit(shown) + 1, 1, 0, kForward);
 	};
 
 	const auto clampCursor = [&](int &x, int &y) {
@@ -340,17 +341,17 @@ void AlienEngine::playNetTerminal() {
 				if (shown == kFieldNode) {
 					if (nodeLit(shown) == 1) {
 						// 0x18f9: the field goes down.
-						_anims.play(kSlotScreen, 0x10, 7, 2, kForward);
+						_vm->_anims.play(kSlotScreen, 0x10, 7, 2, kForward);
 						glow = false;
 						step = kStepFieldDown;
 						pos = 0;
-						_script.setFlag(kFieldUp, 0);
+						_vm->_script.setFlag(kFieldUp, 0);
 						debugC(1, kDebugRooms, "terminal: node 0x%02x, the force field is down",
 							   shown);
 					}
 				} else {
 					// 0x1921
-					_anims.play(kSlotScreen, 0x4d, 2, 9, kForward);
+					_vm->_anims.play(kSlotScreen, 0x4d, 2, 9, kForward);
 					step = kStepRefused;
 					pos = 0;
 					refusal = true;
@@ -379,9 +380,9 @@ void AlienEngine::playNetTerminal() {
 	// 35 to the plate's own pixels (fb_2), not to what the page holds.
 	const auto drawOver = [&]() {
 		if (face.isLoaded()) {
-			face.drawString(_screen, Common::String::format("%d", shown), kNumberX, kNumberY);
+			face.drawString(_vm->_screen, Common::String::format("%d", shown), kNumberX, kNumberY);
 			if (refusal)
-				face.drawString(_screen, kRefusal, kRefusalX, kRefusalY);
+				face.drawString(_vm->_screen, kRefusal, kRefusalX, kRefusalY);
 		}
 
 		if (glow) {
@@ -394,26 +395,26 @@ void AlienEngine::playNetTerminal() {
 												 screen.at(gx + c + 1, gy + r) << 8) +
 										(uint16)(*(const byte *)sheet.getBasePtr(c, kGlowRow + r) |
 												 *(const byte *)sheet.getBasePtr(c + 1, kGlowRow + r) << 8);
-					*(byte *)_screen.getBasePtr(gx + c, gy + r) = (byte)MIN<int>(pair & 0xff, kGlowLimit);
-					*(byte *)_screen.getBasePtr(gx + c + 1, gy + r) = (byte)MIN<int>(pair >> 8, kGlowLimit);
+					*(byte *)_vm->_screen.getBasePtr(gx + c, gy + r) = (byte)MIN<int>(pair & 0xff, kGlowLimit);
+					*(byte *)_vm->_screen.getBasePtr(gx + c + 1, gy + r) = (byte)MIN<int>(pair >> 8, kGlowLimit);
 				}
 			}
 		}
 
-		g_system->copyRectToScreen(_screen.getPixels(), _screen.pitch, 0, 0, _screen.w, _screen.h);
+		g_system->copyRectToScreen(_vm->_screen.getPixels(), _vm->_screen.pitch, 0, 0, _vm->_screen.w, _vm->_screen.h);
 	};
 
 	debugC(1, kDebugRooms, "terminal: the screen opens on node 0x%02x, the field %s", shown,
-		   _script.flag(kFieldUp) ? "up" : "down");
+		   _vm->_script.flag(kFieldUp) ? "up" : "down");
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = millis();
+	uint32 last = _vm->millis();
 	uint32 tick = 0;
 	uint scripted = 0;
 	uint32 playWaitUntil = 0;
 	bool leaving = false;
 
-	while (!shouldQuit() && !_quit && !leaving) {
+	while (!_vm->shouldQuit() && !_vm->_quit && !leaving) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 			if (event.type == Common::EVENT_MOUSEMOVE) {
@@ -429,33 +430,33 @@ void AlienEngine::playNetTerminal() {
 
 		// The elevator panel's scripted reader: waits are held for real, and a
 		// click or a right click lands on the screen.
-		if (_playActive && playWaitUntil != 0 && millis() >= playWaitUntil)
+		if (_vm->_playActive && playWaitUntil != 0 && _vm->millis() >= playWaitUntil)
 			playWaitUntil = 0;
 
-		if (_playActive && playWaitUntil == 0) {
-			while (_playIndex < _play.commands().size()) {
-				const PlayCommand &cmd = _play.commands()[_playIndex];
+		if (_vm->_playActive && playWaitUntil == 0) {
+			while (_vm->_playIndex < _vm->_play.commands().size()) {
+				const PlayCommand &cmd = _vm->_play.commands()[_vm->_playIndex];
 				if (cmd.type == PlayCommand::kWait || cmd.type == PlayCommand::kSettle) {
-					_playIndex++;
+					_vm->_playIndex++;
 					scripted = 0;
 					// A wait is in master ticks, as the outer driver and the
 					// original's runner count it; a settle has nothing to watch
 					// here and holds for its timeout in milliseconds.
-					playWaitUntil = millis() + (uint32)MAX(cmd.a, 0) *
-						(cmd.type == PlayCommand::kWait ? kMasterTickMillis : 1);
+					playWaitUntil = _vm->millis() + (uint32)MAX(cmd.a, 0) *
+						(cmd.type == PlayCommand::kWait ? AlienEngine::kMasterTickMillis : 1);
 					break;
 				}
 				if (cmd.type == PlayCommand::kSnap) {
 					// The screen as it stands, glow and all.
-					_playIndex++;
-					dumpScreen(cmd.s.empty() ? Common::String::format("play-%u.png", cmd.sourceLine)
+					_vm->_playIndex++;
+					_vm->dumpScreen(cmd.s.empty() ? Common::String::format("play-%u.png", cmd.sourceLine)
 											 : cmd.s + ".png");
 					continue;
 				}
 				if (cmd.type != PlayCommand::kClick && cmd.type != PlayCommand::kRightClick)
 					break;
 
-				_playIndex++;
+				_vm->_playIndex++;
 				scripted = 0;
 				debugC(1, kDebugRooms, "terminal: play: %u: click %d,%d", cmd.sourceLine,
 					   cmd.a, cmd.b);
@@ -469,23 +470,23 @@ void AlienEngine::playNetTerminal() {
 				// A port-only guard, as the elevator panel has: a script that
 				// never presses EXIT would otherwise hold the run here.
 				warning("terminal: the script left the screen open; leaving it");
-				playLeftOpen("the network terminal");
+				_vm->playLeftOpen("the network terminal");
 				done = true;
 			}
 		}
 
-		const uint32 now = millis();
+		const uint32 now = _vm->millis();
 		while (now - last >= kTickMillis && !leaving) {
 			last += kTickMillis;
 			tick++;
-			sceneClockTick();
+			_vm->sceneClockTick();
 
 			if ((tick & 3) != 0)
 				continue;
 
 			pos++;
 			refusalPasses++;
-			_anims.tick();
+			_vm->_anims.tick();
 
 			// 0x15c0..0x165d: both nodes one step on, the one that reaches
 			// the focus is the node shown, and one that runs off the table
@@ -525,7 +526,7 @@ void AlienEngine::playNetTerminal() {
 			}
 
 			// sub_19df8: the screen is the plate again before anything is drawn.
-			_background.copyFrom(plate);
+			_vm->_background.copyFrom(plate);
 
 			// 0x1660: the dimmer of the two first.
 			int scale, brightA, brightB;
@@ -551,13 +552,13 @@ void AlienEngine::playNetTerminal() {
 			switch (step) {
 			case kStepRefused:
 				if (pos > 0x1e) {
-					_anims.play(kSlotScreen, 0x4f, 6, 0x1e, kForward);
+					_vm->_anims.play(kSlotScreen, 0x4f, 6, 0x1e, kForward);
 					step = kStepIdle;
 				}
 				break;
 			case kStepFieldDown:
 				if (pos > 0x50) {
-					_anims.play(kSlotScreen, 0x17, 0x36, 4, kForward);
+					_vm->_anims.play(kSlotScreen, 0x17, 0x36, 4, kForward);
 					step = kStepFieldGone;
 					pos = 0;
 				}
@@ -570,7 +571,7 @@ void AlienEngine::playNetTerminal() {
 				break;
 			case kStepStarting:
 				if (pos > 0x6e) {
-					_anims.play(kSlotScreen, 0x0d, 3, 3, kForward);
+					_vm->_anims.play(kSlotScreen, 0x0d, 3, 3, kForward);
 					step = kStepIdle;
 				}
 				break;
@@ -580,29 +581,29 @@ void AlienEngine::playNetTerminal() {
 
 			if (done)
 				leaving = true;
-			_dirty = true;
+			_vm->_dirty = true;
 		}
 
-		if (_dirty) {
-			redraw();
+		if (_vm->_dirty) {
+			_vm->redraw();
 			drawOver();
 		}
 
 		if (debugChannelSet(4, kDebugRooms) && (tick & 0x3f) == 0)
-			dumpScreen(Common::String::format("terminal-%u.png", tick));
+			_vm->dumpScreen(Common::String::format("terminal-%u.png", tick));
 
-		present();
-		sleep(10);
+		_vm->present();
+		_vm->sleep(10);
 	}
 
 	plate.free();
 	sheet.free();
 
 	// 0x1b03: CUTSCENE:sub_0c5c9's teardown, and [0xa7d4] for the room.
-	_cutscene = false;
-	_clipBottom = clip;
-	_script.setFlag(kScenePlayed, 1);
-	_script.setFlag(kTerminalReturn, 1);
+	_vm->_cutscene = false;
+	_vm->_clipBottom = clip;
+	_vm->_script.setFlag(kScenePlayed, 1);
+	_vm->_script.setFlag(kTerminalReturn, 1);
 	CursorMan.showMouse(true);
 	debugC(1, kDebugRooms, "terminal: the screen closes on node 0x%02x", shown);
 }
