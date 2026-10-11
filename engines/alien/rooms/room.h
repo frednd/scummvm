@@ -98,7 +98,7 @@ public:
 	virtual void lineDown() {}
 	/// Every frame, after the conversation menu.
 	virtual void frame() {}
-	/// Beside the walker's step.
+	/// Every tick, once the camera has followed the walker.
 	virtual void walkPhase() {}
 	/// After the walker: the machines that are not tied to the room's loop.
 	virtual void machine() {}

@@ -147,7 +147,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_divingStep(0), _divingExit(0), _divingWavePhase(0),
 		_shoreStep(0),
 		_steamStep(0), _steamPos(0), _steamWas(0), _steamRelight(false), _steamBurst(0),
-		_parkStep(0), _parkWait(0), _parkLock(false),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -699,10 +698,6 @@ void AlienEngine::stepClock() {
 		// and the lever leave running (steam.cpp).
 		stepSteam();
 
-		// And room 22's arrival scene: the voice in the booth, and the wreck
-		// it leaves behind (park.cpp).
-		stepPark();
-
 
 
 
@@ -779,8 +774,9 @@ void AlienEngine::stepClock() {
 	if (_tick & 3) {
 		stepCameraHold();
 		updateScroll();
-		stepParkTrigger();
 		stepBasementLadder();
+		for (Room *r : _rooms)
+			r->walkPhase();
 		return;
 	}
 
@@ -809,8 +805,9 @@ void AlienEngine::stepClock() {
 	// late, and the focus would latch 2 px off.
 	stepCameraHold();
 	updateScroll();
-	stepParkTrigger();
 	stepBasementLadder();
+	for (Room *r : _rooms)
+		r->walkPhase();
 
 	if (moving) {
 		_dirty = true;

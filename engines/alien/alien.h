@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class ParkRoom;
 	friend class YodleRoom;
 	friend class ForestRoom;
 	friend class TeleportRoom;
@@ -498,11 +499,6 @@ private:
 	void stepSteam();
 	void stepSteamLight();
 
-	/// Room 22's arrival scene: the voice in the booth, and the wreck it
-	/// leaves behind (park.cpp).
-	void startPark();
-	void stepPark();
-	void stepParkTrigger();
 	void stepBasementLadder();
 
 	bool shoreWalkTo(int x, int y, int arrivalFacing);
@@ -1021,12 +1017,6 @@ private:
 	uint _steamBurst;
 	byte _steamLight[0x1a * 3];
 
-	/// Room 22's arrival scene: the step of its machine, and ticks left of
-	/// whichever of its two waits is running (park.cpp).
-	byte _parkStep;
-	uint _parkWait;
-	bool _parkLock;				///< [0xa8a4]: the scene holds the camera
-
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
 	int _scrollHold;
@@ -1128,7 +1118,6 @@ private:
 	bool resumePlayRun();
 	void restorePlayState(Common::SeekableReadStream *in, uint32 sinceTick);
 	bool scrollWouldPan() const;
-	void stepParkHold();
 	void writePlayCamera(Common::WriteStream *out) const;
 	void readPlayCamera(Common::SeekableReadStream *in);
 	void writeFailureState(uint line);

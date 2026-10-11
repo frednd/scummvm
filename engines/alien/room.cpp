@@ -534,9 +534,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// And the ladder between rooms 49 and 50 (steam.cpp).
 	startSteam();
 
-	// And room 22's arrival scene, which is the room's own machine rather than
-	// a lifted cutscene (park.cpp).
-	startPark();
 	startObservatory();
 
 
@@ -598,7 +595,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// The rooms that hold the camera do it at the top of every pass of their
 	// loop, the first one included, so the hold is in place before anything
 	// asks whether the camera is still.
-	stepParkHold();
 	for (Room *r : _rooms)
 		r->holdCamera();
 

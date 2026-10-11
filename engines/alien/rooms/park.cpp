@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/park.h"
 
 namespace Alien {
 
@@ -144,85 +145,89 @@ static const int kGoFirst = 0xa, kGoCount = 0x10, kGoRate = 3, kGoMode = 4;
 static const int kRestFrame = 0x1b;
 static const int kAfterFirst = 0x1a, kAfterCount = 13, kAfterRate = 3, kAfterMode = 1;
 
+ParkRoom::ParkRoom(AlienEngine *vm) : Room(vm),
+		_parkStep(0), _parkWait(0), _parkLock(false) {
+}
+
 /**
  * 0x07b3: the booth is whole until the scene has played, and only the enter
  * routine ever draws it that way.
  */
-void AlienEngine::startPark() {
-	if (_room != kParkRoom)
+void ParkRoom::start() {
+	if (_vm->_room != kParkRoom)
 		return;
 
 	_parkStep = 0;
 	_parkWait = 0;
 	_parkLock = false;			// 0x0599
 
-	if (_script.flag(kSceneSeen) != 0)
+	if (_vm->_script.flag(kSceneSeen) != 0)
 		return;
 
-	_anims.stamp(kBoothSlot, kWholeFrame, _background);
+	_vm->_anims.stamp(kBoothSlot, kWholeFrame, _vm->_background);
 	debugC(1, kDebugRooms, "park: the booth is whole, with its occupant in it");
 }
 
 /// 0x0d1a: the left half of the park holds the camera on itself, unless the
 /// scene already has it.
-void AlienEngine::stepParkHold() {
-	if (_room != kParkRoom || _parkLock)
+void ParkRoom::holdCamera() {
+	if (_vm->_room != kParkRoom || _parkLock)
 		return;
-	_scrollHold = _ben.spriteX() < kHoldBelowX ? 0 : -1;
+	_vm->_scrollHold = _vm->_ben.spriteX() < kHoldBelowX ? 0 : -1;
 }
 
 /// 0x0d1a and the trigger at 0x0d47, on every pass of the room's loop. They
 /// come after LOGIC:sub_13015 (0x0913) in the same pass, so the trigger reads
 /// the speed the pan has just left. Walking west against the right cap, that
 /// speed is 0x28 and 0 on alternate passes.
-void AlienEngine::stepParkTrigger() {
-	if (_room != kParkRoom)
+void ParkRoom::walkPhase() {
+	if (_vm->_room != kParkRoom)
 		return;
 
-	stepParkHold();
+	holdCamera();
 
 	// Far enough west, no pan in flight, and the latch has not been burnt.
 	// The x is the sprite's, [0xa8ec].
-	if (_parkStep || _script.flag(kSceneSeen) != 0 || _ben.spriteX() >= kTriggerX ||
-		_scrollVel != 0)
+	if (_parkStep || _vm->_script.flag(kSceneSeen) != 0 || _vm->_ben.spriteX() >= kTriggerX ||
+		_vm->_scrollVel != 0)
 		return;
 
-	_script.setFlag(kSceneSeen, 1);
-	_scrollHold = 0;
+	_vm->_script.setFlag(kSceneSeen, 1);
+	_vm->_scrollHold = 0;
 	_parkLock = true;
-	walkTo(kStartX, kStartY, kStartFacing);
+	_vm->walkTo(kStartX, kStartY, kStartFacing);
 	CursorMan.showMouse(false);
-	hideBar();
+	_vm->hideBar();
 	_parkStep = kStepVoice;
 	debugC(1, kDebugRooms, "park: the scene starts, step 0x%02x", kStepVoice);
 }
 
 /// The machine at 0x0a8f, one step to a tick.
-void AlienEngine::stepPark() {
-	if (_room != kParkRoom || !_parkStep)
+void ParkRoom::tickPair() {
+	if (_vm->_room != kParkRoom || !_parkStep)
 		return;
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
+	_vm->characterAnchor(anchorX, anchorY);
 
 	switch (_parkStep) {
 	case kStepVoice:
 		// 0x0a93: not before the camera has come to rest on the booth.
-		if (_scrollVel != 0 || _scrollX != 0)
+		if (_vm->_scrollVel != 0 || _vm->_scrollX != 0)
 			break;
 		// 0x0aa1: the booth opens and whatever is in it shouts.
-		_anims.play(kBoothSlot, kOpenFirst, kOpenCount, kOpenRate, kOpenMode);
-		_anims.setLoopFlag(kBoothSlot, 1);
-		queueOutcome(_tal, kLineVoice, kVoiceX, kVoiceY, false);
+		_vm->_anims.play(kBoothSlot, kOpenFirst, kOpenCount, kOpenRate, kOpenMode);
+		_vm->_anims.setLoopFlag(kBoothSlot, 1);
+		_vm->queueOutcome(_vm->_tal, kLineVoice, kVoiceX, kVoiceY, false);
 		_parkStep = kStepVoiceDone;
-		_dirty = true;
+		_vm->_dirty = true;
 		break;
 
 	case kStepVoiceDone:
 		// 0x0acb
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		_anims.setLoopFlag(kBoothSlot, 0);
+		_vm->_anims.setLoopFlag(kBoothSlot, 0);
 		_parkWait = kHoldTicks;
 		_parkStep = kStepHold;
 		break;
@@ -236,46 +241,46 @@ void AlienEngine::stepPark() {
 
 	case kStepWreck:
 		// 0x0b00: the wreck goes into the plate, and the booth fires.
-		_anims.stamp(kWreckSlot, kWreckFrame, _background);
-		_anims.play(kBoothSlot, kGoFirst, kGoCount, kGoRate, kGoMode);
+		_vm->_anims.stamp(kWreckSlot, kWreckFrame, _vm->_background);
+		_vm->_anims.play(kBoothSlot, kGoFirst, kGoCount, kGoRate, kGoMode);
 		_parkStep = kStepSettle;
-		_dirty = true;
+		_vm->_dirty = true;
 		debugC(1, kDebugRooms, "park: the booth is wrecked");
 		break;
 
 	case kStepSettle:
 		// 0x0b27: one frame left standing where the booth was.
-		if (_anims.remaining(kBoothSlot))
+		if (_vm->_anims.remaining(kBoothSlot))
 			break;
-		_anims.play(kBoothSlot, kRestFrame, 1, 0, kGoMode);
+		_vm->_anims.play(kBoothSlot, kRestFrame, 1, 0, kGoMode);
 		_parkStep = kStepRefresh;
 		break;
 
 	case kStepRefresh:
 		// 0x0b4c
-		rebuildHotspots();
+		_vm->rebuildHotspots();
 		_parkStep = kStepAfter;
 		break;
 
 	case kStepAfter:
 		// 0x0b5d
-		_anims.play(kBoothSlot, kAfterFirst, kAfterCount, kAfterRate, kAfterMode);
+		_vm->_anims.play(kBoothSlot, kAfterFirst, kAfterCount, kAfterRate, kAfterMode);
 		_parkStep = kStepSpeak;
 		break;
 
 	case kStepSpeak:
 		// 0x0b76
-		if (_anims.remaining(kBoothSlot))
+		if (_vm->_anims.remaining(kBoothSlot))
 			break;
-		queueOutcome(_tal, kLineBooth, anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kLineBooth, anchorX, anchorY);
 		_parkStep = kStepWalk;
 		break;
 
 	case kStepWalk:
 		// 0x0b97: Ben goes over to what is left of it.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		walkTo(kLookX, kLookY, kStartFacing);
+		_vm->walkTo(kLookX, kLookY, kStartFacing);
 		_parkWait = kSecondTicks;
 		_parkStep = kStepSecond;
 		break;
@@ -284,20 +289,20 @@ void AlienEngine::stepPark() {
 		// 0x0bb4
 		if (_parkWait && --_parkWait)
 			break;
-		queueOutcome(_tal, kLineBroken, anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kLineBroken, anchorX, anchorY);
 		_parkStep = kStepEnd;
 		break;
 
 	case kStepEnd:
 		// 0x0bce: the room is the player's again.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		_parkStep = 0;
 		_parkLock = false;
 		CursorMan.showMouse(true);
-		showBar();
-		_scrollHold = -1;
-		_dirty = true;
+		_vm->showBar();
+		_vm->_scrollHold = -1;
+		_vm->_dirty = true;
 		debugC(1, kDebugRooms, "park: the scene is over");
 		break;
 
