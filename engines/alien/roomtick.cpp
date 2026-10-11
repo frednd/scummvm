@@ -113,30 +113,6 @@ static const uint16 kDarkSecond = 0x15e0;
 static const byte kDarkLine1 = 42;
 static const byte kDarkLine2 = 43;
 
-// Room 40, the cave entrance (ovr_28_0ebb:0x04a7). Every frame [0xa78c] says
-// whether his sprite is right of 0x88, and entry 0 reads it to choose where a
-// click on the hole (obj 4) walks him: from the left, 0xae,0x7f facing right;
-// from the right, 0x75,0x91 facing left (0x01e5-0x021c, a walk_to_object on
-// [0x7dbc]/[0x7dbe]/[0x7db8], which the walk geometry lift cannot carry). The
-// port walked him to the click.
-static const int kCaveRoom = 40;
-static const uint16 kCaveRight = 0xa78c;
-static const int kCaveSideX = 0x88;
-static const byte kCaveHole = 4;
-
-void AlienEngine::caveWalkTarget(byte obj, WalkTarget &target) {
-	if (_room != kCaveRoom)
-		return;
-	const bool right = _ben.spriteX() >= kCaveSideX;
-	_script.setFlag(kCaveRight, right ? 1 : 0);
-	if (obj != kCaveHole)
-		return;
-
-	target.x = right ? 0x75 : 0xae;
-	target.y = right ? 0x91 : 0x7f;
-	target.facing = right ? 4 : 2;
-}
-
 uint16 AlienEngine::stateWord(uint16 addr) const {
 	return _script.flag(addr) | _script.flag(addr + 1) << 8;
 }
@@ -172,8 +148,8 @@ void AlienEngine::stepRoomClock() {
 	// Whether this tick moved something a hotspot guard reads.
 	bool changed = false;
 
-	if (_room == kCaveRoom)
-		_script.setFlag(kCaveRight, _ben.spriteX() >= kCaveSideX ? 1 : 0);
+	for (Room *r : _rooms)
+		changed = r->roomClock() || changed;
 
 	switch (_room) {
 	case kDarkRoom: {

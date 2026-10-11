@@ -615,11 +615,10 @@ void AlienEngine::clickAt(int x, int y, bool rightButton) {
 			debugC(1, kDebugRooms, "exit: object %u arms submode %u at %d,%d facing %u",
 				   obj, target.submode, target.x, target.y, target.facing);
 		}
-		// And room 40's hole, approached from whichever side he is on.
-		caveWalkTarget(obj, target);
 		// And the rooms' own (rooms/): room 31, which answers a click off the
 		// ledge he is standing on with a climb (cliff.cpp), room 8's open safe, where the port
-		// stands him aside to take what is on its shelf (library.cpp), and
+		// stands him aside to take what is on its shelf (library.cpp), room
+		// 40's hole, approached from whichever side he is on (cave.cpp), and
 		// room 56's chamber, which has two approach points, chosen by the
 		// button rather than by a flag (teleport.cpp).
 		for (Room *r : _rooms)
@@ -787,7 +786,7 @@ void AlienEngine::finishAction() {
 	// drop, so leaving the row to run as well handed the key and the disks
 	// out twice. And room 11's remote control, whose branches are the room's
 	// click dispatch and not script rows (living.cpp), and the pick-axe on the
-	// rocks at the shore (shore.cpp).
+	// rocks at the shore (shore.cpp), and room 40's item uses (cave.cpp).
 	bool roomReplaced = false, roomHandled = false;
 	for (Room *r : _rooms) {
 		const Room::Body b = r->body(spot.obj, verb, item, anchorX, anchorY);
@@ -795,11 +794,8 @@ void AlienEngine::finishAction() {
 		roomHandled = roomHandled || b != Room::kBodyNone;
 	}
 
-	// Room 40's item uses are the room's own dispatch too, and the table's
-	// three rows for them lost their guards (cave.cpp).
-	const bool caveHandled = armCave(spot.obj, item, anchorX, anchorY);
-	const bool ranScript = !roomReplaced && !caveHandled && _script.run(spot.obj, verb, item);
-	const bool handled = roomHandled || caveHandled || ranScript;
+	const bool ranScript = !roomReplaced && _script.run(spot.obj, verb, item);
+	const bool handled = roomHandled || ranScript;
 
 	// And the rooms' own (rooms/): the bodies the lift left behind, from the
 	// sewer's ladder, valve and hatch to room 58's prisoners, shackle and card.

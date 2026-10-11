@@ -92,6 +92,13 @@ public:
 
 	/// Every master tick.
 	virtual void tick() {}
+	/**
+	 * Every tick pair, ahead of the machines: what the room does on its own
+	 * while nobody touches it -- a counter that runs while the player is in
+	 * the room and fires once it is full. True when it moved a byte a hotspot
+	 * guard reads, which in the original entry 1 answers on the next frame.
+	 */
+	virtual bool roomClock() { return false; }
 	/// Every tick pair, the gate the rooms' own loops run under.
 	virtual void tickPair() {}
 	/// A line has just come down.

@@ -21,6 +21,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/cave.h"
 
 namespace Alien {
 
@@ -75,32 +76,68 @@ static const char *const kSharedNames[] = {
 	"PIPEYES0.TAL", "PIPEYES1.TAL", "MISC.TAL", "FIREYES1.TAL", "MUMMY2.TAL"
 };
 
-void AlienEngine::loadSharedTal(uint n) {
+void CaveRoom::loadSharedTal(uint n) {
 	if (n == 0 || n >= ARRAYSIZE(kSharedNames))
 		return;
-	_tal.load(Common::Path(kSharedNames[n]), &_pack);
-	_script.setFlag(kSharedTal, (byte)n);
+	_vm->_tal.load(Common::Path(kSharedNames[n]), &_vm->_pack);
+	_vm->_script.setFlag(kSharedTal, (byte)n);
 	debugC(1, kDebugChat, "cave: %s is the room's file", kSharedNames[n]);
 }
 
-void AlienEngine::enterCave(int room) {
+void CaveRoom::scriptLoaded(int room) {
 	// The room being opened, not _room: _room is still the room being left
 	// until loadRoom completes.
 	if (room == kCaveRoom)
 		loadSharedTal(kMummyFile);
 }
 
-bool AlienEngine::armCave(int obj, byte item, int anchorX, int anchorY) {
-	if (_room != kCaveRoom || item == Inventory::kNoItem)
+bool CaveRoom::armCave(int obj, byte item, int anchorX, int anchorY) {
+	if (_vm->_room != kCaveRoom || item == Inventory::kNoItem)
 		return false;
 
 	// 0x00e4: the last arm, and the only one the game can reach.
-	if (_script.flag(kMiscArmed) != 0 || obj <= 0)
+	if (_vm->_script.flag(kMiscArmed) != 0 || obj <= 0)
 		return false;
 
 	loadSharedTal(kMiscFile);
-	queueOutcome(_tal, kSuspicious, anchorX, anchorY);
+	_vm->queueOutcome(_vm->_tal, kSuspicious, anchorX, anchorY);
 	return true;
+}
+
+// The hole (ovr_28_0ebb:0x04a7). Every frame [0xa78c] says
+// whether his sprite is right of 0x88, and entry 0 reads it to choose where a
+// click on the hole (obj 4) walks him: from the left, 0xae,0x7f facing right;
+// from the right, 0x75,0x91 facing left (0x01e5-0x021c, a walk_to_object on
+// [0x7dbc]/[0x7dbe]/[0x7db8], which the walk geometry lift cannot carry). The
+// port walked him to the click.
+static const uint16 kCaveRight = 0xa78c;
+static const int kCaveSideX = 0x88;
+static const byte kCaveHole = 4;
+
+void CaveRoom::walkTarget(byte obj, int roomX, int y, bool action, WalkTarget &target) {
+	if (_vm->_room != kCaveRoom)
+		return;
+	const bool right = _vm->_ben.spriteX() >= kCaveSideX;
+	_vm->_script.setFlag(kCaveRight, right ? 1 : 0);
+	if (obj != kCaveHole)
+		return;
+
+	target.x = right ? 0x75 : 0xae;
+	target.y = right ? 0x91 : 0x7f;
+	target.facing = right ? 4 : 2;
+}
+
+/// The side [0xa78c] says he is on, every tick pair.
+bool CaveRoom::roomClock() {
+	if (_vm->_room == kCaveRoom)
+		_vm->_script.setFlag(kCaveRight, _vm->_ben.spriteX() >= kCaveSideX ? 1 : 0);
+	return false;
+}
+
+/// The room's item uses are its own dispatch, and the table's three rows for
+/// them lost their guards.
+Room::Body CaveRoom::body(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	return armCave(obj, item, anchorX, anchorY) ? kBodyReplaced : kBodyNone;
 }
 
 } // End of namespace Alien

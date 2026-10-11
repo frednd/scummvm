@@ -66,6 +66,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class CaveRoom;
 	friend class EndingRoom;
 	friend class OpeningRoom;
 	friend class HallwayRoom;
@@ -390,11 +391,6 @@ private:
 	/// A two-point route from where he stands, for the rooms with no walk mask.
 	void straightWalkTo(int x, int y, int arrivalFacing);
 
-	/// Room 40's shared files and the one item-use line it has (cave.cpp).
-	void loadSharedTal(uint n);
-	void enterCave(int room);
-	bool armCave(int obj, byte item, int anchorX, int anchorY);
-
 	bool dlgreqRunning() const;
 	bool roomHoldsCharacter() const;
 	bool roomHoldsInput() const;
@@ -445,7 +441,6 @@ private:
 	void showBar();
 	void stepChat();
 
-	void caveWalkTarget(byte obj, WalkTarget &target);
 	void nextSpeech();
 	void stopSpeech();
 

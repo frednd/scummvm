@@ -411,7 +411,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// Room 40's pool names no file and there is no ROOM40.TAL: its init takes
 	// one of LOGIC's ten shared files instead, LOGIC:sub_124a7(1) at
 	// ovr_28_0ebb:0x0399, which is MUMMY0.TAL, and [0x33db] remembers which.
-	enterCave(room);
+	for (Room *r : _rooms)
+		r->scriptLoaded(room);
 
 	// Every OBJ file loader drops [0xa742] (0251:1e25 and its three siblings),
 	// the byte LOGIC:sub_12418 keeps for "ROOM21.TAL is the one in"; room 21's
