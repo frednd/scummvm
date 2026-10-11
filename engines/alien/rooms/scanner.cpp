@@ -19,15 +19,11 @@
  *
  */
 
-#include "common/events.h"
-#include "common/file.h"
-#include "common/system.h"
 #include "graphics/cursorman.h"
-#include "graphics/paletteman.h"
 
 #include "alien/alien.h"
 #include "alien/detection.h"
-#include "alien/resources.h"
+#include "alien/rooms/scanner.h"
 
 namespace Alien {
 
@@ -93,33 +89,36 @@ static const byte kStepArrest = 3;
 static const byte kStepLine = 0xa;
 
 static const uint kScanMusic = 12;
-static const uint kDl2RecordSize = 20;
 
-int AlienEngine::scannerGate(int room) {
-	if (room != kScannerRoom || _script.flag(kScanned) == 1)
+ScannerRoom::ScannerRoom(AlienEngine *vm) : Room(vm),
+		_scannerArrest(false), _scannerStep(0) {
+}
+
+int ScannerRoom::redirect(int room) {
+	if (room != kScannerRoom || _vm->_script.flag(kScanned) == 1)
 		return room;
 
-	if (_script.flag(kMaskOn) == 1) {
+	if (_vm->_script.flag(kMaskOn) == 1) {
 		playScannerScan(true);
-		_script.setFlag(kScanned, 1);
-		_script.setFlag(kPassedLatch, 1);
+		_vm->_script.setFlag(kScanned, 1);
+		_vm->_script.setFlag(kPassedLatch, 1);
 		debugC(1, kDebugRooms, "scanner: the mask passes the scan");
 		return room;
 	}
 
-	if (_script.flag(kArrests) < 2) {
+	if (_vm->_script.flag(kArrests) < 2) {
 		playScannerScan(false);
-		_script.setFlag(kArrestLatch, 1);
+		_vm->_script.setFlag(kArrestLatch, 1);
 		_scannerArrest = true;
 		debugC(1, kDebugRooms, "scanner: no mask, the robot is waiting");
 		return room;
 	}
 
 	// 0x0227: jailed twice already, and the scan is not played a third time.
-	_script.setFlag(kJailArrival, 1);
-	_script.setFlag(kJailGate, 1);
+	_vm->_script.setFlag(kJailArrival, 1);
+	_vm->_script.setFlag(kJailGate, 1);
 	debugC(1, kDebugRooms, "scanner: arrest %u, straight to the jail",
-		   _script.flag(kArrests) + 1);
+		   _vm->_script.flag(kArrests) + 1);
 	return kJailRoom;
 }
 
@@ -130,187 +129,52 @@ int AlienEngine::scannerGate(int room) {
  * room is loaded yet -- the scan runs in front of the room's own dispatch -- so
  * there is nothing to put back afterwards: loadRoom() goes on to load the room.
  */
-void AlienEngine::playScannerScan(bool mask) {
-	playDl2Clip(mask ? "SEC_SCR2.DL2" : "SEC_SCR1.DL2", mask ? "SEC_SCA2.PCX" : "SEC_SCAN.PCX",
+void ScannerRoom::playScannerScan(bool mask) {
+	_vm->playDl2Clip(mask ? "SEC_SCR2.DL2" : "SEC_SCR1.DL2", mask ? "SEC_SCA2.PCX" : "SEC_SCAN.PCX",
 				kScanMusic, mask ? "scan-2" : "scan-1");
-	_script.setFlag(kScanPlayed, 1);
-}
-
-/**
- * The body CUTSCENE:sub_0e2a0 and sub_0e458 share: a DL2 over its plate, one
- * frame every animation tick pair, with a music slot of its own.
- *
- * Called in front of a room's load, so it leaves the plate, palette and banks
- * holding its own and lets the load put the room's back. `tag` names the
- * frames the cutscene debug channel dumps.
- */
-void AlienEngine::playDl2Clip(const char *clip, const char *plateName, uint music,
-							  const char *tag) {
-	Common::File f;
-	if (!f.open(Common::Path(clip))) {
-		warning("dl2: cannot open %s", clip);
-		return;
-	}
-	const uint32 size = (uint32)f.size();
-	Common::Array<byte> data;
-	data.resize(size);
-	if (size < 3 || f.read(data.data(), size) != size) {
-		warning("dl2: short read on %s", clip);
-		return;
-	}
-
-	// u8 version, u16 count, count 20-byte records (+5: u16 size), count 8-byte
-	// bboxes, then the frames back to back.
-	const uint count = READ_LE_UINT16(&data[1]);
-	uint32 payload = 3 + count * (kDl2RecordSize + 8);
-	Common::Array<uint32> offsets, sizes;
-	for (uint i = 0; i < count && payload <= size; i++) {
-		const uint16 frameSize = READ_LE_UINT16(&data[3 + i * kDl2RecordSize + 5]);
-		offsets.push_back(payload);
-		sizes.push_back(frameSize);
-		payload += frameSize;
-	}
-	if (payload > size) {
-		warning("dl2: %s overruns its payload", clip);
-		return;
-	}
-
-	Graphics::Surface plate;
-	byte palette[256 * 3];
-	if (!loadGamePCX(Common::Path(plateName), plate, palette)) {
-		plate.free();
-		warning("dl2: could not load %s", plateName);
-		return;
-	}
-
-	stopSpeech();
-	_cutscene = true;
-	_background.free();
-	_background = plate;
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
-	const int clipBottom = _clipBottom;
-	_clipBottom = _screen.h - 1;
-	memcpy(_palette, palette, sizeof(_palette));
-	CursorMan.showMouse(false);
-
-	const char *none[] = { nullptr };
-	_anims.loadBanks(none, ARRAYSIZE(none));
-
-	playMusicSlot(music);
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	_dirty = true;
-
-	debugC(1, kDebugCutscene, "dl2: %s over %s, %u frames", clip, plateName, count);
-
-	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = millis();
-	uint32 tick = 0;
-	uint frame = 0;
-	bool skipped = false;
-
-	while (!shouldQuit() && !_quit && !skipped && frame < offsets.size()) {
-		Common::Event event;
-		while (g_system->getEventManager()->pollEvent(event)) {
-			// Both joystick buttons at once end it early in the original; the
-			// port takes Escape or the right button, as every other scene does.
-			if ((event.type == Common::EVENT_KEYDOWN &&
-				 event.kbd.keycode == Common::KEYCODE_ESCAPE) ||
-				event.type == Common::EVENT_RBUTTONDOWN)
-				skipped = true;
-		}
-
-		// The cutscene sweep steps the frames as fast as they can be painted;
-		// a scripted run takes them at the game's own pace, and turbo is what
-		// makes that quick (clock.cpp).
-		const uint32 now = millis();
-		bool due = _cutsceneFast;
-		if (!due && now - last >= kTickMillis) {
-			last += kTickMillis;
-			due = (++tick & 1) == 0;	// [0xa5fc], the animation tick pair
-			sceneClockTick();
-		}
-
-		if (due) {
-			const byte *d = &data[offsets[frame]];
-			const uint32 end = sizes[frame] >= 2 ? sizes[frame] - 2 : 0;
-			uint32 off = 0;
-			while (off + 4 <= end) {
-				const uint16 addr = READ_LE_UINT16(d + off);
-				const uint32 n = READ_LE_UINT16(d + off + 2) * 2;
-				off += 4;
-				if (off + n > end)
-					break;
-				for (uint32 i = 0; i < n; i++) {
-					const uint32 at = addr + i;
-					if (at < (uint32)(kScreenWidth * _background.h))
-						*(byte *)_background.getBasePtr(at % kScreenWidth, at / kScreenWidth) = d[off + i];
-				}
-				off += n;
-			}
-			frame++;
-			_dirty = true;
-
-			if (debugChannelSet(3, kDebugCutscene) && (frame & 63) == 0) {
-				redraw();
-				dumpScreen(Common::String::format("%s-%03u.png", tag, frame));
-			}
-		}
-
-		if (_dirty)
-			redraw();
-		present();
-		if (!_cutsceneFast)
-			sleep(5);
-	}
-
-	stopMusic();
-	_cutscene = false;
-	_clipBottom = clipBottom;
-	debugC(1, kDebugCutscene, "dl2: %s ends at frame %u of %u%s", clip, frame, count,
-		   skipped ? ", skipped" : "");
+	_vm->_script.setFlag(kScanPlayed, 1);
 }
 
 /// The overlay's own arm for [0x33e3], ovr_34_0f96:0x05ee; the init effects
 /// before it already cleared the latch and put the robot up.
-void AlienEngine::startScanner() {
+void ScannerRoom::start() {
 	_scannerStep = 0;
-	if (_room != kScannerRoom || !_scannerArrest)
+	if (_vm->_room != kScannerRoom || !_scannerArrest)
 		return;
 
 	_scannerArrest = false;
 	// 0x05e4: and the camera held at the room's left edge for the rest of
 	// the visit.
-	_scrollHold = 0;
+	_vm->_scrollHold = 0;
 	_scannerStep = kStepArrest;
-	_script.setFlag(kMachine, kStepArrest);
+	_vm->_script.setFlag(kMachine, kStepArrest);
 	CursorMan.showMouse(false);
 	debugC(1, kDebugRooms, "scanner: the robot comes for him");
 }
 
 /// ovr_34_0f96:0x0853, the room's [0xa49f] machine.
-void AlienEngine::stepScanner() {
-	if (_room != kScannerRoom || !_scannerStep)
+void ScannerRoom::tickPair() {
+	if (_vm->_room != kScannerRoom || !_scannerStep)
 		return;
 
 	switch (_scannerStep) {
 	case kStepArrest:
-		if (_anims.remaining(kRobotSlot) != 0)
+		if (_vm->_anims.remaining(kRobotSlot) != 0)
 			break;
-		queueOutcome(_tal, kArrestLine, kArrestX, kArrestY, false);
+		_vm->queueOutcome(_vm->_tal, kArrestLine, kArrestX, kArrestY, false);
 		_scannerStep = kStepLine;
-		_script.setFlag(kMachine, kStepLine);
+		_vm->_script.setFlag(kMachine, kStepLine);
 		break;
 
 	case kStepLine:
-		if (_speech || _queueNext < _queueCount)
+		if (_vm->_speech || _vm->_queueNext < _vm->_queueCount)
 			break;
 		_scannerStep = 0;
-		_script.setFlag(kMachine, 0);
-		_script.setFlag(kJailArrival, 1);
-		_script.setFlag(kJailGate, 1);
+		_vm->_script.setFlag(kMachine, 0);
+		_vm->_script.setFlag(kJailArrival, 1);
+		_vm->_script.setFlag(kJailGate, 1);
 		debugC(1, kDebugRooms, "scanner: arrested, to the jail");
-		takeExit(kJailSubmode);
+		_vm->takeExit(kJailSubmode);
 		// The jail's own machine is what gives the cursor back in the
 		// original; until that is ported (job 13) the port does it here.
 		CursorMan.showMouse(true);

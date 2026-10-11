@@ -156,7 +156,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_shipFlashes(0), _shipFlashLevel(0), _shipFlashCount(0), _shipFlashDue(false),
 		_terminalStep(0), _hallAlienCount(0), _hallAlienWait(0), _hallAlienLast(1),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
-		_scannerArrest(false), _scannerStep(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
 		_chatPickNew(false),
@@ -721,8 +720,6 @@ void AlienEngine::stepClock() {
 		// 57's terminal (corridor.cpp, elevator.cpp, terminal.cpp).
 		stepCorridor();
 
-		// And room 52's robot, once the scan has found no mask (scanner.cpp).
-		stepScanner();
 
 
 

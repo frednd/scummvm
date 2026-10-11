@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class ScannerRoom;
 	friend class StoreRoom;
 	friend class HippieRoom;
 	friend class LibraryRoom;
@@ -565,13 +566,7 @@ private:
 	bool hallwayWalkTo(int x, int y, int arrivalFacing);
 	bool shoreWalkTo(int x, int y, int arrivalFacing);
 
-	/// Room 52's security scanner: the resident gate in front of the room,
-	/// its DL2 scan, and the robot's arrest (scanner.cpp).
-	int scannerGate(int room);
-	void playScannerScan(bool mask);
 	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
-	void startScanner();
-	void stepScanner();
 
 	bool chatReplyOwed() const;
 
@@ -1157,11 +1152,6 @@ private:
 	/// of the six went by last (corridor.cpp).
 	uint16 _hallAlienCount, _hallAlienWait;
 	byte _hallAlienLast;
-
-	/// Room 52: the gate sent him in without the mask, and the room's
-	/// [0xa49f] machine step that arrests him (scanner.cpp).
-	bool _scannerArrest;
-	byte _scannerStep;
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.

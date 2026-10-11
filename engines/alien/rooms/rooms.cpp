@@ -21,6 +21,7 @@
 
 #include "alien/alien.h"
 #include "alien/rooms/boss.h"
+#include "alien/rooms/scanner.h"
 #include "alien/rooms/store.h"
 #include "alien/rooms/hippie.h"
 #include "alien/rooms/library.h"
@@ -37,6 +38,7 @@ namespace Alien {
  * here is the one whose code the original runs first.
  */
 void AlienEngine::registerRooms() {
+	_rooms.push_back(new ScannerRoom(this));
 	_rooms.push_back(new StoreRoom(this));
 	_rooms.push_back(new HippieRoom(this));
 	_rooms.push_back(new LibraryRoom(this));

@@ -129,7 +129,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// may send him to the jail instead (scanner.cpp). A self-reload is the
 	// room coming back to itself, not an entry through the door.
 	if (!keepPosition)
-		room = scannerGate(room);
+		for (Room *r : _rooms)
+			room = r->redirect(room);
 
 	// And room 57's alarm, which its own entry plays in front of the room the
 	// first time it is entered with the force field down (corridor.cpp).
@@ -542,7 +543,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// And the ship's four elevator floors (corridor.cpp), the scanner's
 	// robot (scanner.cpp).
 	startCorridor();
-	startScanner();
 
 	// And the rooms' own (rooms/), in the order rooms.cpp gives.
 	for (Room *r : _rooms)

@@ -23,8 +23,8 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
-#include "alien/rooms/hippie.h"
 #include "alien/detection.h"
+#include "alien/rooms/hippie.h"
 
 namespace Alien {
 

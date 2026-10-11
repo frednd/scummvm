@@ -22,8 +22,8 @@
 #include "graphics/cursorman.h"
 
 #include "alien/alien.h"
-#include "alien/rooms/library.h"
 #include "alien/detection.h"
+#include "alien/rooms/library.h"
 
 namespace Alien {
 

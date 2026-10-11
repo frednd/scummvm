@@ -21,11 +21,13 @@
 
 #include "common/config-manager.h"
 #include "common/events.h"
+#include "common/file.h"
 #include "graphics/cursorman.h"
 #include "graphics/paletteman.h"
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/resources.h"
 
 namespace Alien {
 
@@ -280,6 +282,144 @@ void AlienEngine::stepLoopSounds() {
 			_sound.queue(l.plays[p].sample, l.plays[p].rate, l.plays[p].volume,
 						 l.plays[p].panning, l.plays[p].delay);
 	}
+}
+
+/// A DL2 header record: what precedes each frame of the clip.
+static const uint kDl2RecordSize = 20;
+
+/**
+ * The body CUTSCENE:sub_0e2a0 and sub_0e458 share: a DL2 over its plate, one
+ * frame every animation tick pair, with a music slot of its own.
+ *
+ * Called in front of a room's load, so it leaves the plate, palette and banks
+ * holding its own and lets the load put the room's back. `tag` names the
+ * frames the cutscene debug channel dumps.
+ */
+void AlienEngine::playDl2Clip(const char *clip, const char *plateName, uint music,
+							  const char *tag) {
+	Common::File f;
+	if (!f.open(Common::Path(clip))) {
+		warning("dl2: cannot open %s", clip);
+		return;
+	}
+	const uint32 size = (uint32)f.size();
+	Common::Array<byte> data;
+	data.resize(size);
+	if (size < 3 || f.read(data.data(), size) != size) {
+		warning("dl2: short read on %s", clip);
+		return;
+	}
+
+	// u8 version, u16 count, count 20-byte records (+5: u16 size), count 8-byte
+	// bboxes, then the frames back to back.
+	const uint count = READ_LE_UINT16(&data[1]);
+	uint32 payload = 3 + count * (kDl2RecordSize + 8);
+	Common::Array<uint32> offsets, sizes;
+	for (uint i = 0; i < count && payload <= size; i++) {
+		const uint16 frameSize = READ_LE_UINT16(&data[3 + i * kDl2RecordSize + 5]);
+		offsets.push_back(payload);
+		sizes.push_back(frameSize);
+		payload += frameSize;
+	}
+	if (payload > size) {
+		warning("dl2: %s overruns its payload", clip);
+		return;
+	}
+
+	Graphics::Surface plate;
+	byte palette[256 * 3];
+	if (!loadGamePCX(Common::Path(plateName), plate, palette)) {
+		plate.free();
+		warning("dl2: could not load %s", plateName);
+		return;
+	}
+
+	stopSpeech();
+	_cutscene = true;
+	_background.free();
+	_background = plate;
+	_roomWidth = kScreenWidth;
+	_scrollX = 0;
+	const int clipBottom = _clipBottom;
+	_clipBottom = _screen.h - 1;
+	memcpy(_palette, palette, sizeof(_palette));
+	CursorMan.showMouse(false);
+
+	const char *none[] = { nullptr };
+	_anims.loadBanks(none, ARRAYSIZE(none));
+
+	playMusicSlot(music);
+	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	_dirty = true;
+
+	debugC(1, kDebugCutscene, "dl2: %s over %s, %u frames", clip, plateName, count);
+
+	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
+	uint32 last = millis();
+	uint32 tick = 0;
+	uint frame = 0;
+	bool skipped = false;
+
+	while (!shouldQuit() && !_quit && !skipped && frame < offsets.size()) {
+		Common::Event event;
+		while (g_system->getEventManager()->pollEvent(event)) {
+			// Both joystick buttons at once end it early in the original; the
+			// port takes Escape or the right button, as every other scene does.
+			if ((event.type == Common::EVENT_KEYDOWN &&
+				 event.kbd.keycode == Common::KEYCODE_ESCAPE) ||
+				event.type == Common::EVENT_RBUTTONDOWN)
+				skipped = true;
+		}
+
+		// The cutscene sweep steps the frames as fast as they can be painted;
+		// a scripted run takes them at the game's own pace, and turbo is what
+		// makes that quick (clock.cpp).
+		const uint32 now = millis();
+		bool due = _cutsceneFast;
+		if (!due && now - last >= kTickMillis) {
+			last += kTickMillis;
+			due = (++tick & 1) == 0;	// [0xa5fc], the animation tick pair
+			sceneClockTick();
+		}
+
+		if (due) {
+			const byte *d = &data[offsets[frame]];
+			const uint32 end = sizes[frame] >= 2 ? sizes[frame] - 2 : 0;
+			uint32 off = 0;
+			while (off + 4 <= end) {
+				const uint16 addr = READ_LE_UINT16(d + off);
+				const uint32 n = READ_LE_UINT16(d + off + 2) * 2;
+				off += 4;
+				if (off + n > end)
+					break;
+				for (uint32 i = 0; i < n; i++) {
+					const uint32 at = addr + i;
+					if (at < (uint32)(kScreenWidth * _background.h))
+						*(byte *)_background.getBasePtr(at % kScreenWidth, at / kScreenWidth) = d[off + i];
+				}
+				off += n;
+			}
+			frame++;
+			_dirty = true;
+
+			if (debugChannelSet(3, kDebugCutscene) && (frame & 63) == 0) {
+				redraw();
+				dumpScreen(Common::String::format("%s-%03u.png", tag, frame));
+			}
+		}
+
+		if (_dirty)
+			redraw();
+		present();
+		if (!_cutsceneFast)
+			sleep(5);
+	}
+
+	stopMusic();
+	_cutscene = false;
+	_clipBottom = clipBottom;
+	debugC(1, kDebugCutscene, "dl2: %s ends at frame %u of %u%s", clip, frame, count,
+		   skipped ? ", skipped" : "");
 }
 
 } // End of namespace Alien
