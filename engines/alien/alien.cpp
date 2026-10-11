@@ -144,7 +144,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_crystalStep(0), _crystalWait(0), _crystalSpeaker(0), _crystalLine(0),
 		_crystalLeft(0), _crystalSpeaking(false),
 		_poolStep(0),
-		_divingStep(0), _divingExit(0), _divingWavePhase(0),
 		_shoreStep(0),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
@@ -584,9 +583,8 @@ void AlienEngine::stepClock() {
 	// tick pair -- INPUT:0x5D9 tests the same [0xa5fc] the slots do.
 	_sound.tick((_tick & 1) == 0);
 
-	// Room 46's water ripples a step every tick (diving.cpp).
-	stepDivingWave();
-	// And the rooms' own (rooms/): room 49's light fades and flickers at the
+	// The rooms' own (rooms/): room 46's water ripples a step every tick
+	// (diving.cpp), room 49's light fades and flickers at the
 	// same pace (steam.cpp), and room 56's flashes as the beam hums
 	// (teleport.cpp).
 	for (Room *r : _rooms)
@@ -689,8 +687,6 @@ void AlienEngine::stepClock() {
 		stepPool();
 
 		// And room 46's chest, its key, and the swim across (diving.cpp).
-		stepDiving();
-		stepDivingWater();
 
 
 

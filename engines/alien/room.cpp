@@ -348,7 +348,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 		r->chooseView(room);
 
 	_anims.loadRoom(room, _script);
-	loadDivingBanks(room);
+	for (Room *r : _rooms)
+		r->loadBanks(room);
 
 	// What the room does with a click on its own account, lifted out of its
 	// overlay, plus the opening frame of every slot. The state block is not
@@ -522,9 +523,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// And the two mazes, whose dialog file the shared overlay's manifest names
 	// wrongly and whose torch the cell may not have (maze.cpp).
 	startMaze();
-
-	// And room 46's swim, the same way (diving.cpp).
-	startDiving();
 
 	// And room 41's machines (shore.cpp), and room 32's way back from the
 	// crystal (cemetery.cpp).
@@ -832,8 +830,9 @@ void AlienEngine::showCharacter() {
 void AlienEngine::walkTo(int x, int y, int arrivalFacing) {
 	// Room 46 has no mask and no nodes: every walk is a swim in a straight
 	// line (diving.cpp).
-	if (divingSwimTo(x, y, arrivalFacing))
-		return;
+	for (Room *r : _rooms)
+		if (r->walk(x, y, arrivalFacing))
+			return;
 	// Room 41's two ledges have no nodes and no mask of their own (shore.cpp).
 	if (shoreWalkTo(x, y, arrivalFacing))
 		return;

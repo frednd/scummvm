@@ -882,9 +882,6 @@ void AlienEngine::finishAction() {
 	// own rather than a script row (pool.cpp).
 	armPool(spot.obj, item);
 
-	// And room 46's chest and its key (diving.cpp).
-	armDiving(spot.obj, item);
-
 	// And the diving suit on the water there, the way back down to room 46.
 	armShoreSuit(spot.obj, item);
 

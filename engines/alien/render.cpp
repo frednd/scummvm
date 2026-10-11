@@ -229,7 +229,8 @@ void AlienEngine::redraw() {
 
 		// Room 46's bubbles over all of that, and then the water, which moves
 		// the whole playfield (diving.cpp).
-		drawDivingWater(_screen);
+		for (const Room *r : _rooms)
+			r->drawOverPlayfield(_screen);
 
 		if (_showWalk)
 			drawWalkOverlay();

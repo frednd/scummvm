@@ -27,6 +27,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/diving.h"
 
 namespace Alien {
 
@@ -160,29 +161,33 @@ static int waveRound(double v) {
 	return v < 0 ? -(int)(-v + 0.5) : (int)(v + 0.5);
 }
 
+DivingRoom::DivingRoom(AlienEngine *vm) : Room(vm),
+		_divingExit(0), _divingStep(0), _divingWavePhase(0) {
+}
+
 /// The view picks slot 0's bank, and only the cave has the chest: the overlay
 /// loads by [0xa785] (0x036a), where the table the port reads has all three.
-void AlienEngine::loadDivingBanks(int room) {
+void DivingRoom::loadBanks(int room) {
 	if (room != kDivingRoom)
 		return;
 
-	if (_script.flag(kView) == 0) {
-		_anims.loadBank(kLightSlot, "DIV_SADE.DL1");
-		_anims.loadBank(kChestSlot, nullptr);
+	if (_vm->_script.flag(kView) == 0) {
+		_vm->_anims.loadBank(kLightSlot, "DIV_SADE.DL1");
+		_vm->_anims.loadBank(kChestSlot, nullptr);
 	} else {
-		_anims.loadBank(kPropellerSlot, "DIV_PROP.DL1");
-		_anims.loadBank(kChestSlot, "DIV_CHES.DL1");
+		_vm->_anims.loadBank(kPropellerSlot, "DIV_PROP.DL1");
+		_vm->_anims.loadBank(kChestSlot, "DIV_CHES.DL1");
 	}
 }
 
 /// The room has opened, in either view.
-void AlienEngine::startDiving() {
-	if (_room != kDivingRoom)
+void DivingRoom::start() {
+	if (_vm->_room != kDivingRoom)
 		return;
 
 	_divingStep = 0;
 	_divingExit = 0;
-	_script.setFlag(kPassing, 0);
+	_vm->_script.setFlag(kPassing, 0);
 
 	for (uint p = 0; p < 2; p++) {
 		for (uint i = 0; i < kDivingBubbles; i++) {
@@ -206,37 +211,37 @@ void AlienEngine::startDiving() {
 	// overlay's calls, whichever view: put back the one the view makes. The
 	// chest's six frame play is the machine's (0x0620), not the opening's, and
 	// an open chest is the plate stamp's to draw.
-	const bool cave = _script.flag(kView) == 1;
-	_anims.takeDown(kChestSlot);
+	const bool cave = _vm->_script.flag(kView) == 1;
+	_vm->_anims.takeDown(kChestSlot);
 	if (!cave)
-		_anims.play(kLightSlot, 1, kLightFrames, kLightRate, kModeOnce);
-	else if (_script.flag(kPropeller) != 1)
-		_anims.takeDown(kPropellerSlot);
+		_vm->_anims.play(kLightSlot, 1, kLightFrames, kLightRate, kModeOnce);
+	else if (_vm->_script.flag(kPropeller) != 1)
+		_vm->_anims.takeDown(kPropellerSlot);
 
 	// A switch between the views keeps his x and puts him at the edge he
 	// swam out of (0x0336, 0x0350). A restored game is already where it was
 	// saved.
-	if (_restoring) {
+	if (_vm->_restoring) {
 		// Nothing: the save put him there.
-	} else if (_mode == kDivingRoom) {
-		_ben.placeSprite(_ben.spriteX(), _lastSubmode == kSubmodeUp ? kUpY : kDownY,
-						 _ben.facing());
-	} else if (_mode == kShoreRoom) {
+	} else if (_vm->_mode == kDivingRoom) {
+		_vm->_ben.placeSprite(_vm->_ben.spriteX(), _vm->_lastSubmode == kSubmodeUp ? kUpY : kDownY,
+						 _vm->_ben.facing());
+	} else if (_vm->_mode == kShoreRoom) {
 		// In through the tunnel, the propeller drawn over him until he is
 		// clear of it (0x03fa).
-		_script.setFlag(kPassing, 1);
-		_ben.swimTo(kInX, kInY, 1);
+		_vm->_script.setFlag(kPassing, 1);
+		_vm->_ben.swimTo(kInX, kInY, 1);
 		_divingStep = kStepSwimmingIn;
 		CursorMan.showMouse(false);
 	}
 
 	debugC(1, kDebugRooms, "diving: view %d, propeller %s", cave ? 1 : 0,
-		   _script.flag(kPropeller) == 1 ? "turning" : "stopped");
+		   _vm->_script.flag(kPropeller) == 1 ? "turning" : "stopped");
 }
 
 /// Entry 3: the picklock on the chest, and the key out of it.
-bool AlienEngine::armDiving(int obj, byte item) {
-	if (_room != kDivingRoom)
+bool DivingRoom::armDiving(int obj, byte item) {
+	if (_vm->_room != kDivingRoom)
 		return false;
 
 	// The line is the lifted row's (outcome 9, block 0); what the row cannot
@@ -248,14 +253,14 @@ bool AlienEngine::armDiving(int obj, byte item) {
 		return true;
 	}
 
-	if (obj == kKeyObj && item == Inventory::kNoItem && _script.flag(kKeyReady) == 1) {
-		_script.setFlag(kKeyReady, 0);
-		_inventory.add(kOldKey);
+	if (obj == kKeyObj && item == Inventory::kNoItem && _vm->_script.flag(kKeyReady) == 1) {
+		_vm->_script.setFlag(kKeyReady, 0);
+		_vm->_inventory.add(kOldKey);
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOutcomeOldKey, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeOldKey, anchorX, anchorY);
 		debugC(1, kDebugItems, "diving: the chest holds item %u (%s)", kOldKey,
-			   _inventory.name(kOldKey).c_str());
+			   _vm->_inventory.name(kOldKey).c_str());
 		return true;
 	}
 
@@ -268,13 +273,13 @@ bool AlienEngine::armDiving(int obj, byte item) {
  * the swim itself. Every click re-arms from nothing, the way 1021:sub_105fa
  * clears walk_submode first.
  */
-bool AlienEngine::divingSwimTo(int x, int y, int arrivalFacing) {
-	if (_room != kDivingRoom)
+bool DivingRoom::walk(int x, int y, int arrivalFacing) {
+	if (_vm->_room != kDivingRoom)
 		return false;
 
 	_divingExit = 0;
-	if (!_ben.isTurning()) {
-		if (_script.flag(kView) == 0) {
+	if (!_vm->_ben.isTurning()) {
+		if (_vm->_script.flag(kView) == 0) {
 			if (y < kTopEdge) {
 				_divingExit = kSubmodePool;
 				y = kOffTop;
@@ -290,60 +295,60 @@ bool AlienEngine::divingSwimTo(int x, int y, int arrivalFacing) {
 	}
 
 	debugC(1, kDebugGraphics, "swim %d,%d -> %d,%d facing %d%s",
-		   _ben.walkX(), _ben.walkY(), x, y, arrivalFacing,
+		   _vm->_ben.walkX(), _vm->_ben.walkY(), x, y, arrivalFacing,
 		   _divingExit ? Common::String::format(", arms submode %u", _divingExit).c_str() : "");
-	_ben.swimTo(x, y, arrivalFacing);
-	_dirty = true;
+	_vm->_ben.swimTo(x, y, arrivalFacing);
+	_vm->_dirty = true;
 	return true;
 }
 
 /// The view switch MAIN:sub_00110 makes, or the chain for the two real exits.
-bool AlienEngine::divingTakeExit(byte submode) {
+bool DivingRoom::divingTakeExit(byte submode) {
 	if (submode != kSubmodeUp && submode != kSubmodeDown)
-		return takeExit(submode);
+		return _vm->takeExit(submode);
 
-	_script.setFlag(kView, submode == kSubmodeUp ? 0 : 1);
-	_mode = (byte)kDivingRoom;
-	_lastSubmode = submode;
+	_vm->_script.setFlag(kView, submode == kSubmodeUp ? 0 : 1);
+	_vm->_mode = (byte)kDivingRoom;
+	_vm->_lastSubmode = submode;
 	debugC(1, kDebugRooms, "diving: up to view %d", submode == kSubmodeUp ? 0 : 1);
-	return loadRoom(kDivingRoom, false, true);
+	return _vm->loadRoom(kDivingRoom, false, true);
 }
 
 /// The room's tick: the [0xa49f] machine, the arrivals, and the exits.
-void AlienEngine::stepDiving() {
-	if (_room != kDivingRoom)
+void DivingRoom::stepDiving() {
+	if (_vm->_room != kDivingRoom)
 		return;
 
-	const bool standing = !_ben.isWalking() && !_ben.isTurning() &&
-						  _ben.idleCount() >= kStandSettle;
+	const bool standing = !_vm->_ben.isWalking() && !_vm->_ben.isTurning() &&
+						  _vm->_ben.idleCount() >= kStandSettle;
 
 	switch (_divingStep) {
 	case kStepChestOpening:
-		if (speechDone())
+		if (_vm->speechDone())
 			_divingStep = kStepChestOpen;
 		break;
 
 	case kStepChestOpen:
-		_sound.queue(kChestSample, kChestRateHz, kChestVolume, kChestPanning, kChestDelay);
-		_script.setFlag(kChestShut, 0);
-		_anims.play(kChestSlot, 1, kChestFrames, kChestRate, kModeOnce);
-		rebuildHotspots(_room);
+		_vm->_sound.queue(kChestSample, kChestRateHz, kChestVolume, kChestPanning, kChestDelay);
+		_vm->_script.setFlag(kChestShut, 0);
+		_vm->_anims.play(kChestSlot, 1, kChestFrames, kChestRate, kModeOnce);
+		_vm->rebuildHotspots(_vm->_room);
 		CursorMan.showMouse(true);
 		_divingStep = 0;
 		break;
 
 	case kStepSwimOut:
 		// Through the stopped propeller and out to the shore (0x063d).
-		_script.setFlag(kPassing, 1);
-		_ben.swimTo(kOutX, kOutY, 4);
+		_vm->_script.setFlag(kPassing, 1);
+		_vm->_ben.swimTo(kOutX, kOutY, 4);
 		_divingStep = kStepSwimmingOut;
-		playMusicSlot(1);
+		_vm->playMusicSlot(1);
 		break;
 
 	case kStepSwimmingOut:
 		if (standing) {
 			_divingStep = 0;
-			takeExit(kSubmodeShore);
+			_vm->takeExit(kSubmodeShore);
 			return;
 		}
 		break;
@@ -352,7 +357,7 @@ void AlienEngine::stepDiving() {
 		if (standing) {
 			_divingStep = 0;
 			CursorMan.showMouse(true);
-			_script.setFlag(kPassing, 0);
+			_vm->_script.setFlag(kPassing, 0);
 		}
 		break;
 
@@ -363,18 +368,18 @@ void AlienEngine::stepDiving() {
 	// The two arrivals the room answers itself (0x069b, 0x06bd): the tunnel,
 	// which only registers once the propeller has stopped, and the propeller
 	// while it is still turning.
-	if (standing && _script.flag(kArrival) == kThroughPropeller) {
-		_script.setFlag(kArrival, 0);
+	if (standing && _vm->_script.flag(kArrival) == kThroughPropeller) {
+		_vm->_script.setFlag(kArrival, 0);
 		_divingStep = kStepSwimOut;
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "diving: out through the tunnel");
 	}
 
-	if (standing && _script.flag(kArrival) == kNearPropeller) {
-		_script.setFlag(kArrival, 0);
+	if (standing && _vm->_script.flag(kArrival) == kNearPropeller) {
+		_vm->_script.setFlag(kArrival, 0);
 		int anchorX, anchorY;
-		characterAnchor(anchorX, anchorY);
-		queueOutcome(_tal, kOutcomeTooClose, anchorX, anchorY);
+		_vm->characterAnchor(anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeTooClose, anchorX, anchorY);
 	}
 
 	// And the edge a click armed, once he has stopped (0x06e6).
@@ -386,8 +391,8 @@ void AlienEngine::stepDiving() {
 }
 
 /// The bubbles, a pass of the room loop each.
-void AlienEngine::stepDivingWater() {
-	if (_room != kDivingRoom)
+void DivingRoom::stepDivingWater() {
+	if (_vm->_room != kDivingRoom)
 		return;
 
 	// 0ec7:sub_0efd9: every bubble rises and drifts; one that reaches the top
@@ -415,16 +420,16 @@ void AlienEngine::stepDivingWater() {
 
 	// 0ec7:sub_0eff5: new ones, only while the propeller turns -- in the shaft
 	// as well as beside it.
-	if (_script.flag(kPropeller) == 1) {
-		const BubbleSource &src = kBubbleSources[_script.flag(kView) == 1 ? 1 : 0];
+	if (_vm->_script.flag(kPropeller) == 1) {
+		const BubbleSource &src = kBubbleSources[_vm->_script.flag(kView) == 1 ? 1 : 0];
 		for (uint p = 0; p < 2; p++) {
-			if (_rnd.getRandomNumber(src.chance[p] - 1) != 0)
+			if (_vm->_rnd.getRandomNumber(src.chance[p] - 1) != 0)
 				continue;
 
-			const int x = (int)_rnd.getRandomNumber(6) + src.x;
-			const int y = (int)_rnd.getRandomNumber(0x1e) + src.y;
-			const int drift = (int)_rnd.getRandomNumber(0xfe) + src.drift;
-			const int vy = (int)_rnd.getRandomNumber(kBubbleRiseRange[p] - 1);
+			const int x = (int)_vm->_rnd.getRandomNumber(6) + src.x;
+			const int y = (int)_vm->_rnd.getRandomNumber(0x1e) + src.y;
+			const int drift = (int)_vm->_rnd.getRandomNumber(0xfe) + src.drift;
+			const int vy = (int)_vm->_rnd.getRandomNumber(kBubbleRiseRange[p] - 1);
 
 			// sub_0ec70: the first dead slot, if there is one.
 			for (uint i = 0; i < kDivingBubbles; i++) {
@@ -440,26 +445,26 @@ void AlienEngine::stepDivingWater() {
 		}
 	}
 
-	_dirty = true;
+	_vm->_dirty = true;
 }
 
 /// The water's phase. The original steps it once a pass of the room loop
 /// like the bubbles, but that loop outruns the tick pair the port gives
 /// them; stepped every tick, the ripple keeps the original's pace.
-void AlienEngine::stepDivingWave() {
-	if (_room != kDivingRoom)
+void DivingRoom::tick() {
+	if (_vm->_room != kDivingRoom)
 		return;
 
 	_divingWavePhase += kWavePhaseStep;
 	if (_divingWavePhase > kWavePhaseWrap)
 		_divingWavePhase = 0;
 
-	_dirty = true;
+	_vm->_dirty = true;
 }
 
 /// Over the composed room: the bubbles, then the water that moves all of it.
-void AlienEngine::drawDivingWater(Graphics::Surface &dest) const {
-	if (_room != kDivingRoom)
+void DivingRoom::drawOverPlayfield(Graphics::Surface &dest) const {
+	if (_vm->_room != kDivingRoom)
 		return;
 
 	// 0ec7:sub_0edee, the four pixel bubble in its three blues, and sub_0ee63,
@@ -509,6 +514,16 @@ void AlienEngine::drawDivingWater(Graphics::Surface &dest) const {
 			continue;
 		memcpy(dest.getBasePtr(0, y), dest.getBasePtr(0, from), dest.w);
 	}
+}
+
+void DivingRoom::tickPair() {
+	stepDiving();
+	stepDivingWater();
+}
+
+void DivingRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The chest and its key.
+	armDiving(obj, item);
 }
 
 } // End of namespace Alien

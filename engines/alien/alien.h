@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class DivingRoom;
 	friend class SteamRoom;
 	friend class ParkRoom;
 	friend class YodleRoom;
@@ -462,18 +463,6 @@ private:
 	/// (pool.cpp).
 	bool armPool(int obj, byte item);
 	void stepPool();
-
-	/// Room 46, underwater: its two views, the swim, the chest and its key,
-	/// the propeller's bubbles and the water over all of it (diving.cpp).
-	void loadDivingBanks(int room);
-	void startDiving();
-	bool armDiving(int obj, byte item);
-	bool divingSwimTo(int x, int y, int arrivalFacing);
-	void stepDiving();
-	void stepDivingWater();
-	void stepDivingWave();
-	void drawDivingWater(Graphics::Surface &dest) const;
-	bool divingTakeExit(byte submode);
 
 	/// Room 40's shared files and the one item-use line it has (cave.cpp).
 	void loadSharedTal(uint n);
@@ -977,22 +966,6 @@ private:
 
 	/// Room 48's pool: the step of the dive machine (pool.cpp).
 	byte _poolStep;
-
-	/// Room 46: the [0xa49f] machine step, the submode a click armed
-	/// ([0xa87d]), the two bubble pools at ds:0xb06a and ds:0xb51e, and the
-	/// water's row table ([0xae28]) with its phase ([0xb066]) (diving.cpp).
-	struct DivingBubble {
-		uint16 x;		///< 8.8
-		uint16 y;		///< 9.7, dead past 0xf0 rows
-		uint16 vy;
-		int16 drift;
-	};
-	enum { kDivingBubbles = 100, kDivingWaveRows = 0x11e };
-	byte _divingStep;
-	byte _divingExit;
-	DivingBubble _divingBubbles[2][kDivingBubbles];
-	int16 _divingWave[kDivingWaveRows];
-	uint16 _divingWavePhase;
 
 	/// Room 41's own machines: the step of the pick-axe swing, or of whichever
 	/// climb between the two cave mouths is running (shore.cpp).
