@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class HallwayRoom;
 	friend class LabRoom;
 	friend class BedroomRoom;
 	friend class MansionRoom;
@@ -372,9 +373,6 @@ private:
 	uint16 stateWord(uint16 addr) const;
 	void setStateWord(uint16 addr, uint16 value);
 	void resetRoomClock(int room);
-
-	void stepHallway();
-	void playPeephole();
 
 	void openRoomPlate(int room);
 	void dumpPlates();

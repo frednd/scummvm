@@ -27,6 +27,7 @@
 #include "alien/alien.h"
 #include "alien/detection.h"
 #include "alien/resources.h"
+#include "alien/rooms/hallway.h"
 
 namespace Alien {
 
@@ -110,10 +111,10 @@ static const uint kAnimTickMask = 3;
  * the tick calls this when the speech queue has just run dry, and the id the
  * queue was raised with stands in for [0xacf6].
  */
-void AlienEngine::stepHallway() {
-	if (_room != kHallway || _speech || _queueNext < _queueCount)
+void HallwayRoom::lineDown() {
+	if (_vm->_room != kHallway || _vm->_speech || _vm->_queueNext < _vm->_queueCount)
 		return;
-	if (_lastEvent != kDoorRefusalOpen && _lastEvent != kDoorRefusalItem)
+	if (_vm->_lastEvent != kDoorRefusalOpen && _vm->_lastEvent != kDoorRefusalItem)
 		return;
 
 	// Both arms that queue those two ids are guarded on [0xa6d7] being clear
@@ -121,16 +122,16 @@ void AlienEngine::stepHallway() {
 	// repeated here because the port's lift of the item arm lost it -- the row
 	// that queues 16 came out unguarded, so the door answers with it on a plain
 	// Open as well, and without this the scene would play again on every click.
-	if (_script.flag(kSeenAliens))
+	if (_vm->_script.flag(kSeenAliens))
 		return;
 
 	// The original leaves [0xacf6] standing and relies on [0xa6d7] to keep the
 	// door from queueing either id again; clearing it here says the same thing
 	// without depending on that, since any other line would overwrite it.
-	_lastEvent = 0;
+	_vm->_lastEvent = 0;
 
 	debugC(1, kDebugCutscene, "hallway: the door's refusal ended, looking through the glass");
-	_script.setFlag(kSeenAliens, 1);
+	_vm->_script.setFlag(kSeenAliens, 1);
 
 	playPeephole();
 
@@ -144,7 +145,7 @@ void AlienEngine::stepHallway() {
 	// speaks outcome 20 (ovr_0f_0e5b:0x066c, lifted into roominit.cpp). So the
 	// latch is a hand-off and not a "seen it" flag, and it reads 0 again by the
 	// time the room is up.
-	takeExit(kSelfSubmode);
+	_vm->takeExit(kSelfSubmode);
 	CursorMan.showMouse(true);
 }
 
@@ -160,7 +161,7 @@ void AlienEngine::stepHallway() {
  * his line is drawn at, and the talk cycle that runs on his slot while it is
  * up.
  */
-void AlienEngine::playPeephole() {
+void HallwayRoom::playPeephole() {
 	Graphics::Surface plate;
 	byte palette[256 * 3];
 	if (!loadGamePCX(Common::Path(kPeepholePlate), plate, palette)) {
@@ -169,30 +170,30 @@ void AlienEngine::playPeephole() {
 		return;
 	}
 
-	stopSpeech();
+	_vm->stopSpeech();
 
 	CursorMan.showMouse(false);
-	_cutscene = true;
-	_background.free();
-	_background = plate;
-	_roomWidth = kScreenWidth;
-	_scrollX = 0;
-	memcpy(_palette, palette, sizeof(_palette));
+	_vm->_cutscene = true;
+	_vm->_background.free();
+	_vm->_background = plate;
+	_vm->_roomWidth = AlienEngine::kScreenWidth;
+	_vm->_scrollX = 0;
+	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 
-	_tal.load(Common::Path(kPeepholeTal));
-	_speechTal = &_tal;
-	_dialogBand = false;
-	_anims.loadBanks(kPeepholeBanks, ARRAYSIZE(kPeepholeBanks));
-	playMusicSlot(kPeepholeMusic);
+	_vm->_tal.load(Common::Path(kPeepholeTal));
+	_vm->_speechTal = &_vm->_tal;
+	_vm->_dialogBand = false;
+	_vm->_anims.loadBanks(kPeepholeBanks, ARRAYSIZE(kPeepholeBanks));
+	_vm->playMusicSlot(kPeepholeMusic);
 
-	g_system->getPaletteManager()->setPalette(_palette, 0, 256);
-	_dirty = true;
+	g_system->getPaletteManager()->setPalette(_vm->_palette, 0, 256);
+	_vm->_dirty = true;
 
 	debugC(1, kDebugCutscene, "hallway: %s, %s, music %u", kPeepholePlate, kPeepholeTal,
 		   kPeepholeMusic);
 
 	static const uint32 kTickMillis = AlienEngine::kMasterTickMillis;
-	uint32 last = millis();
+	uint32 last = _vm->millis();
 	uint32 tick = 0;
 
 	int idle = 0;			// [0xad16], the counter the whole scene is paced by
@@ -207,7 +208,7 @@ void AlienEngine::playPeephole() {
 	bool skipped = false;
 	uint32 exitTick = 0;	// when the closing play was issued, for the dumps
 
-	while (!shouldQuit() && !_quit && !skipped) {
+	while (!_vm->shouldQuit() && !_vm->_quit && !skipped) {
 		Common::Event event;
 		while (g_system->getEventManager()->pollEvent(event)) {
 			// The original ends the scene on both mouse buttons ([0xa900] and
@@ -218,43 +219,43 @@ void AlienEngine::playPeephole() {
 				skipped = true;
 		}
 
-		const uint32 now = millis();
-		if (_cutsceneFast || now - last >= kTickMillis) {
+		const uint32 now = _vm->millis();
+		if (_vm->_cutsceneFast || now - last >= kTickMillis) {
 			// One tick per pass, owed ticks taken on the passes after: the pass
 			// sleeps longer than a tick, and setting the mark to now dropped
 			// one tick in ten -- the scene ran slow against the master tick
 			// and the scene clocks fell behind it.
-			last = _cutsceneFast ? now : last + kTickMillis;
+			last = _vm->_cutsceneFast ? now : last + kTickMillis;
 			tick++;
-			sceneClockTick();
+			_vm->sceneClockTick();
 
 			if ((tick & 1) == 0) {
-				if (_anims.isBusy()) {
-					_anims.tick();
-					_dirty = true;
+				if (_vm->_anims.isBusy()) {
+					_vm->_anims.tick();
+					_vm->_dirty = true;
 				}
 
-				if (_speech && _speechTicks > 0) {
+				if (_vm->_speech && _vm->_speechTicks > 0) {
 					// Both mouths close a moment before the line goes, which is
 					// the scene's own reset play rather than anything the
 					// dialog unit does.
 					// dialog unit does. Both tests the original makes are here:
 					// the countdown, and [0xacf8] (0c55:0bd1 and 0c55:0bd8),
 					// which is only up on the last entry of the step's chain.
-					if (talking && _speechTicks <= kMouthCloseTicks &&
-						_queueNext >= _queueCount) {
-						_anims.play(0, 1, 1, 0, 1);
-						_anims.play(1, 1, 1, 0, 1);
+					if (talking && _vm->_speechTicks <= kMouthCloseTicks &&
+						_vm->_queueNext >= _vm->_queueCount) {
+						_vm->_anims.play(0, 1, 1, 0, 1);
+						_vm->_anims.play(1, 1, 1, 0, 1);
 						talking = false;
 					}
 
-					if (--_speechTicks == 0) {
+					if (--_vm->_speechTicks == 0) {
 						// A line here is an outcome code too, and this scene
 						// leans on it: code 6 of aliecon1.tal is two entries.
 						// The idle counter is only cleared where the chain runs
 						// out, since that is where OBJ:sub_08486 clears it
 						// (0251:5fd6, past the [0xad14] countdown).
-						if (!nextCutsceneLine()) {
+						if (!_vm->nextCutsceneLine()) {
 							lineJustEnded = true;
 							idle = 0;
 						}
@@ -267,28 +268,28 @@ void AlienEngine::playPeephole() {
 				// scene re-issues the slot's own play the way a room's tick
 				// does (MIDAS:snd_func_112d).
 				if (talking)
-					_anims.relaunch((uint)speaker);
+					_vm->_anims.relaunch((uint)speaker);
 			}
 
 			// A line is due thirty ticks after the last one came down, and the
 			// speakers alternate: the advance is what counts the exchanges.
-			if (!_speech && idle == kLineDue && exchanges < kExchanges) {
+			if (!_vm->_speech && idle == kLineDue && exchanges < kExchanges) {
 				if (++speaker == 2) {
 					speaker = 0;
 					exchanges++;
 				}
 
 				const int anchorX = speaker == 1 ? kPeepholeRightX : kPeepholeLeftX;
-				speakCutsceneLine(next++, anchorX, kPeepholeAnchorY);
-				_anims.play((uint)speaker, kTalkFirst, kTalkCount, kTalkRate, 1);
+				_vm->speakCutsceneLine(next++, anchorX, kPeepholeAnchorY);
+				_vm->_anims.play((uint)speaker, kTalkFirst, kTalkCount, kTalkRate, 1);
 				talking = true;
 
 				// Level 3 writes one frame per line, the only way to look at
 				// the scene from a headless run -- what the record player's
 				// step dumps do for a scene that has steps.
 				if (debugChannelSet(3, kDebugCutscene)) {
-					redraw();
-					dumpScreen(Common::String::format("hallway-line-%u.png", next - 1));
+					_vm->redraw();
+					_vm->dumpScreen(Common::String::format("hallway-line-%u.png", next - 1));
 				}
 			}
 
@@ -298,7 +299,7 @@ void AlienEngine::playPeephole() {
 			// (17a9:0b9b zeroes its frame), so re-issuing it every pass would
 			// pin the play on its first frame and nothing would move.
 			if (lineJustEnded && exchanges == kExchanges) {
-				_anims.play(1, kExitFirst, kExitCount, kExitRate, 1);
+				_vm->_anims.play(1, kExitFirst, kExitCount, kExitRate, 1);
 				exitTick = tick;
 			}
 
@@ -309,9 +310,9 @@ void AlienEngine::playPeephole() {
 			if (exitTick && debugChannelSet(3, kDebugCutscene) &&
 				tick - exitTick <= (uint32)kExitCount * kExitRate * 2 &&
 				(tick - exitTick) % (kExitRate * 2) == 0) {
-				bakeSlots();
-				redraw();
-				dumpScreen(Common::String::format("hallway-exit-%u.png",
+				_vm->bakeSlots();
+				_vm->redraw();
+				_vm->dumpScreen(Common::String::format("hallway-exit-%u.png",
 												  (uint)((tick - exitTick) / (kExitRate * 2))));
 			}
 
@@ -319,28 +320,28 @@ void AlienEngine::playPeephole() {
 				skipped = true;
 
 			if ((tick & kAnimTickMask) == 0)
-				bakeSlots();
+				_vm->bakeSlots();
 		}
 
-		if (_dirty)
-			redraw();
+		if (_vm->_dirty)
+			_vm->redraw();
 
-		present();
-		if (!_cutsceneFast && millis() - last < kTickMillis)
-			sleep(10);
+		_vm->present();
+		if (!_vm->_cutsceneFast && _vm->millis() - last < kTickMillis)
+			_vm->sleep(10);
 	}
 
 	debugC(1, kDebugCutscene,
 		   "hallway: the glass scene ran %u lines, %d exchanges, ended at idle %d%s",
 		   next - 1, exchanges, idle, skipped && idle != kSceneEnd ? " (skipped)" : "");
 
-	stopSpeech();
-	_cutscene = false;
+	_vm->stopSpeech();
+	_vm->_cutscene = false;
 
 	// 0c55:0c6f, the same [0xa6d3] every other teardown in CUTSCENE raises.
-	_script.setFlag(kScenePlayed, 1);
-	_script.setFlag(kPeepholeLatch, 1);
-	_dirty = true;
+	_vm->_script.setFlag(kScenePlayed, 1);
+	_vm->_script.setFlag(kPeepholeLatch, 1);
+	_vm->_dirty = true;
 
 	// The room is not put back here: the original ends its loop instead and
 	// lets the transition chain re-enter room 15 (see stepHallway). The scene's

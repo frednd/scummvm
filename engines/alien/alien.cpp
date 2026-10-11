@@ -614,13 +614,10 @@ void AlienEngine::stepClock() {
 		if (_speech && _speechTicks > 0 && --_speechTicks == 0) {
 			nextSpeech();
 
-			// A line coming down is what room 15 answers the front door with:
-			// the original's dialog unit writes [0xa956] = 0x4e2a here and the
-			// room's entry 3 tests it at its top (hallway.cpp).
-			stepHallway();
-
-			// And the rooms' own (rooms/): room 25's, which lights the fuse
-			// when the matches' line comes down (mailbox.cpp).
+			// And what the rooms answer a line coming down with (rooms/): the
+			// original's dialog unit writes [0xa956] = 0x4e2a here and the
+			// room's entry 3 tests it at its top -- room 15's front door
+			// (hallway.cpp), and room 25's fuse (mailbox.cpp).
 			for (Room *r : _rooms)
 				r->lineDown();
 		}
