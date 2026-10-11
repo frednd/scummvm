@@ -267,9 +267,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	_labPos = 0;
 	_labNearHole = false;
 	_sewerStep = 0;
-	_basementStep = 0;
-	_basementClimbing = false;
-	_basementWalkOff = false;
 	for (Room *r : _rooms)
 		r->reset();
 	_chatPickNew = false;
@@ -366,11 +363,8 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	enterSewer(room);
 	enterMansion(room);
 
-	// And room 13's, which is the climb down when he came in over it
-	// (basement.cpp).
-	enterBasement(room);
-
-	// And the rooms' own: room 33's, which is him landing in the road after
+	// And the rooms' own: room 13's, which is the climb down when he came in
+	// over it (basement.cpp), room 33's, which is him landing in the road after
 	// the mailbox went up -- the far end of [0x33bc] (mailbox.cpp) -- and room
 	// 34's, which puts Sluggs out on the road (sluggs.cpp).
 	for (Room *r : _rooms)
@@ -1066,8 +1060,9 @@ void AlienEngine::checkExit() {
 	// answer an arrival with an animation of their own and write game_submode
 	// out of how far it has got instead (basement.cpp). Firing the shared test
 	// there would take the room before its climb had played.
-	if (!roomHasSharedExit(_room))
-		return;
+	for (const Room *r : _rooms)
+		if (!r->sharedExit(_room))
+			return;
 
 	if (ABS(_ben.walkX() - _armedX) > 2 || ABS(_ben.walkY() - _armedY) > 2)
 		return;

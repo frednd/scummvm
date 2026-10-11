@@ -837,11 +837,6 @@ void AlienEngine::finishAction() {
 	if (!item)
 		armSewer(spot.obj, verb);
 
-	// And room 13's battery, whose body stops two animation slots by writing
-	// into the slot arrays, which the lifted row cannot (basement.cpp).
-	if (!item)
-		takeBasementBattery(spot.obj);
-
 	// And the rooms' own (rooms/): room 26's parrot, room 50's lever, room
 	// 57's terminal, and room 58's prisoners, shackle and card.
 	for (Room *r : _rooms)

@@ -526,4 +526,10 @@ void DivingRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anc
 	armDiving(obj, item);
 }
 
+/// Like room 13's, this overlay has no call to the shared arrival test,
+/// although nothing in the port drives its exits through it yet.
+bool DivingRoom::sharedExit(int room) const {
+	return room != kDivingRoom;
+}
+
 } // End of namespace Alien

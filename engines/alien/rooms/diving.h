@@ -39,6 +39,7 @@ public:
 	void afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) override;
 	bool walk(int x, int y, int arrivalFacing) override;
 	void drawOverPlayfield(Graphics::Surface &dest) const override;
+	bool sharedExit(int room) const override;
 	bool busy() const override { return _divingExit || _divingStep; }
 
 private:

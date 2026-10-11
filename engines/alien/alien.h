@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class BasementRoom;
 	friend class CliffRoom;
 	friend class LivingRoom;
 	friend class MailboxRoom;
@@ -412,10 +413,6 @@ private:
 	void stepSewer();
 	void sewerValve();
 
-	void enterBasement(int room);
-	void stepBasement();
-	void takeBasementBattery(int obj);
-
 	/// The room's hotspot table, rebuilt from the puzzle state -- and from the
 	/// cell, in the two mazes. Defaults to the room the engine is in; loadRoom
 	/// passes the room it is opening, which is not yet _room.
@@ -432,14 +429,11 @@ private:
 	bool dlgreqRunning() const;
 	bool roomHoldsCharacter() const;
 
-	void stepBasementLadder();
-
 	void playDl2Clip(const char *clip, const char *plateName, uint music, const char *tag);
 
 	bool chatReplyOwed() const;
 
 	void walkHandRoute(int viaX, int viaY, int x, int y, int facing);
-	bool roomHasSharedExit(int room) const;
 	void cancelOpening();
 	void stepEnding();
 	void speakEnding(byte code);
@@ -836,9 +830,6 @@ private:
 	/// Room 35's [0xa49f] machine (sewer.cpp). Zero when nothing is running.
 	byte _sewerStep;
 
-	/// Room 13's, which is the same byte in the original (basement.cpp).
-	byte _basementStep;
-
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
 	int _scrollHold;
@@ -858,11 +849,6 @@ private:
 
 	/// GFX:sub_26ebc, the resident random the store picks its refusal with.
 	Common::RandomSource _rnd;
-
-	/// Whether slot 0 is running room 13's arrival climb, which is what the
-	/// original can read off the slot itself (basement.cpp).
-	bool _basementClimbing;
-	bool _basementWalkOff;		///< [0xa5fe]: walking off the ladder, cursor still away
 
 	/// The sewer's water, which the original keeps as four words of its own in
 	/// the data segment rather than in the state block: [0x4380] is the phase

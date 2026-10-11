@@ -146,7 +146,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_openingStep(0), _openingPending(true),
 		_labStep(0), _bedroomLiftStep(0), _mansionStep(0), _labPos(0), _labNearHole(false), _drawCharacter(true), _characterAnimSlots(0),
 		_cursorWasVisible(true), _sewerStep(0),
-		_basementStep(0), _basementClimbing(false), _basementWalkOff(false),
 		_sewerPhase(0), _sewerDepth(kSewerDepthStart), _sewerDivider(0), _sewerDraining(0),
 		_clipBottom(kPlayfieldBottom), _fadePending(false), _pendingCutscenes(false), _sceneHandBack(false), _darkLastX(-1), _darkLastY(-1), _won(false),
 		_playIndex(0), _playActive(false), _playPaused(false), _playStep(false), _playSkippable(false), _playHurry(false),
@@ -631,7 +630,6 @@ void AlienEngine::stepClock() {
 		stepObservatoryBreaker();
 		stepObservatoryStairs();
 		stepSewer();
-		stepBasement();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)
@@ -706,7 +704,6 @@ void AlienEngine::stepClock() {
 	if (_tick & 3) {
 		stepCameraHold();
 		updateScroll();
-		stepBasementLadder();
 		for (Room *r : _rooms)
 			r->walkPhase();
 		return;
@@ -727,7 +724,7 @@ void AlienEngine::stepClock() {
 	// [0xa4a1] up for a scene it requested. Without this he fidgets and turns
 	// to face the player in the middle of one.
 	_ben.setIdleAllowed(!_cutscene && !_chat.isActive() && !roomHoldsCharacter() && !_labStep &&
-						!_sewerStep && !_mansionStep && !_basementStep && !_endingStep && !_openingStep &&
+						!_sewerStep && !_mansionStep && !_endingStep && !_openingStep &&
 						!dlgreqRunning());
 
 	_ben.tick(_script.flag(0xa605) != 0);
@@ -737,7 +734,6 @@ void AlienEngine::stepClock() {
 	// late, and the focus would latch 2 px off.
 	stepCameraHold();
 	updateScroll();
-	stepBasementLadder();
 	for (Room *r : _rooms)
 		r->walkPhase();
 

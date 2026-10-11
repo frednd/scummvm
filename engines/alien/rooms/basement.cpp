@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/basement.h"
 
 namespace Alien {
 
@@ -72,9 +73,6 @@ namespace Alien {
 // what using item 8 on obj 2 sets. Item 8 is the rope, and room 3's obj 4 is
 // where the game hands it out.
 static const int kBasementRoom = 13;
-
-/// The other overlay with no shared arrival test, for the suppression rule.
-static const int kDivingRoom = 46;
 
 static const uint kClimbSlot = 0;		///< the way in from the bedroom
 static const uint kHoleSlot = 9;		///< down to the sewer
@@ -136,49 +134,52 @@ static const int kArrivalRelease = 1;
 static const int kLadderCue = 9;
 static const int kLadderLeave = 1;
 
+BasementRoom::BasementRoom(AlienEngine *vm) : Room(vm),
+		_basementStep(0), _basementClimbing(false), _basementWalkOff(false) {
+}
+
 /**
  * Whether this room answers an arrival itself rather than through sub_078dd.
  *
- * Called by checkExit, which is the port's model of that routine. Room 46 is
- * listed for the same reason room 13 is -- its overlay has no call either --
- * although nothing in the port drives it yet.
+ * Called by checkExit, which is the port's model of that routine. Room 46
+ * answers no for the same reason (diving.cpp).
  */
-bool AlienEngine::roomHasSharedExit(int room) const {
-	return room != kBasementRoom && room != kDivingRoom;
+bool BasementRoom::sharedExit(int room) const {
+	return room != kBasementRoom;
 }
 
 /// The room has just opened: the climb down, when he came in over it.
-void AlienEngine::enterBasement(int room) {
+void BasementRoom::enter(int room) {
 	// The room being opened is passed in: loadRoom does not publish it as _room
 	// until after this runs, so _room here is still the room being left.
 	if (room != kBasementRoom)
 		return;
 
 	// 0x0816: both arms are armed afresh on every entry.
-	_script.setFlag(kHoleArmed, 0);
-	_script.setFlag(kLadderArmed, 0);
+	_vm->_script.setFlag(kHoleArmed, 0);
+	_vm->_script.setFlag(kLadderArmed, 0);
 
-	if (_mode != kEnterFromBedroom) {
+	if (_vm->_mode != kEnterFromBedroom) {
 		// 0x0855: no climb, just slot 0 left standing at its last frame.
-		_anims.play(kClimbSlot, 11, 1, 0, 1);
+		_vm->_anims.play(kClimbSlot, 11, 1, 0, 1);
 		return;
 	}
 
 	// 0x0837: eleven frames of him coming down, with the character and the
 	// cursor out of the way until the animation gives them back.
-	playCharacterAnim(kClimbSlot, 1, 11, 2, 1);
+	_vm->playCharacterAnim(kClimbSlot, 1, 11, 2, 1);
 	_basementStep = kStepArriving;
 	_basementClimbing = true;
 	CursorMan.showMouse(false);
 	debugC(1, kDebugRooms, "basement: down from room %d, step %d",
-		   _mode, kStepArriving);
+		   _vm->_mode, kStepArriving);
 }
 
 /// 0x0a40 runs on every pass of the room's loop, right after the animation
 /// stepper, not on the tick pair: while the climb's last frame stands the walk
 /// is started on each of them.
-void AlienEngine::stepBasementLadder() {
-	if (_room != kBasementRoom)
+void BasementRoom::walkPhase() {
+	if (_vm->_room != kBasementRoom)
 		return;
 
 	// 0x0a40: the character comes back a frame before the climb ends, and the
@@ -190,76 +191,76 @@ void AlienEngine::stepBasementLadder() {
 	// one and a rate of zero, which stands at one frame left for as long as the
 	// room is open, so the test is tied to the climb explicitly. It outlives the
 	// state machine, which ends two frames earlier.
-	if (_basementClimbing && _anims.remaining(kClimbSlot) == kArrivalRelease) {
+	if (_basementClimbing && _vm->_anims.remaining(kClimbSlot) == kArrivalRelease) {
 		_basementClimbing = false;
 		// 0x0a47 only gives the character back ([0xa94d]); slot 0 is left to
 		// run its last frame and stand there, the lift door the other entry
 		// stamps.
-		_characterAnimSlots &= ~(1 << kClimbSlot);
-		showCharacter();
-		walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
+		_vm->_characterAnimSlots &= ~(1 << kClimbSlot);
+		_vm->showCharacter();
+		_vm->walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
 		_basementWalkOff = true;
 		debugC(1, kDebugRooms, "basement: off the ladder, walking to %d,%d",
 			   kOffLadderX, kOffLadderY);
-	} else if (_basementWalkOff && _anims.remaining(kClimbSlot) == kArrivalRelease) {
+	} else if (_basementWalkOff && _vm->_anims.remaining(kClimbSlot) == kArrivalRelease) {
 		// The test at 0x0a40 holds for as long as the last frame stands, and the
 		// walk is started again on every pass it does: from wherever the first
 		// steps have got him, which rounds the rest differently 
-		walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
+		_vm->walkTo(kOffLadderX, kOffLadderY, kOffLadderFacing);
 	}
 }
 
-void AlienEngine::stepBasement() {
-	if (_room != kBasementRoom)
+void BasementRoom::tickPair() {
+	if (_vm->_room != kBasementRoom)
 		return;
 
-	if (_basementWalkOff && _ben.spriteX() < kWalkOffClearX) {
+	if (_basementWalkOff && _vm->_ben.spriteX() < kWalkOffClearX) {
 		_basementWalkOff = false;
 		CursorMan.showMouse(true);
-		if (_script.flag(kFirstArrivalSaid) == 0) {
+		if (_vm->_script.flag(kFirstArrivalSaid) == 0) {
 			int anchorX, anchorY;
-			characterAnchor(anchorX, anchorY);
-			queueOutcome(_tal, kFirstArrivalLine, anchorX, anchorY);
+			_vm->characterAnchor(anchorX, anchorY);
+			_vm->queueOutcome(_vm->_tal, kFirstArrivalLine, anchorX, anchorY);
 		}
-		_script.setFlag(kFirstArrivalSaid, 1);
+		_vm->_script.setFlag(kFirstArrivalSaid, 1);
 		debugC(1, kDebugRooms, "basement: clear of the ladder");
 	}
 
 	switch (_basementStep) {
 	case kStepArriving:
 		// 0x0b0c
-		if (_anims.remaining(kClimbSlot) != kArrivalCue)
+		if (_vm->_anims.remaining(kClimbSlot) != kArrivalCue)
 			break;
 		_basementStep = kStepArrived;
 		break;
 
 	case kStepArrived:
 		// 0x0b1e
-		_sound.play(kArrivalSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
+		_vm->_sound.play(kArrivalSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
 		_basementStep = 0;
 		break;
 
 	case kStepLadder:
 		// 0x0b30
-		if (_anims.remaining(kLadderSlot) != kLadderCue)
+		if (_vm->_anims.remaining(kLadderSlot) != kLadderCue)
 			break;
 		_basementStep = kStepLadderSound;
 		break;
 
 	case kStepLadderSound:
 		// 0x0b42
-		_sound.play(kLadderSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
+		_vm->_sound.play(kLadderSample, SoundFX::kDefaultRate, SoundFX::kFullVolume, 0);
 		_basementStep = 0;
 		break;
 
 	case kStepHole:
 		// 0x0b54: the climb down has run, and the room ends on submode 10.
-		if (_anims.remaining(kHoleSlot) != 0)
+		if (_vm->_anims.remaining(kHoleSlot) != 0)
 			break;
 		_basementStep = 0;
 		debugC(1, kDebugRooms, "basement: submode %d, down to the sewer",
 			   kSubmodeHole);
-		takeExit(kSubmodeHole);
+		_vm->takeExit(kSubmodeHole);
 		return;
 
 	default:
@@ -271,41 +272,41 @@ void AlienEngine::stepBasement() {
 	// because it is the only thing in the room that ever plays slot 10, so the
 	// two are equivalent and this cannot answer a frame count left by anything
 	// else.
-	if (_script.flag(kLadderArmed) == 1 &&
-		_anims.remaining(kLadderSlot) == kLadderLeave) {
+	if (_vm->_script.flag(kLadderArmed) == 1 &&
+		_vm->_anims.remaining(kLadderSlot) == kLadderLeave) {
 		debugC(1, kDebugRooms, "basement: submode %d, back up to the bedroom",
 			   kSubmodeLadder);
-		takeExit(kSubmodeLadder);
+		_vm->takeExit(kSubmodeLadder);
 		return;
 	}
 
 	// The two arrival arms. Both want the route run out, which is the branch of
 	// the tick this is called from, plus a standing count of their own.
-	if (_ben.isWalking() || _ben.isTurning())
+	if (_vm->_ben.isWalking() || _vm->_ben.isTurning())
 		return;
 
 	debugC(3, kDebugRooms, "basement: armed %u, standing %d, hole %d, ladder %d",
-		   _armed, _ben.idleCount(), _script.flag(kHoleArmed),
-		   _script.flag(kLadderArmed));
+		   _vm->_armed, _vm->_ben.idleCount(), _vm->_script.flag(kHoleArmed),
+		   _vm->_script.flag(kLadderArmed));
 
-	if (_armed == kArmedLadder && _ben.idleCount() >= kLadderWait &&
-		_script.flag(kLadderArmed) == 0) {
+	if (_vm->_armed == kArmedLadder && _vm->_ben.idleCount() >= kLadderWait &&
+		_vm->_script.flag(kLadderArmed) == 0) {
 		// 0x0bb5
-		playCharacterAnim(kLadderSlot, 1, 0x10, 2, 1);
+		_vm->playCharacterAnim(kLadderSlot, 1, 0x10, 2, 1);
 		_basementStep = kStepLadder;
-		_script.setFlag(kLadderArmed, 1);
-		_script.setFlag(kCabinetVariant, 0);
+		_vm->_script.setFlag(kLadderArmed, 1);
+		_vm->_script.setFlag(kCabinetVariant, 0);
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "basement: up the ladder, step 0x%02x", kStepLadder);
 		return;
 	}
 
-	if (_armed == kArmedHole && _ben.idleCount() >= kHoleWait &&
-		_script.flag(kHoleArmed) == 0) {
+	if (_vm->_armed == kArmedHole && _vm->_ben.idleCount() >= kHoleWait &&
+		_vm->_script.flag(kHoleArmed) == 0) {
 		// 0x0c21
-		playCharacterAnim(kHoleSlot, 1, 0x21, 3, 1);
+		_vm->playCharacterAnim(kHoleSlot, 1, 0x21, 3, 1);
 		_basementStep = kStepHole;
-		_script.setFlag(kHoleArmed, 1);
+		_vm->_script.setFlag(kHoleArmed, 1);
 		CursorMan.showMouse(false);
 		debugC(1, kDebugRooms, "basement: into the hole, step 0x%02x", kStepHole);
 		return;
@@ -322,14 +323,28 @@ void AlienEngine::stepBasement() {
  * slot arrays, which is why the machine stopped -- its loop is also guarded on
  * [0xa6f0] -- but the smoke, looped unguarded, went on.
  */
-void AlienEngine::takeBasementBattery(int obj) {
-	if (_room != kBasementRoom || obj != kBatteryObject)
+void BasementRoom::takeBasementBattery(int obj) {
+	if (_vm->_room != kBasementRoom || obj != kBatteryObject)
 		return;
 
-	_anims.stop(kPipeSlot);
-	_anims.stop(kSmokeSlot);
+	_vm->_anims.stop(kPipeSlot);
+	_vm->_anims.stop(kSmokeSlot);
 	debugC(1, kDebugRooms, "basement: battery out, slots %u and %u stopped", kPipeSlot,
 		   kSmokeSlot);
+}
+
+/// The shared room open drops whatever the last visit left standing.
+void BasementRoom::reset() {
+	_basementStep = 0;
+	_basementClimbing = false;
+	_basementWalkOff = false;
+}
+
+void BasementRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The battery, whose body stops two animation slots by writing into the
+	// slot arrays, which the lifted row cannot.
+	if (!item)
+		takeBasementBattery(obj);
 }
 
 } // End of namespace Alien
