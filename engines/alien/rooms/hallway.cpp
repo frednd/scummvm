@@ -180,7 +180,7 @@ void HallwayRoom::playPeephole() {
 	_vm->_scrollX = 0;
 	memcpy(_vm->_palette, palette, sizeof(_vm->_palette));
 
-	_vm->_tal.load(Common::Path(kPeepholeTal));
+	_vm->_tal.load(Common::Path(kPeepholeTal), &_vm->_pack);
 	_vm->_speechTal = &_vm->_tal;
 	_vm->_dialogBand = false;
 	_vm->_anims.loadBanks(kPeepholeBanks, ARRAYSIZE(kPeepholeBanks));
