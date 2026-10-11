@@ -859,11 +859,6 @@ void AlienEngine::finishAction() {
 	// line, which is the half of that branch the lift left behind (mailbox.cpp).
 	armMailbox(spot.obj, item);
 
-	// And room 32's statue, whose talk and look both end past the flags the
-	// lift already moves for them (cemetery.cpp).
-	if (!item)
-		armCemeteryStatue(spot.obj, verb);
-
 	// And room 19's circuit breaker, whose hand on slot 5 draws Ben himself
 	// and whose line waits for it (observatory.cpp).
 	if (!item)

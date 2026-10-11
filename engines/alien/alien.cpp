@@ -139,7 +139,6 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 		_observatoryEncore(false), _stairsDescents(0), _restoring(false),
 		_sluggsStep(0), _sluggsPos(0), _sluggsLine(0), _sluggsSpeaker(0),
 		_sluggsLeft(0), _sluggsSpeaking(false), _sluggsTalking(false),
-		_cemeteryPos(0), _cemeteryZapPos(-1), _cemeteryCursorOwed(false), _cemeteryStep(0),
 		_useLastItem(0), _useLastObj(0), _useRepeat(0), _refusalNext(0),
 		_scrollHold(-1), _cameraLastX(0), _cameraPlacements(0), _roomEnterTick(0),
 		_chatPickReply(0), _chatPickNext(0), _chatPickTopic(0), _chatPickChoice(0),
@@ -657,10 +656,6 @@ void AlienEngine::stepClock() {
 		// observatory keys -- the one source the tables have none of
 		// (sluggs.cpp).
 		stepSluggs();
-
-		// And room 32's statue, whose menu pick either opens the cave or
-		// counts one more wrong answer (cemetery.cpp).
-		stepCemetery();
 
 		// And the rooms' own machines (rooms/), in the order rooms.cpp gives.
 		for (Room *r : _rooms)

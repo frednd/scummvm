@@ -23,6 +23,7 @@
 
 #include "alien/alien.h"
 #include "alien/detection.h"
+#include "alien/rooms/cemetery.h"
 
 namespace Alien {
 
@@ -162,8 +163,13 @@ static const int kCaveFrames = 0x10;
 static const byte kStepEnterCave = 0x3c;
 static const byte kCaveSubmode = 3;
 
-void AlienEngine::setCemeteryState(byte state) {
-	_script.setFlag(0xa49f, state);
+CemeteryRoom::CemeteryRoom(AlienEngine *vm) : Room(vm),
+		_cemeteryPos(0), _cemeteryZapPos(-1), _cemeteryCursorOwed(false),
+		_cemeteryStep(0) {
+}
+
+void CemeteryRoom::setCemeteryState(byte state) {
+	_vm->_script.setFlag(0xa49f, state);
 	_cemeteryPos = 0;
 }
 
@@ -178,12 +184,12 @@ static const byte kOutcomeBack = 3;			///< "...Uh oh.."
  * with the bar already off the screen, the cursor goes, and [0xa49f] 3 runs the
  * rest.
  */
-void AlienEngine::startCemetery() {
-	if (_room != kCemeteryRoom || _mode != kCrystalRoom)
+void CemeteryRoom::start() {
+	if (_vm->_room != kCemeteryRoom || _vm->_mode != kCrystalRoom)
 		return;
 
-	_barHidden = true;
-	_inventory.setBarAway(true);
+	_vm->_barHidden = true;
+	_vm->_inventory.setBarAway(true);
 	CursorMan.showMouse(false);
 	setCemeteryState(kStateBack);
 	debugC(1, kDebugRooms, "cemetery: back from the crystal");
@@ -194,29 +200,29 @@ void AlienEngine::startCemetery() {
  * [0xa72a] and TALK after it (entry 1, 0x02ce), so the first thing a player
  * ever does to it is the look.
  */
-void AlienEngine::armCemeteryStatue(int obj, byte verb) {
-	if (_room != kCemeteryRoom || obj != kStatue)
+void CemeteryRoom::armCemeteryStatue(int obj, byte verb) {
+	if (_vm->_room != kCemeteryRoom || obj != kStatue)
 		return;
 
-	if (verb == kVerbTalkTo && _script.flag(kPhraseNeeded) == 1) {
+	if (verb == kVerbTalkTo && _vm->_script.flag(kPhraseNeeded) == 1) {
 		// 0x0078: the topic. The rune stone in Yodle's hut alone is enough for
 		// the phrase; the gravestone alone gets the spells. The port used to
 		// ask for both before offering the phrase, so a player who had read
 		// only the rune stone never saw it.
 		byte topic = 0;
-		if (_script.flag(kRunestoneRead) == 0 && _script.flag(kGravestoneRead) == 1)
+		if (_vm->_script.flag(kRunestoneRead) == 0 && _vm->_script.flag(kGravestoneRead) == 1)
 			topic = 1;
-		if (_script.flag(kRunestoneRead) == 1)
+		if (_vm->_script.flag(kRunestoneRead) == 1)
 			topic = 2;
-		_script.setFlag(kTopic, topic);
+		_vm->_script.setFlag(kTopic, topic);
 		setCemeteryState(kStateAsked);
-		openChat(topic);
+		_vm->openChat(topic);
 		debugC(1, kDebugChat, "cemetery: the statue's topic is %u", topic);
 	} else if (verb == kVerbLookAt) {
 		// 0x00b8: the look's own line goes through the generic outcome path;
 		// this room takes the cursor away until it is down and then opens
 		// topic 0 (state 0x46).
-		_script.setFlag(kLooked, 1);
+		_vm->_script.setFlag(kLooked, 1);
 		setCemeteryState(kStateLook);
 		CursorMan.showMouse(false);
 	}
@@ -229,32 +235,32 @@ void AlienEngine::armCemeteryStatue(int obj, byte verb) {
  * because that is where the original keeps it: the click has no submode to
  * arm, and whether the walk is a way out is decided when it lands.
  */
-void AlienEngine::cemeteryArrival() {
-	if (_room != kCemeteryRoom || _cemeteryStep)
+void CemeteryRoom::cemeteryArrival() {
+	if (_vm->_room != kCemeteryRoom || _cemeteryStep)
 		return;
-	if (_ben.isWalking() || _ben.isTurning() || !speechDone())
+	if (_vm->_ben.isWalking() || _vm->_ben.isTurning() || !_vm->speechDone())
 		return;
 
-	if (_script.flag(kClickedObj) != kLasers)
+	if (_vm->_script.flag(kClickedObj) != kLasers)
 		return;
 
 	// 0x0c43: the latch is spent whichever way the test goes, so a second
 	// arrival at the same spot says nothing a second time.
-	_script.setFlag(kClickedObj, 0);
+	_vm->_script.setFlag(kClickedObj, 0);
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
+	_vm->characterAnchor(anchorX, anchorY);
 
-	if (_script.flag(kPhraseNeeded) != 0) {
+	if (_vm->_script.flag(kPhraseNeeded) != 0) {
 		// 0x0c4f: the beams are still up.
-		queueOutcome(_tal, kOutcomeNotYet, anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeNotYet, anchorX, anchorY);
 		debugC(1, kDebugRooms, "cemetery: the beams are still up");
 		return;
 	}
 
 	// 0x0c5d: the cursor and the walker both go, and slot 3 has him.
 	CursorMan.showMouse(false);
-	playCharacterAnim(kCaveSlot, 1, kCaveFrames, kStatueRate, kStatueMode);
+	_vm->playCharacterAnim(kCaveSlot, 1, kCaveFrames, kStatueRate, kStatueMode);
 	_cemeteryStep = kStepEnterCave;
 	debugC(1, kDebugRooms, "cemetery: through the beams and into the cave");
 }
@@ -265,12 +271,12 @@ void AlienEngine::cemeteryArrival() {
  * here opens it again -- the port used to reopen topic 0 after every pick,
  * which is why "I have to go" could not end it.
  */
-void AlienEngine::cemeteryStatuePick() {
-	if (_script.flag(0xa49f) != kStateAsked)
+void CemeteryRoom::cemeteryStatuePick() {
+	if (_vm->_script.flag(0xa49f) != kStateAsked)
 		return;
 
-	const uint topic = _script.flag(kTopic);
-	const uint choice = _chatPickChoice;
+	const uint topic = _vm->_script.flag(kTopic);
+	const uint choice = _vm->_chatPickChoice;
 
 	if (topic == 0) {
 		// 0x09d0: small talk, and goodbye is just goodbye.
@@ -282,12 +288,12 @@ void AlienEngine::cemeteryStatuePick() {
 		// 0x09e3: a spell. The count goes up on the goodbye too, and since
 		// the state is left at 0x15 the original counts it again on every
 		// pass until the cap -- a farewell there uses up every try.
-		const byte attempts = (byte)_script.flag(kAttempts);
+		const byte attempts = (byte)_vm->_script.flag(kAttempts);
 		if (choice < kLeaveChoice) {
-			_script.setFlag(kAttempts, MIN<byte>(attempts + 1, kMaxAttempts));
+			_vm->_script.setFlag(kAttempts, MIN<byte>(attempts + 1, kMaxAttempts));
 			setCemeteryState(kStateSpell);
 		} else {
-			_script.setFlag(kAttempts, kMaxAttempts);
+			_vm->_script.setFlag(kAttempts, kMaxAttempts);
 			setCemeteryState(kStateIdle);
 		}
 	} else if (choice == kCorrectChoice) {
@@ -299,91 +305,91 @@ void AlienEngine::cemeteryStatuePick() {
 	}
 
 	debugC(1, kDebugChat, "cemetery: topic %u choice %u -> state 0x%02x, %u attempt(s)",
-		   topic, choice, _script.flag(0xa49f), _script.flag(kAttempts));
+		   topic, choice, _vm->_script.flag(0xa49f), _vm->_script.flag(kAttempts));
 }
 
 /// The zap a wrong spell or a near miss gets (0x0a93, 0x0ac9).
-void AlienEngine::cemeteryZap() {
-	_anims.play(kZapSlot, 1, kZapFrames, 0, kStatueMode);
-	_sound.queue(kZapSample, kZapRate, kStatueVolume, kStatuePan, 0);
+void CemeteryRoom::cemeteryZap() {
+	_vm->_anims.play(kZapSlot, 1, kZapFrames, 0, kStatueMode);
+	_vm->_sound.queue(kZapSample, kZapRate, kStatueVolume, kStatuePan, 0);
 	_cemeteryZapPos = 0;
 }
 
 /// The statue's [0xa49f] machine, 0x0962-0x0c2c, and the cave's arrival.
-void AlienEngine::stepCemetery() {
-	if (_room != kCemeteryRoom)
+void CemeteryRoom::tickPair() {
+	if (_vm->_room != kCemeteryRoom)
 		return;
 
 	// [0xa49c] and the zap's own count both move on the animation gate.
-	if ((_tick & 3) == 0) {
+	if ((_vm->_tick & 3) == 0) {
 		_cemeteryPos++;
 		if (_cemeteryZapPos >= 0)
 			_cemeteryZapPos++;
 	}
 
-	if (_chatPickNew) {
-		_chatPickNew = false;
+	if (_vm->_chatPickNew) {
+		_vm->_chatPickNew = false;
 		cemeteryStatuePick();
 	}
 
 	int anchorX, anchorY;
-	characterAnchor(anchorX, anchorY);
+	_vm->characterAnchor(anchorX, anchorY);
 
-	switch (_script.flag(0xa49f)) {
+	switch (_vm->_script.flag(0xa49f)) {
 	case kStateBack:
 		// 0x0969
 		if (_cemeteryPos <= kBackWait)
 			break;
-		queueOutcome(_tal, kOutcomeBackEmpty, anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeBackEmpty, anchorX, anchorY);
 		setCemeteryState(kStateBackLine);
 		break;
 
 	case kStateBackLine:
 		// 0x0988: queued straight after it, so it is the one that is said.
-		queueOutcome(_tal, kOutcomeBack, anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeBack, anchorX, anchorY);
 		setCemeteryState(kStateBackDown);
 		break;
 
 	case kStateBackDown:
 		// 0x099b: OBJ:sub_030f4 and sub_03c77 put the bar back.
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		setCemeteryState(kStateIdle);
-		showBar();
+		_vm->showBar();
 		CursorMan.showMouse(true);
 		break;
 
 	case kStateLook:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
-		_script.setFlag(kTopic, 0);
+		_vm->_script.setFlag(kTopic, 0);
 		setCemeteryState(kStateAsked);
-		openChat(0);
+		_vm->openChat(0);
 		CursorMan.showMouse(true);
 		break;
 
 	case kStateTalk:
-		if (speechDone())
+		if (_vm->speechDone())
 			setCemeteryState(kStateTalkReply);
 		break;
 
 	case kStateTalkReply:
 		if (_cemeteryPos <= kTalkReplyAt)
 			break;
-		queueOutcome(_tal, (byte)(kWrongBase + _chatPickChoice), anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, (byte)(kWrongBase + _vm->_chatPickChoice), anchorX, anchorY);
 		setCemeteryState(kStateIdle);
 		break;
 
 	case kStateSpell:
-		if (!speechDone())
+		if (!_vm->speechDone())
 			break;
 		setCemeteryState(kStateSpellZap);
 		cemeteryZap();
 		break;
 
 	case kStateSpellZap:
-		if (_script.flag(kAttempts) == kMaxAttempts)
-			queueOutcome(_tal, kOutcomeGiveUp, anchorX, anchorY);
+		if (_vm->_script.flag(kAttempts) == kMaxAttempts)
+			_vm->queueOutcome(_vm->_tal, kOutcomeGiveUp, anchorX, anchorY);
 		setCemeteryState(kStateSpellLine);
 		break;
 
@@ -391,12 +397,12 @@ void AlienEngine::stepCemetery() {
 		if (_cemeteryPos <= kAfterZapAt)
 			break;
 		setCemeteryState(kStateIdle);
-		if (_script.flag(kAttempts) != kMaxAttempts)
-			queueOutcome(_tal, kOutcomeTryAgain, anchorX, anchorY);
+		if (_vm->_script.flag(kAttempts) != kMaxAttempts)
+			_vm->queueOutcome(_vm->_tal, kOutcomeTryAgain, anchorX, anchorY);
 		break;
 
 	case kStateClose:
-		if (speechDone())
+		if (_vm->speechDone())
 			setCemeteryState(kStateCloseZap);
 		break;
 
@@ -411,31 +417,31 @@ void AlienEngine::stepCemetery() {
 		if (_cemeteryPos <= kAfterZapAt)
 			break;
 		setCemeteryState(kStateIdle);
-		queueOutcome(_tal, kOutcomeClose, anchorX, anchorY);
+		_vm->queueOutcome(_vm->_tal, kOutcomeClose, anchorX, anchorY);
 		break;
 
 	case kStateRight:
-		if (speechDone())
+		if (_vm->speechDone())
 			setCemeteryState(kStateMouth);
 		break;
 
 	case kStateMouth:
-		if (_anims.isBusy(kRewardSlot))
+		if (_vm->_anims.isBusy(kRewardSlot))
 			break;
-		_sound.queue(kMouthSample, kMouthRate, kStatueVolume, kStatuePan, 0);
-		_anims.setLoopFlag(kRewardSlot, 0);
-		_anims.play(kRewardSlot, 1, kRewardFrames, kStatueRate, kStatueMode);
+		_vm->_sound.queue(kMouthSample, kMouthRate, kStatueVolume, kStatuePan, 0);
+		_vm->_anims.setLoopFlag(kRewardSlot, 0);
+		_vm->_anims.play(kRewardSlot, 1, kRewardFrames, kStatueRate, kStatueMode);
 		setCemeteryState(kStateOpen);
 		break;
 
 	case kStateOpen: {
-		if (_anims.isBusy(kRewardSlot))
+		if (_vm->_anims.isBusy(kRewardSlot))
 			break;
-		_script.setFlag(kPhraseNeeded, 0);
+		_vm->_script.setFlag(kPhraseNeeded, 0);
 
-		queueOutcome(_tal, kOutcomeSolved, anchorX, anchorY);
-		_anims.setLoopFlag(kOpenSlot, 0);
-		_anims.play(kOpenSlot, 1, kOpenFrames, kStatueRate, kStatueMode);
+		_vm->queueOutcome(_vm->_tal, kOutcomeSolved, anchorX, anchorY);
+		_vm->_anims.setLoopFlag(kOpenSlot, 0);
+		_vm->_anims.play(kOpenSlot, 1, kOpenFrames, kStatueRate, kStatueMode);
 		setCemeteryState(kStateIdle);
 		// The cursor went at 0x0a1e and the machine never gives it back; the
 		// dialog unit does when the line comes down, which the port's
@@ -450,7 +456,7 @@ void AlienEngine::stepCemetery() {
 
 	// Slot 2 is one of the room's always-relaunched loops, so it never reads
 	// as finished: the line is the whole wait.
-	if (_cemeteryCursorOwed && speechDone()) {
+	if (_cemeteryCursorOwed && _vm->speechDone()) {
 		_cemeteryCursorOwed = false;
 		CursorMan.showMouse(true);
 	}
@@ -458,18 +464,25 @@ void AlienEngine::stepCemetery() {
 	// 0x0c0d: fifteen counts after a zap the beams run their eleven frames.
 	if (_cemeteryZapPos > (int)kAfterZapAt) {
 		_cemeteryZapPos = -1;
-		_anims.play(kBeamSlot, 1, kBeamFrames, kStatueRate, kStatueMode);
+		_vm->_anims.play(kBeamSlot, 1, kBeamFrames, kStatueRate, kStatueMode);
 	}
 
 	cemeteryArrival();
 
 	// 0x0b7e: and the submode goes out once slot 3 has run out, not before.
-	if (_cemeteryStep == kStepEnterCave && !_anims.isBusy(kCaveSlot)) {
+	if (_cemeteryStep == kStepEnterCave && !_vm->_anims.isBusy(kCaveSlot)) {
 		_cemeteryStep = 0;
-		showCharacter();
+		_vm->showCharacter();
 		debugC(1, kDebugRooms, "cemetery: submode %u, into room 40", kCaveSubmode);
-		takeExit(kCaveSubmode);
+		_vm->takeExit(kCaveSubmode);
 	}
+}
+
+void CemeteryRoom::afterScript(int obj, byte verb, byte item, int anchorX, int anchorY) {
+	// The statue, whose talk and look both end past the flags the lift
+	// already moves for them.
+	if (!item)
+		armCemeteryStatue(obj, verb);
 }
 
 } // End of namespace Alien

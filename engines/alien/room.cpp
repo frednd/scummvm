@@ -523,9 +523,6 @@ bool AlienEngine::loadRoom(int room, bool secondPlate, bool keepPosition) {
 	// with the character talking to himself before the player gets the cursor.
 	startOpening();
 
-	// And room 32's way back from the crystal (cemetery.cpp).
-	startCemetery();
-
 	startObservatory();
 
 

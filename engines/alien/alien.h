@@ -62,6 +62,7 @@ class AlienEngine : public Engine {
 	// reach into the engine as freely as the overlays reach into the resident
 	// units.
 	friend class BossRoom;
+	friend class CemeteryRoom;
 	friend class TelescopeRoom;
 	friend class MazeRoom;
 	friend class ShoreRoom;
@@ -421,16 +422,6 @@ private:
 	/// Room 31's two ledges and the climb between them (cliff.cpp).
 	void armCliff(int clickX, int clickY, WalkTarget &target);
 	void stepCliff();
-
-	/// Room 32's statue, the phrase it wants and the cave it guards
-	/// (cemetery.cpp).
-	void armCemeteryStatue(int obj, byte verb);
-	void cemeteryArrival();
-	void setCemeteryState(byte state);
-	void cemeteryZap();
-	void cemeteryStatuePick();
-	void startCemetery();
-	void stepCemetery();
 
 	/// The room's hotspot table, rebuilt from the puzzle state -- and from the
 	/// cell, in the two mazes. Defaults to the room the engine is in; loadRoom
@@ -905,13 +896,6 @@ private:
 	byte _sluggsLeft;
 	bool _sluggsSpeaking;
 	bool _sluggsTalking;
-
-	/// Room 32's statue: waiting for the look's own line to come down before
-	/// the topic-0 conversation reopens (cemetery.cpp).
-	uint16 _cemeteryPos;		///< room 32's [0xa49c]
-	int _cemeteryZapPos;		///< [bp-4] after a zap, -1 when none is pending
-	bool _cemeteryCursorOwed;	///< the phrase took the cursor; its line gives it back
-	byte _cemeteryStep;	///< [0xa49f] while the cave is being walked into
 
 	/// [0xa8e0]/[0xa8e2]: a scene holding the camera on a point of its own
 	/// rather than on Ben, or -1 while it follows him.
