@@ -24,6 +24,8 @@ MODULE_OBJS = \
 	overlay.o \
 	pack.o \
 	plates.o \
+	play.o \
+	playrun.o \
 	render.o \
 	resources.o \
 	room.o \

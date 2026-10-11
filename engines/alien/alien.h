@@ -1450,6 +1450,8 @@ private:
 	/// The keys a watched run answers to; false for any other key.
 	bool playHotkey(const Common::KeyState &key);
 	void playMessage(const Common::String &text);
+	void playClick(int x, int y, bool right);
+	void playQuit();
 };
 
 } // End of namespace Alien
