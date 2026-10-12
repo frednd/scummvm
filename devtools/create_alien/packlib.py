@@ -95,6 +95,12 @@ TEXT_FLAGS = {
 
 ENCODING = 'cp850'
 
+# The language trees the game ships, TALFILES/<lang> and NAMEROOM/<lang>. A
+# text row that names one only applies to a run in that language; the pack
+# stores it under the qualified name 'FIN/ROOM19.TAL', which the engine
+# filters on as it loads and strips before anything else sees it.
+LANGUAGES = ('ENG', 'FIN')
+
 MAX_LINES = 5
 MAX_OUTCOME_IDS = 10
 ENTRY_COUNT = 100
@@ -197,6 +203,37 @@ def normalize_tal(name):
     return os.path.basename(str(name).replace('\\', '/')).upper()
 
 
+def text_name(row):
+    """The TAL name a text or manifest row is stored under in the pack."""
+    tal = normalize_tal(row['tal'])
+    return '%s/%s' % (row['lang'], tal) if row.get('lang') else tal
+
+
+def split_text_name(name):
+    """'FIN/ROOM19.TAL' -> ('FIN', 'ROOM19.TAL'); a bare name has no language."""
+    lang, sep, tal = name.partition('/')
+    return (lang, tal) if sep and lang in LANGUAGES else (None, name)
+
+
+def text_key(row):
+    """What makes two text rows the same override: the language is part of it."""
+    return (row.get('lang') or '', normalize_tal(row['tal']), row['entry'])
+
+
+def rows_for_language(rows, language):
+    """The text rows a run in `language` would apply, a qualified row winning
+    over a neutral one for the same entry -- the order the engine resolves them in."""
+    picked = {}
+    for row in rows:
+        if row.get('lang') not in (None, language):
+            continue
+        key = (normalize_tal(row['tal']), row['entry'])
+        if key in picked and not row.get('lang'):
+            continue
+        picked[key] = row
+    return list(picked.values())
+
+
 def _check_range(what, value, lo, hi):
     if not isinstance(value, int) or not lo <= value <= hi:
         raise PackError('%s: %r is outside %d..%d' % (what, value, lo, hi))
@@ -206,12 +243,23 @@ def validate_text(rows):
     """Reject a dialog override the engine could not act on."""
     seen = set()
     for row in rows:
-        tal = normalize_tal(row['tal'])
+        tal = text_name(row)
         entry = row['entry']
         _check_range('%s entry' % tal, entry, 0, ENTRY_COUNT - 1)
         if (tal, entry) in seen:
             raise PackError('%s entry %d has two override rows' % (tal, entry))
         seen.add((tal, entry))
+
+        lang = row.get('lang')
+        if lang is not None and lang not in LANGUAGES:
+            raise PackError('%s entry %d: language %r is not one of %s'
+                            % (tal, entry, lang, ', '.join(LANGUAGES)))
+        # Timing and placement mean the same in either language, but a line
+        # of text is written in one: unqualified, an English line would be
+        # spoken in the middle of the Finnish game.
+        if 'lines' in row and lang is None:
+            raise PackError('%s entry %d replaces the text but names no language'
+                            % (tal, entry))
 
         if 'duration' in row:
             _check_range('%s entry %d duration' % (tal, entry), row['duration'], 0, 0x7FFF)
@@ -279,7 +327,7 @@ def _pack_text(rows, strings):
         anchor = row.get('anchor', (-1, -1))
         lines = row.get('lines', [])
         out.append(struct.pack('<HBHhbBBBhhBB',
-                               strings.add(normalize_tal(row['tal'])),
+                               strings.add(text_name(row)),
                                row['entry'],
                                flags,
                                row.get('duration', -1),
@@ -306,7 +354,10 @@ def _unpack_text(blob, strings):
             idx, = struct.unpack_from('<H', blob, p)
             p += 2
             lines.append(strings[idx])
-        row = {'tal': strings[tal], 'entry': entry}
+        lang, name = split_text_name(strings[tal])
+        row = {'tal': name, 'entry': entry}
+        if lang:
+            row['lang'] = lang
         if flags & F_DURATION:
             row['duration'] = duration
         if flags & F_TICKS_PER_CHAR:
@@ -348,7 +399,7 @@ def _unpack_outcomes(blob, strings):
 def _pack_manifest(rows, strings):
     out = [struct.pack('<H', len(rows))]
     for row in rows:
-        out.append(struct.pack('<HBI', strings.add(normalize_tal(row['tal'])),
+        out.append(struct.pack('<HBI', strings.add(text_name(row)),
                                row['entry'], row['hash']))
     return b''.join(out)
 
@@ -360,7 +411,11 @@ def _unpack_manifest(blob, strings):
     for _ in range(count):
         tal, entry, h = struct.unpack_from('<HBI', blob, p)
         p += 7
-        rows.append({'tal': strings[tal], 'entry': entry, 'hash': h})
+        lang, name = split_text_name(strings[tal])
+        row = {'tal': name, 'entry': entry, 'hash': h}
+        if lang:
+            row['lang'] = lang
+        rows.append(row)
     return rows
 
 
@@ -788,7 +843,7 @@ def nest(doc):
 # is one table rather than a set of rows, and an edit layer carrying one
 # replaces the lift's outright.
 MERGE_KEYS = {
-    'text': lambda r: (normalize_tal(r['tal']), r['entry']),
+    'text': text_key,
     'outcomes': lambda r: (normalize_tal(r['tal']), r['code']),
     'tune': lambda r: r['name'],
     'records': lambda r: r.get('number'),
@@ -802,7 +857,7 @@ MERGE_KEYS = {
 SORT_KEYS = {
     'text': MERGE_KEYS['text'],
     'outcomes': MERGE_KEYS['outcomes'],
-    'manifest': lambda r: (normalize_tal(r['tal']), r['entry']),
+    'manifest': text_key,
     'tune': MERGE_KEYS['tune'],
     'records': lambda r: r.get('number', 0),
     'blocks': lambda r: r.get('index', 0),

@@ -72,7 +72,7 @@ static ScriptCond readCond(const byte *p) {
 /// What an unset string index reads as.
 static const uint16 kNoString = 0xFFFF;
 
-AlienPack::AlienPack() : _loaded(false), _status(kStatusMissing), _foundVersion(0) {
+AlienPack::AlienPack() : _language("ENG"), _loaded(false), _status(kStatusMissing), _foundVersion(0) {
 }
 
 /**
@@ -134,6 +134,19 @@ uint32 AlienPack::textHash(const Common::Array<Common::String> &lines) {
 
 Common::String AlienPack::key(const Common::String &talName, byte index) const {
 	return Common::String::format("%s/%u", talKey(talName).c_str(), index);
+}
+
+bool AlienPack::inLanguage(const Common::String &stored, Common::String &name,
+							bool &qualified) const {
+	// gen_pack.py writes the qualifier as one of the two tree names and a
+	// slash; anything else is a bare name, which applies in either language.
+	qualified = stored.hasPrefix("ENG/") || stored.hasPrefix("FIN/");
+	if (!qualified) {
+		name = stored;
+		return true;
+	}
+	name = Common::String(stored.c_str() + 4);
+	return Common::String(stored.c_str(), 3).equalsIgnoreCase(_language);
 }
 
 bool AlienPack::load() {
@@ -294,6 +307,7 @@ bool AlienPack::loadStream(Common::SeekableReadStream &stream) {
 		}
 	};
 
+	Common::HashMap<Common::String, bool> qualifiedText;
 	if (body[0] && bodySize[0] >= 2) {
 		const byte *p = body[0];
 		const byte *end = body[0] + bodySize[0];
@@ -301,7 +315,9 @@ bool AlienPack::loadStream(Common::SeekableReadStream &stream) {
 		p += 2;
 		for (uint i = 0; i < count && p + 17 <= end; i++) {
 			TextOverride ov;
-			const Common::String name = Local::at(strings, READ_LE_UINT16(p));
+			Common::String name;
+			bool qualified;
+			const bool kept = inLanguage(Local::at(strings, READ_LE_UINT16(p)), name, qualified);
 			const byte entry = p[2];
 			ov.flags = READ_LE_UINT16(p + 3);
 			ov.duration = (int16)READ_LE_UINT16(p + 5);
@@ -318,6 +334,12 @@ bool AlienPack::loadStream(Common::SeekableReadStream &stream) {
 				ov.lines.push_back(Local::at(strings, READ_LE_UINT16(p)));
 				p += 2;
 			}
+			// The other language's rows are read past; a row for this one
+			// replaces the neutral row for the same entry whichever came first.
+			if (!kept || (!qualified && qualifiedText.contains(key(name, entry))))
+				continue;
+			if (qualified)
+				qualifiedText[key(name, entry)] = true;
 			_text[key(name, entry)] = ov;
 		}
 	}
@@ -347,11 +369,13 @@ bool AlienPack::loadStream(Common::SeekableReadStream &stream) {
 		const uint16 count = READ_LE_UINT16(p);
 		p += 2;
 		for (uint i = 0; i < count && p + 7 <= end; i++) {
-			const Common::String name = Local::at(strings, READ_LE_UINT16(p));
+			Common::String name;
+			bool qualified;
+			const bool kept = inLanguage(Local::at(strings, READ_LE_UINT16(p)), name, qualified);
 			const byte entry = p[2];
 			const uint32 hash = READ_LE_UINT32(p + 3);
 			p += 7;
-			if (_text.contains(key(name, entry))) {
+			if (kept && _text.contains(key(name, entry))) {
 				TextOverride &ov = _text[key(name, entry)];
 				ov.hash = hash;
 				ov.hasHash = true;

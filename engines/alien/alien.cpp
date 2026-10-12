@@ -204,6 +204,7 @@ Common::Error AlienEngine::run() {
 	const char *languageDir = getLanguage() == Common::FI_FIN ? "FIN" : "ENG";
 	addTextTree(gameDataDir, kScriptTree, languageDir);
 	addTextTree(gameDataDir, kLabelTree, languageDir);
+	_pack.setLanguage(languageDir);
 
 	_screen.create(kScreenWidth, kScreenHeight, Graphics::PixelFormat::createFormatCLUT8());
 

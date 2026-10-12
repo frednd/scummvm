@@ -110,6 +110,15 @@ public:
 	bool load();
 	bool loadStream(Common::SeekableReadStream &stream);
 
+	/**
+	 * The language tree this run reads its text from ("ENG" or "FIN"), set
+	 * before load(). A dialog row the pack qualifies with a language
+	 * ("FIN/ROOM19.TAL") is only kept in a run of that language, and wins over
+	 * an unqualified row for the same entry; a replacement line is written in
+	 * one language, while timing and placement suit either.
+	 */
+	void setLanguage(const char *language) { _language = language; }
+
 	bool isLoaded() const { return _loaded; }
 	Status status() const { return _status; }
 	/** The version the file said it was, when status() is kStatusVersion. */
@@ -173,6 +182,7 @@ public:
 
 private:
 	Common::String key(const Common::String &talName, byte index) const;
+	bool inLanguage(const Common::String &stored, Common::String &name, bool &qualified) const;
 	static void readEffects(const byte *body, uint32 size, Common::Array<ScriptEffect> &out);
 
 	Common::HashMap<Common::String, TextOverride> _text;
@@ -202,6 +212,8 @@ private:
 	Common::Array<ScriptBlock> _blocks;
 	Common::Array<RoomBlocks> _rooms;
 	Common::Array<ScriptFlagInit> _flags;
+
+	Common::String _language;
 
 	bool _loaded;
 	Status _status;
