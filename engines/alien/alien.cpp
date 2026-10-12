@@ -159,6 +159,10 @@ AlienEngine::AlienEngine(OSystem *syst, const ADGameDescription *gameDesc) :
 	// that never set the option gets them too.
 	ConfMan.registerDefault("subtitles", true);
 
+	// Holding h shows the hotspot markers; the backend drops that key unless
+	// the target enabled them, so a target that never set it has them on.
+	ConfMan.registerDefault("enable_hotspots", true);
+
 	// An anim_play effect in a room script drives the slots directly, the way the
 	// overlay's own body calls MIDAS, and inv_add / inv_remove work the list.
 	_script.setAnims(&_anims);
@@ -562,18 +566,36 @@ uint32 AlienEngine::masterTick() const {
 
 void AlienEngine::stepClock() {
 	const uint32 now = millis();
-	if (now - _lastTick < kTickMillis)
+	uint32 due = (now - _lastTick) / kTickMillis;
+	if (!due)
 		return;
-	// [0x7926] is the timer interrupt's (INPUT:psub_01820), not the loop's: it
-	// keeps counting through a fade, a scene or any other wait that holds the
-	// loop up. The port's blocking waits let the clock run on without coming
-	// back here, so the ticks they spent are counted now, without the work the
-	// loop does on a tick.
-	const uint32 missed = (now - _lastTick) / kTickMillis - 1;
-	if (missed)
-		_tick += missed;
-	_lastTick = now;
-	_tick++;
+
+	if (due > kMaxCatchUpTicks) {
+		// [0x7926] is the timer interrupt's (INPUT:psub_01820), not the loop's:
+		// it keeps counting through a fade, a scene or any other wait that holds
+		// the loop up. The port's blocking waits let the clock run on without
+		// coming back here, so the ticks they spent are counted now, without the
+		// work the loop does on a tick.
+		_tick += due - 1;
+		_lastTick = now;
+		due = 1;
+	} else {
+		// A pass that merely ran long -- a full redraw every tick while the
+		// camera pans, and a present that waits for the retrace -- still owes
+		// the work of every tick it covered. Everything is gated on the tick's
+		// phase, so skipping them dropped the walker's steps and the pan's
+		// speed steps at random: he slowed and hitched whenever the room
+		// scrolled. The remainder is kept too, so the clock does not drift.
+		_lastTick += due * kTickMillis;
+	}
+
+	while (due--) {
+		_tick++;
+		stepTick();
+	}
+}
+
+void AlienEngine::stepTick() {
 
 	// The delay queue is serviced every tick, but its countdowns only step on the
 	// tick pair -- INPUT:0x5D9 tests the same [0xa5fc] the slots do.

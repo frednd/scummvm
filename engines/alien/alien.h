@@ -325,6 +325,12 @@ private:
 	void sweepWalkGeometry();
 	void dumpHotspots();
 	void stepClock();
+	void stepTick();
+
+	/// The most ticks one loop pass catches up on. A pass that ran late by
+	/// less is frame jitter and owes every tick's work; more is a blocking
+	/// wait, whose ticks are counted but not worked (stepClock).
+	static const uint32 kMaxCatchUpTicks = 8;
 
 	void drawWalkOverlay();
 	void drawSpotOverlay();
