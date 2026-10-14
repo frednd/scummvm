@@ -377,7 +377,6 @@ private:
 	bool nextCutsceneLine();
 	void dumpMusic();
 	void sweepMusicCues();
-	void sweepMusicRows();
 	void renderMusic();
 	void playVideo(Video::VideoDecoder &video, CDA2Decoder *subtitles = nullptr);
 	void drawSubtitle(const CDA2Decoder &video);
@@ -559,7 +558,6 @@ private:
 
 	/// The module playing now, if any, and the mixer channel it is on. One track
 	/// is resident at a time, the way MIDAS holds one module.
-	S3MModule _music;
 	Audio::SoundHandle _musicHandle;
 	int _musicSlot;
 

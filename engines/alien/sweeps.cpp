@@ -31,10 +31,7 @@ namespace Alien {
 // back into each other, so a tour never ends on its own.
 static const uint kTourHops = 20;
 
-// The music sweeps: the rate the traces are rendered at, how many rows of each
-// slot's track the sequencer trace walks, and how long the loudness render runs.
-static const int kMusicRate = 22050;
-static const uint kMusicRows = 64;
+// How long the music loudness render runs.
 static const uint kMusicSeconds = 10;
 
 // How many frames of each cutscene the checksum sweep decodes. The intro is
@@ -197,14 +194,9 @@ void AlienEngine::dumpMusic() {
 		if (!module.load(_tables.musicName(i)))
 			continue;
 
-		uint samples = 0;
-		for (uint s = 1; s < module.sampleCount(); s++) {
-			if (module.sample(s))
-				samples++;
-		}
 		debugC(1, kDebugMusic, "module %2d %-18s %2u channels %3u orders %2u patterns "
 			   "%2u samples speed %2u tempo %3u", i, _tables.musicName(i).c_str(),
-			   module.channelCount(), module.orderCount(), module.patternCount(), samples,
+			   module.channelCount(), module.orderCount(), module.patternCount(), module.sampleCount(),
 			   module.speed(), module.tempo());
 	}
 
@@ -409,65 +401,42 @@ void AlienEngine::sweepMusicCues() {
 }
 
 /**
- * Step every slot's track row by row and print what the sequencer sees.
- *
- * This is the half of a replayer that can be checked exactly: which pattern each
- * order names, where Bxx and Cxx send the song next, and what every cell of the
- * rows it walks through holds.
- */
-void AlienEngine::sweepMusicRows() {
-	for (int slot = 0; slot < StaticTables::kMusicSlotCount; slot++) {
-		const byte index = _tables.musicSlotModule(slot);
-		S3MModule module;
-		if (!module.load(_tables.musicName(index)))
-			continue;
-
-		S3MPlayer player(&module, kMusicRate, _tables.musicSlotOrder(slot));
-		for (uint i = 0; i < kMusicRows; i++) {
-			S3MPlayer::RowTrace trace;
-			if (!player.traceRow(trace))
-				break;
-
-			for (uint channel = 0; channel < module.channelCount(); channel++) {
-				const S3MModule::Cell &cell = module.cell(trace.pattern, trace.row, channel);
-				if (cell.note == S3MModule::kNoteEmpty && !cell.instrument &&
-					cell.volume == S3MModule::kVolumeEmpty && !cell.command)
-					continue;
-
-				debugC(2, kDebugMusic, "row slot %2d order %3u pat %3u row %2u ch %u "
-					   "note %3u ins %2u vol %3u fx %c%02X", slot, trace.order, trace.pattern,
-					   trace.row, channel, cell.note, cell.instrument, cell.volume,
-					   cell.command ? (char)('A' + cell.command - 1) : '-', cell.info);
-			}
-		}
-	}
-}
-
-/**
  * Render each module from its own start and log the loudness second by second
  * for verification.
  */
 void AlienEngine::renderMusic() {
 	Common::Array<int16> buffer;
-	buffer.resize(kMusicRate);
 
 	for (int i = 0; i < StaticTables::kMusicCount; i++) {
 		S3MModule module;
 		if (!module.load(_tables.musicName(i)))
 			continue;
 
-		S3MPlayer player(&module, kMusicRate, 0);
+		Audio::AudioStream *stream = makeSongStream(module, 0);
+		if (!stream)
+			continue;
+
+		// The tracker mixes in stereo, so a second is measured over the two
+		// channels folded back into the one the modules were written for.
+		const int frames = stream->getRate();
+		const int channels = stream->isStereo() ? 2 : 1;
+		buffer.resize(frames * channels);
 		for (uint second = 0; second < kMusicSeconds; second++) {
-			player.readBuffer(&buffer[0], kMusicRate);
+			const int got = stream->readBuffer(&buffer[0], frames * channels) / channels;
 
 			uint64 square = 0;
-			for (int s = 0; s < kMusicRate; s++)
-				square += (int64)buffer[s] * buffer[s];
+			for (int f = 0; f < got; f++) {
+				int value = buffer[f * channels];
+				if (channels == 2)
+					value = (value + buffer[f * 2 + 1]) / 2;
+				square += (int64)value * value;
+			}
 
-			const uint rms = (uint)sqrt((double)(square / kMusicRate));
+			const uint rms = got ? (uint)sqrt((double)(square / got)) : 0;
 			debugC(3, kDebugMusic, "rms %-18s second %2u %5u", _tables.musicName(i).c_str(),
 				   second, rms);
 		}
+		delete stream;
 	}
 }
 

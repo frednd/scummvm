@@ -397,14 +397,11 @@ Common::Error AlienEngine::run() {
 			sweepScale();
 	}
 
-	// The music channel prints the module and
-	// slot tables, then the sequencer walked row by row, then the loudness of the
-	// rendered output second by second.
+	// The music channel prints the module and slot tables, then (at level 3) the
+	// loudness of the rendered output second by second.
 	if (debugChannelSet(-1, kDebugMusic)) {
 		dumpMusic();
 		sweepMusicCues();
-		if (debugChannelSet(2, kDebugMusic))
-			sweepMusicRows();
 		if (debugChannelSet(3, kDebugMusic))
 			renderMusic();
 	}

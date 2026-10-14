@@ -48,19 +48,20 @@ void AlienEngine::playMusicSlot(uint slot) {
 	const byte module = _tables.musicSlotModule(slot);
 	const byte order = _tables.musicSlotOrder(slot);
 	const Common::String &name = _tables.musicName(module);
-	if (name.empty() || !_music.load(name)) {
+	S3MModule music;
+	Audio::AudioStream *stream = nullptr;
+	if (!name.empty() && music.load(name))
+		stream = makeSongStream(music, order);
+	if (!stream) {
 		warning("could not load the music module for slot %u", slot);
 		return;
 	}
 
 	_musicSlot = (int)slot;
 	debugC(1, kDebugMusic, "slot %u: module %d %s at order %d, %u channels", slot, module,
-		   name.c_str(), order, _music.channelCount());
+		   name.c_str(), order, music.channelCount());
 
-	// The player owns nothing but the module, which outlives it, so the mixer is
-	// free to dispose of the stream when the track is stopped.
-	_mixer->playStream(Audio::Mixer::kMusicSoundType, &_musicHandle,
-					   new S3MPlayer(&_music, _mixer->getOutputRate(), order));
+	_mixer->playStream(Audio::Mixer::kMusicSoundType, &_musicHandle, stream);
 }
 
 void AlienEngine::stopMusic() {
